@@ -2148,168 +2148,237 @@ function nl(txt){ return (txt||'').split('\n').join('<br>'); }
 
 function renderMasterGrid(){
   const con=document.getElementById('master-grid');
-  if(!con) return;
+  if(!con){return;}
   con.innerHTML='';
+
   const LYRS=['SHIFT JADUAL','KZ PENYELIA','KZ KOPERAL','TIMECARE','MC DITERIMA','CUTI HRMIS','AUDIT FINAL'];
-  const LYR_STYLE=[
-    'font-weight:700;background:#e0e7ff;color:#1e3a8a',           // SHIFT JADUAL — biru
-    'background:#f0fdf4;color:#166534',                           // KZ PENYELIA
-    'background:#f0fdf4;color:#166534',                           // KZ KOPERAL
-    'background:#fff7ed;color:#9a3412',                           // TIMECARE — oren
-    'background:#fef9c3;color:#92400e;font-style:italic',         // MC DITERIMA — kuning
-    'background:#dbeafe;color:#1e40af;font-style:italic',         // CUTI HRMIS — biru muda
-    'background:#dcfce7;color:#166534;font-weight:700',           // AUDIT FINAL — hijau
+  const LYRST=[
+    'font-weight:700;background:#e0e7ff;color:#1e3a8a',
+    'background:#f0fdf4;color:#166534',
+    'background:#f0fdf4;color:#166534',
+    'background:#fff7ed;color:#9a3412',
+    'background:#fef9c3;color:#92400e',
+    'background:#dbeafe;color:#1e40af',
+    'background:#dcfce7;color:#166534;font-weight:700',
   ];
 
-  ['IKTAR','MHKL','RT'].forEach(jab=>{
-    const jabMembers=MASTER.filter(m=>m.jab===jab);
-    const wrap=document.createElement('div');
-    wrap.style.marginBottom='24px';
-    wrap.innerHTML=`<div class="jab-hdr"><h3>JABATAN: ${jab}</h3><span>${jabMembers.length} anggota</span></div>`;
+  function getD(bil,d){return DATA[bil]&&DATA[bil][d]?DATA[bil][d]:{kzp:'',kzk:'',tc_in:'',tc_out:'',ot_sambung:false,flags:[]};}
+  function sMC(bil,d){return(MC_APR||[]).filter(function(mc){return mc.bil===bil&&d>=mc.dari&&d<=mc.hingga;});}
+  function sHR(bil,d){return(HR_APR||[]).filter(function(h){return h.bil===bil&&d>=h.dari&&d<=h.hingga;});}
 
-    ['ALPHA','BRAVO','CHARLIE','DELTA'].forEach(komp=>{
-      const mems=jabMembers.filter(m=>m.komp===komp);
-      if(!mems.length) return;
+  function shL(sh){return{P:'Petang',S:'Pagi',M:'Malam',O:'OFFDAY'}[sh]||'OFFDAY';}
+  function shC(sh){return{P:'lyr-shift sh-pt',S:'lyr-shift sh-pg',M:'lyr-shift sh-m',O:'lyr-shift sh-o'}[sh]||'lyr-shift sh-o';}
+  function kC(v,sh){
+    if(sh==='O')return 'lyr-kz-off';
+    if(!v||v==='✓')return 'lyr-kz-ok';
+    var m={MC:'lyr-kz-mc',CR:'lyr-kz-cr',ABS:'lyr-kz-abs',NHT:'lyr-kz-nht',TH:'lyr-kz-th',
+           EL:'lyr-kz-el',LEWAT:'lyr-kz-lw','K/P':'lyr-kz-kp',CTR:'lyr-kz-ctr',X:'lyr-kz-abs'};
+    return m[v]||'lyr-kz-ok';
+  }
+  function nl(t){return(t||'').replace(/\n/g,'<br>');}
 
-      const kDiv=document.createElement('div');
+  function getTCdata(sh,tcIn,tcOut,flags){
+    if(sh==='O'){
+      if(tcIn||tcOut)return{t:'OFFDAY/OT\nABAIKAN\nTHUMB '+(tcIn||tcOut),c:'lyr-tc-ot'};
+      return{t:'OFFDAY',c:'lyr-tc-off'};
+    }
+    if(!tcIn&&!tcOut)return{t:'',c:''};
+    var spI=flags.find(function(f){return f.indexOf('SP IN')===0;});
+    var spO=flags.find(function(f){return f.indexOf('SP OUT')===0;});
+    var lw=flags.find(function(f){return f.indexOf('LEWAT')===0;});
+    var tI=flags.find(function(f){return f.indexOf('TLS IN')===0;});
+    var tO=flags.find(function(f){return f.indexOf('TLS OUT')===0;});
+    var oa=flags.find(function(f){return f.indexOf('OUT AWAL')===0;});
+    var ia=flags.find(function(f){return f.indexOf('IN AWAL')===0;});
+    if(spO)return{t:'SP THUMB OUT\n'+tcOut,c:'lyr-tc-sp'};
+    if(spI)return{t:'SP THUMB IN\n'+tcIn,c:'lyr-tc-sp'};
+    var lines=[],c='lyr-tc-ok';
+    if(lw){lines.push('LEWAT IN '+tcIn);c='lyr-tc-lewat';}
+    if(oa){lines.push('OUT >1J '+tcOut);c='lyr-tc-out1j';}
+    if(tI){lines.push('TLS IN '+tcIn);c='lyr-tc-tls';}
+    if(tO){lines.push('TLS OUT '+tcOut);c='lyr-tc-tls';}
+    if(ia){lines.push('IN AWAL '+tcIn);c='lyr-tc-lewat';}
+    if(!lines.length){
+      if(tcIn)lines.push('IN '+tcIn);
+      if(tcOut)lines.push('OUT '+tcOut+(sh==='M'?' (+1)':''));
+    }
+    return{t:lines.join('\n'),c:c};
+  }
+
+  function getMCdata(sh,mcRec){
+    if(sh==='O')return{t:'OFFDAY',c:'lyr-mc-off2'};
+    if(!mcRec.length)return{t:'',c:''};
+    return{t:'✓ MC\n'+(mcRec[0].klinik||'').substring(0,18),c:'lyr-mc-sah'};
+  }
+
+  function getHRdata(sh,hrRec){
+    if(sh==='O')return{t:'OFFDAY',c:'lyr-hr-off'};
+    if(!hrRec.length)return{t:'',c:''};
+    return{t:hrRec[0].jenis||'CR',c:'lyr-hr-ok'};
+  }
+
+  function getAFdata(sh,kzp,kzk,tcIn,tcOut,mcRec,hrRec,flags){
+    if(sh==='O'){
+      if(tcIn||tcOut)return{t:'OFFDAY / OT\nABAIKAN',c:'lyr-af-ot'};
+      return{t:'OFFDAY',c:'lyr-af-off'};
+    }
+    if(kzp==='TH'||kzk==='TH')return{t:'TAHAN TUGAS',c:'lyr-af-th'};
+    if(kzp==='NHT'||kzk==='NHT')return{t:'TIDAK HADIR\nTUGAS',c:'lyr-af-nht'};
+    if(kzp==='K/P'||kzk==='K/P')return{t:'KELEPASAN /\nPELEPASAN',c:'lyr-af-cr'};
+    if(kzp==='CTR'||kzk==='CTR')return{t:'CUTI TANPA\nREKOD',c:'lyr-af-warn'};
+    if(kzp==='CB'||kzk==='CB')return{t:'CUTI BERSALIN',c:'lyr-af-cr'};
+    if(mcRec.length){
+      if(tcIn||tcOut)return{t:'MC SAH\n⚠ ADA THUMB\nSEMAK',c:'lyr-af-warn'};
+      return{t:'MC SAH',c:'lyr-af-mc'};
+    }
+    if(hrRec.length){
+      var j=hrRec[0].jenis||'CR';
+      if(tcIn||tcOut)return{t:j+' SAH\n⚠ ADA THUMB\nSEMAK',c:'lyr-af-warn'};
+      return{t:j+' SAH',c:'lyr-af-cr'};
+    }
+    if((kzp==='MC'||kzk==='MC')&&!mcRec.length)return{t:'MC BELUM\nDITERIMA\nSILA HANTAR',c:'lyr-af-abs'};
+    if((kzp==='CR'||kzk==='CR')&&!hrRec.length)return{t:'CUTI BELUM\nSUBMIT\nSILA SEMAK',c:'lyr-af-warn'};
+    var isAbs=['ABS','X','NHT'].indexOf(kzp)>-1||['ABS','X','NHT'].indexOf(kzk)>-1||flags.some(function(f){return f.indexOf('ABS!')===0;});
+    if(isAbs)return{t:'✗ ABS\nMOHON HANTAR\nMC / CUTI',c:'lyr-af-abs'};
+    if(kzp==='EL'||kzk==='EL')return{t:'EL BELUM\nDISUBMIT',c:'lyr-af-warn'};
+    if(!kzp&&!kzk&&!tcIn&&!tcOut)return{t:'X LAPORAN\nKPL - SEMAK',c:'lyr-af-semak'};
+    var sp=flags.find(function(f){return f.indexOf('SP ')===0;});
+    var lw=flags.find(function(f){return f.indexOf('LEWAT')===0;});
+    var tls=flags.find(function(f){return f.indexOf('TLS')===0;});
+    var oa=flags.find(function(f){return f.indexOf('OUT AWAL')===0;});
+    var ia=flags.find(function(f){return f.indexOf('IN AWAL')===0;});
+    if(sp)return{t:sp.substring(0,30),c:'lyr-af-sp'};
+    if(tls)return{t:tls.substring(0,22),c:'lyr-af-tls'};
+    if(lw)return{t:lw.substring(0,22),c:'lyr-af-lewat'};
+    if(oa)return{t:oa.substring(0,22),c:'lyr-af-lewat'};
+    if(ia)return{t:ia.substring(0,22),c:'lyr-af-semak'};
+    return{t:'✓',c:'lyr-af-ok'};
+  }
+
+  function buildDayCell(li,day){
+    var sh=day.sh,c='',t='',es='';
+    if(li===0){t=shL(sh);c=shC(sh);es='font-weight:700';}
+    else if(li===1){t=day.kzpE||'&nbsp;';c=kC(day.kzp,sh);}
+    else if(li===2){t=day.kzkE||'&nbsp;';c=kC(day.kzk,sh);}
+    else if(li===3){t=nl(day.tc.t)||'&nbsp;';c=day.tc.c||'';}
+    else if(li===4){t=nl(day.mc.t)||'&nbsp;';c=day.mc.c||'';}
+    else if(li===5){t=nl(day.hr.t)||'&nbsp;';c=day.hr.c||'';}
+    else if(li===6){t=nl(day.af.t)||'&nbsp;';c=day.af.c||'';es='font-weight:700';}
+    return '<td class="mg-cell '+c+'" style="font-size:7px;line-height:1.4;vertical-align:middle;'+es+'">'+t+'</td>';
+  }
+
+  ['IKTAR','MHKL','RT'].forEach(function(jab){
+    var jabM=MASTER.filter(function(m){return m.jab===jab;});
+    var wrapDiv=document.createElement('div');
+    wrapDiv.style.marginBottom='20px';
+    wrapDiv.innerHTML='<div class="jab-hdr"><h3>JABATAN: '+jab+'</h3><span>'+jabM.length+' anggota</span></div>';
+
+    ['ALPHA','BRAVO','CHARLIE','DELTA'].forEach(function(komp){
+      var mems=jabM.filter(function(m){return m.komp===komp;});
+      if(!mems.length)return;
+
+      var kDiv=document.createElement('div');
       kDiv.style.borderBottom='1px solid var(--gbd)';
-      const sh1=shLbl2(getShift(mems[0].bil,1));
-      const st1=SH_TIME[getShift(mems[0].bil,1)];
-      kDiv.innerHTML=`<div class="komp-hdr"><h4>KOMPENI ${komp}</h4><span>Shift 1 Apr: ${sh1} (${st1})</span></div>`;
+      var sh1=shL(getShift(mems[0].bil,1));
+      var st1=SH_TIME[getShift(mems[0].bil,1)];
+      kDiv.innerHTML='<div class="komp-hdr"><h4>KOMPENI '+komp+'</h4><span>Shift 1 Apr: '+sh1+' ('+st1+')</span></div>';
 
-      const scrollDiv=document.createElement('div');
+      var scrollDiv=document.createElement('div');
       scrollDiv.className='mg-wrap';
 
-      // ── TABLE HEADER ──
-      let tbl=`<table class="mg-table" style="font-size:7.5px"><thead><tr>`;
-      tbl+=`<th style="min-width:25px;font-size:7px;position:sticky;left:0;z-index:6">Bil</th>`;
-      tbl+=`<th style="min-width:38px;font-size:7px;position:sticky;left:25px;z-index:6">Jabatan</th>`;
-      tbl+=`<th style="min-width:52px;font-size:7px;position:sticky;left:63px;z-index:6">Kompeni</th>`;
-      tbl+=`<th style="min-width:140px;font-size:8px;text-align:left;position:sticky;left:115px;z-index:6">Nama Anggota</th>`;
-      tbl+=`<th style="min-width:78px;font-size:7px;background:#1e2d4a">Lapisan Data</th>`;
-      for(let d=1;d<=30;d++){
-        const dow=APR_DOW[d-1];
-        const dc=dow===0?'dow-sun':dow===6?'dow-sat':'';
-        tbl+=`<th class="${dc}" style="min-width:72px">${d}<br><span style="font-size:5.5px;opacity:.7">${DOW_MS[dow]}</span></th>`;
+      // Build header
+      var tbl='<table class="mg-table"><thead><tr>';
+      tbl+='<th style="min-width:22px;font-size:7px;position:sticky;left:0;z-index:6;background:var(--navy3)">Bil</th>';
+      tbl+='<th style="min-width:40px;font-size:7px;position:sticky;left:22px;z-index:6;background:var(--navy3)">Jab</th>';
+      tbl+='<th style="min-width:55px;font-size:7px;position:sticky;left:62px;z-index:6;background:var(--navy3)">Komp</th>';
+      tbl+='<th class="mg-name" style="position:sticky;left:117px;z-index:6">Nama Anggota</th>';
+      tbl+='<th style="min-width:80px;font-size:7px;background:#1e2d4a;white-space:nowrap">Lapisan Data</th>';
+      for(var d=1;d<=30;d++){
+        var dow=APR_DOW[d-1];
+        var dc=dow===0?'dow-sun':dow===6?'dow-sat':'';
+        tbl+='<th class="'+dc+'" style="min-width:72px">'+d+'<br><span style="font-size:5.5px;opacity:.7">'+DOW_MS[dow]+'</span></th>';
       }
-      // Summary headers
-      ['H','MC','CR','AB','TH','⚑'].forEach(s=>tbl+=`<th style="min-width:20px;font-size:7px;background:#1a2f52">${s}</th>`);
-      tbl+=`</tr></thead><tbody>`;
+      ['H','MC','CR','AB','TH','⚑'].forEach(function(s){
+        tbl+='<th style="min-width:20px;font-size:7px;background:#1a2f52">'+s+'</th>';
+      });
+      tbl+='</tr></thead><tbody>';
 
-      mems.forEach((m,mi)=>{
-        if(mi>0) tbl+=`<tr class="mg-sep-anggota"><td colspan="${5+30+6}" style="height:6px;background:#e8edf2"></td></tr>`;
+      mems.forEach(function(m,mi){
+        if(mi>0)tbl+='<tr class="mg-sep-anggota"><td colspan="'+(5+30+6)+'" style="height:6px;background:#e8edf2;padding:0"></td></tr>';
 
-        // Pre-compute all days
-        const days=[];
-        let sumH=0,sumMC=0,sumCR=0,sumAB=0,sumTH=0,sumFL=0;
-        for(let d=1;d<=30;d++){
-          const sh=getShift(m.bil,d);
-          const cell=DATA[m.bil]?.[d]||{};
-          const kzp=cell.kzp||'';
-          const kzk=cell.kzk||'';
-          const tcIn=cell.tc_in||'';
-          const tcOut=cell.tc_out||'';
-          const flags=detectFlags(m.bil,d);
-          const mcRec=getMC(m.bil,d);
-          const hrRec=getHR(m.bil,d);
-          const auto=sh!=='O'&&!kzp&&!kzk&&!flags.some(f=>f.startsWith('ABS!'))&&!mcRec.length&&!hrRec.length;
-          const kzpE=kzp||(sh==='O'?'OFFDAY':auto?'✓':'');
-          const kzkE=kzk||(sh==='O'?'OFFDAY':auto?'✓':'');
-          const tc=tcLabel(sh,tcIn,tcOut,flags);
-          const mc=mcLabel(sh,mcRec);
-          const hr=hrLabel(sh,hrRec);
-          const af=auditLabel(sh,kzp,kzk,tcIn,tcOut,mcRec,hrRec,flags);
+        // Pre-compute days
+        var days=[];
+        var sumH=0,sumMC=0,sumCR=0,sumAB=0,sumTH=0,sumFL=0;
+        for(var d=1;d<=30;d++){
+          var sh=getShift(m.bil,d);
+          var cell=getD(m.bil,d);
+          var kzp=cell.kzp||'';
+          var kzk=cell.kzk||'';
+          var tcIn=cell.tc_in||'';
+          var tcOut=cell.tc_out||'';
+          var flags=detectFlags(m.bil,d);
+          var mcRec=sMC(m.bil,d);
+          var hrRec=sHR(m.bil,d);
+          var autoTick=sh!=='O'&&!kzp&&!kzk&&!flags.some(function(f){return f.indexOf('ABS!')===0;})&&!mcRec.length&&!hrRec.length;
+          var kzpE=kzp||(sh==='O'?'OFFDAY':autoTick?'✓':'');
+          var kzkE=kzk||(sh==='O'?'OFFDAY':autoTick?'✓':'');
+          var tc=getTCdata(sh,tcIn,tcOut,flags);
+          var mc=getMCdata(sh,mcRec);
+          var hr=getHRdata(sh,hrRec);
+          var af=getAFdata(sh,kzp,kzk,tcIn,tcOut,mcRec,hrRec,flags);
           if(sh!=='O'){
-            if(kzp==='TH'||kzk==='TH'||kzp==='NHT'||kzk==='NHT') sumTH++;
-            else if(mcRec.length) sumMC++;
-            else if(hrRec.length||kzp==='CR') sumCR++;
-            else if(['ABS','X','NHT'].includes(kzp)||flags.some(f=>f.startsWith('ABS!'))) sumAB++;
+            if(kzp==='TH'||kzk==='TH'||kzp==='NHT'||kzk==='NHT')sumTH++;
+            else if(mcRec.length)sumMC++;
+            else if(hrRec.length||kzp==='CR')sumCR++;
+            else if(['ABS','X','NHT'].indexOf(kzp)>-1||flags.some(function(f){return f.indexOf('ABS!')===0;}))sumAB++;
             else sumH++;
           }
           sumFL+=flags.length;
-          days.push({d,sh,kzpE,kzkE,kzp,kzk,tcIn,tcOut,flags,mcRec,hrRec,tc,mc,hr,af});
+          days.push({d:d,sh:sh,kzp:kzp,kzk:kzk,kzpE:kzpE,kzkE:kzkE,tc:tc,mc:mc,hr:hr,af:af});
         }
 
-        // Generate 7 rows
-        LYRS.forEach((lyr,li)=>{
-          tbl+=`<tr>`;
-          // Fixed cols — only on row 0 (SHIFT JADUAL), span 7 rows
+        // Build 7 rows
+        for(var li=0;li<7;li++){
+          tbl+='<tr>';
+          // Fixed left cols — only on layer 0, rowspan 7
           if(li===0){
-            tbl+=`<td class="mg-cell" rowspan="7" style="text-align:center;font-weight:700;font-size:8px;vertical-align:middle;position:sticky;left:0;z-index:3;background:#fff;border-right:1px solid var(--gbd)">${m.bil}</td>`;
-            tbl+=`<td class="mg-cell" rowspan="7" style="text-align:center;font-size:7.5px;vertical-align:middle;position:sticky;left:25px;z-index:3;background:#fff;border-right:1px solid var(--gbd)">${m.jab}</td>`;
-            tbl+=`<td class="mg-cell" rowspan="7" style="text-align:center;font-size:7.5px;vertical-align:middle;position:sticky;left:63px;z-index:3;background:#fff;border-right:1px solid var(--gbd)">${m.komp}</td>`;
-            tbl+=`<td class="mg-cell" rowspan="7" style="text-align:left;vertical-align:top;padding:5px 7px;position:sticky;left:115px;z-index:3;background:#fff;border-right:2px solid var(--navy)">
-              <div style="font-size:7px;color:var(--gray);font-weight:700">Bil ${m.bil}</div>
-              <div style="font-size:8.5px;font-weight:700;color:var(--navy);line-height:1.3;margin-top:1px">${m.nama}</div>
-              <div style="font-size:7px;color:var(--gray);margin-top:1px">${m.jab} · ${m.komp}</div>
-              ${m.note?`<div style="margin-top:3px;background:var(--rd-bg);color:var(--rd-t);padding:1px 5px;border-radius:3px;font-size:7px;font-weight:700">${m.note}</div>`:''}
-            </td>`;
-            // Summary cols — span 7 rows
-            const sCol=(v,c)=>`<td class="mg-sum" rowspan="7" style="vertical-align:middle;border-left:2px solid var(--navy);color:${c}">${v}</td>`;
+            var noteHtml=m.note?'<div style="margin-top:3px;background:var(--rd-bg);color:var(--rd-t);padding:1px 4px;border-radius:3px;font-size:6.5px;font-weight:700">'+m.note+'</div>':'';
+            tbl+='<td class="mg-cell" rowspan="7" style="text-align:center;font-weight:700;font-size:8px;vertical-align:middle;position:sticky;left:0;z-index:3;background:#fff;border-right:1px solid var(--gbd)">'+m.bil+'</td>';
+            tbl+='<td class="mg-cell" rowspan="7" style="text-align:center;font-size:7px;vertical-align:middle;position:sticky;left:22px;z-index:3;background:#fff;border-right:1px solid var(--gbd)">'+m.jab+'</td>';
+            tbl+='<td class="mg-cell" rowspan="7" style="text-align:center;font-size:7px;vertical-align:middle;position:sticky;left:62px;z-index:3;background:#fff;border-right:1px solid var(--gbd)">'+m.komp+'</td>';
+            tbl+='<td class="mg-cell" rowspan="7" style="text-align:left;vertical-align:top;padding:5px 7px;position:sticky;left:117px;z-index:3;background:#fff;border-right:2px solid var(--navy)">'
+              +'<div style="font-size:6.5px;color:var(--gray)">Bil '+m.bil+'</div>'
+              +'<div style="font-size:8.5px;font-weight:700;color:var(--navy);line-height:1.3;margin-top:1px">'+m.nama+'</div>'
+              +'<div style="font-size:7px;color:var(--gray);margin-top:1px">'+m.jab+' · '+m.komp+'</div>'
+              +noteHtml
+              +'</td>';
           }
           // Lapisan label
-          tbl+=`<td style="padding:2px 5px;font-size:7px;font-weight:600;white-space:nowrap;border:1px solid #e2e8f0;${LYR_STYLE[li]}">${lyr}</td>`;
-
+          tbl+='<td style="padding:2px 6px;font-size:7px;font-weight:600;white-space:nowrap;border:1px solid #e2e8f0;'+LYRST[li]+'">'+LYRS[li]+'</td>';
           // Day cells
-          days.forEach(day=>{
-            const {sh,kzpE,kzkE,kzp,kzk,tc,mc,hr,af}=day;
-            let cellTxt='',cellCls='',extraStyle='';
-            switch(li){
-              case 0: // SHIFT JADUAL
-                cellTxt=shLbl2(sh);
-                cellCls=`lyr-shift ${shCls2(sh)}`;
-                extraStyle='font-weight:700';
-                break;
-              case 1: // KZ PENYELIA
-                cellTxt=kzpE||'&nbsp;';
-                cellCls=kzMCls(kzp,sh);
-                break;
-              case 2: // KZ KOPERAL
-                cellTxt=kzkE||'&nbsp;';
-                cellCls=kzMCls(kzk,sh);
-                break;
-              case 3: // TIMECARE
-                cellTxt=nl(tc.t)||'&nbsp;';
-                cellCls=tc.c||'';
-                break;
-              case 4: // MC DITERIMA
-                cellTxt=nl(mc.t)||'&nbsp;';
-                cellCls=mc.c||'';
-                break;
-              case 5: // CUTI HRMIS
-                cellTxt=nl(hr.t)||'&nbsp;';
-                cellCls=hr.c||'';
-                break;
-              case 6: // AUDIT FINAL
-                cellTxt=nl(af.t)||'&nbsp;';
-                cellCls=af.c||'';
-                extraStyle='font-weight:700';
-                break;
-            }
-            tbl+=`<td class="mg-cell ${cellCls}" style="font-size:7px;line-height:1.4;${extraStyle}">${cellTxt}</td>`;
-          });
-
-          // Summary cols only on first row
-          if(li===0){
-            const sc=(v,col)=>`<td class="mg-sum" rowspan="7" style="vertical-align:middle;border-left:${li===0?'2px solid var(--navy)':'none'};color:${col};font-weight:700">${v}</td>`;
-            tbl+=sc(sumH,'var(--green)');
-            tbl+=sc(sumMC,'var(--amber)');
-            tbl+=sc(sumCR,'var(--blue)');
-            tbl+=sc(sumAB,sumAB>0?'var(--red)':'var(--gray)');
-            tbl+=sc(sumTH,'var(--purple)');
-            tbl+=sc(sumFL,sumFL>3?'var(--red)':sumFL>0?'var(--amber)':'var(--gray)');
+          for(var di=0;di<days.length;di++){
+            tbl+=buildDayCell(li,days[di]);
           }
-          tbl+=`</tr>`;
-        });
+          // Summary cols — only on layer 0, rowspan 7
+          if(li===0){
+            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:var(--green)">'+sumH+'</td>';
+            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:var(--amber)">'+sumMC+'</td>';
+            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:var(--blue)">'+sumCR+'</td>';
+            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:'+(sumAB>0?'var(--red)':'var(--gray)')+'">'+sumAB+'</td>';
+            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:var(--purple)">'+sumTH+'</td>';
+            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:'+(sumFL>3?'var(--red)':sumFL>0?'var(--amber)':'var(--gray)')+'">'+sumFL+'</td>';
+          }
+          tbl+='</tr>';
+        }
       });
 
-      tbl+=`<tr class="mg-sep-komp"><td colspan="${5+30+6}" style="height:12px;background:#dde3ea"></td></tr>`;
-      tbl+=`</tbody></table>`;
+      tbl+='<tr class="mg-sep-komp"><td colspan="'+(5+30+6)+'" style="height:12px;background:#dde3ea;padding:0"></td></tr>';
+      tbl+='</tbody></table>';
       scrollDiv.innerHTML=tbl;
       kDiv.appendChild(scrollDiv);
-      wrap.appendChild(kDiv);
+      wrapDiv.appendChild(kDiv);
     });
-    con.appendChild(wrap);
+    con.appendChild(wrapDiv);
   });
 }
 
