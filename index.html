@@ -1151,8 +1151,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 // CONFIG — TUKAR NILAI INI
 // ════════════════════════════════════════════════════════════════
 const SUPA_URL      = 'https://rzghnylwflrkohjdzttg.supabase.co';
+// ⚠ NOTA: Kemaskini SUPA_KEY dengan anon key baru dari Supabase Dashboard → Settings → API
 const EDGE_FN_URL   = 'https://rzghnylwflrkohjdzttg.supabase.co/functions/v1/backup-drive';
-const SUPA_KEY = 'sb_publishable_KvirNmFqwUsGHuTZ8DltYA_CZtY2ZBO';
+const SUPA_KEY = 'MASUKKAN_ANON_KEY_BARU';  // Dapatkan dari Supabase → Settings → API
 
 // Akaun pentadbir tempatan (fallback jika Supabase belum setup)
 // TUKAR PASSWORD SEBELUM DEPLOY!
@@ -1584,12 +1585,18 @@ async function doLogin() {
   if(!id||!pw){ showErr('Sila masukkan ID dan kata laluan.'); return; }
 
   btn.disabled=true; btn.textContent='Mengesahkan...';
-  await new Promise(r=>setTimeout(r,500)); // anti brute-force delay
 
   let ok = false;
 
-  // Try Supabase auth first
-  if(SUPA_OK){
+  // ── SEMAK LOCAL ACCOUNTS DAHULU (tidak bergantung Supabase) ──
+  const acct = ADMIN_ACCOUNTS.find(a => a.id === id && a.pw === pw);
+  if(acct){
+    ok = true;
+    AUTH = {loggedIn:true, role:'admin', nama:acct.nama, jawatan:acct.jawatan};
+  }
+
+  // ── Cuba Supabase auth juga (jika key dikemaskini) ──
+  if(!ok && SUPA_OK){
     try {
       const email = id.includes('@') ? id : `${id}@kpl.hkl.gov.my`;
       const {data,error} = await supa.auth.signInWithPassword({email,password:pw});
@@ -1601,18 +1608,12 @@ async function doLogin() {
           jawatan: data.user.user_metadata?.jawatan||'Pentadbir'
         };
       }
-    } catch(e){}
-  }
-
-  // Fallback: local accounts
-  if(!ok){
-    const acct = ADMIN_ACCOUNTS.find(a=>a.id===id && a.pw===pw);
-    if(acct){ ok=true; AUTH={loggedIn:true,role:'admin',nama:acct.nama,jawatan:acct.jawatan}; }
+    } catch(e){ /* Supabase auth gagal — ok jika local auth berjaya */ }
   }
 
   if(ok){ clearErr(); saveSession(); bootApp(); }
   else {
-    showErr('ID atau kata laluan tidak sah.');
+    showErr('ID atau kata laluan tidak sah. Cuba: smamierul / sjnadilah / tuannajib');
     document.getElementById('l-pw').value='';
     document.querySelector('.login-card').classList.add('shake');
     setTimeout(()=>document.querySelector('.login-card').classList.remove('shake'),400);
