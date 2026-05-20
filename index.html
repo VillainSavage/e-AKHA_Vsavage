@@ -250,6 +250,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 .nc-meta{font-size:7px;color:var(--gray);margin-top:1px}
 .nc-flags{display:flex;gap:2px;flex-wrap:wrap;margin-top:2px}
 .nc-note{font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700;background:var(--rd-bg);color:var(--rd-t)}
+.nc-note-th{font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700;background:var(--pu-bg);color:var(--pu-t)}
+.nc-note-nht{font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700;background:#1c1917;color:#fef2f2}
 .nc-flag-cnt{font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700;background:var(--am-bg);color:var(--am-t)}
 
 /* Day cell — 4 layers */
@@ -497,6 +499,22 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 
     <div class="sb-sec" id="sb-admin-section">
       <div class="sb-lbl">Pentadbir</div>
+      <div class="sb-item" onclick="nav('mc',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07"/><path d="M2 2l20 20"/></svg>
+        Register MC
+      </div>
+      <div class="sb-item" onclick="nav('baki',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4"/></svg>
+        Baki Cuti
+      </div>
+      <div class="sb-item" onclick="nav('raya',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Kerja Raya Aidilfitri
+      </div>
+      <div class="sb-item" onclick="nav('haji',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        CTR Raya Haji 2026
+      </div>
       <div class="sb-item" onclick="nav('entry',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Entry Manual KZ / TC
@@ -532,6 +550,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
           Export CSV
         </button>
+        <button class="btn btn-sm" onclick="generatePDF()" id="btn-pdf" style="background:#dc2626;color:#fff;border-color:#dc2626" title="Jana Laporan PDF Penuh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF
+        </button>
       </div>
     </div>
 
@@ -545,14 +567,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
         </div>
         <div class="srow">
           <div class="sc navy"><div class="sc-l">Jumlah Anggota</div><div class="sc-v">52</div><div class="sc-s">IKTAR·MHKL·RT</div></div>
-          <div class="sc red"><div class="sc-l">Kes Kritikal</div><div class="sc-v" id="d-krit">2</div><div class="sc-s">Tahan/Tidak Hadir</div></div>
+          <div class="sc purple"><div class="sc-l">Tahan / Tidak Hadir</div><div class="sc-v" id="d-krit">3</div><div class="sc-s">bil 4, 10, 52</div></div>
           <div class="sc amber"><div class="sc-l">Output Perhatian</div><div class="sc-v" id="d-flags">–</div><div class="sc-s">flags aktif</div></div>
-          <div class="sc blue"><div class="sc-l">Data Dimasukkan</div><div class="sc-v" id="d-cells">0</div><div class="sc-s">rekod tersimpan</div></div>
+          <div class="sc amber"><div class="sc-l">MC Diterima</div><div class="sc-v" id="d-mc-cnt">27</div><div class="sc-s">rekod MC April</div></div>
+          <div class="sc blue"><div class="sc-l">Data Supabase</div><div class="sc-v" id="d-cells">0</div><div class="sc-s">rekod tersimpan</div></div>
           <div class="sc green"><div class="sc-l">Sambungan DB</div><div class="sc-v" style="font-size:13px" id="d-db">–</div><div class="sc-s">Supabase</div></div>
         </div>
         <div class="notif warn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
-          <div><b>8 Peraturan Flag Aktif:</b> ①SP (nyatakan jam IN/OUT) ②TLS (luar shift hakiki, kecuali OT bersambung) ③LEWAT (&gt;6min, OT bersambung=tidak lewat) ④IN AWAL (&gt;60min sebelum shift=tidak sah) ⑤ABS tanpa dok (mohon MC/cuti) ⑥EL (wajib HRMIS) ⑦K/P (Kelepasan/Pelepasan) ⑧CTR/CB</div>
+          <div><b>8 Peraturan Flag Aktif:</b> ①SP (nyatakan jam IN/OUT) ③LEWAT (&gt;6min, OT bersambung=tidak lewat) ④IN AWAL (&gt;60min sebelum shift=tidak sah) ⑤ABS tanpa dok (mohon MC/cuti) ⑥EL (wajib HRMIS) ⑦K/P (Kelepasan/Pelepasan) ⑧CTR/CB</div>
         </div>
         <div class="sech"><div class="sect">Kes Perlu Tindakan Segera</div><button class="btn btn-sm" onclick="nav('flags',document.querySelector('[onclick*=flags]'))">Semua →</button></div>
         <div id="dash-alerts">
@@ -600,7 +623,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
           <span class="lg-i"><span class="fl sh-o"  style="padding:1px 4px">OF</span>Offday</span>
           &nbsp;<b style="color:var(--gray)">Flag:</b>
           <span class="lg-i"><span class="fl fl-sp">SP</span>Single Punch</span>
-          <span class="lg-i"><span class="fl fl-tls">TLS</span>Thumb Luar Shift</span>
           <span class="lg-i"><span class="fl fl-lw">LW</span>Lewat</span>
           <span class="lg-i"><span class="fl fl-ia">IA</span>IN Awal</span>
           <span class="lg-i"><span class="fl fl-oa">OA</span>OUT Awal</span>
@@ -617,7 +639,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
         <div class="ftabs">
           <button class="ftab active" onclick="renderFlags('',this)">Semua (<span id="fct-all">0</span>)</button>
           <button class="ftab" onclick="renderFlags('SP',this)">SP (<span id="fct-sp">0</span>)</button>
-          <button class="ftab" onclick="renderFlags('TLS',this)">TLS (<span id="fct-tls">0</span>)</button>
           <button class="ftab" onclick="renderFlags('LEWAT',this)">Lewat (<span id="fct-lw">0</span>)</button>
           <button class="ftab" onclick="renderFlags('IN AWAL',this)">IN Awal (<span id="fct-ia">0</span>)</button>
           <button class="ftab" onclick="renderFlags('OUT AWAL',this)">OUT Awal (<span id="fct-oa">0</span>)</button>
@@ -663,6 +684,81 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
           <button class="ftab" onclick="setKomp('rt','DELTA',this)">DELTA</button>
         </div>
         <div id="grid-rt"></div>
+      </div>
+
+      <!-- ── REGISTER MC ── -->
+      <div class="page" id="page-mc">
+        <div class="notif info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+          <div><b>Register MC April 2026.</b> MC diterima: tarikh, hari, klinik wajib. MC backdated → masuk listing berasingan. MC bulan hadapan → masuk file bulan seterusnya. Jika tiada MC → flag <b>SILA MOHON CUTI</b>.</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="mc-srch" placeholder="Cari nama / klinik / no siri..." oninput="renderMC()" style="font-size:9.5px;padding:5px 9px;border:1px solid var(--gbd);border-radius:5px;width:200px">
+          <select id="mc-jab-f" onchange="renderMC()" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
+            <option value="">Semua Jabatan</option><option>IKTAR</option><option>MHKL</option><option>RT</option>
+          </select>
+          <button class="btn btn-gr btn-sm" id="mc-add-btn" onclick="showMCForm()" style="display:none">+ Tambah MC</button>
+          <span id="mc-count" style="font-size:9px;color:var(--gray);margin-left:auto"></span>
+          <button class="btn btn-gd btn-sm" onclick="exportMCcsv()">Export CSV</button>
+        </div>
+        <!-- Add MC form (admin only) -->
+        <div id="mc-form" style="display:none;background:#fff;border:1px solid var(--gbd);border-radius:8px;padding:14px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;margin-bottom:10px">Tambah Rekod MC</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">Anggota</div>
+              <select id="mc-f-bil" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:200px">
+                <option value="">-- Pilih --</option>
+              </select></div>
+            <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">Dari (DD/MM)</div>
+              <input type="text" id="mc-f-dari" placeholder="01/04" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:80px"></div>
+            <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">Hingga (DD/MM)</div>
+              <input type="text" id="mc-f-hingga" placeholder="01/04" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:80px"></div>
+            <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">Nama Klinik *</div>
+              <input type="text" id="mc-f-klinik" placeholder="Klinik OSH / Hospital..." style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:180px"></div>
+            <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">No Siri MC</div>
+              <input type="text" id="mc-f-siri" placeholder="AC1172010" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:110px"></div>
+            <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">Jenis</div>
+              <select id="mc-f-jenis" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
+                <option>Bulan Ini</option><option>Backdated</option><option>Bulan Hadapan</option>
+              </select></div>
+            <button class="btn btn-gr btn-sm" onclick="addMCRecord()">Simpan</button>
+            <button class="btn btn-sm" onclick="document.getElementById('mc-form').style.display='none'">Batal</button>
+          </div>
+          <div id="mc-f-status" style="font-size:9px;margin-top:6px;color:var(--green)"></div>
+        </div>
+        <div id="mc-table-wrap"></div>
+      </div>
+
+      <!-- ── BAKI CUTI ── -->
+      <div class="page" id="page-baki">
+        <div class="notif warn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <span>Baki cuti setiap anggota berbeza. Upload PDF baki cuti → sistem akan kemaskini. CR/EL yang disahkan ditolak dari baki. MC <b>tidak</b> tolak baki. HKA (hari kelepasan am): bekerja=OT (bilangan kosong), bercuti=tidak tolak baki.</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input type="text" id="baki-srch" placeholder="Cari nama..." oninput="renderBaki()" style="font-size:9.5px;padding:5px 9px;border:1px solid var(--gbd);border-radius:5px;width:180px">
+          <button class="btn btn-gr btn-sm" id="baki-save-btn" onclick="saveBakiAll()" style="display:none">Simpan Semua</button>
+          <span style="font-size:9px;color:var(--gray);margin-left:auto">Klik nilai untuk edit (admin sahaja)</span>
+        </div>
+        <div id="baki-grid"></div>
+      </div>
+
+      <!-- ── RAYA AIDILFITRI 2026 ── -->
+      <div class="page" id="page-raya">
+        <div class="notif info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <div><b>Anggota Bertugas Raya Aidilfitri 2026</b> — Fokus IKTAR, MHKL, RT sahaja. Hari Raya Aidilfitri: 20–21 Mac 2026 (tertakluk cerapan). Anggota yang bertugas pada hari HKA ini dikira OT — bukan cuti. Bilangan hari bekerja dikosongkan dalam rekod.</div>
+        </div>
+        <div id="raya-content"></div>
+      </div>
+
+      <!-- ── CTR RAYA HAJI 2026 ── -->
+      <div class="page" id="page-haji">
+        <div class="notif warn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          <div><b>CTR (Cuti Tanpa Rekod) — Raya Haji Kedua 2026</b> — Untuk kegunaan audit bulan Mei. Anggota yang CTR pada Hari Raya Haji (27 Mei 2026) wajib isi permohonan cuti. Ini adalah listing berasingan untuk tindakan susulan.</div>
+        </div>
+        <div id="haji-content"></div>
       </div>
 
       <!-- ── ENTRY MANUAL (ADMIN ONLY) ── -->
@@ -925,13 +1021,13 @@ const MASTER = [
   {bil:1, jab:'IKTAR',komp:'ALPHA',nama:'MOHAMAD ALIFF BIN MOHTAR'},
   {bil:2, jab:'IKTAR',komp:'ALPHA',nama:'ABDULLAH BIN BAHUDIN'},
   {bil:3, jab:'IKTAR',komp:'ALPHA',nama:'MUHAMMAD TARMIZI BIN ABDULLAH'},
-  {bil:4, jab:'IKTAR',komp:'ALPHA',nama:'MOHD AMINUDIN BIN DAUD',note:'TAHAN TUGAS'},
+  {bil:4, jab:'IKTAR',komp:'ALPHA',nama:'MOHD AMINUDIN BIN DAUD',note:'TIDAK HADIR TUGAS'},
   {bil:5, jab:'IKTAR',komp:'ALPHA',nama:'IRWAN SYAMIR BIN MOHD ZAINAL',note:'5x LEWAT'},
   {bil:6, jab:'IKTAR',komp:'ALPHA',nama:'AALIYA AUNI BINTI MAT ZABIR'},
   {bil:7, jab:'IKTAR',komp:'BRAVO',nama:'ZULKIFLI BIN YUSOF'},
   {bil:8, jab:'IKTAR',komp:'BRAVO',nama:'MOHD ILHAM BIN YUSOFF'},
   {bil:9, jab:'IKTAR',komp:'BRAVO',nama:'NORAZARIN BIN HUSSIN'},
-  {bil:10,jab:'IKTAR',komp:'BRAVO',nama:'MUHAMAD ASREE BIN HAZIR',note:'TIDAK HADIR'},
+  {bil:10,jab:'IKTAR',komp:'BRAVO',nama:'MUHAMAD ASREE BIN HAZIR',note:'TAHAN TUGAS'},
   {bil:11,jab:'IKTAR',komp:'BRAVO',nama:'AZLANNOOR HADY BIN ABDUL TALIB'},
   {bil:12,jab:'IKTAR',komp:'BRAVO',nama:'NOR AINA NAZIRA BINTI MOHD TARMIZI'},
   {bil:13,jab:'IKTAR',komp:'CHARLIE',nama:'AZROL NAIM BIN AB MALEK'},
@@ -973,7 +1069,7 @@ const MASTER = [
   {bil:49,jab:'RT',komp:'DELTA',nama:'ROSARIZAM BIN SAMSUDIN'},
   {bil:50,jab:'RT',komp:'DELTA',nama:'MUHAMMAD TARMIZI BIN SAZALI'},
   {bil:51,jab:'RT',komp:'DELTA',nama:'KHAIROL ISZUWAN BIN ZAKARIA',note:'9x LEWAT'},
-  {bil:52,jab:'RT',komp:'DELTA',nama:'MOHD NAZRI BIN ISMAIL'},
+  {bil:52,jab:'RT',komp:'DELTA',nama:'MOHD NAZRI BIN ISMAIL',note:'TAHAN TUGAS'},
 ];
 
 // ════════════════════════════════════════════════════════════════
@@ -989,22 +1085,24 @@ MASTER.forEach(m => {
 
 // Pre-fill known kes
 function setC(bil,d,o) { if(DATA[bil]?.[d]) Object.assign(DATA[bil][d], o); }
-// Tahan Tugas — AMINUDIN bil 4
-for(let d=1;d<=30;d++) if(getShift(4,d)!=='O') setC(4,d,{kzp:'TH',kzk:'TH'});
-// Tidak Hadir — ASREE bil 10
-for(let d=1;d<=30;d++) if(getShift(10,d)!=='O') setC(10,d,{kzp:'ABS',kzk:'ABS'});
+// Tidak Hadir Tugas — AMINUDIN bil 4 (tiada rekod timecard)
+for(let d=1;d<=30;d++) if(getShift(4,d)!=='O') setC(4,d,{kzp:'NHT',kzk:'NHT',flags:[]});
+// Tahan Tugas — ASREE bil 10
+for(let d=1;d<=30;d++) if(getShift(10,d)!=='O') setC(10,d,{kzp:'TH',kzk:'TH',flags:[]});
+// Tahan Tugas — MOHD NAZRI bil 52
+for(let d=1;d<=30;d++) if(getShift(52,d)!=='O') setC(52,d,{kzp:'TH',kzk:'TH',flags:[]});
 // HAZLAN (28) MC 1-2 Apr, ABS 17,30, CR 18
 setC(28,1,{kzp:'MC',kzk:'MC'}); setC(28,2,{kzp:'MC',kzk:'MC'});
 setC(28,17,{kzp:'ABS',kzk:'ABS'}); setC(28,30,{kzp:'ABS',kzk:'ABS'});
 setC(28,18,{kzp:'CR',kzk:'CR'});
 // ZULHELMI (18) CR+TLS 4 tarikh
-[13,17,21,26].forEach(d=>setC(18,d,{kzp:'CR',kzk:'CR',flags:['TLS IN (luar shift)']}));
+[13,17,21,26].forEach(d=>setC(18,d,{kzp:'CR',kzk:'CR'}));
 // IRWAN (5) 5x lewat
 [6,7,14,15,19].forEach(d=>setC(5,d,{kzp:'✓',kzk:'✓',flags:['LEWAT +8min']}));
 // KHAIROL (51) 9x lewat
 [4,6,9,11,14,16,20,23,27].forEach(d=>setC(51,d,{kzp:'✓',kzk:'✓',flags:['LEWAT +12min']}));
 // SAIFUL (47) MC+TLS 09-10/04
-setC(47,9,{kzp:'MC',kzk:'MC',flags:['TLS OUT 06:53']}); setC(47,10,{kzp:'MC',kzk:'MC',flags:['TLS IN 19:00']});
+setC(47,9,{kzp:'MC',kzk:'MC'}); setC(47,10,{kzp:'MC',kzk:'MC'});
 
 // ════════════════════════════════════════════════════════════════
 // FLAG DETECTION ENGINE
@@ -1032,7 +1130,8 @@ function detectFlags(bil, d) {
   if(kzp==='K/P'||kzk==='K/P')   { if(!flags.includes('K/P'))  flags.push('K/P');  return [...new Set(flags)]; }
   if(kzp==='CB' ||kzk==='CB')    { if(!flags.includes('CB'))   flags.push('CB');   return [...new Set(flags)]; }
   if(kzp==='CTR'||kzk==='CTR')   { if(!flags.some(f=>f==='CTR')) flags.push('CTR'); }
-  if(kzp==='TH' ||kzk==='TH')    return [...new Set(flags)];
+  // TAHAN TUGAS & TIDAK HADIR — tiada flag diperlukan
+  if(['TH','NHT'].includes(kzp)||['TH','NHT'].includes(kzk)) return [];
 
   // EL tanpa HRMIS (simplified check)
   if((kzp==='EL'||kzk==='EL') && !flags.some(f=>f.startsWith('EL')))
@@ -1051,37 +1150,25 @@ function detectFlags(bil, d) {
   const SS = sh==='S'?420:sh==='P'?900:1380;
   const SE = sh==='S'?900:sh==='P'?1380:420;
 
-  // RULE 1: SINGLE PUNCH
+  // RULE 1: SINGLE PUNCH — nyatakan jam & apa tiada
   if(tc_in && !tc_out && !flags.some(f=>f.startsWith('SP')))
-    flags.push(`SP IN ${tc_in} (tiada OUT)`);
+    flags.push(`Tiada OUT (IN: ${tc_in})`);
   else if(!tc_in && tc_out && !flags.some(f=>f.startsWith('SP')))
-    flags.push(`SP OUT ${tc_out} (tiada IN)`);
+    flags.push(`Tiada IN (OUT: ${tc_out})`);
 
-  // RULE 2: THUMB LUAR SHIFT (toleran ±90min, kecuali OT sambung)
-  if(!ot_sambung && inM!==null) {
-    let outside = false;
-    if(sh==='S') outside = inM<(SS-90)||inM>(SS+90);
-    if(sh==='P') outside = inM<(SS-90)||inM>(SS+90);
-    if(sh==='M') outside = !(inM>=1290||inM<=90); // ~21:30–00:30
-    if(outside && !flags.some(f=>f.startsWith('TLS IN')))
-      flags.push(`TLS IN ${tc_in}`);
-  }
-  if(!ot_sambung && outM!==null) {
-    let outside = false;
-    if(sh==='S') outside = outM<(SE-90)||outM>(SE+90);
-    if(sh==='P') outside = outM<(SE-90)||outM>(SE+90);
-    if(sh==='M') outside = outM<330||outM>540; // ~05:30–09:00
-    if(outside && !flags.some(f=>f.startsWith('TLS OUT')))
-      flags.push(`TLS OUT ${tc_out}`);
-  }
+  // RULE 2: TLS — DIABAIKAN (tugasan di luar shift dikira OT, tidak perlu flag)
 
   // RULE 3: LEWAT >6 minit (OT sambung = tidak lewat)
   if(inM!==null && !ot_sambung) {
     let late=0;
     if(sh==='S'||sh==='P') late = inM-SS;
     if(sh==='M') late = inM>=SS ? inM-SS : inM+(1440-SS);
-    if(late>6 && !flags.some(f=>f.startsWith('LEWAT')))
-      flags.push(`LEWAT +${late}min (IN ${tc_in})`);
+    if(late>6 && !flags.some(f=>f.startsWith('LEWAT'))) {
+      const lateH = Math.floor(late/60);
+      const lateM = late%60;
+      const lateTxt = lateH>0 ? `${lateH}j ${lateM}min` : `${lateM}min`;
+      flags.push(`LEWAT ${lateTxt} (IN ${tc_in})`);
+    }
   }
 
   // RULE 4: IN AWAL >60 minit sebelum shift
@@ -1089,8 +1176,12 @@ function detectFlags(bil, d) {
     let early=0;
     if(sh==='S'||sh==='P') early = SS-inM;
     if(sh==='M' && inM>600) early = SS-inM;
-    if(early>60 && !flags.some(f=>f.startsWith('IN AWAL')))
-      flags.push(`IN AWAL ${tc_in} (${early}min terlalu awal)`);
+    if(early>60 && !flags.some(f=>f.startsWith('IN AWAL'))) {
+      const earlyH = Math.floor(early/60);
+      const earlyM = early%60;
+      const earlyTxt = earlyH>0 ? `${earlyH}j ${earlyM}min` : `${earlyM}min`;
+      flags.push(`IN AWAL ${tc_in} (${earlyTxt} sebelum shift)`);
+    }
   }
 
   // RULE 5: OUT AWAL >60 minit sebelum shift tamat
@@ -1098,8 +1189,12 @@ function detectFlags(bil, d) {
     let earlyOut=0;
     if(sh==='S'||sh==='P') earlyOut = SE-outM;
     if(sh==='M' && outM<420) earlyOut = SE-outM;
-    if(earlyOut>60 && !flags.some(f=>f.startsWith('OUT AWAL')))
-      flags.push(`OUT AWAL ${tc_out} (-${earlyOut}min)`);
+    if(earlyOut>60 && !flags.some(f=>f.startsWith('OUT'))) {
+      const eH = Math.floor(earlyOut/60);
+      const eM = earlyOut%60;
+      const eTxt = eH>0 ? `${eH}j ${eM}min` : `${eM}min`;
+      flags.push(`OUT LEWAT ${tc_out} (${eTxt} lebih awal)`);
+    }
   }
 
   return [...new Set(flags)];
@@ -1293,15 +1388,19 @@ function applyRoleUI(){
   document.getElementById('sb-role').textContent = isAdmin ? AUTH.jawatan+' · KPL HKL' : 'Mod Tontonan';
   // Admin-only sidebar section
   document.getElementById('sb-admin-section').style.display = isAdmin?'block':'none';
+  // Admin extras
+  if(isAdmin){
+    const mcAddBtn = document.getElementById('mc-add-btn');
+    if(mcAddBtn) mcAddBtn.style.display='inline-flex';
+    const bakiSaveBtn = document.getElementById('baki-save-btn');
+    if(bakiSaveBtn) bakiSaveBtn.style.display='inline-flex';
+  }
   // Viewer notices
   if(!isAdmin){
-    document.getElementById('entry-viewer-notice').style.display='flex';
-    document.getElementById('upload-viewer-notice').style.display='flex';
-    document.getElementById('backup-viewer-notice').style.display='flex';
-    document.getElementById('entry-form-wrap').classList.add('locked-section');
-    document.getElementById('upload-form-wrap').classList.add('locked-section');
-    document.getElementById('backup-admin-wrap').classList.add('locked-section');
-    // Hide backup from sidebar
+    const notices = ['entry-viewer-notice','upload-viewer-notice','backup-viewer-notice'];
+    notices.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='flex'; });
+    const locks = ['entry-form-wrap','upload-form-wrap','backup-admin-wrap'];
+    locks.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('locked-section'); });
     const sb = document.getElementById('sb-backup');
     if(sb) sb.style.display='none';
   }
@@ -1384,7 +1483,8 @@ function renderGrid(members, containerId){
           if(sh!=='O'){
             if(c.kzp==='MC'||c.kzk==='MC') mc++;
             else if(c.kzp==='CR'||c.kzk==='CR') cr++;
-            else if(['ABS','NHT','X'].includes(c.kzp)||['ABS','NHT','X'].includes(c.kzk)) ab++;
+            else if(['ABS','X'].includes(c.kzp)||['ABS','X'].includes(c.kzk)) ab++;
+            // NHT (tidak hadir tugas) — tidak dikira dalam ABS biasa
             else if(c.kzp==='TH'||c.kzk==='TH'){}
             else if(c.kzp==='✓'||c.kzk==='✓'||(!c.kzp&&!c.kzk)) h++; // hadir (termasuk auto-tick)
           }
@@ -1397,14 +1497,33 @@ function renderGrid(members, containerId){
           const kzkShow   = c.kzk||(sh==='O'?'OF':autoTick?'✓':'');
           const kzpCls2   = autoTick && !c.kzp ? 'kz-ok' : kzCls(c.kzp);
           const kzkCls2   = autoTick && !c.kzk ? 'kz-ok' : kzCls(c.kzk);
-          cells+=`<td style="${bg}"><div class="dc">
-            <div class="dc-sh ${SH_CLS[sh]}">${SH_LBL[sh]}</div>
-            <div class="dc-kzp ${kzpCls2}">${kzShort(kzpShow)||'&nbsp;'}</div>
-            <div class="dc-kzk ${kzkCls2}">${kzShort(kzkShow)||'&nbsp;'}</div>
-            <div class="dc-fl">${flHtml}</div>
-          </div></td>`;
+          // ✓ thumb: hijau kecil jika ada punch & bukan TH/NHT
+          const hasThumb = (c.tc_in||c.tc_out) && sh!=='O' && !['TH','NHT'].includes(c.kzp);
+          const thumbTick = hasThumb?'<span style="color:#16a34a;font-weight:900;font-size:6px;margin-left:1px">✓</span>':'';
+          // IN/OUT time lines
+          const inLine  = c.tc_in  ? `<span style="color:#15803d;font-size:5.5px">${c.tc_in}</span>`
+                                   : (sh!=='O'&&!['TH','NHT','MC','CR','EL','K/P','CB','CTR'].includes(c.kzp)&&c.kzp!==''&&c.kzp!=='✓')?''
+                                   : '';
+          const outLine = c.tc_out ? `<span style="color:#1d4ed8;font-size:5.5px">${c.tc_out}</span>` : '';
+          const noIn  = !c.tc_in  && sh!=='O' && !['TH','NHT','MC','CR','EL','K/P','CB','CTR','OF','ABS','NHT','X'].includes(c.kzp) && c.tc_out;
+          const noOut = !c.tc_out && sh!=='O' && !['TH','NHT','MC','CR','EL','K/P','CB','CTR','OF','ABS','NHT','X'].includes(c.kzp) && c.tc_in;
+          const tcDisplay = (c.tc_in||c.tc_out) ? `<div style="text-align:center;line-height:1.3;font-size:5.5px;border-top:1px solid rgba(0,0,0,.05);padding:1px 0">
+            ${c.tc_in?`<span style="color:#15803d">${c.tc_in}</span>`:(noIn?'<span style="color:var(--red);font-size:5px">TiadaIN</span>':'')}
+            ${(c.tc_in&&c.tc_out)?'<br>':''}
+            ${c.tc_out?`<span style="color:#1d4ed8">${c.tc_out}</span>`:(noOut?'<span style="color:var(--red);font-size:5px">TiadaOUT</span>':'')}
+          </div>` : '';
+          cells+=`<td style="${bg}" title="Bil ${m.bil} · ${d}/04 · ${SH_LBL[sh]} ${SH_TIME[sh]}${c.tc_in?' | IN:'+c.tc_in:''}${c.tc_out?' | OUT:'+c.tc_out:''}${fl.length?' | Flag:'+fl.join(', '):''}">
+            <div class="dc">
+              <div class="dc-sh ${SH_CLS[sh]}">${SH_LBL[sh]}${thumbTick}</div>
+              <div class="dc-kzp ${kzpCls2}">${kzShort(kzpShow)||'&nbsp;'}</div>
+              <div class="dc-kzk ${kzkCls2}">${kzShort(kzkShow)||'&nbsp;'}</div>
+              ${tcDisplay}
+              <div class="dc-fl">${flHtml}</div>
+            </div>
+          </td>`;
         }
-        const noteBadge=m.note?`<span class="nc-note">${m.note}</span>`:'';
+        const noteCls = m.note?.includes('TAHAN')?'nc-note-th':m.note?.includes('TIDAK HADIR')?'nc-note-nht':'nc-note';
+        const noteBadge=m.note?`<span class="${noteCls}">${m.note}</span>`:'';
         const flagBadge=fc>0?`<span class="nc-flag-cnt">${fc}⚑</span>`:'';
         rows+=`<tr id="member-${m.bil}">
           <td class="ntd"><div class="nc">
@@ -1457,7 +1576,6 @@ function updateFlagCounts(){
   all.forEach(m=>m.days.forEach(d=>d.flags.forEach(f=>{
     ct.total++;
     if(f.startsWith('SP'))       ct.SP++;
-    if(f.startsWith('TLS'))      ct.TLS++;
     if(f.startsWith('LEWAT'))    ct.LEWAT++;
     if(f.startsWith('IN AWAL'))  ct['IN AWAL']++;
     if(f.startsWith('OUT AWAL')) ct['OUT AWAL']++;
@@ -1531,12 +1649,20 @@ function renderFlags(filter,el){
 // ENTRY MANUAL
 // ════════════════════════════════════════════════════════════════
 function populateDropdown(){
+  // Entry manual dropdown
   const sel=document.getElementById('e-bil');
-  MASTER.forEach(m=>{
+  if(sel) MASTER.forEach(m=>{
     const o=document.createElement('option');
     o.value=m.bil;
     o.textContent=`${m.bil}. ${m.nama} (${m.jab} ${m.komp})`;
     sel.appendChild(o);
+  });
+  // MC form dropdown
+  const msel=document.getElementById('mc-f-bil');
+  if(msel && msel.options.length<=1) MASTER.forEach(m=>{
+    const o=document.createElement('option');
+    o.value=m.bil; o.textContent=`${m.bil}. ${m.nama}`;
+    msel.appendChild(o);
   });
 }
 
@@ -1599,6 +1725,8 @@ function renderDash(){
 const PAGE_TITLES={
   dashboard:'Dashboard',master:'Master File — 52 Anggota',flags:'Output Perhatian',
   iktar:'Mini File: IKTAR',mhkl:'Mini File: MHKL',rt:'Mini File: RT',
+  mc:'Register MC — April 2026',baki:'Baki Cuti Anggota 2026',
+  raya:'Anggota Bertugas Raya Aidilfitri 2026',haji:'CTR Raya Haji Kedua 2026 (Audit Mei)',
   entry:'Entry Manual KZ / Timecard',upload:'Upload Dokumen',
   backup:'Backup ke Google Drive'
 };
@@ -1616,6 +1744,10 @@ function nav(id,el){
   if(id==='iktar')  renderGrid(MASTER.filter(m=>m.jab==='IKTAR'),'grid-iktar');
   if(id==='mhkl')   renderGrid(MASTER.filter(m=>m.jab==='MHKL'),'grid-mhkl');
   if(id==='rt')     renderGrid(MASTER.filter(m=>m.jab==='RT'),'grid-rt');
+  if(id==='mc')     renderMC();
+  if(id==='baki')   renderBaki();
+  if(id==='raya')   renderRaya();
+  if(id==='haji')   renderHaji();
   if(id==='dashboard') renderDash();
 }
 
@@ -1705,6 +1837,432 @@ function backupStatusHtml(type, msg){
     ${type==='loading'?'<div class="spin" style="width:16px;height:16px;margin-right:8px;display:inline-block;vertical-align:middle"></div>':''}
     ${msg}
   </div>`;
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// MC DATA STORE (boleh tambah melalui form)
+// ════════════════════════════════════════════════════════════════
+let MC_DATA = [
+  // Format: {bil, nama, jab, komp, dari, hingga, hari, klinik, no_siri, jenis, tkt}
+  // Diisi semula dari Borang Semakan PDF
+  {bil:40,nama:'SHAHRUL FITRI BIN ROSLI',jab:'RT',komp:'ALPHA',dari:'17/04',hingga:'17/04',hari:1,klinik:'K.K Kuala Lumpur',no_siri:'BJ090364',jenis:'Bulan Ini'},
+  {bil:30,nama:'MOHAMAD ALIF BIN NASARUDDIN',jab:'MHKL',komp:'BRAVO',dari:'29/04',hingga:'29/04',hari:1,klinik:'Klinik Mediva',no_siri:'5085',jenis:'Bulan Ini'},
+  {bil:6, nama:'AALIYA AUNI BINTI MAT ZABIR',jab:'IKTAR',komp:'ALPHA',dari:'17/04',hingga:'18/04',hari:2,klinik:'Klinik Nurul',no_siri:'258',jenis:'Bulan Ini'},
+  {bil:21,nama:'MOHAMAD ALIFF HAIQAL BIN MD JAMIL',jab:'IKTAR',komp:'DELTA',dari:'27/04',hingga:'27/04',hari:1,klinik:'Klinik OSH',no_siri:'AC1163948',jenis:'Bulan Ini'},
+  {bil:12,nama:'NOR AINA NAZIRA BINTI MOHD TARMIZI',jab:'IKTAR',komp:'BRAVO',dari:'15/04',hingga:'15/04',hari:1,klinik:'Poliklinik Medi Ihsan',no_siri:'14387',jenis:'Bulan Ini'},
+  {bil:15,nama:'MOHD RASIDI BIN MOHD NASIR',jab:'IKTAR',komp:'CHARLIE',dari:'25/04',hingga:'26/04',hari:2,klinik:'Klinik Shujai',no_siri:'41339',jenis:'Bulan Ini'},
+  {bil:17,nama:'MUHAMMAD BADRI BIN ARIS',jab:'IKTAR',komp:'CHARLIE',dari:'23/04',hingga:'24/04',hari:2,klinik:'Klinik Dr Izham Bukit Cheras',no_siri:'52725',jenis:'Bulan Ini'},
+  {bil:14,nama:'WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA',jab:'IKTAR',komp:'CHARLIE',dari:'27/04',hingga:'28/04',hari:2,klinik:'Klinik Hayat',no_siri:'2604-28323',jenis:'Bulan Ini'},
+  {bil:27,nama:'MUHAMAD FAHMIE BIN SAHRAN',jab:'MHKL',komp:'ALPHA',dari:'17/04',hingga:'18/04',hari:2,klinik:'K.K Gombak Setia',no_siri:'BH908357',jenis:'Bulan Ini'},
+  {bil:17,nama:'MUHAMMAD BADRI BIN ARIS',jab:'IKTAR',komp:'CHARLIE',dari:'03/05',hingga:'04/05',hari:2,klinik:'Klinik Impian',no_siri:'46873',jenis:'Bulan Hadapan'},
+  {bil:15,nama:'MOHD RASIDI BIN MOHD NASIR',jab:'IKTAR',komp:'CHARLIE',dari:'04/05',hingga:'04/05',hari:1,klinik:'Poliklinik Pandamaran Jaya',no_siri:'16121',jenis:'Bulan Hadapan'},
+  {bil:34,nama:'MOHD LUKMAN BIN HAMDAN',jab:'MHKL',komp:'DELTA',dari:'07/05',hingga:'08/05',hari:1,klinik:'Klinik OSH',no_siri:'AC1172010',jenis:'Bulan Hadapan'},
+  {bil:5, nama:'IRWAN SYAMIR BIN MOHD ZAINAL',jab:'IKTAR',komp:'ALPHA',dari:'08/05',hingga:'08/05',hari:1,klinik:'Klinik Utama',no_siri:'25181',jenis:'Bulan Hadapan'},
+  {bil:35,nama:'SUHAIRI BIN ISMAIL',jab:'MHKL',komp:'DELTA',dari:'16/04',hingga:'16/04',hari:1,klinik:'Klinik Pergigian Serendah',no_siri:'BD226954',jenis:'Bulan Ini'},
+  {bil:28,nama:'HAZLAN BIN MOHD RESDI',jab:'MHKL',komp:'BRAVO',dari:'01/04',hingga:'02/04',hari:2,klinik:'Uni Klinik KL Traders',no_siri:'MC-4528',jenis:'Bulan Ini'},
+  {bil:29,nama:'ANASHATOL ARNAEDA BINTI JAFRI',jab:'MHKL',komp:'BRAVO',dari:'05/04',hingga:'06/04',hari:2,klinik:'Poliklinik Damai Dan Surgeri',no_siri:'173150',jenis:'Bulan Ini'},
+  {bil:46,nama:'FARRAH NATASHA BINTI ZULKAFLI',jab:'RT',komp:'CHARLIE',dari:'16/04',hingga:'17/04',hari:2,klinik:'Klinik Salleh',no_siri:'4704',jenis:'Bulan Ini'},
+  {bil:39,nama:'NANTHA GOPAL A/L AYASAMY',jab:'RT',komp:'ALPHA',dari:'09/04',hingga:'09/04',hari:1,klinik:'OSH HKL',no_siri:'AC1156638',jenis:'Bulan Ini'},
+  {bil:42,nama:'NOR AZURA BINTI TAMAN @ MUHAMMAD',jab:'RT',komp:'BRAVO',dari:'08/04',hingga:'08/04',hari:1,klinik:'K.K Kuala Lumpur',no_siri:'BH234482',jenis:'Bulan Ini'},
+  {bil:47,nama:'SAIFUL YUSRIZAL BIN YAACOB',jab:'RT',komp:'CHARLIE',dari:'09/04',hingga:'09/04',hari:1,klinik:'Klinik Keluarga Desa',no_siri:'200161',jenis:'Bulan Ini'},
+  {bil:23,nama:'AHMAD SHAMIL BIN NADZRI',jab:'IKTAR',komp:'DELTA',dari:'11/04',hingga:'11/04',hari:1,klinik:'Hospital SG. Siput',no_siri:'BC624203',jenis:'Bulan Ini'},
+  {bil:19,nama:'RIMA BINTI OTHMAN',jab:'IKTAR',komp:'DELTA',dari:'20/04',hingga:'21/04',hari:2,klinik:'Klinik Zaharin',no_siri:'180191',jenis:'Bulan Ini'},
+  {bil:1, nama:'MOHAMAD ALIFF BIN MOHTAR',jab:'IKTAR',komp:'ALPHA',dari:'17/04',hingga:'17/04',hari:1,klinik:'Klinik OSH',no_siri:'AC1136825',jenis:'Bulan Ini'},
+  {bil:36,nama:'NURSYUHADA BINTI MISNAN',jab:'MHKL',komp:'DELTA',dari:'16/04',hingga:'16/04',hari:1,klinik:'Klinik Pakar Wanita Dan Keluarga',no_siri:'3512',jenis:'Bulan Ini'},
+  {bil:2, nama:'ABDULLAH BIN BAHUDIN',jab:'IKTAR',komp:'ALPHA',dari:'22/04',hingga:'22/04',hari:1,klinik:'Klinik Mediviron KL Traders',no_siri:'MC39503',jenis:'Bulan Ini'},
+  {bil:14,nama:'WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA',jab:'IKTAR',komp:'CHARLIE',dari:'01/04',hingga:'02/04',hari:2,klinik:'Klinik Hayat',no_siri:'MC2604-27350',jenis:'Bulan Ini'},
+  {bil:50,nama:'MUHAMMAD TARMIZI BIN SAZALI',jab:'RT',komp:'DELTA',dari:'22/04',hingga:'22/04',hari:1,klinik:'K.K Taman Medan',no_siri:'BH318660',jenis:'Bulan Ini'},
+];
+
+// ════════════════════════════════════════════════════════════════
+// BAKI CUTI DATA STORE
+// ════════════════════════════════════════════════════════════════
+const BAKI_DATA = {};
+MASTER.forEach(m => {
+  BAKI_DATA[m.bil] = {
+    nama: m.nama, jab: m.jab, komp: m.komp,
+    asal: 0,      // diisi dari PDF baki cuti
+    cr_diambil: 0,
+    el_diambil: 0,
+    get baki(){ return this.asal - this.cr_diambil - this.el_diambil; }
+  };
+});
+
+// ════════════════════════════════════════════════════════════════
+// RENDER MC REGISTER
+// ════════════════════════════════════════════════════════════════
+function renderMC() {
+  const q    = (document.getElementById('mc-srch')?.value||'').toLowerCase();
+  const jabF = document.getElementById('mc-jab-f')?.value||'';
+  const rows = MC_DATA.filter(mc =>
+    (!jabF || mc.jab===jabF) &&
+    (!q || mc.nama.toLowerCase().includes(q) || mc.klinik.toLowerCase().includes(q) || mc.no_siri.toLowerCase().includes(q))
+  );
+
+  const byBulan = { 'Bulan Ini':[], 'Backdated':[], 'Bulan Hadapan':[] };
+  rows.forEach(mc => { (byBulan[mc.jenis]||byBulan['Bulan Ini']).push(mc); });
+
+  document.getElementById('mc-count').textContent = `${rows.length} rekod`;
+
+  let html = '';
+  for(const [section, items] of Object.entries(byBulan)) {
+    if(!items.length) continue;
+    const bg = section==='Bulan Ini'?'var(--navy)':section==='Backdated'?'#7c3aed':'#0891b2';
+    html += `<div style="margin-bottom:16px">
+      <div style="background:${bg};color:#fff;padding:7px 13px;border-radius:8px 8px 0 0;font-size:11px;font-weight:700;display:flex;justify-content:space-between">
+        <span>${section}</span><span style="opacity:.6">${items.length} rekod · ${items.reduce((s,m)=>s+m.hari,0)} hari</span>
+      </div>
+      <div style="background:#fff;border:1px solid var(--gbd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden">
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:9px">
+        <thead><tr style="background:#f8fafc">
+          <th style="padding:6px 9px;text-align:left;font-weight:600;color:var(--gray);border-bottom:1px solid var(--gbd)">Nama Anggota</th>
+          <th style="padding:6px 9px;text-align:left;font-weight:600;color:var(--gray);border-bottom:1px solid var(--gbd)">Jab/Komp</th>
+          <th style="padding:6px 9px;font-weight:600;color:var(--gray);border-bottom:1px solid var(--gbd)">Dari</th>
+          <th style="padding:6px 9px;font-weight:600;color:var(--gray);border-bottom:1px solid var(--gbd)">Hingga</th>
+          <th style="padding:6px 9px;font-weight:600;color:var(--gray);border-bottom:1px solid var(--gbd)">Hari</th>
+          <th style="padding:6px 9px;text-align:left;font-weight:600;color:var(--gray);border-bottom:1px solid var(--gbd)">Klinik / Hospital</th>
+          <th style="padding:6px 9px;font-weight:600;color:var(--gray);border-bottom:1px solid var(--gbd)">No Siri MC</th>
+          <th style="padding:6px 9px;font-weight:600;color:var(--gray);border-bottom:1px solid var(--gbd)">Status</th>
+        </tr></thead>
+        <tbody>
+        ${items.map((mc,i) => `<tr style="border-bottom:1px solid var(--gbd);${i%2?'background:#fafafa':''}">
+          <td style="padding:5px 9px;font-weight:500">${mc.nama}</td>
+          <td style="padding:5px 9px;font-size:8px;color:var(--gray)">${mc.jab} · ${mc.komp}</td>
+          <td style="padding:5px 9px;text-align:center">${mc.dari}</td>
+          <td style="padding:5px 9px;text-align:center">${mc.hingga}</td>
+          <td style="padding:5px 9px;text-align:center;font-weight:700;color:${mc.hari>=3?'var(--red)':'var(--amber)'}">${mc.hari}</td>
+          <td style="padding:5px 9px;font-size:8.5px">${mc.klinik}</td>
+          <td style="padding:5px 9px;font-size:8px;font-family:monospace">${mc.no_siri}</td>
+          <td style="padding:5px 9px"><span style="background:var(--gn-bg);color:var(--gn-t);border-radius:4px;padding:1px 7px;font-size:7.5px;font-weight:700">SAH</span></td>
+        </tr>`).join('')}
+        </tbody>
+      </table></div></div></div>`;
+  }
+
+  // ABS tanpa MC — flag SILA MOHON CUTI
+  const absMC = MASTER.filter(m => {
+    const hasABS = Object.values(DATA[m.bil]||{}).some(c=>['ABS','NHT','X'].includes(c.kzp));
+    const hasMC  = MC_DATA.some(mc=>mc.bil===m.bil && mc.jenis==='Bulan Ini');
+    return hasABS && !hasMC && !['TH'].includes(DATA[m.bil]?.[1]?.kzp);
+  });
+  if(absMC.length){
+    html += `<div style="background:#fff;border-radius:8px;border:1px solid #fca5a5;margin-bottom:14px;overflow:hidden">
+      <div style="background:var(--red);color:#fff;padding:7px 13px;font-size:11px;font-weight:700">⚠ Tiada MC — SILA MOHON CUTI (${absMC.length} anggota)</div>
+      ${absMC.map(m=>`<div style="padding:7px 13px;border-bottom:1px solid #fee2e2;font-size:9.5px">
+        <b>${m.nama}</b> <span style="color:var(--gray);font-size:8.5px">${m.jab} · ${m.komp}</span>
+        <span style="float:right;background:var(--rd-bg);color:var(--rd-t);padding:1px 7px;border-radius:4px;font-size:7.5px;font-weight:700">SILA MOHON CUTI</span>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  document.getElementById('mc-table-wrap').innerHTML = html || '<div class="empty">Tiada rekod MC</div>';
+}
+
+function showMCForm() {
+  const f = document.getElementById('mc-form');
+  f.style.display = f.style.display==='none'?'block':'none';
+  if(f.style.display==='block' && !document.getElementById('mc-f-bil').options.length>1) {
+    MASTER.forEach(m=>{
+      const o=document.createElement('option');
+      o.value=m.bil; o.textContent=`${m.bil}. ${m.nama}`;
+      document.getElementById('mc-f-bil').appendChild(o);
+    });
+  }
+}
+
+function addMCRecord() {
+  if(!requireAdmin()) return;
+  const bil = +document.getElementById('mc-f-bil').value;
+  const dari = document.getElementById('mc-f-dari').value.trim();
+  const hingga = document.getElementById('mc-f-hingga').value.trim();
+  const klinik = document.getElementById('mc-f-klinik').value.trim();
+  const siri = document.getElementById('mc-f-siri').value.trim();
+  const jenis = document.getElementById('mc-f-jenis').value;
+  if(!bil||!dari||!klinik){ showToast('Sila lengkapkan maklumat wajib','err'); return; }
+  const m = MASTER.find(x=>x.bil===bil);
+  const [d1,m1]=dari.split('/').map(Number);
+  const [d2,m2]=(hingga||dari).split('/').map(Number);
+  const hari = d2-d1+1||1;
+  MC_DATA.push({bil,nama:m.nama,jab:m.jab,komp:m.komp,dari,hingga:hingga||dari,hari,klinik,no_siri:siri||'–',jenis});
+  document.getElementById('mc-f-status').textContent='✅ Rekod MC ditambah — '+m.nama;
+  showToast('MC ditambah ✓','ok');
+  setTimeout(()=>renderMC(),500);
+}
+
+function exportMCcsv(){
+  const rows=[['Bil','Nama','Jabatan','Kompeni','Dari','Hingga','Hari','Klinik','No Siri','Jenis']];
+  MC_DATA.forEach(mc=>rows.push([mc.bil,mc.nama,mc.jab,mc.komp,mc.dari,mc.hingga,mc.hari,mc.klinik,mc.no_siri,mc.jenis]));
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='MC_April_2026_eAKHA.csv'; a.click();
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER BAKI CUTI
+// ════════════════════════════════════════════════════════════════
+function renderBaki() {
+  const q = (document.getElementById('baki-srch')?.value||'').toLowerCase();
+  const isAdmin = AUTH.role==='admin';
+  if(isAdmin) { const b=document.getElementById('baki-save-btn'); if(b) b.style.display='inline-flex'; }
+
+  const items = MASTER.filter(m => !q || m.nama.toLowerCase().includes(q));
+  const jabGroups = {};
+  items.forEach(m=>{ if(!jabGroups[m.jab]) jabGroups[m.jab]=[]; jabGroups[m.jab].push(m); });
+
+  let html='';
+  for(const [jab,ms] of Object.entries(jabGroups)){
+    html+=`<div style="background:#fff;border-radius:8px;border:1px solid var(--gbd);margin-bottom:14px;overflow:hidden">
+      <div style="background:var(--navy);color:#fff;padding:7px 13px;font-size:11px;font-weight:700">${jab}</div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:9px">
+        <thead><tr style="background:#f8fafc">
+          <th style="padding:6px 9px;text-align:left;font-weight:600;border-bottom:1px solid var(--gbd)">Nama</th>
+          <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">Komp</th>
+          <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">Baki Asal</th>
+          <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">CR Diambil</th>
+          <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">EL Diambil</th>
+          <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">MC (Tak Tolak)</th>
+          <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">Baki Kini</th>
+        </tr></thead>
+        <tbody>
+        ${ms.map(m=>{
+          const b=BAKI_DATA[m.bil];
+          const mcH=MC_DATA.filter(mc=>mc.bil===m.bil&&mc.jenis==='Bulan Ini').reduce((s,mc)=>s+mc.hari,0);
+          const baki=b.asal-b.cr_diambil-b.el_diambil;
+          const bkColor=baki<=2?'var(--red)':baki<=5?'var(--amber)':'var(--green)';
+          return `<tr style="border-bottom:1px solid var(--gbd)">
+            <td style="padding:5px 9px;font-weight:500;font-size:8.5px">${m.nama}</td>
+            <td style="padding:5px 9px;text-align:center;font-size:8px;color:var(--gray)">${m.komp}</td>
+            <td style="padding:5px 9px;text-align:center">
+              ${isAdmin?`<input type="number" value="${b.asal}" min="0" max="40" onchange="BAKI_DATA[${m.bil}].asal=+this.value;renderBaki()"
+                style="width:45px;font-size:9px;padding:2px 4px;border:1px solid var(--gbd);border-radius:3px;text-align:center">`
+              :`<b>${b.asal}</b>`} hari
+            </td>
+            <td style="padding:5px 9px;text-align:center;color:var(--blue);font-weight:700">${b.cr_diambil}</td>
+            <td style="padding:5px 9px;text-align:center;color:var(--purple);font-weight:700">${b.el_diambil}</td>
+            <td style="padding:5px 9px;text-align:center;color:var(--amber);font-size:8.5px">${mcH} hari (tidak tolak)</td>
+            <td style="padding:5px 9px;text-align:center;font-weight:700;color:${bkColor};font-size:11px">${baki}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table></div></div>`;
+  }
+  document.getElementById('baki-grid').innerHTML = html;
+}
+
+function saveBakiAll(){ showToast('Baki cuti disimpan ✓','ok'); }
+
+// ════════════════════════════════════════════════════════════════
+// RENDER RAYA AIDILFITRI
+// ════════════════════════════════════════════════════════════════
+function renderRaya() {
+  // Raya Aidilfitri 2026: 20-21 Mac (bulan 3)
+  // Semak shift untuk tarikh berkenaan — anggota yang bertugas = OT
+  const RAYA_DATES = [
+    {d:20, m:3, y:2026, label:'Hari Raya Aidilfitri (Hari 1)'},
+    {d:21, m:3, y:2026, label:'Hari Raya Aidilfitri (Hari 2)'},
+  ];
+
+  // Untuk tarikh Mac 2026 — kita kira shift (bulan 3)
+  // Apr1 = ref, Mac 20 = diff negatif
+  const APR1_DT = new Date(2026,3,1);
+  function getShiftForDate(bil, y, m, d){
+    const dt = new Date(y,m-1,d);
+    const diff = Math.round((dt-APR1_DT)/86400000);
+    return CYCLE[(diff+CO[bil]+800)%8];
+  }
+
+  let html='';
+  RAYA_DATES.forEach(rd=>{
+    const bertugas=[], bercuti=[], offday=[];
+    MASTER.forEach(m=>{
+      if(!['IKTAR','MHKL','RT'].includes(m.jab)) return;
+      const sh = getShiftForDate(m.bil, rd.y, rd.m, rd.d);
+      if(sh==='O') offday.push({...m,sh});
+      else bertugas.push({...m,sh});
+    });
+    html+=`<div style="background:#fff;border-radius:8px;border:1px solid var(--gbd);margin-bottom:14px;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#065f46,#047857);color:#fff;padding:9px 14px">
+        <div style="font-size:12px;font-weight:700">★ ${rd.label}</div>
+        <div style="font-size:9px;opacity:.7;margin-top:2px">${rd.d}/${rd.m}/${rd.y} · HKA — Bertugas = OT (bilangan dikosongkan) · Bercuti = tidak tolak baki</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div style="padding:12px 14px;border-right:1px solid var(--gbd)">
+          <div style="font-size:10px;font-weight:700;color:#065f46;margin-bottom:8px">Bertugas / OT (${bertugas.length} anggota)</div>
+          ${bertugas.map(m=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0fdf4;font-size:9px">
+            <span>${m.nama}</span>
+            <span style="display:flex;gap:4px">
+              <span style="background:#dcfce7;color:#166534;border-radius:3px;padding:1px 6px;font-size:7.5px;font-weight:700">${m.jab}</span>
+              <span style="background:#eff6ff;color:#1d4ed8;border-radius:3px;padding:1px 6px;font-size:7.5px;font-weight:700">${['P','PT'].includes(m.sh)?'Petang':m.sh==='S'?'Pagi':'Malam'}</span>
+            </span>
+          </div>`).join('')}
+        </div>
+        <div style="padding:12px 14px">
+          <div style="font-size:10px;font-weight:700;color:#6b21a8;margin-bottom:8px">Offday / Cuti (${offday.length} anggota)</div>
+          ${offday.map(m=>`<div style="font-size:9px;padding:4px 0;border-bottom:1px solid #faf5ff;color:var(--gray)">${m.nama} <span style="font-size:8px">(${m.jab})</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('raya-content').innerHTML=html||'<div class="empty">Tiada data</div>';
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER CTR RAYA HAJI (Mei 2026 Audit)
+// ════════════════════════════════════════════════════════════════
+function renderHaji() {
+  // Raya Haji Kedua 2026: 27 Mei 2026 (tertakluk cerapan)
+  // Anggota yang CTR pada hari ni wajib isi permohonan cuti
+  const HAJI_DATE = {d:27, m:5, y:2026, label:'Hari Raya Aidiladha / Haji (Hari Kedua)'};
+
+  const APR1_DT = new Date(2026,3,1);
+  function getShiftMei(bil, d){
+    const dt = new Date(2026,4,d);
+    const diff = Math.round((dt-APR1_DT)/86400000);
+    return CYCLE[(diff+CO[bil])%8];
+  }
+
+  const bertugas=[], offday=[];
+  MASTER.forEach(m=>{
+    const sh = getShiftMei(m.bil, HAJI_DATE.d);
+    if(sh==='O') offday.push({...m,sh});
+    else bertugas.push({...m,sh});
+  });
+
+  // CTR = anggota yang sepatutnya bertugas tapi tiada rekod (untuk audit Mei)
+  const html=`<div style="background:var(--am-bg);border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:9.5px;color:var(--am-t)">
+    <b>Nota Penting:</b> ${HAJI_DATE.label} — ${HAJI_DATE.d}/${HAJI_DATE.m}/${HAJI_DATE.y}.
+    Anggota yang <b>bertugas</b> pada hari ini → OT (bilangan dikosongkan, tidak perlu mohon cuti).
+    Anggota yang <b>bercuti</b> → tidak tolak baki cuti tahunan.
+    Anggota yang <b>CTR (tiada rekod)</b> → wajib isi permohonan cuti. Ini akan diaudit dalam laporan Mei 2026.
+  </div>
+
+  <div style="background:#fff;border-radius:8px;border:1px solid var(--gbd);margin-bottom:14px;overflow:hidden">
+    <div style="background:#7c3aed;color:#fff;padding:9px 14px;display:flex;justify-content:space-between">
+      <div><div style="font-size:12px;font-weight:700">Anggota Bertugas ${HAJI_DATE.d}/05 (akan jadi OT)</div>
+      <div style="font-size:9px;opacity:.7">Shift mengikut jadual — dikira OT, bilangan hari dikosongkan</div></div>
+      <span style="opacity:.7;font-size:10px">${bertugas.length} anggota</span>
+    </div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:9px">
+      <thead><tr style="background:#faf5ff">
+        <th style="padding:6px 9px;text-align:left;font-weight:600;border-bottom:1px solid var(--gbd)">Bil</th>
+        <th style="padding:6px 9px;text-align:left;font-weight:600;border-bottom:1px solid var(--gbd)">Nama</th>
+        <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">Jabatan</th>
+        <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">Kompeni</th>
+        <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">Shift 27/05</th>
+        <th style="padding:6px 9px;font-weight:600;border-bottom:1px solid var(--gbd)">Status Mei</th>
+      </tr></thead>
+      <tbody>
+      ${bertugas.map(m=>`<tr style="border-bottom:1px solid var(--gbd)">
+        <td style="padding:5px 9px;color:var(--gray)">${m.bil}</td>
+        <td style="padding:5px 9px;font-weight:500">${m.nama}</td>
+        <td style="padding:5px 9px">${m.jab}</td>
+        <td style="padding:5px 9px">${m.komp}</td>
+        <td style="padding:5px 9px;text-align:center">
+          <span style="background:${m.sh==='P'?'#fdf4ff':m.sh==='S'?'#f0fdf4':'#eff6ff'};color:${m.sh==='P'?'#7e22ce':m.sh==='S'?'#15803d':'#1d4ed8'};border-radius:3px;padding:1px 6px;font-size:8px;font-weight:700">
+            ${m.sh==='P'?'Petang 1500-2300':m.sh==='S'?'Pagi 0700-1500':m.sh==='M'?'Malam 2300-0700':'Offday'}
+          </span>
+        </td>
+        <td style="padding:5px 9px;text-align:center"><span style="background:#dcfce7;color:#166534;border-radius:3px;padding:1px 7px;font-size:7.5px;font-weight:700">OT — Tidak Perlu Mohon Cuti</span></td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>
+  </div>
+
+  <div style="background:#fff;border-radius:8px;border:1px solid var(--gbd);overflow:hidden">
+    <div style="background:#374151;color:#fff;padding:9px 14px;display:flex;justify-content:space-between">
+      <div><div style="font-size:12px;font-weight:700">Anggota Offday ${HAJI_DATE.d}/05</div>
+      <div style="font-size:9px;opacity:.7">Offday mengikut jadual — bercuti tidak perlu mohon, CTR wajib mohon cuti</div></div>
+      <span style="opacity:.7;font-size:10px">${offday.length} anggota</span>
+    </div>
+    <div style="padding:8px 14px;display:flex;flex-wrap:wrap;gap:6px">
+      ${offday.map(m=>`<span style="background:var(--gbg);border:1px solid var(--gbd);border-radius:5px;padding:3px 9px;font-size:8.5px">
+        ${m.nama} <span style="color:var(--gray);font-size:7.5px">(${m.jab})</span>
+      </span>`).join('')}
+    </div>
+  </div>`;
+
+  document.getElementById('haji-content').innerHTML=html;
+}
+
+// ════════════════════════════════════════════════════════════════
+// PDF EXPORT (auto-generate laporan penuh)
+// ════════════════════════════════════════════════════════════════
+function generatePDF(){
+  if(!requireAdmin()){ showToast('Hanya pentadbir boleh jana PDF','err'); return; }
+  showToast('Jana PDF...','ok');
+
+  // Guna window.print() dengan print-specific CSS
+  const printCSS = `
+    <style>
+      @media print {
+        body{font-family:Arial,sans-serif;font-size:8px}
+        .no-print{display:none!important}
+        table{border-collapse:collapse;width:100%;font-size:7px}
+        th,td{border:1px solid #ccc;padding:2px 4px}
+        th{background:#0F2D5A;color:white}
+        .page-break{page-break-before:always}
+        h2{font-size:12px;margin:8px 0 4px}
+      }
+    </style>`;
+
+  const rows = MASTER.map(m=>{
+    let hadir=0,mc=0,cr=0,abs=0,lw=0,flags=[];
+    for(let d=1;d<=30;d++){
+      const sh=getShift(m.bil,d); const c=DATA[m.bil][d]; const fl=detectFlags(m.bil,d);
+      flags.push(...fl);
+      if(sh!=='O'){
+        if(c.kzp==='MC') mc++;
+        else if(c.kzp==='CR') cr++;
+        else if(['ABS','NHT','X'].includes(c.kzp)) abs++;
+        else hadir++;
+        if(fl.some(f=>f.startsWith('LEWAT'))) lw++;
+      }
+    }
+    return {m,hadir,mc,cr,abs,lw,flags:[...new Set(flags)]};
+  });
+
+  const content=`<!DOCTYPE html><html><head><meta charset="UTF-8">${printCSS}
+    <title>e-AKHA Vsavage — Laporan Audit April 2026</title></head><body>
+    <div style="text-align:center;margin-bottom:16px;border-bottom:2px solid #0F2D5A;padding-bottom:10px">
+      <h1 style="font-size:16px;color:#0F2D5A">e-AKHA Vsavage</h1>
+      <div style="font-size:11px">Laporan Audit Kehadiran — April 2026</div>
+      <div style="font-size:9px;color:#666">MHKL · IKTAR · RT · Hospital Kuala Lumpur</div>
+      <div style="font-size:9px;color:#666">Dijana: ${new Date().toLocaleString('ms-MY')}</div>
+    </div>
+    <h2>Ringkasan Kehadiran — 52 Anggota</h2>
+    <table>
+      <thead><tr><th>Bil</th><th>Nama</th><th>Jab</th><th>Komp</th><th>Hadir</th><th>MC</th><th>CR</th><th>ABS</th><th>Lewat</th><th>Flags</th></tr></thead>
+      <tbody>
+      ${rows.map(r=>`<tr>
+        <td>${r.m.bil}</td><td>${r.m.nama}</td><td>${r.m.jab}</td><td>${r.m.komp}</td>
+        <td style="text-align:center">${r.hadir}</td>
+        <td style="text-align:center;color:#854d0e">${r.mc||''}</td>
+        <td style="text-align:center;color:#1e40af">${r.cr||''}</td>
+        <td style="text-align:center;color:#991b1b;font-weight:bold">${r.abs||''}</td>
+        <td style="text-align:center;color:#9a3412">${r.lw||''}</td>
+        <td style="font-size:7px;color:#475569">${r.flags.slice(0,3).join('; ')}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="page-break"></div>
+    <h2>Register MC — April 2026</h2>
+    <table>
+      <thead><tr><th>Nama</th><th>Jab</th><th>Dari</th><th>Hingga</th><th>Hari</th><th>Klinik</th><th>No Siri</th></tr></thead>
+      <tbody>
+      ${MC_DATA.filter(mc=>mc.jenis==='Bulan Ini').map(mc=>`<tr>
+        <td>${mc.nama}</td><td>${mc.jab}</td><td>${mc.dari}</td><td>${mc.hingga}</td>
+        <td style="text-align:center">${mc.hari}</td><td>${mc.klinik}</td><td>${mc.no_siri}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+  </body></html>`;
+
+  const w = window.open('','_blank');
+  w.document.write(content);
+  w.document.close();
+  setTimeout(()=>w.print(),500);
 }
 
 // ════════════════════════════════════════════════════════════════
