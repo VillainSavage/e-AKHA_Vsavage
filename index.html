@@ -157,6 +157,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
   display:inline-flex;align-items:center;gap:4px;
   padding:3px 9px;border-radius:20px;font-size:8.5px;font-weight:700;
 }
+.badge-owner{background:#fef9c3;color:#713f12;border:1.5px solid #fde68a;font-weight:700}
 .badge-admin{background:var(--gn-bg);color:var(--gn-t);border:1px solid #86efac}
 .badge-viewer{background:var(--bl-bg);color:var(--bl-t);border:1px solid #93c5fd}
 .badge-supa{font-size:8px;padding:2px 7px;border-radius:10px;font-weight:600}
@@ -399,7 +400,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
     <!-- ADMIN FORM -->
     <div id="tab-admin">
       <label class="lf-lbl">ID Pengguna</label>
-      <input class="lf-inp" id="l-id" type="text" placeholder="sm.amierul"
+      <input class="lf-inp" id="l-id" type="text" placeholder="Masukkan ID pengguna"
         autocomplete="username"
         onkeydown="if(event.key==='Enter')document.getElementById('l-pw').focus()">
       <div class="lf-gap"></div>
@@ -469,6 +470,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
         Master File (52 Anggota)
       </div>
+
+      <div class="sb-item" onclick="nav('auditprompt',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Kriteria Audit / PDF
+      </div>
       <div class="sb-item" onclick="nav('flags',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         Output Perhatian
@@ -530,7 +536,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
       </div>
       <div class="sb-item" onclick="nav('upload',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Upload Timecard
+        Upload TIMEKAD
       </div>
       <div class="sb-item" onclick="nav('backup',this)" id="sb-backup">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
@@ -572,7 +578,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
       <div class="page active" id="page-dashboard">
         <div class="notif info">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div><b>e-AKHA Vsavage · Tapisan April 2026 (1–30 haribulan).</b> Shift hakiki: Pagi 0700–1500 · Petang 1500–2300 · Malam 2300–0700. Timecard dikira semula ikut shift sebenar, bukan andaian lama.</div>
+          <div><b>e-AKHA Vsavage · Tapisan April 2026 (1–30 haribulan).</b> Shift hakiki: Pagi 0700–1500 · Petang 1500–2300 · Malam 2300–0700. TIMEKAD dikira semula ikut shift sebenar, bukan andaian lama.</div>
         </div>
         <div class="srow">
           <div class="sc navy"><div class="sc-l">Jumlah Anggota</div><div class="sc-v">52</div><div class="sc-s">IKTAR·MHKL·RT</div></div>
@@ -593,7 +599,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
             <div style="flex:1">
               <div class="flag-name">MOHD AMINUDIN BIN DAUD</div>
               <div class="flag-meta">IKTAR · Kompeni ALPHA · Bil 4</div>
-              <div style="font-size:9.5px;color:#475569;margin-top:4px">TAHAN TUGAS sepanjang April 2026 — tiada rekod timecard.</div>
+              <div style="font-size:9.5px;color:#475569;margin-top:4px">TAHAN TUGAS sepanjang April 2026 — tiada rekod TIMEKAD.</div>
               <span class="ftag" style="background:var(--pu-bg);color:var(--pu-t);margin-top:4px">Tahan Tugas</span>
             </div>
           </div>
@@ -622,7 +628,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
       <div class="page" id="page-master">
         <div class="notif info">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
-          <span>Master File — semua 52 anggota. Sel: Baris 1=Shift · Baris 2=KZ Penyelia · Baris 3=KZ Koperal · Baris 4=Flag TC</span>
+          <span>Master File — semua 52 anggota. Sel: Baris 1=Shift · Baris 2=KZ Penyelia · Baris 3=KZ Koperal · Baris 4=TIMEKAD · Baris 5=MC DITERIMA · Baris 6=CUTI HRMIS · Baris 7=AUDIT FINAL</span>
         </div>
         <div class="leg">
           <b style="color:var(--gray)">Shift:</b>
@@ -631,7 +637,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
           <span class="lg-i"><span class="fl sh-m"  style="padding:1px 4px">M</span>Malam</span>
           <span class="lg-i"><span class="fl sh-o"  style="padding:1px 4px">OF</span>Offday</span>
           &nbsp;<b style="color:var(--gray)">Flag:</b>
-          <span class="lg-i" style="background:#f8fafc;border:1px solid var(--gbd);padding:2px 6px;border-radius:4px;font-size:8px;line-height:1.6">Lapisan per sel: <b>SH</b>=Shift · <b>KZP</b>=KZ Penyelia · <b>KZK</b>=KZ Koperal · <b>TC</b>=Timecare IN/OUT · <b>MC</b>=MC Diterima · <b>HR</b>=HRMIS · <b style="color:var(--navy)">AF</b>=Audit Final</span>
+          <span class="lg-i" style="background:#f8fafc;border:1px solid var(--gbd);padding:2px 6px;border-radius:4px;font-size:8px;line-height:1.6">Lapisan per sel: <b>SH</b>=Shift · <b>KZP</b>=KZ Penyelia · <b>KZK</b>=KZ Koperal · <b>TC</b>=TIMEKAD IN/OUT · <b>MC</b>=MC Diterima · <b>HR</b>=HRMIS · <b style="color:var(--navy)">AF</b>=Audit Final</span>
           <span class="lg-i"><span class="fl fl-lw">LW</span>Lewat</span>
           <span class="lg-i"><span class="fl fl-ia">IA</span>IN Awal</span>
           <span class="lg-i"><span class="fl fl-oa">OA</span>OUT Awal</span>
@@ -641,6 +647,29 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
           <span class="lg-i"><span class="fl fl-cb">CB</span>Cuti Bersalin</span>
         </div>
         <div id="master-grid"></div>
+      </div>
+
+
+
+      <!-- ── KRITERIA AUDIT / PROMPT PDF ── -->
+      <div class="page" id="page-auditprompt">
+        <div class="notif info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+          <div><b>Kriteria Audit / Prompt Janaan PDF.</b> Semua ejaan dalam prompt menggunakan <b>TIMEKAD</b>. PDF wajib mengambil data yang telah selesai dibandingkan dan telah diisi dalam Master File.</div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--gbd);border-radius:9px;padding:14px;line-height:1.7;font-size:10px;color:#334155">
+          <div style="font-size:12px;font-weight:800;color:var(--navy);margin-bottom:8px">PROMPT TAMBAHAN JANAAN PDF AUDIT + MASTER FILE</div>
+          <p style="margin-bottom:8px">Jana PDF Audit Kehadiran e-AKHA Vsavage berdasarkan data terkini dalam Master File selepas semua sumber selesai dibandingkan dan diisi, iaitu KZ Penyelia, KZ Koperal, TIMEKAD, MC Diterima, Cuti HRMIS dan Audit Final.</p>
+          <p style="margin-bottom:8px">PDF yang dijana mesti memasukkan semua dapatan yang telah dibandingkan mengikut nama anggota, jabatan, kompeni, tarikh, status KZ Penyelia, status KZ Koperal, keputusan TIMEKAD, MC Diterima, Cuti HRMIS, flag/warning dan keputusan Audit Final.</p>
+          <p style="margin-bottom:8px">PDF juga wajib menyertakan Master File penuh 7 lapisan dan paparan Master File dalam PDF hendaklah sama seperti paparan dalam sistem, termasuk warna lapisan, susunan tarikh, nama anggota, lapisan data, status, tick kehadiran, status MC/CR/EL/P/K/BER/CTR, TIMEKAD, MC Diterima, Cuti HRMIS dan Audit Final.</p>
+          <div style="background:#f8fafc;border:1px solid var(--gbd);border-radius:7px;padding:10px;margin-top:10px">
+            <b>Ringkasan wajib PDF:</b><br>
+            1. Ringkasan Audit Anggota.<br>
+            2. Senarai Dapatan Yang Telah Selesai Dibandingkan dan Diisi Daripada Master File.<br>
+            3. Kriteria Audit / Prompt Janaan PDF.<br>
+            4. Master File Penuh 7 Lapisan yang sama dengan paparan sistem.
+          </div>
+        </div>
       </div>
 
       <!-- ── FLAGS ── -->
@@ -726,6 +755,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
               <input type="text" id="mc-f-klinik" placeholder="Klinik OSH / Hospital..." style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:180px"></div>
             <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">No Siri MC</div>
               <input type="text" id="mc-f-siri" placeholder="AC1172010" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:110px"></div>
+            <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">Upload MC PDF</div>
+              <input type="file" id="mc-f-file" accept=".pdf,.jpg,.jpeg,.png" style="font-size:8.5px;padding:4px;border:1px solid var(--gbd);border-radius:5px;width:165px;background:#fff"></div>
             <div><div style="font-size:9px;color:var(--gray);margin-bottom:3px">Jenis</div>
               <select id="mc-f-jenis" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
                 <option>Bulan Ini</option><option>Backdated</option><option>Bulan Hadapan</option>
@@ -770,7 +801,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
         <div id="haji-content"></div>
       </div>
 
-      <!-- ── UPLOAD KZ & TIMECARE ── -->
+      <!-- ── UPLOAD KZ & TIMEKAD ── -->
       <div class="page" id="page-entry">
         <div id="entry-viewer-notice" class="notif warn" style="display:none">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -781,12 +812,34 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
           <div class="notif info">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
             <div><b>Upload PDF — Sistem Auto-Proses &amp; Kemaskini Master File.</b>
-            Upload KZ Penyelia (PDF scan) · KZ Koperal (WhatsApp export) · Timecare (PDF/Excel).
+            Upload KZ Penyelia (PDF scan) · KZ Koperal (WhatsApp export) · TIMEKAD (PDF/Excel).
             Sistem akan trace nama, tarikh, status dan punch IN/OUT secara automatik melalui Supabase Edge Function. Semua 3 sumber akan dibandingkan dan master listing dikemaskini.</div>
           </div>
 
           <!-- 3 UPLOAD ZONES -->
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:14px">
+
+            <!-- MC BORANG SEMAKAN -->
+            <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);overflow:hidden">
+              <div style="background:linear-gradient(135deg,#92400e,#b45309);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px">
+                <span style="font-size:18px">🏥</span>
+                <div><div style="font-size:11px;font-weight:700">MC Hard Copy (Borang Semakan)</div>
+                <div style="font-size:8px;opacity:.75">PDF · Auto-fill MC DITERIMA dalam master listing</div></div>
+              </div>
+              <div style="padding:12px">
+                <div class="uzone" id="uz-mc-up" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'mc-up',this)" style="padding:14px 12px">
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'mc-up')">
+                  <div style="font-size:22px;margin-bottom:5px">📋</div>
+                  <div style="font-size:10px;font-weight:600;color:#374151">Upload Borang Semakan MC</div>
+                  <div style="font-size:8px;color:var(--gray);margin-top:2px">PDF · Auto-parse nama, tarikh, klinik, no siri</div>
+                  <div id="fn-mc-up" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:4px"></div>
+                </div>
+                <div id="mc-up-prog" style="display:none;margin-top:8px">
+                  <div style="background:var(--gbd);border-radius:3px;height:4px;margin-bottom:4px"><div id="mc-up-bar" style="height:4px;background:#b45309;border-radius:3px;width:0;transition:width .4s"></div></div>
+                  <div id="mc-up-msg" style="font-size:8.5px;color:var(--gray)"></div>
+                </div>
+              </div>
+            </div>
 
             <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);overflow:hidden">
               <div style="background:linear-gradient(135deg,#065f46,#047857);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px">
@@ -833,14 +886,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
             <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);overflow:hidden">
               <div style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px">
                 <span style="font-size:20px">⏱</span>
-                <div><div style="font-size:11.5px;font-weight:700">Timecare (Punch IN/OUT)</div>
-                <div style="font-size:8px;opacity:.75">PDF/Excel Timecare · bandingkan dengan shift hakiki automatik</div></div>
+                <div><div style="font-size:11.5px;font-weight:700">TIMEKAD (Punch IN/OUT)</div>
+                <div style="font-size:8px;opacity:.75">PDF/Excel TIMEKAD · bandingkan dengan shift hakiki automatik</div></div>
               </div>
               <div style="padding:12px">
                 <div class="uzone" id="uz-tc-new" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'tc-new',this)" style="padding:20px 12px">
                   <input type="file" accept=".pdf,.xlsx,.xls,.csv" onchange="fsel(this,'tc-new')">
                   <div style="font-size:28px;margin-bottom:6px">🕐</div>
-                  <div style="font-size:10px;font-weight:600;color:#374151">Drag &amp; Drop Timecare Export</div>
+                  <div style="font-size:10px;font-weight:600;color:#374151">Drag &amp; Drop TIMEKAD Export</div>
                   <div style="font-size:8px;color:var(--gray);margin-top:2px">PDF / Excel (.xlsx) / CSV</div>
                   <div id="fn-tc-new" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:5px"></div>
                 </div>
@@ -899,25 +952,33 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
               <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">KZ Penyelia</div>
                 <select id="e-kzp" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px">
                   <option value="">–</option>
-                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option>
+                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option><option>P</option><option>K</option>
                   <option>ABS</option><option>TT</option><option>TH</option><option>X</option>
                   <option>L</option><option>LL</option><option>K/P</option><option>CTR</option><option>CB</option><option>BER</option>
                 </select></div>
               <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">KZ Koperal</div>
                 <select id="e-kzk" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px">
                   <option value="">–</option>
-                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option>
+                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option><option>P</option><option>K</option>
                   <option>ABS</option><option>TT</option><option>TH</option><option>X</option>
                   <option>L</option><option>LL</option><option>K/P</option><option>CTR</option><option>CB</option><option>BER</option>
                 </select></div>
-              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">TC IN</div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">TIMEKAD IN</div>
                 <input type="text" id="e-in" placeholder="07:02"
                   style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px;width:62px"></div>
-              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">TC OUT</div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">TIMEKAD OUT</div>
                 <input type="text" id="e-out" placeholder="14:58"
                   style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px;width:62px"></div>
               <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">OT</div>
                 <select id="e-ot" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="false">Tidak</option><option value="true">Ya</option>
+                </select></div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">CUTI HRMIS</div>
+                <select id="e-hrmis" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px;width:120px">
+                  <option value="">–</option><option>1/1 SAH SISTEM</option><option>CUTI SAH</option><option>EL SAH</option><option>CR SAH</option><option>TIADA PERMOHONAN</option>
+                </select></div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">Pengganti di Pos</div>
+                <select id="e-pengganti" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px">
                   <option value="false">Tidak</option><option value="true">Ya</option>
                 </select></div>
               <button class="btn btn-gr btn-sm" onclick="saveEntry()">✓ Simpan</button>
@@ -940,8 +1001,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
             <div class="uzone" id="uz-tc" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'tc',this)">
               <input type="file" accept=".pdf,.xlsx,.xls,.csv" onchange="fsel(this,'tc')">
               <div style="font-size:26px;margin-bottom:5px">🕐</div>
-              <div style="font-size:10px;font-weight:600">Timecard (TC)</div>
-              <div style="font-size:8px;color:var(--gray)">PDF / Excel TIMECARE</div>
+              <div style="font-size:10px;font-weight:600">TIMEKAD (TC)</div>
+              <div style="font-size:8px;color:var(--gray)">PDF / Excel TIMEKAD</div>
               <div id="fn-tc" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:3px"></div>
             </div>
             <div class="uzone" id="uz-kzp" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'kzp',this)">
@@ -1085,10 +1146,14 @@ const SUPA_KEY = 'sb_publishable_KvirNmFqwUsGHuTZ8DltYA_CZtY2ZBO';
 // Akaun pentadbir tempatan (fallback jika Supabase belum setup)
 // TUKAR PASSWORD SEBELUM DEPLOY!
 const ADMIN_ACCOUNTS = [
-  { id:'sm.amierul', pw:'6438670', nama:'SM Amierul',  jawatan:'PELULUS'   },
-  { id:'sjn.adilah', pw:'6438670', nama:'SJN Adilah',  jawatan:'PENYOKONG' },
-  { id:'smamierul',  pw:'6438670', nama:'SM Amierul',  jawatan:'PELULUS'   },
-  { id:'sjnadilah',  pw:'6438670', nama:'SJN Adilah',  jawatan:'PENYOKONG' },
+  // ── OWNER / AUDITOR ──────────────────────────────────────────
+  { id:'sjnadilah',  pw:'912012',  nama:'SJN Adilah',  jawatan:'OWNER · AUDITOR' },
+  { id:'sjn.adilah', pw:'912012',  nama:'SJN Adilah',  jawatan:'OWNER · AUDITOR' },
+  // ── ADMIN ────────────────────────────────────────────────────
+  { id:'smamierul',  pw:'6438670', nama:'SM Amierul',  jawatan:'ADMIN' },
+  { id:'sm.amierul', pw:'6438670', nama:'SM Amierul',  jawatan:'ADMIN' },
+  { id:'tuannajib',  pw:'68828',   nama:'Tuan Najib',  jawatan:'ADMIN' },
+  { id:'tuan.najib', pw:'68828',   nama:'Tuan Najib',  jawatan:'ADMIN' },
 ];
 const VIEWER_PASS = '633283';
 
@@ -1180,13 +1245,13 @@ const DATA = {};
 MASTER.forEach(m => {
   DATA[m.bil] = {};
   for(let d=1;d<=30;d++) {
-    DATA[m.bil][d] = {kzp:'',kzk:'',tc_in:'',tc_out:'',ot_sambung:false,flags:[],note:''};
+    DATA[m.bil][d] = {kzp:'',kzk:'',tc_in:'',tc_out:'',ot_sambung:false,hrmis:'',pengganti:false,flags:[],note:''};
   }
 });
 
 // Pre-fill known kes
 function setC(bil,d,o) { if(DATA[bil]?.[d]) Object.assign(DATA[bil][d], o); }
-// Tidak Hadir Tugas — AMINUDIN bil 4 (tiada rekod timecard)
+// Tidak Hadir Tugas — AMINUDIN bil 4 (tiada rekod TIMEKAD)
 for(let d=1;d<=30;d++) if(getShift(4,d)!=='O') setC(4,d,{kzp:'NHT',kzk:'NHT',flags:[]});
 // Tahan Tugas — ASREE bil 10
 for(let d=1;d<=30;d++) if(getShift(10,d)!=='O') setC(10,d,{kzp:'TH',kzk:'TH',flags:[]});
@@ -1215,89 +1280,182 @@ setC(47,9,{kzp:'MC',kzk:'MC'}); setC(47,10,{kzp:'MC',kzk:'MC'});
 
 function toMins(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
 
-function detectFlags(bil, d) {
+// ════════════════════════════════════════════════════════════════
+// AUDIT ENGINE — MC PDF / TIMEKAD / KZ / HRMIS
+// ════════════════════════════════════════════════════════════════
+const KZ_CUTI_CODES = ['MC','CR','EL','P','K','BER','CTR','K/P','CB'];
+const KZ_LEAVE_WARNING_CODES = ['MC','CR','EL'];
+
+function normStatus(v){
+  const s = String(v||'').trim().toUpperCase();
+  if(!s) return '';
+  if(['KP','K/P','KELEPASAN','PELEPASAN'].includes(s)) return 'K/P';
+  if(['CUTI REHAT'].includes(s)) return 'CR';
+  if(['EMERGENCY LEAVE'].includes(s)) return 'EL';
+  if(['CUTI TANPA REKOD'].includes(s)) return 'CTR';
+  return s;
+}
+function isCutiStatus(v){ return KZ_CUTI_CODES.includes(normStatus(v)); }
+function hasKzCode(c, codes){
+  const kzp = normStatus(c?.kzp), kzk = normStatus(c?.kzk);
+  return codes.some(x => kzp===x || kzk===x);
+}
+function hasThumb(c){ return !!(c && (c.tc_in || c.tc_out)); }
+function parseDM(s){
+  const m = String(s||'').match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if(!m) return null;
+  return {d:+m[1], m:+m[2]};
+}
+function daysBetweenDM(dari,hingga){
+  const a=parseDM(dari), b=parseDM(hingga||dari);
+  if(!a) return [];
+  const end=b||a;
+  const out=[];
+  // fokus April; jika tarikh melintasi bulan, hanya tarikh April yang dipaparkan dalam Master File April
+  if(a.m===4 && end.m===4){ for(let x=a.d;x<=end.d;x++) out.push(x); }
+  else if(a.m===4 && end.m>4){ for(let x=a.d;x<=30;x++) out.push(x); }
+  else if(a.m<4 && end.m===4){ for(let x=1;x<=end.d;x++) out.push(x); }
+  return out;
+}
+function getMCForDate(bil,d){
+  if(typeof MC_DATA==='undefined') return null;
+  return MC_DATA.find(mc => +mc.bil===+bil && mc.jenis==='Bulan Ini' && daysBetweenDM(mc.dari, mc.hingga).includes(+d)) || null;
+}
+function hrmisText(c){ return String(c?.hrmis || '').trim(); }
+function hasHrmisSah(c){ return /(SAH|LULUS|APPROVED|1\/1|VALID)/i.test(hrmisText(c)); }
+function hasPengganti(c){ return !!(c?.pengganti || /PENGGANTI/i.test(String(c?.note||''))); }
+function shiftWindow(sh){
+  if(sh==='S') return {start:420,end:900,earliest:360,latest:427,label:'PAGI'};
+  if(sh==='P') return {start:900,end:1380,earliest:840,latest:907,label:'PETANG'};
+  if(sh==='M') return {start:1380,end:420,earliest:1320,latest:1387,label:'MALAM'};
+  return null;
+}
+function actualInForShift(inM, sh){
+  if(inM===null) return null;
+  if(sh==='M' && inM < 720) return inM + 1440;
+  return inM;
+}
+function timecardAudit(bil,d){
+  const c=DATA[bil]?.[d]; const sh=getShift(bil,d);
+  if(!c) return {ok:false,text:'–',reason:'NO DATA'};
+  if(sh==='O') return hasThumb(c) ? {ok:true,text:'OFFDAY / OT',reason:'OT'} : {ok:true,text:'OFFDAY',reason:'OFFDAY'};
+  if(!hasThumb(c)) return {ok:false,text:'ABS',reason:'TIADA THUMB'};
+  if(!c.tc_in) return {ok:false,text:'SP',reason:'TIADA IN'};
+  const inM = actualInForShift(toMins(c.tc_in), sh);
+  const w = shiftWindow(sh);
+  if(!w || inM===null) return {ok:false,text:'SEMAK',reason:'MASA TIDAK SAH'};
+  if(inM < w.earliest) return {ok:false,text:'IN AWAL',reason:`IN ${c.tc_in} lebih 1 jam awal`};
+  if(inM > w.latest && !c.ot_sambung) return {ok:false,text:'LEWAT',reason:`IN ${c.tc_in} melebihi 7 minit`};
+  return {ok:true,text:'✓',reason:'TIMEKAD SAH'};
+}
+function statusCellStyle(v){
+  const s = normStatus(v);
+  if(!s || s==='✓') return {bg:'#f0fdf4',fg:'#15803d',txt:s||'✓'};
+  const map={
+    OFFDAY:{bg:'#f1f5f9',fg:'#64748b',txt:'OFFDAY'},
+    MC:{bg:'#fef9c3',fg:'#854d0e',txt:'MC'}, CR:{bg:'#dbeafe',fg:'#1e40af',txt:'CR'},
+    EL:{bg:'#ede9fe',fg:'#5b21b6',txt:'EL'}, P:{bg:'#ecfdf5',fg:'#065f46',txt:'P'},
+    K:{bg:'#ecfdf5',fg:'#065f46',txt:'K'}, 'K/P':{bg:'#ecfdf5',fg:'#065f46',txt:'K/P'},
+    BER:{bg:'#fdf4ff',fg:'#7e22ce',txt:'BER'}, CTR:{bg:'#fff7ed',fg:'#c2410c',txt:'CTR'},
+    CB:{bg:'#fdf4ff',fg:'#7e22ce',txt:'CB'}, ABS:{bg:'#fee2e2',fg:'#991b1b',txt:'ABS'},
+    X:{bg:'#fee2e2',fg:'#991b1b',txt:'X'}, L:{bg:'#ffedd5',fg:'#9a3412',txt:'L'},
+    LL:{bg:'#fee2e2',fg:'#991b1b',txt:'LL'}, TT:{bg:'#fce7f3',fg:'#9d174d',txt:'TAHAN TUGAS'},
+    TH:{bg:'#1c1917',fg:'#fef2f2',txt:'TIDAK HADIR'}, NHT:{bg:'#1c1917',fg:'#fef2f2',txt:'NHT'}
+  };
+  return map[s] || {bg:'#f8fafc',fg:'#374151',txt:s};
+}
+function displayKzValue(raw, sh, autoTick){
+  if(sh==='O') return 'OFFDAY';
+  const s=normStatus(raw);
+  if(s) return s==='K/P'?'K/P':s;
+  return autoTick ? '✓' : '';
+}
+function auditFinalDisplay(bil,d){
+  const c=DATA[bil]?.[d]; const sh=getShift(bil,d); const mcRec=getMCForDate(bil,d); const tc=timecardAudit(bil,d);
+  if(!c) return {txt:'–',bg:'#f8fafc',fg:'#94a3b8'};
+  const kzp=normStatus(c.kzp), kzk=normStatus(c.kzk);
+  const hasMC=!!mcRec, hrOK=hasHrmisSah(c), thumb=hasThumb(c);
+  const warningLeaveThumb = hasKzCode(c, KZ_LEAVE_WARNING_CODES) && thumb;
+  if(sh==='O' && !thumb) return {txt:'OFFDAY',bg:'#f1f5f9',fg:'#64748b'};
+  if(sh==='O' && thumb) return {txt:'OFFDAY / OT — ABAIKAN',bg:'#e0f2fe',fg:'#0c4a6e'};
+  if(['TT','TH','NHT'].includes(kzp)||['TT','TH','NHT'].includes(kzk)) return {txt:kzp==='NHT'||kzk==='NHT'?'TIDAK HADIR TUGAS':'TAHAN TUGAS',bg:'#1c1917',fg:'#fef2f2'};
+  // Keutamaan kes user: KZ cuti/MC/EL/CR tetapi ada thumb + tiada bukti = perlu tindakan
+  if(warningLeaveThumb && !hasMC && !hrOK && hasPengganti(c)) return {txt:'SILA MOHON CUTI',bg:'#fee2e2',fg:'#991b1b'};
+  if(warningLeaveThumb) return {txt:'WARNING — KZ CUTI TAPI ADA THUMB',bg:'#fef3c7',fg:'#b45309'};
+  if(hasKzCode(c,['MC','EL','CR'])){
+    if(hasMC && !thumb) return {txt:'SAH',bg:'#dcfce7',fg:'#166534'};
+    if(hrOK && !thumb) return {txt:'SAH',bg:'#dcfce7',fg:'#166534'};
+    if(!hasMC && !hrOK) return {txt:'SILA MOHON CUTI',bg:'#fee2e2',fg:'#991b1b'};
+    return {txt:'SEMAK KZ',bg:'#fef3c7',fg:'#b45309'};
+  }
+  if(hasKzCode(c,['CTR'])) return hrOK ? {txt:'SAH',bg:'#dcfce7',fg:'#166534'} : {txt:'CTR — WAJIB ISI CUTI',bg:'#fff7ed',fg:'#c2410c'};
+  if(hasKzCode(c,['P','K','K/P','BER','CB'])) return {txt:normStatus(kzp||kzk)+' — SAH/SEMAK',bg:'#ecfdf5',fg:'#065f46'};
+  if(['ABS','X','LL'].includes(kzp)||['ABS','X','LL'].includes(kzk)) return {txt:(hasMC||hrOK)?'SAH':'ABS — SILA MOHON CUTI',bg:(hasMC||hrOK)?'#dcfce7':'#fee2e2',fg:(hasMC||hrOK)?'#166534':'#991b1b'};
+  const fl=detectFlags(bil,d,false);
+  if(fl.some(f=>f.startsWith('LEWAT'))) return {txt:fl.find(f=>f.startsWith('LEWAT')),bg:'#ffedd5',fg:'#9a3412'};
+  if(fl.some(f=>f.startsWith('SP')||f.startsWith('Tiada'))) return {txt:fl.find(f=>f.startsWith('SP')||f.startsWith('Tiada')) || 'SINGLE PUNCH',bg:'#fef3c7',fg:'#b45309'};
+  if(fl.some(f=>f.startsWith('IN AWAL'))) return {txt:fl.find(f=>f.startsWith('IN AWAL')),bg:'#fff7ed',fg:'#c2410c'};
+  if(fl.some(f=>f.startsWith('OUT AWAL'))) return {txt:fl.find(f=>f.startsWith('OUT AWAL')),bg:'#fff7ed',fg:'#9a3412'};
+  if(tc.ok && tc.text==='✓') return {txt:'SAH',bg:'#dcfce7',fg:'#166534'};
+  if(!thumb) return {txt:'SEMAK TIMEKAD',bg:'#fef3c7',fg:'#b45309'};
+  return {txt:'SEMAK',bg:'#f8fafc',fg:'#64748b'};
+}
+
+
+function detectFlags(bil, d, includeManual=true) {
   const cell = DATA[bil]?.[d];
   if(!cell) return [];
   const sh = getShift(bil, d);
-  const flags = [...(cell.flags||[])];
+  const flags = includeManual ? [...(cell.flags||[])] : [];
+  const kzp = normStatus(cell.kzp), kzk = normStatus(cell.kzk);
+  const thumb = hasThumb(cell);
+  const mcRec = getMCForDate(bil,d);
+  const hrOK = hasHrmisSah(cell);
 
-  if(sh==='O') return flags;
+  if(sh==='O') return [...new Set(flags)];
+  if(['TT','TH','NHT'].includes(kzp)||['TT','TH','NHT'].includes(kzk)) return [...new Set(flags)];
 
-  const {kzp,kzk,tc_in,tc_out,ot_sambung} = cell;
-  const inM  = toMins(tc_in);
-  const outM = toMins(tc_out);
+  // KZ lapor MC/EL/CR tetapi TIMEKAD ada thumb = warning wajib
+  if(hasKzCode(cell, KZ_LEAVE_WARNING_CODES) && thumb && !flags.some(f=>f.startsWith('WARNING')))
+    flags.push('WARNING — KZ MC/EL/CR TAPI TIMEKAD ADA THUMB');
 
-  // K/P, CTR, CB — return early
-  if(kzp==='K/P'||kzk==='K/P')   { if(!flags.includes('K/P'))  flags.push('K/P');  return [...new Set(flags)]; }
-  if(kzp==='CB' ||kzk==='CB')    { if(!flags.includes('CB'))   flags.push('CB');   return [...new Set(flags)]; }
-  if(kzp==='CTR'||kzk==='CTR')   { if(!flags.some(f=>f==='CTR')) flags.push('CTR'); }
-  // TAHAN TUGAS & TIDAK HADIR — tiada flag diperlukan
-  if(['TH','NHT'].includes(kzp)||['TH','NHT'].includes(kzk)) return [];
+  // KZ lapor cuti tetapi tiada MC/HRMIS
+  if(hasKzCode(cell, ['MC','EL','CR']) && !mcRec && !hrOK && !flags.some(f=>f.startsWith('SILA MOHON CUTI')))
+    flags.push(hasPengganti(cell) && thumb ? 'SILA MOHON CUTI — ADA THUMB & PENGGANTI DI POS' : 'SILA MOHON CUTI — TIADA MC/HRMIS');
 
-  // EL tanpa HRMIS (simplified check)
-  if((kzp==='EL'||kzk==='EL') && !flags.some(f=>f.startsWith('EL')))
-    flags.push('EL-TIADA PERMOHONAN HRMIS');
+  if(hasKzCode(cell,['CTR']) && !hrOK && !flags.some(f=>f.startsWith('CTR')))
+    flags.push('CTR — WAJIB ISI CUTI HRMIS');
 
-  // ABS tanpa dokumen
-  const isAbs = ['ABS','NHT','X'].includes(kzp)||['ABS','NHT','X'].includes(kzk);
-  if(isAbs && kzp!=='MC' && kzk!=='MC' && !flags.some(f=>f.startsWith('ABS!')))
-    flags.push('ABS! — MOHON HANTAR MC/CUTI');
+  const isAbs = ['ABS','NHT','X','LL'].includes(kzp)||['ABS','NHT','X','LL'].includes(kzk);
+  if(isAbs && !mcRec && !hrOK && !flags.some(f=>f.startsWith('ABS!')))
+    flags.push('ABS! — SILA MOHON CUTI');
 
-  // Jika MC/CR sah — skip punch checks
-  if(['MC','CR'].includes(kzp)||['MC','CR'].includes(kzk)) return [...new Set(flags)];
-  if(isAbs) return [...new Set(flags)];
+  // Jika memang cuti dan tiada thumb, tidak perlu semak lewat/in/out
+  if(hasKzCode(cell, ['MC','EL','CR','P','K','K/P','BER','CTR','CB']) && !thumb)
+    return [...new Set(flags)];
 
-  // Shift start/end
-  const SS = sh==='S'?420:sh==='P'?900:1380;
-  const SE = sh==='S'?900:sh==='P'?1380:420;
-
-  // RULE 1: SINGLE PUNCH — nyatakan jam & apa tiada
-  if(tc_in && !tc_out && !flags.some(f=>f.startsWith('SP')))
-    flags.push(`Tiada OUT (IN: ${tc_in})`);
-  else if(!tc_in && tc_out && !flags.some(f=>f.startsWith('SP')))
-    flags.push(`Tiada IN (OUT: ${tc_out})`);
-
-  // RULE 2: TLS — DIABAIKAN (tugasan di luar shift dikira OT, tidak perlu flag)
-
-  // RULE 3: LEWAT >6 minit (OT sambung = tidak lewat)
-  if(inM!==null && !ot_sambung) {
-    let late=0;
-    if(sh==='S'||sh==='P') late = inM-SS;
-    if(sh==='M') late = inM>=SS ? inM-SS : inM+(1440-SS);
-    if(late>6 && !flags.some(f=>f.startsWith('LEWAT'))) {
-      const lateH = Math.floor(late/60);
-      const lateM = late%60;
-      const lateTxt = lateH>0 ? `${lateH}j ${lateM}min` : `${lateM}min`;
-      flags.push(`LEWAT ${lateTxt} (IN ${tc_in})`);
-    }
+  const tc = timecardAudit(bil,d);
+  if(thumb){
+    if(tc.text==='SP' && !flags.some(f=>f.startsWith('SP'))) flags.push('SP — '+tc.reason);
+    if(tc.text==='LEWAT' && !flags.some(f=>f.startsWith('LEWAT'))) flags.push('LEWAT — '+tc.reason);
+    if(tc.text==='IN AWAL' && !flags.some(f=>f.startsWith('IN AWAL'))) flags.push('IN AWAL — '+tc.reason);
   }
 
-  // RULE 4: IN AWAL >60 minit sebelum shift
-  if(inM!==null) {
-    let early=0;
-    if(sh==='S'||sh==='P') early = SS-inM;
-    if(sh==='M' && inM>600) early = SS-inM;
-    if(early>60 && !flags.some(f=>f.startsWith('IN AWAL'))) {
-      const earlyH = Math.floor(early/60);
-      const earlyM = early%60;
-      const earlyTxt = earlyH>0 ? `${earlyH}j ${earlyM}min` : `${earlyM}min`;
-      flags.push(`IN AWAL ${tc_in} (${earlyTxt} sebelum shift)`);
+  if(cell.tc_in && !cell.tc_out && !flags.some(f=>f.startsWith('SP')))
+    flags.push(`SP — Tiada OUT (IN: ${cell.tc_in})`);
+  else if(!cell.tc_in && cell.tc_out && !flags.some(f=>f.startsWith('SP')))
+    flags.push(`SP — Tiada IN (OUT: ${cell.tc_out})`);
+
+  const outM = toMins(cell.tc_out);
+  const w = shiftWindow(sh);
+  if(outM!==null && w && !cell.ot_sambung) {
+    let actualOut = (sh==='M' && outM<720) ? outM+1440 : outM;
+    let end = sh==='M' ? w.end+1440 : w.end;
+    if(end-actualOut>60 && !flags.some(f=>f.startsWith('OUT AWAL'))) {
+      const early=end-actualOut; const eH=Math.floor(early/60); const eM=early%60;
+      flags.push(`OUT AWAL ${cell.tc_out} (${eH>0?`${eH}j ${eM}min`:`${eM}min`} lebih awal)`);
     }
   }
-
-  // RULE 5: OUT AWAL >60 minit sebelum shift tamat
-  if(outM!==null && !ot_sambung) {
-    let earlyOut=0;
-    if(sh==='S'||sh==='P') earlyOut = SE-outM;
-    if(sh==='M' && outM<420) earlyOut = SE-outM;
-    if(earlyOut>60 && !flags.some(f=>f.startsWith('OUT'))) {
-      const eH = Math.floor(earlyOut/60);
-      const eM = earlyOut%60;
-      const eTxt = eH>0 ? `${eH}j ${eM}min` : `${eM}min`;
-      flags.push(`OUT LEWAT ${tc_out} (${eTxt} lebih awal)`);
-    }
-  }
-
   return [...new Set(flags)];
 }
 
@@ -1442,6 +1600,8 @@ async function loadBulan(bln){
     DATA[r.bil][r.hari].tc_in      = r.tc_in||'';
     DATA[r.bil][r.hari].tc_out     = r.tc_out||'';
     DATA[r.bil][r.hari].ot_sambung = r.ot_sambung||false;
+    DATA[r.bil][r.hari].hrmis      = r.hrmis || r.cuti_hrmis || '';
+    DATA[r.bil][r.hari].pengganti  = !!(r.pengganti || r.ada_pengganti);
     DATA[r.bil][r.hari].flags      = r.flags||[];
   });
   document.getElementById('d-cells').textContent = data.length;
@@ -1482,11 +1642,21 @@ function applyRoleUI(){
   const isAdmin = AUTH.role==='admin';
   // Role badge topbar
   const rb = document.getElementById('role-badge');
-  rb.textContent = isAdmin ? `🔓 ${AUTH.nama} · ${AUTH.jawatan}` : '👁 Penonton Sahaja';
-  rb.className = 'role-badge '+(isAdmin?'badge-admin':'badge-viewer');
-  // Sidebar user
-  document.getElementById('sb-nama').textContent = AUTH.nama;
-  document.getElementById('sb-role').textContent = isAdmin ? AUTH.jawatan+' · KPL HKL' : 'Mod Tontonan';
+  const isOwner = AUTH.jawatan?.includes('OWNER');
+  if(isAdmin){
+    rb.textContent = isOwner
+      ? '👑 '+AUTH.nama+' · '+AUTH.jawatan
+      : '🔓 '+AUTH.nama+' · '+AUTH.jawatan;
+    rb.className = 'role-badge '+(isOwner?'badge-owner':'badge-admin');
+  } else {
+    rb.textContent = '👁 Penonton Sahaja';
+    rb.className = 'role-badge badge-viewer';
+  }
+  // Sidebar user — jangan paparkan nama/ID login di paparan sistem
+  document.getElementById('sb-nama').textContent = isAdmin ? AUTH.nama : 'Penonton Awam';
+  document.getElementById('sb-role').textContent = isAdmin
+    ? (AUTH.jawatan?.includes('OWNER') ? '👑 '+AUTH.jawatan+' · KPL HKL' : '🔓 '+AUTH.jawatan+' · KPL HKL')
+    : '👁 Mod Tontonan';
   // Admin-only sidebar section
   document.getElementById('sb-admin-section').style.display = isAdmin?'block':'none';
   // Admin extras
@@ -1544,7 +1714,6 @@ function renderGrid(members, containerId){
   const con=document.getElementById(containerId);
   if(!con) return;
 
-  // Group: jabatan → kompeni
   const groups={};
   members.forEach(m=>{
     if(!groups[m.jab]) groups[m.jab]={};
@@ -1552,15 +1721,14 @@ function renderGrid(members, containerId){
     groups[m.jab][m.komp].push(m);
   });
 
-  // ── Layer colours (matching Excel) ──────────────────────────
   const LAYER = [
     {key:'sh',  label:'SHIFT JADUAL', bg:'#fef9c3', fg:'#713f12', fw:'700'},
     {key:'kzp', label:'KZ PENYELIA',  bg:'#dcfce7', fg:'#14532d', fw:'600'},
     {key:'kzk', label:'KZ KOPERAL',   bg:'#dcfce7', fg:'#14532d', fw:'600'},
-    {key:'tc',  label:'TIMECARE',     bg:'#ffffff', fg:'#1e293b', fw:'500'},
+    {key:'tc',  label:'TIMEKAD',      bg:'#ffffff', fg:'#1e293b', fw:'500'},
     {key:'mc',  label:'MC DITERIMA',  bg:'#fed7aa', fg:'#7c2d12', fw:'700'},
     {key:'hr',  label:'CUTI HRMIS',   bg:'#e0f2fe', fg:'#0c4a6e', fw:'600'},
-    {key:'af',  label:'AUDIT FINAL',  bg:'#f8fafc', fg:'#374151', fw:'700'},
+    {key:'af',  label:'AUDIT FINAL',  bg:'#111827', fg:'#facc15', fw:'800'},
   ];
 
   let html='';
@@ -1571,7 +1739,6 @@ function renderGrid(members, containerId){
       const sh1=SH_LBL[getShift(ms[0].bil,1)];
       const st1=SH_TIME[getShift(ms[0].bil,1)];
 
-      // ── Build header row ──────────────────────────────────
       let hdrHtml = `<tr class="hr-day">
         <th class="nm" rowspan="2" style="min-width:110px;position:sticky;left:0;z-index:5;background:var(--navy3)">Nama Anggota</th>
         <th class="nm" rowspan="2" style="min-width:90px;position:sticky;left:110px;z-index:5;background:var(--navy3);font-size:7px;color:rgba(255,255,255,0.5)">Lapisan Data</th>`;
@@ -1582,161 +1749,88 @@ function renderGrid(members, containerId){
       }
       hdrHtml+=`<th style="background:#1a2f52;min-width:26px;font-size:7px">Hadir</th>
         <th style="background:#854d0e;min-width:22px;font-size:7px">MC</th>
-        <th style="background:#1e40af;min-width:22px;font-size:7px">CR</th>
+        <th style="background:#1e40af;min-width:22px;font-size:7px">CR/EL</th>
         <th style="background:#991b1b;min-width:22px;font-size:7px">ABS</th>
         <th style="background:#b45309;min-width:22px;font-size:7px">L</th>
         <th style="background:#374151;min-width:22px;font-size:7px">SP</th>
         <th style="background:#5b21b6;min-width:22px;font-size:7px">⚑</th>
       </tr>`;
 
-      // ── Build member rows (7 per member) ─────────────────
       let rows='';
       ms.forEach(m=>{
         let hadir=0,mc=0,cr=0,ab=0,lw=0,sp=0,fc=0;
-
-        // Pre-compute all 30 days
         const days=[];
         for(let d=1;d<=30;d++){
           const sh  = getShift(m.bil,d);
           const c   = DATA[m.bil][d];
           const fl  = detectFlags(m.bil,d);
           const isWorkDay = sh!=='O';
+          const mcRec = getMCForDate(m.bil,d);
+          const tc = timecardAudit(m.bil,d);
+          const audit = auditFinalDisplay(m.bil,d);
 
-          // MC from MC_DATA
-          const mcRec = (typeof MC_DATA!=='undefined') ?
-            MC_DATA.find(mc=>mc.bil===m.bil &&
-              (mc.dari.startsWith(String(d).padStart(2,'0')+'/04')) &&
-              mc.jenis==='Bulan Ini') : null;
+          const kzpNorm=normStatus(c.kzp), kzkNorm=normStatus(c.kzk);
+          const isTT  = ['TT'].includes(kzpNorm)||['TT'].includes(kzkNorm);
+          const isTHx = ['TH','NHT'].includes(kzpNorm)||['TH','NHT'].includes(kzkNorm);
+          const autoTick = isWorkDay && !kzpNorm && !kzkNorm && !isTT && !isTHx;
 
-          // Summary counts
-          const isMC  = c.kzp==='MC'||c.kzk==='MC'||mcRec!==null;
-          const isCR  = (c.kzp==='CR'||c.kzk==='CR')||(c.kzp==='EL'||c.kzk==='EL');
-          const isABS = ['ABS','X','LL'].includes(c.kzp)||['ABS','X','LL'].includes(c.kzk);
-          const isTT  = c.kzp==='TT'||c.kzk==='TT';
-          const isTHx = c.kzp==='TH'||c.kzk==='TH';
-          const hasLew= fl.some(f=>f.startsWith('L +'));
-          const hasSP = fl.some(f=>f.startsWith('Tiada'));
+          const isMC  = kzpNorm==='MC'||kzkNorm==='MC'||mcRec!==null;
+          const isCR  = ['CR','EL','CTR'].includes(kzpNorm)||['CR','EL','CTR'].includes(kzkNorm);
+          const isABS = ['ABS','X','LL'].includes(kzpNorm)||['ABS','X','LL'].includes(kzkNorm)||isTHx;
+          const hasLew= fl.some(f=>f.startsWith('LEWAT'));
+          const hasSP = fl.some(f=>f.startsWith('SP')||f.startsWith('Tiada'));
           if(isWorkDay){
             if(isMC) mc++;
             else if(isCR) cr++;
-            else if(isABS||isTHx) ab++;
-            else if(!isTT) hadir++;
+            else if(isABS) ab++;
+            else if(audit.txt==='SAH' || autoTick || kzpNorm==='✓' || kzkNorm==='✓' || tc.ok) hadir++;
           }
           if(hasLew) lw++;
           if(hasSP) sp++;
-          fc += fl.length + (c.kzp==='LL'||c.kzk==='LL'||c.kzp==='L'||c.kzk==='L'?1:0);
+          fc += fl.length;
 
-          // ── Layer values ────────────────────────────────
-          // L1: Shift
           const shTxt = sh==='O'?'OFFDAY':sh==='P'?'PETANG (1500–2300)':sh==='S'?'PAGI (0700–1500)':'MALAM (2300–0700)';
           const shBg  = sh==='O'?'#f1f5f9':sh==='P'?'#fdf4ff':sh==='S'?'#f0fdf4':'#eff6ff';
           const shFg  = sh==='O'?'#94a3b8':sh==='P'?'#7e22ce':sh==='S'?'#15803d':'#1d4ed8';
 
-          // L2: KZ Penyelia
-          const autoTick = isWorkDay && !c.kzp && !c.kzk && !isTT && !isTHx;
-          const kzpVal = c.kzp||(sh==='O'?'OFFDAY':autoTick?'✓':'');
-          const kzpTxt = kzpVal==='OFFDAY'?'OFFDAY':
-                         kzpVal==='TT'?'TAHAN TUGAS (TT)':
-                         kzpVal==='TH'?'TIDAK HADIR (TH)':
-                         kzpVal==='✓'?'✓':kzpVal||'–';
-          const kzpBg  = kzpVal==='OFFDAY'?'#f1f5f9':
-                         kzpVal==='TT'?'#fce7f3':kzpVal==='TH'?'#1c1917':
-                         kzpVal==='MC'?'#fef9c3':kzpVal==='CR'?'#dbeafe':
-                         kzpVal==='ABS'||kzpVal==='X'?'#fee2e2':
-                         kzpVal==='EL'?'#ede9fe':kzpVal==='LL'?'#fee2e2':
-                         kzpVal==='L'?'#ffedd5':kzpVal==='✓'?'#f0fdf4':'#f8fafc';
-          const kzpFg  = kzpVal==='TH'?'#fef2f2':kzpVal==='TT'?'#9d174d':
-                         kzpVal==='MC'?'#854d0e':kzpVal==='CR'?'#1e40af':
-                         kzpVal==='ABS'||kzpVal==='X'?'#991b1b':
-                         kzpVal==='EL'?'#5b21b6':kzpVal==='LL'?'#991b1b':
-                         kzpVal==='L'?'#9a3412':kzpVal==='✓'?'#15803d':'#374151';
+          const kzpVal = displayKzValue(c.kzp, sh, autoTick);
+          const kzkVal = displayKzValue(c.kzk, sh, autoTick);
+          const kzpSty = statusCellStyle(kzpVal);
+          const kzkSty = statusCellStyle(kzkVal);
+          const kzpTxt = kzpVal || '–';
+          const kzkTxt = kzkVal || '–';
 
-          // L3: KZ Koperal
-          const kzkVal = c.kzk||(sh==='O'?'OFFDAY':autoTick?'✓':'');
-          const kzkTxt = kzkVal==='OFFDAY'?'OFFDAY':kzkVal==='TT'?'TAHAN TUGAS (TT)':kzkVal==='TH'?'TIDAK HADIR (TH)':kzkVal==='✓'?'✓':kzkVal||'–';
-          const kzkBg  = kzpBg; const kzkFg = kzpFg;  // sama dengan KZP
-
-          // L4: Timecare
           let tcLines=[];
+          let tcBg='#ffffff', tcFg='#1e293b';
           if(sh==='O'){
-            // Offday tapi ada thumb — OT
-            if(c.tc_in||c.tc_out){
-              tcLines.push(`OFFDAY / OT — ABAIKAN`);
-              if(c.tc_in)  tcLines.push(`THUMB IN ${c.tc_in}`);
-              if(c.tc_out) tcLines.push(`THUMB OUT ${c.tc_out}`);
-            } else { tcLines.push('OFFDAY'); }
-          } else if(['TT','TH'].includes(c.kzp)){
-            tcLines.push(c.kzp==='TT'?'TAHAN TUGAS':'TIDAK HADIR');
-          } else if(['MC','CR','EL','K/P','CB','CTR'].includes(c.kzp)){
-            tcLines.push(c.kzp);
-            if(c.tc_in)  tcLines.push(`THUMB IN ${c.tc_in}`);
-            if(c.tc_out) tcLines.push(`THUMB OUT ${c.tc_out}`);
+            if(hasThumb(c)) tcLines=[`OFFDAY / OT`, c.tc_in?`IN ${c.tc_in}`:'', c.tc_out?`OUT ${c.tc_out}`:''].filter(Boolean);
+            else tcLines=['OFFDAY'];
+            tcBg=hasThumb(c)?'#e0f2fe':'#f1f5f9'; tcFg=hasThumb(c)?'#0c4a6e':'#64748b';
+          } else if(hasThumb(c)){
+            if(tc.text==='✓') { tcLines=['✓']; tcBg='#dcfce7'; tcFg='#166534'; }
+            else { tcLines=[tc.text, tc.reason]; tcBg='#fef3c7'; tcFg='#b45309'; }
+            if(c.tc_in || c.tc_out) tcLines.push(`${c.tc_in||'–'} / ${c.tc_out||'–'}`);
           } else {
-            if(!c.tc_in && !c.tc_out){ tcLines.push('–'); }
-            else {
-              const noIn  = !c.tc_in  && c.tc_out;
-              const noOut = !c.tc_out && c.tc_in;
-              if(c.tc_in)  tcLines.push(`IN ${c.tc_in}`);
-              else if(noIn) tcLines.push('TIADA IN');
-              if(c.tc_out) tcLines.push(`OUT ${c.tc_out}`);
-              else if(noOut) tcLines.push('TIADA OUT');
-              // Lewat info
-              const lwFlag = fl.find(f=>f.startsWith('L +'));
-              if(lwFlag) tcLines.push(lwFlag);
-              const spFlag = fl.find(f=>f.startsWith('Tiada'));
-              if(spFlag&&!c.tc_in&&!c.tc_out) tcLines.push('SINGLE PUNCH');
-              const iaFlag = fl.find(f=>f.startsWith('IN AWAL'));
-              if(iaFlag) tcLines.push(iaFlag);
-              const olFlag = fl.find(f=>f.startsWith('OUT LEWAT'));
-              if(olFlag) tcLines.push(olFlag);
-            }
+            tcLines=['ABS']; tcBg='#fee2e2'; tcFg='#991b1b';
           }
-          const tcBg = fl.some(f=>f.startsWith('L +'))?'#fff7ed':
-                       fl.some(f=>f.startsWith('Tiada'))?'#fffbeb':
-                       fl.some(f=>f.startsWith('IN AWAL')||f.startsWith('OUT LEWAT'))?'#fff7ed':'#ffffff';
 
-          // L5: MC Diterima
           let mcTxt='–', mcBg='#fff7ed';
           if(sh==='O'){ mcTxt='OFFDAY'; mcBg='#f1f5f9'; }
           else if(mcRec){ mcTxt=`MC ${mcRec.hari} HARI — ${mcRec.klinik}`; mcBg='#fed7aa'; }
-          else if(c.kzp==='MC'||c.kzk==='MC'){ mcTxt='MC — SEMAK BORANG'; mcBg='#fef3c7'; }
+          else if(kzpNorm==='MC'||kzkNorm==='MC'){ mcTxt='TIADA DOKUMEN'; mcBg='#fee2e2'; }
 
-          // L6: HRMIS Cuti
-          let hrTxt='–', hrBg='#e0f2fe';
-          if(sh==='O'){ hrTxt='OFFDAY'; hrBg='#f1f5f9'; }
-          else if(c.kzp==='CR'||c.kzk==='CR'){ hrTxt='CUTI REHAT'; hrBg='#dbeafe'; }
-          else if(c.kzp==='EL'||c.kzk==='EL'){ hrTxt='EMERGENCY LEAVE'; hrBg='#ede9fe'; }
-          else if(c.kzp==='CTR'||c.kzk==='CTR'){ hrTxt='CTR — WAJIB ISI'; hrBg='#fee2e2'; }
-          else if(c.kzp==='CB'||c.kzk==='CB'){ hrTxt='CUTI BERSALIN'; hrBg='#fdf4ff'; }
-          else if(c.kzp==='K/P'||c.kzk==='K/P'){ hrTxt='KELEPASAN'; hrBg='#ecfdf5'; }
-
-          // L7: Audit Final
-          let afTxt='–', afBg='#f8fafc', afFg='#94a3b8';
-          if(sh==='O' && !(c.tc_in||c.tc_out)){ afTxt='OFFDAY'; afBg='#f1f5f9'; afFg='#64748b'; }
-          else if(sh==='O' && (c.tc_in||c.tc_out)){ afTxt='OFFDAY / OT — ABAIKAN'; afBg='#e0f2fe'; afFg='#0c4a6e'; }
-          else if(isTT){ afTxt='TAHAN TUGAS'; afBg='#fce7f3'; afFg='#9d174d'; }
-          else if(isTHx){ afTxt='TIDAK HADIR'; afBg='#1c1917'; afFg='#fef2f2'; }
-          else if(isMC){ afTxt=mcRec?`MC SAH — ${mcRec.klinik.substring(0,15)}`:'MC — SEMAK'; afBg=mcRec?'#fef9c3':'#292524'; afFg=mcRec?'#854d0e':'#fbbf24'; }
-          else if(isCR){ afTxt=c.kzp==='EL'||c.kzk==='EL'?'EL SAH — ISI CUTI':'CR SAH'; afBg='#dbeafe'; afFg='#1e40af'; }
-          else if(c.kzp==='CTR'||c.kzk==='CTR'){ afTxt='CTR — WAJIB ISI CUTI'; afBg='#fff7ed'; afFg='#c2410c'; }
-          else if(c.kzp==='K/P'||c.kzk==='K/P'){ afTxt='KELEPASAN / OT'; afBg='#ecfdf5'; afFg='#065f46'; }
-          else if(isABS){ const hM=mcRec!==null; afTxt=hM?'MC SAH':'ABS — SILA MOHON CUTI'; afBg=hM?'#fef9c3':'#fee2e2'; afFg=hM?'#854d0e':'#991b1b'; }
-          else if(c.kzp==='LL'||c.kzk==='LL'){ afTxt='LL — LAPOR LEWAT'; afBg='#fee2e2'; afFg='#991b1b'; }
-          else if(fl.some(f=>f.startsWith('L +'))){ afTxt=fl.find(f=>f.startsWith('L +')); afBg='#ffedd5'; afFg='#9a3412'; }
-          else if(fl.some(f=>f.startsWith('Tiada'))){ afTxt=fl.find(f=>f.startsWith('Tiada'))||'SINGLE PUNCH'; afBg='#fef3c7'; afFg='#b45309'; }
-          else if(fl.some(f=>f.startsWith('IN AWAL'))){ afTxt=fl.find(f=>f.startsWith('IN AWAL')); afBg='#fff7ed'; afFg='#c2410c'; }
-          else if(fl.some(f=>f.startsWith('OUT LEWAT'))){ afTxt=fl.find(f=>f.startsWith('OUT LEWAT')); afBg='#fff7ed'; afFg='#9a3412'; }
-          else if(autoTick||c.kzp==='✓'||c.kzk==='✓'||(c.tc_in&&c.tc_out)){ afTxt='✓'; afBg='#dcfce7'; afFg='#166534'; }
-          else{ afTxt='–'; afBg='#f8fafc'; afFg='#94a3b8'; }
+          let hrTxt='–', hrBg='#e0f2fe', hrFg='#0c4a6e';
+          if(sh==='O'){ hrTxt='OFFDAY'; hrBg='#f1f5f9'; hrFg='#64748b'; }
+          else if(hrmisText(c)){ hrTxt=hrmisText(c); hrBg=hasHrmisSah(c)?'#dcfce7':'#fef3c7'; hrFg=hasHrmisSah(c)?'#166534':'#b45309'; }
+          else if(hasKzCode(c,['MC','CR','EL','CTR'])){ hrTxt='TIADA PERMOHONAN'; hrBg='#fee2e2'; hrFg='#991b1b'; }
 
           days.push({d, sh, shTxt, shBg, shFg,
-            kzpTxt, kzpBg, kzpFg, kzkTxt, kzkBg, kzkFg,
-            tcLines, tcBg, mcTxt, mcBg, hrTxt, hrBg,
-            afTxt, afBg, afFg, fl, isOT: sh==='O'&&(c.tc_in||c.tc_out)
+            kzpTxt, kzpBg:kzpSty.bg, kzpFg:kzpSty.fg, kzkTxt, kzkBg:kzkSty.bg, kzkFg:kzkSty.fg,
+            tcLines, tcBg, tcFg, mcTxt, mcBg, hrTxt, hrBg, hrFg,
+            afTxt:audit.txt, afBg:audit.bg, afFg:audit.fg, fl, isOT: sh==='O'&&hasThumb(c)
           });
         }
 
-        // Summary
         const noteCls = (m.note?.includes('TAHAN')||m.note?.includes('TT'))?'nc-note-th':(m.note?.includes('HADIR')||m.note?.includes('(TH)'))?'nc-note-nht':'nc-note';
         const noteBadge = m.note?`<span class="${noteCls}">${m.note}</span>`:'';
         const sumH  = `<td rowspan="7" class="sc-col" style="color:${hadir>0?'var(--green)':'var(--gray)'};vertical-align:middle"><b>${hadir||'–'}</b></td>`;
@@ -1747,18 +1841,16 @@ function renderGrid(members, containerId){
         const sumSP = `<td rowspan="7" class="sc-col" style="color:${sp>0?'#b45309':'var(--gray)'};vertical-align:middle"><b>${sp||'–'}</b></td>`;
         const sumFC = `<td rowspan="7" class="sc-col" style="color:${fc>3?'var(--red)':fc>0?'var(--amber)':'var(--gray)'};vertical-align:middle"><b>${fc||'–'}</b></td>`;
 
-        // ── 7 rows per member ────────────────────────────────
         const ROWS = [
           {key:'sh',  cells: days.map(x=>`<td style="background:${x.shBg};color:${x.shFg};font-weight:700;text-align:center;font-size:8px;padding:2px 3px;white-space:nowrap">${x.shTxt}</td>`)},
-          {key:'kzp', cells: days.map(x=>`<td style="background:${x.kzpBg};color:${x.kzpFg};font-weight:600;text-align:center;font-size:8px;padding:2px 3px">${x.kzpTxt}</td>`)},
-          {key:'kzk', cells: days.map(x=>`<td style="background:${x.kzkBg};color:${x.kzkFg};font-weight:600;text-align:center;font-size:8px;padding:2px 3px">${x.kzkTxt}</td>`)},
-          {key:'tc',  cells: days.map(x=>`<td style="background:${x.tcBg};text-align:center;font-size:7.5px;padding:2px 4px;vertical-align:top;line-height:1.5">${x.tcLines.map(l=>`<div>${l}</div>`).join('')}</td>`)},
-          {key:'mc',  cells: days.map(x=>`<td style="background:${x.mcBg};color:#7c2d12;font-weight:600;text-align:center;font-size:7.5px;padding:2px 3px">${x.mcTxt}</td>`)},
-          {key:'hr',  cells: days.map(x=>`<td style="background:${x.hrBg};color:#0c4a6e;font-weight:600;text-align:center;font-size:7.5px;padding:2px 3px">${x.hrTxt}</td>`)},
-          {key:'af',  cells: days.map(x=>`<td style="background:${x.afBg};color:${x.afFg};font-weight:700;text-align:center;font-size:7.5px;padding:3px 3px;white-space:nowrap">${x.afTxt}</td>`)},
+          {key:'kzp', cells: days.map(x=>`<td style="background:${x.kzpBg};color:${x.kzpFg};font-weight:700;text-align:center;font-size:8px;padding:2px 3px">${x.kzpTxt}</td>`)},
+          {key:'kzk', cells: days.map(x=>`<td style="background:${x.kzkBg};color:${x.kzkFg};font-weight:700;text-align:center;font-size:8px;padding:2px 3px">${x.kzkTxt}</td>`)},
+          {key:'tc',  cells: days.map(x=>`<td style="background:${x.tcBg};color:${x.tcFg};text-align:center;font-size:7.5px;padding:2px 4px;vertical-align:top;line-height:1.5;font-weight:700">${x.tcLines.map(l=>`<div>${l}</div>`).join('')}</td>`)},
+          {key:'mc',  cells: days.map(x=>`<td style="background:${x.mcBg};color:${x.mcBg==='#fed7aa'?'#7c2d12':x.mcBg==='#fee2e2'?'#991b1b':'#94a3b8'};font-weight:${x.mcBg==='#fed7aa'?'700':'500'};text-align:center;font-size:7px;padding:2px 4px;white-space:pre-line;line-height:1.4;vertical-align:top">${x.mcTxt}</td>`)},
+          {key:'hr',  cells: days.map(x=>`<td style="background:${x.hrBg};color:${x.hrFg};font-weight:600;text-align:center;font-size:7.5px;padding:2px 3px">${x.hrTxt}</td>`)},
+          {key:'af',  cells: days.map(x=>`<td style="background:${x.afBg};color:${x.afFg};font-weight:800;text-align:center;font-size:7.5px;padding:3px 3px;white-space:nowrap">${x.afTxt}</td>`)},
         ];
 
-        // Name cell (rowspan 7) + Layer label cell per row
         rows += ROWS.map((row, ri) => {
           const isFirst = ri===0;
           const lyrInfo = LAYER[ri];
@@ -1912,9 +2004,11 @@ async function saveEntry(){
   const tc_in=document.getElementById('e-in').value.trim();
   const tc_out=document.getElementById('e-out').value.trim();
   const ot_sambung=document.getElementById('e-ot').value==='true';
+  const hrmis=(document.getElementById('e-hrmis')?.value||'').trim();
+  const pengganti=document.getElementById('e-pengganti')?.value==='true';
 
   // Update memory
-  Object.assign(DATA[bil][hari],{kzp,kzk,tc_in,tc_out,ot_sambung});
+  Object.assign(DATA[bil][hari],{kzp:normStatus(kzp),kzk:normStatus(kzk),tc_in,tc_out,ot_sambung,hrmis,pengganti});
 
   // Save to Supabase
   await saveToDB(bil,4,hari);
@@ -1959,11 +2053,11 @@ function renderDash(){
 // NAVIGATION
 // ════════════════════════════════════════════════════════════════
 const PAGE_TITLES={
-  dashboard:'Dashboard',master:'Master File — 52 Anggota',flags:'Output Perhatian',
+  dashboard:'Dashboard',master:'Master File — 52 Anggota',auditprompt:'Kriteria Audit / Prompt PDF',flags:'Output Perhatian',
   iktar:'Mini File: IKTAR',mhkl:'Mini File: MHKL',rt:'Mini File: RT',
   mc:'Register MC — April 2026',baki:'Baki Cuti Anggota 2026',
   raya:'Anggota Bertugas Raya Aidilfitri 2026',haji:'CTR Raya Haji Kedua 2026 (Audit Mei)',
-  entry:'Upload KZ &amp; Timecare',upload:'Upload Dokumen',
+  entry:'Upload KZ &amp; TIMEKAD',upload:'Upload Dokumen',
   backup:'Backup ke Google Drive'
 };
 
@@ -2215,12 +2309,13 @@ function addMCRecord() {
   const klinik = document.getElementById('mc-f-klinik').value.trim();
   const siri = document.getElementById('mc-f-siri').value.trim();
   const jenis = document.getElementById('mc-f-jenis').value;
+  const fail_pdf = document.getElementById('mc-f-file')?.files?.[0]?.name || '';
   if(!bil||!dari||!klinik){ showToast('Sila lengkapkan maklumat wajib','err'); return; }
   const m = MASTER.find(x=>x.bil===bil);
   const [d1,m1]=dari.split('/').map(Number);
   const [d2,m2]=(hingga||dari).split('/').map(Number);
-  const hari = d2-d1+1||1;
-  MC_DATA.push({bil,nama:m.nama,jab:m.jab,komp:m.komp,dari,hingga:hingga||dari,hari,klinik,no_siri:siri||'–',jenis});
+  const hari = Math.max(1, daysBetweenDM(dari, hingga||dari).length || (d2-d1+1) || 1);
+  MC_DATA.push({bil,nama:m.nama,jab:m.jab,komp:m.komp,dari,hingga:hingga||dari,hari,klinik,no_siri:siri||'–',jenis,fail_pdf});
   document.getElementById('mc-f-status').textContent='✅ Rekod MC ditambah — '+m.nama;
   showToast('MC ditambah ✓','ok');
   setTimeout(()=>renderMC(),500);
@@ -2423,328 +2518,218 @@ function renderHaji() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// PDF EXPORT (auto-generate laporan penuh)
+// PDF EXPORT (Audit + Dapatan + Prompt + Master File sama paparan sistem)
 // ════════════════════════════════════════════════════════════════
+function pdfEsc(v){
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function masterDisplayValuesForPdf(m,d){
+  const sh = getShift(m.bil,d);
+  const c = DATA[m.bil][d];
+  const fl = detectFlags(m.bil,d);
+  const mcRec = getMCForDate(m.bil,d);
+  const tc = timecardAudit(m.bil,d);
+  const audit = auditFinalDisplay(m.bil,d);
+  const kzpNorm = normStatus(c.kzp), kzkNorm = normStatus(c.kzk);
+  const isTT = ['TT'].includes(kzpNorm)||['TT'].includes(kzkNorm);
+  const isTHx = ['TH','NHT'].includes(kzpNorm)||['TH','NHT'].includes(kzkNorm);
+  const autoTick = sh!=='O' && !kzpNorm && !kzkNorm && !isTT && !isTHx;
+  const kzpVal = displayKzValue(c.kzp, sh, autoTick) || '–';
+  const kzkVal = displayKzValue(c.kzk, sh, autoTick) || '–';
+  let tcTxt = '–';
+  if(sh==='O') tcTxt = hasThumb(c) ? `OFFDAY / OT — ${c.tc_in||'–'} / ${c.tc_out||'–'}` : 'OFFDAY';
+  else if(hasThumb(c)) tcTxt = tc.text==='✓' ? `✓ — ${c.tc_in||'–'} / ${c.tc_out||'–'}` : `${tc.text} — ${tc.reason} — ${c.tc_in||'–'} / ${c.tc_out||'–'}`;
+  else tcTxt = 'ABS';
+  let mcTxt = '–';
+  if(sh==='O') mcTxt = 'OFFDAY';
+  else if(mcRec) mcTxt = `MC ${mcRec.hari} HARI — ${mcRec.klinik}`;
+  else if(kzpNorm==='MC'||kzkNorm==='MC') mcTxt = 'TIADA DOKUMEN';
+  let hrTxt = '–';
+  if(sh==='O') hrTxt = 'OFFDAY';
+  else if(hrmisText(c)) hrTxt = hrmisText(c);
+  else if(hasKzCode(c,['MC','CR','EL','CTR'])) hrTxt = 'TIADA PERMOHONAN';
+  return {sh,kzpVal,kzkVal,tcTxt,mcTxt,hrTxt,auditTxt:audit.txt,flags:fl,c,mcRec,tc,audit,kzpNorm,kzkNorm};
+}
+
+function buildPdfDapatanRows(){
+  const rows=[];
+  MASTER.forEach(m=>{
+    for(let d=1; d<=30; d++){
+      const x = masterDisplayValuesForPdf(m,d);
+      const hasTypedKz = !!(x.kzpNorm || x.kzkNorm);
+      const hasUploadedEvidence = !!x.mcRec || !!hrmisText(x.c);
+      const hasTimekad = hasThumb(x.c);
+      const hasAuditFinding = x.flags.length || !['SAH','OFFDAY'].includes(x.auditTxt);
+      const hasRealFinding = hasTypedKz || hasUploadedEvidence || hasTimekad || x.flags.length || ['WARNING — KZ CUTI TAPI ADA THUMB','SILA MOHON CUTI','ABS — SILA MOHON CUTI','CTR — WAJIB ISI CUTI'].some(v=>x.auditTxt.includes(v));
+      if(!hasRealFinding && !hasAuditFinding) continue;
+      // Elak jadual dapatan dipenuhi oleh hari kerja kosong yang hanya SEMAK TIMEKAD tanpa data sumber.
+      if(!hasRealFinding && x.auditTxt==='SEMAK TIMEKAD') continue;
+      rows.push({m,d,...x});
+    }
+  });
+  return rows;
+}
+
+function renderPdfDapatanTable(rows){
+  if(!rows.length) return '<div style="padding:10px;border:1px solid #e5e7eb;background:#f8fafc;font-size:9px">Tiada dapatan khusus. Rujuk Master File penuh.</div>';
+  return `<table class="pdf-dapatan-table">
+    <thead><tr>
+      <th>Bil</th><th>Nama</th><th>Jab</th><th>Komp</th><th>Tarikh</th><th>KZP</th><th>KZK</th><th>TIMEKAD</th><th>MC Diterima</th><th>Cuti HRMIS</th><th>Audit Final</th><th>Flag / Dapatan</th>
+    </tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td>${r.m.bil}</td><td>${pdfEsc(r.m.nama)}</td><td>${pdfEsc(r.m.jab)}</td><td>${pdfEsc(r.m.komp)}</td><td>${r.d}/04/2026</td>
+      <td>${pdfEsc(r.kzpVal)}</td><td>${pdfEsc(r.kzkVal)}</td><td>${pdfEsc(r.tcTxt)}</td><td>${pdfEsc(r.mcTxt)}</td><td>${pdfEsc(r.hrTxt)}</td><td><b>${pdfEsc(r.auditTxt)}</b></td><td>${pdfEsc(r.flags.join('; ') || r.auditTxt)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
 function generatePDF(){
   if(!requireAdmin()){ showToast('Hanya pentadbir boleh jana PDF','err'); return; }
-  showToast('Jana PDF...','ok');
+  showToast('Jana PDF Audit + Master File...','ok');
 
-  // Guna window.print() dengan print-specific CSS
-  const printCSS = `
-    <style>
-      @media print {
-        body{font-family:Arial,sans-serif;font-size:8px}
-        .no-print{display:none!important}
-        table{border-collapse:collapse;width:100%;font-size:7px}
-        th,td{border:1px solid #ccc;padding:2px 4px}
-        th{background:#0F2D5A;color:white}
-        .page-break{page-break-before:always}
-        h2{font-size:12px;margin:8px 0 4px}
-      }
-    </style>`;
+  // Pastikan Master File dirender dahulu supaya PDF mengambil paparan terkini yang sama dengan sistem.
+  renderGrid(MASTER,'master-grid');
+  const masterGridHtml = document.getElementById('master-grid')?.innerHTML || '<div>Master File belum dirender.</div>';
+  const appCSS = Array.from(document.querySelectorAll('style')).map(s=>s.innerHTML).join('\n');
+  const dapatanRows = buildPdfDapatanRows();
 
   const rows = MASTER.map(m=>{
     let hadir=0,mc=0,cr=0,abs=0,lw=0,flags=[];
     for(let d=1;d<=30;d++){
       const sh=getShift(m.bil,d); const c=DATA[m.bil][d]; const fl=detectFlags(m.bil,d);
+      const mcRec=getMCForDate(m.bil,d); const audit=auditFinalDisplay(m.bil,d); const tc=timecardAudit(m.bil,d);
       flags.push(...fl);
+      const kzp=normStatus(c.kzp), kzk=normStatus(c.kzk);
       if(sh!=='O'){
-        if(c.kzp==='MC') mc++;
-        else if(c.kzp==='CR') cr++;
-        else if(['ABS','NHT','X'].includes(c.kzp)) abs++;
-        else hadir++;
-        if(fl.some(f=>f.startsWith('LEWAT'))) lw++;
+        if(kzp==='MC'||kzk==='MC'||mcRec) mc++;
+        else if(['CR','EL','CTR'].includes(kzp)||['CR','EL','CTR'].includes(kzk)) cr++;
+        else if(['ABS','NHT','X','LL','TH'].includes(kzp)||['ABS','NHT','X','LL','TH'].includes(kzk)) abs++;
+        else if(audit.txt==='SAH' || tc.ok) hadir++;
       }
+      if(fl.some(f=>f.startsWith('LEWAT'))) lw++;
     }
     return {m,hadir,mc,cr,abs,lw,flags:[...new Set(flags)]};
   });
 
+  const promptHtml = `
+    <div class="pdf-prompt-box">
+      <h2>Prompt Tambahan Janaan PDF Audit + Master File</h2>
+      <p>PDF Audit Kehadiran e-AKHA Vsavage hendaklah dijana berdasarkan data terkini dalam Master File selepas semua sumber selesai dibandingkan dan diisi, iaitu KZ Penyelia, KZ Koperal, TIMEKAD, MC Diterima, Cuti HRMIS dan Audit Final.</p>
+      <p>PDF perlu memasukkan semua dapatan yang telah selesai dibandingkan mengikut nama anggota, jabatan, kompeni, tarikh, KZ Penyelia, KZ Koperal, TIMEKAD, MC Diterima, Cuti HRMIS, flag/warning dan keputusan Audit Final.</p>
+      <p>PDF juga wajib menyertakan Master File penuh 7 lapisan dan paparan Master File dalam PDF hendaklah sama seperti paparan sistem Master File.</p>
+    </div>`;
+
+  const printCSS = `
+    <style>
+      ${appCSS}
+      @page{size:A3 landscape;margin:6mm}
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box}
+      body{background:#fff!important;color:#111827;font-family:Arial,sans-serif;font-size:8px;margin:0;padding:0}
+      .pdf-cover{border-bottom:2px solid #0F2D5A;padding-bottom:8px;margin-bottom:10px;text-align:center}
+      .pdf-cover h1{font-size:17px;color:#0F2D5A;margin:0 0 3px}
+      .pdf-section{page-break-before:always;margin-top:6px}
+      .pdf-section:first-of-type{page-break-before:auto}
+      .pdf-note{font-size:8.5px;color:#475569;margin:4px 0 8px}
+      .pdf-prompt-box{border:1px solid #e5e7eb;background:#f8fafc;border-radius:6px;padding:8px 10px;margin:8px 0 10px;font-size:9px;line-height:1.5}
+      .pdf-prompt-box h2{font-size:11px;margin:0 0 4px;color:#0F2D5A}
+      .pdf-summary-table,.pdf-dapatan-table{border-collapse:collapse;width:100%;font-size:7px;margin-top:5px}
+      .pdf-summary-table th,.pdf-summary-table td,.pdf-dapatan-table th,.pdf-dapatan-table td{border:1px solid #cbd5e1;padding:2px 3px;vertical-align:top}
+      .pdf-summary-table th,.pdf-dapatan-table th{background:#0F2D5A!important;color:#fff!important;text-align:center}
+      .pdf-dapatan-table td:nth-child(2){min-width:95px}
+      .tscroll{overflow:visible!important;max-width:none!important}
+      .jab-block{page-break-inside:avoid;border:1px solid #e5e7eb!important;margin-bottom:8px!important;border-radius:0!important;overflow:visible!important}
+      .jab-hdr{background:#0F2D5A!important;color:#fff!important;padding:5px 8px!important}
+      .komp-hdr{padding:4px 8px!important;background:#f8fafc!important}
+      .grid-t{border-collapse:collapse!important;width:auto!important;table-layout:auto!important;font-size:5.4px!important;white-space:nowrap!important}
+      .grid-t th,.grid-t td{border:0.5px solid #cbd5e1!important;padding:1px 2px!important;min-width:auto!important;position:static!important;left:auto!important}
+      .grid-t thead th{background:#071d3d!important;color:#fff!important}
+      .ntd{position:static!important;min-width:72px!important;max-width:72px!important;width:72px!important}
+      .nc{padding:2px!important}.nc-name{font-size:6px!important}.nc-meta,.nc-bil{font-size:5.5px!important}
+      .sc-col{font-size:6px!important;min-width:16px!important;width:16px!important;padding:1px!important}
+    </style>`;
+
   const content=`<!DOCTYPE html><html><head><meta charset="UTF-8">${printCSS}
     <title>e-AKHA Vsavage — Laporan Audit April 2026</title></head><body>
-    <div style="text-align:center;margin-bottom:16px;border-bottom:2px solid #0F2D5A;padding-bottom:10px">
-      <h1 style="font-size:16px;color:#0F2D5A">e-AKHA Vsavage</h1>
-      <div style="font-size:11px">Laporan Audit Kehadiran — April 2026</div>
+    <div class="pdf-cover">
+      <h1>e-AKHA Vsavage</h1>
+      <div style="font-size:11px">Laporan Audit Kehadiran + Master File — April 2026</div>
       <div style="font-size:9px;color:#666">MHKL · IKTAR · RT · Hospital Kuala Lumpur</div>
       <div style="font-size:9px;color:#666">Dijana: ${new Date().toLocaleString('ms-MY')}</div>
     </div>
-    <h2>Ringkasan Kehadiran — 52 Anggota</h2>
-    <table>
-      <thead><tr><th>Bil</th><th>Nama</th><th>Jab</th><th>Komp</th><th>Hadir</th><th>MC</th><th>CR</th><th>ABS</th><th>Lewat</th><th>Flags</th></tr></thead>
-      <tbody>
-      ${rows.map(r=>`<tr>
-        <td>${r.m.bil}</td><td>${r.m.nama}</td><td>${r.m.jab}</td><td>${r.m.komp}</td>
-        <td style="text-align:center">${r.hadir}</td>
-        <td style="text-align:center;color:#854d0e">${r.mc||''}</td>
-        <td style="text-align:center;color:#1e40af">${r.cr||''}</td>
-        <td style="text-align:center;color:#991b1b;font-weight:bold">${r.abs||''}</td>
-        <td style="text-align:center;color:#9a3412">${r.lw||''}</td>
-        <td style="font-size:7px;color:#475569">${r.flags.slice(0,3).join('; ')}</td>
-      </tr>`).join('')}
-      </tbody>
-    </table>
-    <div class="page-break"></div>
-    <h2>Register MC — April 2026</h2>
-    <table>
-      <thead><tr><th>Nama</th><th>Jab</th><th>Dari</th><th>Hingga</th><th>Hari</th><th>Klinik</th><th>No Siri</th></tr></thead>
-      <tbody>
-      ${MC_DATA.filter(mc=>mc.jenis==='Bulan Ini').map(mc=>`<tr>
-        <td>${mc.nama}</td><td>${mc.jab}</td><td>${mc.dari}</td><td>${mc.hingga}</td>
-        <td style="text-align:center">${mc.hari}</td><td>${mc.klinik}</td><td>${mc.no_siri}</td>
-      </tr>`).join('')}
-      </tbody>
-    </table>
+
+    <div class="pdf-section">
+      <h2>Ringkasan Audit Anggota — 52 Anggota</h2>
+      <div class="pdf-note">Ringkasan ini dijana daripada data yang sama dalam Master File.</div>
+      <table class="pdf-summary-table">
+        <thead><tr><th>Bil</th><th>Nama</th><th>Jab</th><th>Komp</th><th>Hadir</th><th>MC</th><th>CR/EL/CTR</th><th>ABS</th><th>Lewat</th><th>Flags</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr>
+          <td>${r.m.bil}</td><td>${pdfEsc(r.m.nama)}</td><td>${pdfEsc(r.m.jab)}</td><td>${pdfEsc(r.m.komp)}</td>
+          <td style="text-align:center">${r.hadir||''}</td><td style="text-align:center;color:#854d0e">${r.mc||''}</td>
+          <td style="text-align:center;color:#1e40af">${r.cr||''}</td><td style="text-align:center;color:#991b1b;font-weight:bold">${r.abs||''}</td>
+          <td style="text-align:center;color:#9a3412">${r.lw||''}</td><td>${pdfEsc(r.flags.slice(0,5).join('; '))}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+
+    <div class="pdf-section">
+      <h2>Nama Dapatan Yang Telah Selesai Dibandingkan dan Diisi Daripada Master File</h2>
+      <div class="pdf-note">Senarai ini diambil selepas perbandingan KZ Penyelia, KZ Koperal, TIMEKAD, MC Diterima, Cuti HRMIS dan Audit Final selesai dikira.</div>
+      ${renderPdfDapatanTable(dapatanRows)}
+    </div>
+
+    <div class="pdf-section">
+      ${promptHtml}
+    </div>
+
+    <div class="pdf-section">
+      <h2>Master File Penuh 7 Lapisan — Paparan Sama Seperti Sistem</h2>
+      <div class="pdf-note">Salinan paparan Master File sistem: SHIFT JADUAL · KZ PENYELIA · KZ KOPERAL · TIMEKAD · MC DITERIMA · CUTI HRMIS · AUDIT FINAL.</div>
+      ${masterGridHtml}
+    </div>
   </body></html>`;
 
   const w = window.open('','_blank');
   w.document.write(content);
   w.document.close();
-  setTimeout(()=>w.print(),500);
-}
-
-
-// ════════════════════════════════════════════════════════════════
-// UPLOAD PDF — AUTO PROCESS KZ & TIMECARE
-// ════════════════════════════════════════════════════════════════
-const newUploads = {};
-
-function fsel(inp, k) {
-  if(!requireAdmin()) { inp.value=''; return; }
-  const files = inp.files;
-  if(!files.length) return;
-  newUploads[k] = files;
-  const uz = inp.closest('.uzone'); if(uz) uz.classList.add('done');
-  const fn = document.getElementById('fn-'+k);
-  if(fn) fn.textContent = files.length>1 ? `${files.length} fail dipilih` : files[0].name.substring(0,32);
-  // Enable process button if at least 1 file
-  const btn = document.getElementById('btn-proc-all');
-  if(btn) btn.disabled = Object.keys(newUploads).length === 0;
-  document.getElementById('proc-all-stat').textContent = Object.keys(newUploads).length + ' fail sedia untuk diproses';
-}
-
-function dov(e,el){e.preventDefault();el.classList.add('drag')}
-function dlv(el){el.classList.remove('drag')}
-function drop(e,k,el){
-  e.preventDefault();el.classList.remove('drag');
-  if(e.dataTransfer.files.length){ const inp=el.querySelector('input');if(inp){inp.files=e.dataTransfer.files;fsel(inp,k);} }
-}
-
-function resetUploads(){
-  Object.keys(newUploads).forEach(k=>delete newUploads[k]);
-  ['kzp-new','kzk-new','tc-new'].forEach(k=>{
-    const uz=document.getElementById('uz-'+k); if(uz) uz.classList.remove('done');
-    const fn=document.getElementById('fn-'+k); if(fn) fn.textContent='';
-  });
-  const btn=document.getElementById('btn-proc-all'); if(btn) btn.disabled=true;
-  document.getElementById('proc-all-stat').textContent='';
-  document.getElementById('proc-log').style.display='none';
-}
-
-async function processAllUploads(){
-  if(!requireAdmin()) return;
-  const btn = document.getElementById('btn-proc-all');
-  const statEl = document.getElementById('proc-all-stat');
-  const logDiv = document.getElementById('proc-log');
-  const logBody = document.getElementById('proc-log-body');
-
-  btn.disabled=true; btn.textContent='⏳ Memproses...';
-  logDiv.style.display='block'; logBody.innerHTML='';
-  const log = (msg,type='info') => {
-    const c = type==='ok'?'#16a34a':type==='err'?'#dc2626':type==='warn'?'#d97706':'#374151';
-    logBody.innerHTML += `<div style="color:${c}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-    logBody.scrollTop = logBody.scrollHeight;
-  };
-
-  log('Memulakan pemprosesan...');
-  let updated = 0, skipped = 0;
-
-  // ── Proses KZ Koperal (WhatsApp .txt) ───────────────────────
-  if(newUploads['kzk-new']) {
-    log('Membaca KZ Koperal (WhatsApp)...');
-    const prog = document.getElementById('kzk-prog');
-    const bar  = document.getElementById('kzk-bar');
-    const msg  = document.getElementById('kzk-msg');
-    if(prog) prog.style.display='block';
-
-    for(const file of newUploads['kzk-new']) {
-      try {
-        const text = await file.text();
-        const lines = text.split('\n');
-        if(msg) msg.textContent = `Membaca ${file.name}... (${lines.length} baris)`;
-        if(bar) bar.style.width='30%';
-
-        // Parse WhatsApp format: DD/MM/YYYY, HH:MM - Name: message
-        let linesProcessed = 0;
-        lines.forEach(line => {
-          // Detect KZ entries: "✓", "MC", "CR", "L", "LL", "ABS", "TT", "TH" etc
-          const patterns = [
-            { re:/KZ\s+(\d+)[\/\s]+(\d+).*?(✓|MC|CR|EL|ABS|L|LL|TT|TH|CTR|CB|K\/P)/gi, type:'kzk' },
-            { re:/(\d{1,2})\/04.*?(MC|CR|EL|ABS|LL|TT|TH|CTR)/gi, type:'kzk' },
-          ];
-          // Simplified: detect member names and their status
-          MASTER.forEach(m => {
-            const firstName = m.nama.split(' ')[0];
-            if(line.toUpperCase().includes(firstName)) {
-              // Try to extract date and status
-              const dateMatch = line.match(/(\d{1,2})[\/\-]04/);
-              const statMatch = line.match(/(MC|CR|EL|ABS|LL|L|TT|TH|CTR|CB|K\/P|✓)/i);
-              if(dateMatch && statMatch) {
-                const d = +dateMatch[1];
-                const stat = statMatch[1].toUpperCase();
-                if(d>=1 && d<=30 && DATA[m.bil]?.[d]) {
-                  if(!DATA[m.bil][d].kzk) { // jangan overwrite yang ada
-                    DATA[m.bil][d].kzk = stat;
-                    updated++;
-                    log(`KZK: ${m.nama} hari ${d} → ${stat}`, 'ok');
-                  }
-                }
-              }
-            }
-          });
-          linesProcessed++;
-          if(bar) bar.style.width = Math.min(90, 30 + (linesProcessed/lines.length)*60)+'%';
-        });
-
-        if(bar) bar.style.width='100%';
-        log(`KZ Koperal: ${file.name} selesai`, 'ok');
-      } catch(e) { log(`Ralat baca KZ Koperal: ${e.message}`, 'err'); }
-    }
-  }
-
-  // ── Proses Timecare ──────────────────────────────────────────
-  if(newUploads['tc-new']) {
-    log('Membaca Timecare...', 'info');
-    const prog = document.getElementById('tc-prog');
-    const bar  = document.getElementById('tc-bar');
-    const msg  = document.getElementById('tc-msg');
-    if(prog) prog.style.display='block';
-    if(bar) bar.style.width='20%';
-
-    for(const file of newUploads['tc-new']) {
-      try {
-        if(msg) msg.textContent = `Membaca ${file.name}...`;
-        const text = await file.text();
-        const lines = text.split('\n');
-
-        lines.forEach(line => {
-          // Parse timecare format: Name | Date | IN | OUT
-          // Try to match punch times
-          const timeMatch = line.match(/(\d{2}:\d{2})/g);
-          if(timeMatch && timeMatch.length >= 1) {
-            MASTER.forEach(m => {
-              const firstName = m.nama.split(' ')[0].substring(0,5);
-              if(line.toUpperCase().includes(firstName)) {
-                const dateM = line.match(/(\d{1,2})[\/\-](04)/);
-                if(dateM) {
-                  const d = +dateM[1];
-                  if(d>=1 && d<=30 && DATA[m.bil]?.[d]) {
-                    if(timeMatch[0] && !DATA[m.bil][d].tc_in) {
-                      DATA[m.bil][d].tc_in = timeMatch[0];
-                      updated++;
-                    }
-                    if(timeMatch[1] && !DATA[m.bil][d].tc_out) {
-                      DATA[m.bil][d].tc_out = timeMatch[1];
-                    }
-                    log(`TC: ${m.nama} hari ${d} IN:${timeMatch[0]||'–'} OUT:${timeMatch[1]||'–'}`, 'ok');
-                  }
-                }
-              }
-            });
-          }
-        });
-        if(bar) bar.style.width='100%';
-        log(`Timecare: ${file.name} selesai`, 'ok');
-      } catch(e) { log(`Ralat baca Timecare: ${e.message}`, 'err'); }
-    }
-  }
-
-  // ── KZ Penyelia PDF (hanya papar nota — perlu Edge Function untuk OCR) ─
-  if(newUploads['kzp-new']) {
-    log('KZ Penyelia PDF dikesan...', 'warn');
-    log('Nota: OCR penuh untuk KZ Penyelia (PDF scan) memerlukan Supabase Edge Function.', 'warn');
-    log('Fail telah direkod. Gunakan kemaskini manual untuk rekod spesifik.', 'warn');
-    const prog = document.getElementById('kzp-prog');
-    const bar  = document.getElementById('kzp-bar');
-    if(prog) prog.style.display='block';
-    if(bar) { bar.style.width='100%'; bar.style.background='#d97706'; }
-    document.getElementById('kzp-msg').textContent = 'PDF diterima — kemaskini manual diperlukan untuk OCR';
-  }
-
-  // ── Save ke Supabase ─────────────────────────────────────────
-  if(SUPA_OK && updated > 0) {
-    log(`Menyimpan ${updated} rekod ke Supabase...`);
-    let saved = 0;
-    for(const m of MASTER) {
-      for(let d=1;d<=30;d++) {
-        const c = DATA[m.bil][d];
-        if(c.kzk || c.tc_in || c.tc_out) {
-          await saveToDB(m.bil, 4, d);
-          saved++;
-        }
-      }
-    }
-    log(`${saved} rekod disimpan ke Supabase ✓`, 'ok');
-  }
-
-  // ── Kemaskini grid ───────────────────────────────────────────
-  log('Mengemaskini Master Listing...');
-  updateFlagCounts();
-  if(document.getElementById('master-grid')) renderGrid(MASTER,'master-grid');
-
-  btn.disabled=false;
-  btn.textContent='Proses & Kemaskini';
-  const summary = `✅ Selesai — ${updated} rekod dikemaskini`;
-  statEl.textContent = summary;
-  log(summary, 'ok');
-  showToast(summary, 'ok');
+  setTimeout(()=>w.print(),800);
 }
 
 // ════════════════════════════════════════════════════════════════
-// EXPORT CSV
-// ════════════════════════════════════════════════════════════════
-function exportCSV(){
-  const rows=[['Bil','Nama','Jabatan','Kompeni']];
-  for(let d=1;d<=30;d++) rows[0].push(`${d}/04 Shift`,`${d}/04 KZP`,`${d}/04 KZK`,`${d}/04 IN`,`${d}/04 OUT`,`${d}/04 Flags`);
-  rows[0].push('Hadir','MC','CR','ABS','Flags');
-  MASTER.forEach(m=>{
-    const row=[m.bil,m.nama,m.jab,m.komp];
-    let h=0,mc=0,cr=0,ab=0,fc=0;
-    for(let d=1;d<=30;d++){
-      const sh=getShift(m.bil,d); const c=DATA[m.bil][d]; const fl=detectFlags(m.bil,d);
-      fc+=fl.length;
-      if(sh!=='O'){
-        if(c.kzp==='MC') mc++; else if(c.kzp==='CR') cr++;
-        else if(['ABS','NHT','X'].includes(c.kzp)) ab++; else h++;
-      }
-      row.push(SH_LBL[sh],c.kzp||'',c.kzk||'',c.tc_in||'',c.tc_out||'',fl.join('; '));
-    }
-    row.push(h,mc,cr,ab,fc); rows.push(row);
-  });
-  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download='eAKHA_Vsavage_April_2026.csv'; a.click();
-}
-
-// ════════════════════════════════════════════════════════════════
-// UPLOAD HANDLERS
+// UPLOAD HANDLERS (legacy + auto-process page)
 // ════════════════════════════════════════════════════════════════
 const uploadedF={};
 function dov(e,el){e.preventDefault();el.classList.add('drag')}
 function dlv(el){el.classList.remove('drag')}
-function drop(e,k,el){e.preventDefault();el.classList.remove('drag');if(e.dataTransfer.files.length)handleF(e.dataTransfer.files,k,el)}
-function fsel(inp,k){if(inp.files.length)handleF(inp.files,k,inp.closest('.uzone'))}
+function drop(e,k,el){
+  e.preventDefault(); el.classList.remove('drag');
+  if(!e.dataTransfer.files.length) return;
+  if(k.endsWith('-new')) { newUploads[k]=e.dataTransfer.files; el.classList.add('done'); const fn=document.getElementById('fn-'+k); if(fn) fn.textContent=e.dataTransfer.files.length>1?`${e.dataTransfer.files.length} fail dipilih`:e.dataTransfer.files[0].name.slice(0,32); const btn=document.getElementById('btn-proc-all'); if(btn) btn.disabled=false; const st=document.getElementById('proc-all-stat'); if(st) st.textContent=Object.keys(newUploads).length+' fail sedia untuk diproses'; }
+  else handleF(e.dataTransfer.files,k,el);
+}
+function fsel(inp,k){
+  if(!inp.files.length) return;
+  if(k.endsWith('-new')) {
+    if(!requireAdmin()) { inp.value=''; return; }
+    newUploads[k]=inp.files;
+    const uz=inp.closest('.uzone'); if(uz) uz.classList.add('done');
+    const fn=document.getElementById('fn-'+k); if(fn) fn.textContent=inp.files.length>1?`${inp.files.length} fail dipilih`:inp.files[0].name.slice(0,32);
+    const btn=document.getElementById('btn-proc-all'); if(btn) btn.disabled=false;
+    const st=document.getElementById('proc-all-stat'); if(st) st.textContent=Object.keys(newUploads).length+' fail sedia untuk diproses';
+  } else handleF(inp.files,k,inp.closest('.uzone'));
+}
 function handleF(files,k,el){
   if(!requireAdmin()) return;
-  uploadedF[k]=files; el.classList.add('done');
+  uploadedF[k]=files; if(el) el.classList.add('done');
   const fn=document.getElementById('fn-'+k);
   if(fn) fn.textContent=files[0].name.slice(0,30);
-  document.getElementById('btn-proc').disabled=false;
-  document.getElementById('proc-stat').textContent=Object.keys(uploadedF).length+' fail dipilih';
+  const btn=document.getElementById('btn-proc'); if(btn) btn.disabled=false;
+  const st=document.getElementById('proc-stat'); if(st) st.textContent=Object.keys(uploadedF).length+' fail dipilih';
 }
 function procUpload(){
   if(!requireAdmin()) return;
-  document.getElementById('proc-stat').textContent='⏳ Memproses...';
-  setTimeout(()=>{ document.getElementById('proc-stat').textContent='✅ Selesai — data akan dikemaskini dalam grid.'; },1500);
+  const st=document.getElementById('proc-stat'); if(st) st.textContent='⏳ Memproses...';
+  setTimeout(()=>{ if(st) st.textContent='✅ Selesai — data akan dikemaskini dalam grid.'; },1500);
 }
 
 // ════════════════════════════════════════════════════════════════
