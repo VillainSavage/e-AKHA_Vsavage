@@ -7,9 +7,6 @@
 
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- PDF.js untuk ekstrak teks dari PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>if(typeof pdfjsLib!=="undefined"){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";}</script>
 
 <style>
 /* ═══════════════════════════════════════════════
@@ -984,18 +981,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
                 <select id="e-pengganti" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px">
                   <option value="false">Tidak</option><option value="true">Ya</option>
                 </select></div>
-              <div>
-                <div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">Catatan</div>
-                <input type="text" id="e-note" placeholder="Pengganti, MC tertinggal..."
-                  style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px;width:200px">
-              </div>
-              <div>
-                <div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">Lampiran Bukti</div>
-                <input type="file" id="e-bukti" accept=".pdf,.jpg,.jpeg,.png,.txt,.zip"
-                  style="font-size:8.5px" onchange="previewBukti(this)">
-                <div id="e-bukti-status" style="font-size:7.5px;margin-top:2px"></div>
-              </div>
-              <button class="btn btn-gr btn-sm" onclick="saveEntry()" style="align-self:flex-end">✓ Simpan</button>
+              <button class="btn btn-gr btn-sm" onclick="saveEntry()">✓ Simpan</button>
             </div>
             <div id="e-status" style="font-size:9px;margin-top:7px;color:var(--green)"></div>
           </div>
@@ -1154,9 +1140,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 // CONFIG — TUKAR NILAI INI
 // ════════════════════════════════════════════════════════════════
 const SUPA_URL      = 'https://rzghnylwflrkohjdzttg.supabase.co';
-// ⚠ NOTA: Kemaskini SUPA_KEY dengan anon key baru dari Supabase Dashboard → Settings → API
 const EDGE_FN_URL   = 'https://rzghnylwflrkohjdzttg.supabase.co/functions/v1/backup-drive';
-const SUPA_KEY = 'sb_publishable_WW79fN4ZBg45R5Lq0FhkUA_5_roCGQ8';  // Dapatkan dari Supabase → Settings → API
+const SUPA_KEY = 'sb_publishable_KvirNmFqwUsGHuTZ8DltYA_CZtY2ZBO';
 
 // Akaun pentadbir tempatan (fallback jika Supabase belum setup)
 // TUKAR PASSWORD SEBELUM DEPLOY!
@@ -1385,110 +1370,35 @@ function displayKzValue(raw, sh, autoTick){
   if(s) return s==='K/P'?'K/P':s;
   return autoTick ? '✓' : '';
 }
-// ════════════════════════════════════════════════════════════════
-// AUDIT FINAL ENGINE — 7-LAYER COMPARISON (Spec v2)
-// Layer 1: Shift  2:KZP  3:KZK  4:TC  5:MC  6:HRMIS  7:Manual
-// Rule: ABS mesti bandingkan SEMUA lapisan sebelum keputusan
-// ════════════════════════════════════════════════════════════════
-function auditFinalDisplay(bil, d){
-  const c   = DATA[bil]?.[d];
-  const sh  = getShift(bil, d);
-  if(!c) return {txt:'–', bg:'#111827', fg:'#6b7280'};
-
-  // ── Layer reads ──────────────────────────────────────────────
-  const kzp   = normStatus(c.kzp);
-  const kzk   = normStatus(c.kzk);
-  const mcRec = getMCForDate(bil, d);
-  const tc    = timecardAudit(bil, d);
-  const thumb = hasThumb(c);
-  const hasMC = !!mcRec;
-  const hrOK  = hasHrmisSah(c);
-  const hrTxt = hrmisText(c);
-  const manual= c.note || '';
-  const pengg = hasPengganti(c);
-
-  // ── Layer 1: Offday ──────────────────────────────────────────
-  if(sh === 'O'){
-    if(!thumb) return {txt:'OFFDAY', bg:'#1e293b', fg:'#94a3b8'};
-    return {txt:'OFFDAY / OT — ABAIKAN', bg:'#0c4a6e', fg:'#bae6fd'};
+function auditFinalDisplay(bil,d){
+  const c=DATA[bil]?.[d]; const sh=getShift(bil,d); const mcRec=getMCForDate(bil,d); const tc=timecardAudit(bil,d);
+  if(!c) return {txt:'–',bg:'#f8fafc',fg:'#94a3b8'};
+  const kzp=normStatus(c.kzp), kzk=normStatus(c.kzk);
+  const hasMC=!!mcRec, hrOK=hasHrmisSah(c), thumb=hasThumb(c);
+  const warningLeaveThumb = hasKzCode(c, KZ_LEAVE_WARNING_CODES) && thumb;
+  if(sh==='O' && !thumb) return {txt:'OFFDAY',bg:'#f1f5f9',fg:'#64748b'};
+  if(sh==='O' && thumb) return {txt:'OFFDAY / OT — ABAIKAN',bg:'#e0f2fe',fg:'#0c4a6e'};
+  if(['TT','TH','NHT'].includes(kzp)||['TT','TH','NHT'].includes(kzk)) return {txt:kzp==='NHT'||kzk==='NHT'?'TIDAK HADIR TUGAS':'TAHAN TUGAS',bg:'#1c1917',fg:'#fef2f2'};
+  // Keutamaan kes user: KZ cuti/MC/EL/CR tetapi ada thumb + tiada bukti = perlu tindakan
+  if(warningLeaveThumb && !hasMC && !hrOK && hasPengganti(c)) return {txt:'SILA MOHON CUTI',bg:'#fee2e2',fg:'#991b1b'};
+  if(warningLeaveThumb) return {txt:'WARNING — KZ CUTI TAPI ADA THUMB',bg:'#fef3c7',fg:'#b45309'};
+  if(hasKzCode(c,['MC','EL','CR'])){
+    if(hasMC && !thumb) return {txt:'SAH',bg:'#dcfce7',fg:'#166534'};
+    if(hrOK && !thumb) return {txt:'SAH',bg:'#dcfce7',fg:'#166534'};
+    if(!hasMC && !hrOK) return {txt:'SILA MOHON CUTI',bg:'#fee2e2',fg:'#991b1b'};
+    return {txt:'SEMAK KZ',bg:'#fef3c7',fg:'#b45309'};
   }
-
-  // ── Tahan / Tidak Hadir — tiada flag ────────────────────────
-  if(['TT'].includes(kzp)||['TT'].includes(kzk))
-    return {txt:'TAHAN TUGAS', bg:'#1c1917', fg:'#fce7f3'};
-  if(['TH','NHT'].includes(kzp)||['TH','NHT'].includes(kzk))
-    return {txt:'TIDAK HADIR', bg:'#1c1917', fg:'#fef2f2'};
-
-  // ── WARNING: KZ lapor MC/EL/CR TETAPI ada thumb ─────────────
-  // (ada kemungkinan pengganti atau anggota sebenarnya masuk)
-  const kzSaysCuti = hasKzCode(c, ['MC','EL','CR']);
-  if(kzSaysCuti && thumb){
-    if(pengg && !hasMC && !hrOK)
-      return {txt:'FLAG — SILA MOHON CUTI\n(ADA PENGGANTI DI POS)', bg:'#7f1d1d', fg:'#fecaca'};
-    return {txt:'WARNING — KZ CUTI\nTETAPI ADA THUMB', bg:'#78350f', fg:'#fef3c7'};
-  }
-
-  // ── KZ lapor MC / EL / CR ────────────────────────────────────
-  if(kzSaysCuti){
-    // Kes SAH 1: HRMIS sah + tiada thumb
-    if(hrOK && !thumb)   return {txt:'HRMIS SAH', bg:'#1e3a5f', fg:'#93c5fd'};
-    // Kes SAH 2: MC diterima + tiada thumb (walaupun KZP ≠ KZK)
-    if(hasMC && !thumb)  return {txt:'MC SAH', bg:'#451a03', fg:'#fed7aa'};
-    // Kedua-dua ada
-    if(hasMC && hrOK)    return {txt:'MC SAH / HRMIS SAH', bg:'#14532d', fg:'#bbf7d0'};
-    // Ada MC atau HRMIS tapi ada thumb — masih SAH tapi perlu semak
-    if((hasMC||hrOK) && thumb) return {txt:'SEMAK KZ\n(ADA THUMB)', bg:'#713f12', fg:'#fef3c7'};
-    // Tiada MC dan tiada HRMIS
-    if(!hasMC && !hrOK)  return {txt:'SILA MOHON CUTI\n(TIADA MC/HRMIS)', bg:'#7f1d1d', fg:'#fecaca'};
-    return {txt:'SEMAK KZ', bg:'#713f12', fg:'#fef3c7'};
-  }
-
-  // ── K/P / BER / CTR / CB ─────────────────────────────────────
-  if(hasKzCode(c,['CTR']))
-    return hrOK ? {txt:'CTR SAH', bg:'#1c3a1c', fg:'#bbf7d0'} : {txt:'CTR — WAJIB ISI CUTI', bg:'#7c2d12', fg:'#fed7aa'};
-  if(hasKzCode(c,['P','K','K/P']))
-    return {txt:'K/P — SAH', bg:'#052e16', fg:'#86efac'};
-  if(hasKzCode(c,['BER']))
-    return {txt:'BER — SEMAK', bg:'#1e1b4b', fg:'#c7d2fe'};
-  if(hasKzCode(c,['CB']))
-    return {txt:'CUTI BERSALIN — SAH', bg:'#4a044e', fg:'#f0abfc'};
-
-  // ── ABS (KZ lapor ABS / X / LL) — BANDINGKAN SEMUA LAPISAN ──
-  const kzIsAbs = ['ABS','X','LL'].includes(kzp)||['ABS','X','LL'].includes(kzk);
-  // TIMECARD tiada thumb — ABS sebenar
-  const tcAbs = !thumb;
-
-  if(kzIsAbs || tcAbs){
-    // Priority 1: MC diterima → MC SAH
-    if(hasMC)      return {txt:'MC SAH', bg:'#451a03', fg:'#fed7aa'};
-    // Priority 2: HRMIS sah → HRMIS SAH
-    if(hrOK)       return {txt:'HRMIS SAH', bg:'#1e3a5f', fg:'#93c5fd'};
-    // Priority 3: Ada catatan manual → SEMAK
-    if(manual)     return {txt:'SEMAK\n(ADA CATATAN MANUAL)', bg:'#1c3a1c', fg:'#bbf7d0'};
-    // Priority 4: KZ kata MC/EL/CR tapi tiada dokumen
-    if(kzSaysCuti) return {txt:'SILA MOHON CUTI\n(KZ CUTI/TIADA DOKUMEN)', bg:'#7f1d1d', fg:'#fecaca'};
-    // Priority 5: ABS tanpa apa-apa
-    return {txt:'ABS — SILA MOHON CUTI', bg:'#991b1b', fg:'#fee2e2'};
-  }
-
-  // ── Ada thumb — semak timekad ────────────────────────────────
-  if(thumb){
-    const fl = detectFlags(bil, d, false);
-    if(fl.some(f=>f.startsWith('LEWAT')))
-      return {txt:fl.find(f=>f.startsWith('LEWAT')), bg:'#431407', fg:'#fed7aa'};
-    if(fl.some(f=>f.startsWith('SP')||f.startsWith('Tiada')))
-      return {txt:fl.find(f=>f.startsWith('SP')||f.startsWith('Tiada'))||'SINGLE PUNCH', bg:'#451a03', fg:'#fef3c7'};
-    if(fl.some(f=>f.startsWith('IN AWAL')))
-      return {txt:fl.find(f=>f.startsWith('IN AWAL')), bg:'#431407', fg:'#fef3c7'};
-    if(fl.some(f=>f.startsWith('OUT AWAL')))
-      return {txt:fl.find(f=>f.startsWith('OUT AWAL')), bg:'#431407', fg:'#fef3c7'};
-    if(tc.ok) return {txt:'SAH', bg:'#14532d', fg:'#bbf7d0'};
-    // Thumb ada tapi timekad warning
-    return {txt:tc.text||'SEMAK TIMEKAD', bg:'#713f12', fg:'#fef3c7'};
-  }
-
-  // ── Fallback ─────────────────────────────────────────────────
-  return {txt:'SEMAK', bg:'#1e293b', fg:'#94a3b8'};
+  if(hasKzCode(c,['CTR'])) return hrOK ? {txt:'SAH',bg:'#dcfce7',fg:'#166534'} : {txt:'CTR — WAJIB ISI CUTI',bg:'#fff7ed',fg:'#c2410c'};
+  if(hasKzCode(c,['P','K','K/P','BER','CB'])) return {txt:normStatus(kzp||kzk)+' — SAH/SEMAK',bg:'#ecfdf5',fg:'#065f46'};
+  if(['ABS','X','LL'].includes(kzp)||['ABS','X','LL'].includes(kzk)) return {txt:(hasMC||hrOK)?'SAH':'ABS — SILA MOHON CUTI',bg:(hasMC||hrOK)?'#dcfce7':'#fee2e2',fg:(hasMC||hrOK)?'#166534':'#991b1b'};
+  const fl=detectFlags(bil,d,false);
+  if(fl.some(f=>f.startsWith('LEWAT'))) return {txt:fl.find(f=>f.startsWith('LEWAT')),bg:'#ffedd5',fg:'#9a3412'};
+  if(fl.some(f=>f.startsWith('SP')||f.startsWith('Tiada'))) return {txt:fl.find(f=>f.startsWith('SP')||f.startsWith('Tiada')) || 'SINGLE PUNCH',bg:'#fef3c7',fg:'#b45309'};
+  if(fl.some(f=>f.startsWith('IN AWAL'))) return {txt:fl.find(f=>f.startsWith('IN AWAL')),bg:'#fff7ed',fg:'#c2410c'};
+  if(fl.some(f=>f.startsWith('OUT AWAL'))) return {txt:fl.find(f=>f.startsWith('OUT AWAL')),bg:'#fff7ed',fg:'#9a3412'};
+  if(tc.ok && tc.text==='✓') return {txt:'SAH',bg:'#dcfce7',fg:'#166534'};
+  if(!thumb) return {txt:'SEMAK TIMEKAD',bg:'#fef3c7',fg:'#b45309'};
+  return {txt:'SEMAK',bg:'#f8fafc',fg:'#64748b'};
 }
 
 
@@ -1582,18 +1492,12 @@ async function doLogin() {
   if(!id||!pw){ showErr('Sila masukkan ID dan kata laluan.'); return; }
 
   btn.disabled=true; btn.textContent='Mengesahkan...';
+  await new Promise(r=>setTimeout(r,500)); // anti brute-force delay
 
   let ok = false;
 
-  // ── SEMAK LOCAL ACCOUNTS DAHULU (tidak bergantung Supabase) ──
-  const acct = ADMIN_ACCOUNTS.find(a => a.id === id && a.pw === pw);
-  if(acct){
-    ok = true;
-    AUTH = {loggedIn:true, role:'admin', nama:acct.nama, jawatan:acct.jawatan};
-  }
-
-  // ── Cuba Supabase auth juga (jika key dikemaskini) ──
-  if(!ok && SUPA_OK){
+  // Try Supabase auth first
+  if(SUPA_OK){
     try {
       const email = id.includes('@') ? id : `${id}@kpl.hkl.gov.my`;
       const {data,error} = await supa.auth.signInWithPassword({email,password:pw});
@@ -1605,12 +1509,18 @@ async function doLogin() {
           jawatan: data.user.user_metadata?.jawatan||'Pentadbir'
         };
       }
-    } catch(e){ /* Supabase auth gagal — ok jika local auth berjaya */ }
+    } catch(e){}
+  }
+
+  // Fallback: local accounts
+  if(!ok){
+    const acct = ADMIN_ACCOUNTS.find(a=>a.id===id && a.pw===pw);
+    if(acct){ ok=true; AUTH={loggedIn:true,role:'admin',nama:acct.nama,jawatan:acct.jawatan}; }
   }
 
   if(ok){ clearErr(); saveSession(); bootApp(); }
   else {
-    showErr('ID atau kata laluan tidak sah. Cuba: smamierul / sjnadilah / tuannajib');
+    showErr('ID atau kata laluan tidak sah.');
     document.getElementById('l-pw').value='';
     document.querySelector('.login-card').classList.add('shake');
     setTimeout(()=>document.querySelector('.login-card').classList.remove('shake'),400);
@@ -1718,8 +1628,6 @@ async function saveToDB(bil, bln, hari){
 // BOOT APP
 // ════════════════════════════════════════════════════════════════
 async function bootApp(){
-  // Load saved entries from localStorage
-  try{ loadLocalStorage(); }catch(e){}
   document.getElementById('auth-wall').style.display='none';
   document.getElementById('app').style.display='flex';
   applyRoleUI();
@@ -1892,131 +1800,24 @@ function renderGrid(members, containerId){
           const kzpTxt = kzpVal || '–';
           const kzkTxt = kzkVal || '–';
 
-          // ══ TIMECARD LAYER — paparan lengkap ══════════════════
-          let tcLines=[], tcBg='#ffffff', tcFg='#1e293b';
-
+          let tcLines=[];
+          let tcBg='#ffffff', tcFg='#1e293b';
           if(sh==='O'){
-            // OFFDAY
-            if(hasThumb(c)){
-              tcLines=['OFFDAY / OT — ABAIKAN'];
-              if(c.tc_in)  tcLines.push('IN '  +c.tc_in);
-              if(c.tc_out) tcLines.push('OUT ' +c.tc_out);
-              tcBg='#e0f2fe'; tcFg='#0c4a6e';
-            } else {
-              tcLines=['OFFDAY']; tcBg='#f1f5f9'; tcFg='#94a3b8';
-            }
-
-          } else if(['TT','TH','NHT'].includes(kzpNorm)||['TT','TH','NHT'].includes(kzkNorm)){
-            // Tahan / Tidak Hadir — tiada perlu semak TC
-            tcLines=[kzpNorm==='TT'||kzkNorm==='TT'?'TAHAN TUGAS':'TIDAK HADIR'];
-            tcBg='#1c1917'; tcFg='#f9a8d4';
-
+            if(hasThumb(c)) tcLines=[`OFFDAY / OT`, c.tc_in?`IN ${c.tc_in}`:'', c.tc_out?`OUT ${c.tc_out}`:''].filter(Boolean);
+            else tcLines=['OFFDAY'];
+            tcBg=hasThumb(c)?'#e0f2fe':'#f1f5f9'; tcFg=hasThumb(c)?'#0c4a6e':'#64748b';
           } else if(hasThumb(c)){
-            // Ada punch — papar IN/OUT dengan status
-            const hasIn  = !!c.tc_in;
-            const hasOut = !!c.tc_out;
-
-            // Semak IN
-            if(hasIn){
-              // Cek masa IN
-              const inM = (+c.tc_in.split(':')[0])*60 + (+c.tc_in.split(':')[1]);
-              const shStart = sh==='S'?420:sh==='P'?900:1380;
-              const tol = 7; // >7min = lewat
-              const inOK = sh==='M'
-                ? (inM>=1350||inM<=30)   // Malam: 22:30–00:30
-                : Math.abs(inM-shStart)<=60;
-              const isLewat = sh==='M'
-                ? (inM>30 && inM<1350 && !c.ot_sambung)
-                : (inM > shStart+tol && !c.ot_sambung);
-              const isInAwal = sh==='M'
-                ? false
-                : (inM < shStart-60);
-
-              if(isInAwal){
-                const earlyMin = shStart - inM;
-                tcLines.push('⚠ IN AWAL');
-                tcLines.push('IN '+c.tc_in+' ('+Math.floor(earlyMin/60)+'j '+earlyMin%60+'min awal)');
-                tcBg='#fff7ed'; tcFg='#c2410c';
-              } else if(isLewat){
-                const lateMin = sh==='M' ? (inM>=1380?inM-1380:inM+(1440-1380)) : inM-shStart;
-                tcLines.push('⚠ LEWAT');
-                tcLines.push('IN '+c.tc_in+' (+'+lateMin+'min)');
-                tcBg='#fff7ed'; tcFg='#9a3412';
-              } else {
-                tcLines.push('✓ IN '+c.tc_in);
-                if(tcBg==='#ffffff') tcBg='#f0fdf4';
-                tcFg='#15803d';
-              }
-            } else {
-              // Ada OUT tapi tiada IN
-              tcLines.push('⚠ TIADA IN');
-              tcLines.push('(OUT: '+c.tc_out+')');
-              tcBg='#fef9c3'; tcFg='#854d0e';
-            }
-
-            // Semak OUT
-            if(hasOut){
-              const outM = (+c.tc_out.split(':')[0])*60 + (+c.tc_out.split(':')[1]);
-              const shEnd = sh==='S'?900:sh==='P'?1380:420;
-              const outOK = sh==='M'
-                ? (outM>=360&&outM<=480)
-                : Math.abs(outM-shEnd)<=60;
-              const isOutAwal = sh==='M'
-                ? (outM<330&&!c.ot_sambung)
-                : (outM < shEnd-60 && !c.ot_sambung);
-
-              if(!hasIn){
-                // Sudah handle atas
-              } else if(isOutAwal){
-                const earlyOut = sh==='M'?(420-outM):(shEnd-outM);
-                tcLines.push('⚠ OUT AWAL');
-                tcLines.push('OUT '+c.tc_out+' (-'+earlyOut+'min)');
-                if(tcBg!=='#fff7ed') { tcBg='#fff7ed'; tcFg='#c2410c'; }
-              } else {
-                tcLines.push('✓ OUT '+c.tc_out);
-              }
-            } else if(hasIn) {
-              // Ada IN tapi tiada OUT
-              tcLines.push('⚠ TIADA OUT');
-              if(tcBg!=='#fff7ed'&&tcBg!=='#fef9c3') { tcBg='#fef9c3'; tcFg='#854d0e'; }
-            }
-
-            // Single punch (satu sahaja)
-            if((hasIn&&!hasOut)||(hasOut&&!hasIn)){
-              if(!tcLines.some(l=>l.includes('TIADA'))) tcLines.push('SINGLE PUNCH');
-            }
-
+            if(tc.text==='✓') { tcLines=['✓']; tcBg='#dcfce7'; tcFg='#166534'; }
+            else { tcLines=[tc.text, tc.reason]; tcBg='#fef3c7'; tcFg='#b45309'; }
+            if(c.tc_in || c.tc_out) tcLines.push(`${c.tc_in||'–'} / ${c.tc_out||'–'}`);
           } else {
-            // Tiada thumb langsung
-            const cutiKz = isCutiStatus(c.kzp)||isCutiStatus(c.kzk);
-            if(cutiKz){
-              // KZ kata cuti — tiada thumb = OK (anggota bercuti)
-              tcLines=['–']; tcBg='#f1f5f9'; tcFg='#94a3b8';
-            } else if(['ABS','X','LL'].includes(kzpNorm)||['ABS','X','LL'].includes(kzkNorm)){
-              tcLines=['ABS']; tcBg='#fee2e2'; tcFg='#991b1b';
-            } else {
-              // Tiada KZ, tiada punch
-              tcLines=['ABS']; tcBg='#fee2e2'; tcFg='#991b1b';
-            }
+            tcLines=['ABS']; tcBg='#fee2e2'; tcFg='#991b1b';
           }
-          // Pastikan ada content
-          if(!tcLines.length) tcLines=['–'];
 
-          let mcTxt='–', mcBg='#fff7ed', mcFgC='#94a3b8';
-          if(sh==='O'){ mcTxt='OFFDAY'; mcBg='#f1f5f9'; mcFgC='#94a3b8'; }
-          else if(mcRec){
-            const mcRange = daysBetweenDM(mcRec.dari, mcRec.hingga);
-            const dayPos  = mcRange.indexOf(d)+1;
-            const dayInfo = mcRec.hari>1 ? ' (H'+dayPos+'/'+mcRec.hari+')' : '';
-            mcTxt = 'MC '+mcRec.hari+' HARI'+dayInfo+'\n'+mcRec.klinik+'\nNo: '+(mcRec.no_siri||'–');
-            mcBg='#fed7aa'; mcFgC='#7c2d12';
-          }
-          else if(kzpNorm==='MC'||kzkNorm==='MC'){
-            mcTxt='TIADA DOKUMEN\nSila serahkan MC'; mcBg='#fee2e2'; mcFgC='#991b1b';
-          }
-          else if(['ABS','X','LL'].includes(kzpNorm)||['ABS','X','LL'].includes(kzkNorm)){
-            mcTxt='TIADA MC'; mcBg='#fee2e2'; mcFgC='#991b1b';
-          }
+          let mcTxt='–', mcBg='#fff7ed';
+          if(sh==='O'){ mcTxt='OFFDAY'; mcBg='#f1f5f9'; }
+          else if(mcRec){ mcTxt=`MC ${mcRec.hari} HARI — ${mcRec.klinik}`; mcBg='#fed7aa'; }
+          else if(kzpNorm==='MC'||kzkNorm==='MC'){ mcTxt='TIADA DOKUMEN'; mcBg='#fee2e2'; }
 
           let hrTxt='–', hrBg='#e0f2fe', hrFg='#0c4a6e';
           if(sh==='O'){ hrTxt='OFFDAY'; hrBg='#f1f5f9'; hrFg='#64748b'; }
@@ -2025,7 +1826,7 @@ function renderGrid(members, containerId){
 
           days.push({d, sh, shTxt, shBg, shFg,
             kzpTxt, kzpBg:kzpSty.bg, kzpFg:kzpSty.fg, kzkTxt, kzkBg:kzkSty.bg, kzkFg:kzkSty.fg,
-            tcLines, tcBg, tcFg, mcTxt, mcBg, mcFgC, hrTxt, hrBg, hrFg,
+            tcLines, tcBg, tcFg, mcTxt, mcBg, hrTxt, hrBg, hrFg,
             afTxt:audit.txt, afBg:audit.bg, afFg:audit.fg, fl, isOT: sh==='O'&&hasThumb(c)
           });
         }
@@ -2045,9 +1846,9 @@ function renderGrid(members, containerId){
           {key:'kzp', cells: days.map(x=>`<td style="background:${x.kzpBg};color:${x.kzpFg};font-weight:700;text-align:center;font-size:8px;padding:2px 3px">${x.kzpTxt}</td>`)},
           {key:'kzk', cells: days.map(x=>`<td style="background:${x.kzkBg};color:${x.kzkFg};font-weight:700;text-align:center;font-size:8px;padding:2px 3px">${x.kzkTxt}</td>`)},
           {key:'tc',  cells: days.map(x=>`<td style="background:${x.tcBg};color:${x.tcFg};text-align:center;font-size:7.5px;padding:2px 4px;vertical-align:top;line-height:1.5;font-weight:700">${x.tcLines.map(l=>`<div>${l}</div>`).join('')}</td>`)},
-          {key:'mc',  cells: days.map(x=>`<td style="background:${x.mcBg};color:${x.mcFgC||'#94a3b8'};font-weight:${x.mcBg==='#fed7aa'?'700':'500'};text-align:center;font-size:7px;padding:2px 4px;white-space:pre-line;line-height:1.4;vertical-align:top">${x.mcTxt}</td>`)},
+          {key:'mc',  cells: days.map(x=>`<td style="background:${x.mcBg};color:${x.mcBg==='#fed7aa'?'#7c2d12':x.mcBg==='#fee2e2'?'#991b1b':'#94a3b8'};font-weight:${x.mcBg==='#fed7aa'?'700':'500'};text-align:center;font-size:7px;padding:2px 4px;white-space:pre-line;line-height:1.4;vertical-align:top">${x.mcTxt}</td>`)},
           {key:'hr',  cells: days.map(x=>`<td style="background:${x.hrBg};color:${x.hrFg};font-weight:600;text-align:center;font-size:7.5px;padding:2px 3px">${x.hrTxt}</td>`)},
-          {key:'af',  cells: days.map(x=>`<td style="background:${x.afBg};color:${x.afFg};font-weight:700;text-align:center;font-size:7px;padding:2px 3px;white-space:pre-line;line-height:1.3;vertical-align:middle">${x.afTxt}</td>`)},
+          {key:'af',  cells: days.map(x=>`<td style="background:${x.afBg};color:${x.afFg};font-weight:800;text-align:center;font-size:7.5px;padding:3px 3px;white-space:nowrap">${x.afTxt}</td>`)},
         ];
 
         rows += ROWS.map((row, ri) => {
@@ -2193,26 +1994,6 @@ function populateDropdown(){
   });
 }
 
-// Attachment store
-const BUKTI_STORE = {};
-function previewBukti(inp){
-  const el=document.getElementById('e-bukti-status');
-  if(!inp.files.length){if(el)el.textContent='';return;}
-  const f=inp.files[0];
-  if(el) el.innerHTML='<span style="color:var(--gn-t)">📎 '+f.name+' ('+Math.round(f.size/1024)+'KB)</span>';
-}
-
-// Load localStorage on boot
-function loadLocalStorage(){
-  for(const m of MASTER)
-    for(let d=1;d<=30;d++){
-      try{
-        const v=localStorage.getItem('eakha_'+m.bil+'_'+d);
-        if(v){ Object.assign(DATA[m.bil][d], JSON.parse(v)); }
-      }catch(e){}
-    }
-}
-
 async function saveEntry(){
   if(!requireAdmin()) return;
   const bil=+document.getElementById('e-bil').value;
@@ -2223,64 +2004,22 @@ async function saveEntry(){
   const tc_in=document.getElementById('e-in').value.trim();
   const tc_out=document.getElementById('e-out').value.trim();
   const ot_sambung=document.getElementById('e-ot').value==='true';
-  const hrmis    = (document.getElementById('e-hrmis')?.value||'').trim();
-  const pengganti= document.getElementById('e-pengganti')?.value==='true';
-  const note     = (document.getElementById('e-note')?.value||'').trim();
+  const hrmis=(document.getElementById('e-hrmis')?.value||'').trim();
+  const pengganti=document.getElementById('e-pengganti')?.value==='true';
 
-  // ── Proses attachment ─────────────────────────────────
-  const buktiInp = document.getElementById('e-bukti');
-  let buktiLabel = '';
-  if(buktiInp?.files?.length){
-    const f=buktiInp.files[0]; const key=bil+'_'+hari;
-    let txt='', status='';
-    try{ txt = await f.text(); status='BERJAYA DIPROSES'; }
-    catch(e){ status='SIMPAN SEBAGAI BUKTI MANUAL'; }
-    BUKTI_STORE[key]={nama:f.name,teks:txt.substring(0,300),masa:new Date().toISOString()};
-    buktiLabel=f.name;
-    const bEl=document.getElementById('e-bukti-status');
-    if(bEl) bEl.innerHTML='<span style="color:var(--gn-t)">✓ '+status+'</span>';
-    // Auto-MC dari bukti jika KZ=MC
-    if((kzp==='MC'||kzk==='MC')&&txt&&!MC_DATA.some(mc=>mc.bil===bil&&mc.dari.startsWith(String(hari).padStart(2,'0')+'/04'))){
-      const kM=txt.match(/KLINIK\s+[A-Z\s]{3,20}/i); const sM=txt.match(/\b[A-Z]{1,4}\d{4,8}\b/);
-      const mm=MASTER.find(m=>m.bil===bil);
-      if(mm) MC_DATA.push({bil,nama:mm.nama,jab:mm.jab,komp:mm.komp,
-        dari:String(hari).padStart(2,'0')+'/04',hingga:String(hari).padStart(2,'0')+'/04',
-        hari:1,klinik:kM?kM[0].trim():'Klinik (manual)',no_siri:sM?sM[0]:'MANUAL',jenis:'Bulan Ini',fail_pdf:f.name});
-    }
-  }
+  // Update memory
+  Object.assign(DATA[bil][hari],{kzp:normStatus(kzp),kzk:normStatus(kzk),tc_in,tc_out,ot_sambung,hrmis,pengganti});
 
-  // ── Kemaskini DATA ────────────────────────────────────
-  if(!DATA[bil]?.[hari]) DATA[bil][hari]={kzp:'',kzk:'',tc_in:'',tc_out:'',ot_sambung:false,hrmis:'',pengganti:false,flags:[],note:''};
-  Object.assign(DATA[bil][hari],{
-    kzp:normStatus(kzp)||kzp, kzk:normStatus(kzk)||kzk,
-    tc_in, tc_out, ot_sambung, hrmis, pengganti,
-    note: note+(buktiLabel?' [BUKTI:'+buktiLabel+']':'')
-  });
-
-  // ── localStorage (kekal selepas refresh) ─────────────
-  try{ localStorage.setItem('eakha_'+bil+'_'+hari, JSON.stringify(DATA[bil][hari])); }catch(e){}
-
-  // ── Supabase ──────────────────────────────────────────
+  // Save to Supabase
   await saveToDB(bil,4,hari);
 
-  // ── Paparan hasil ─────────────────────────────────────
-  const sh  = getShift(bil,hari);
-  const fl  = detectFlags(bil,hari);
-  const af  = auditFinalDisplay(bil,hari);
-  const stEl= document.getElementById('e-status');
-  if(stEl) stEl.innerHTML =
-    '✅ Bil '+bil+' · '+hari+'/04 · ['+SH_LBL[sh]+'] · KZP:'+(kzp||'–')+' KZK:'+(kzk||'–')+
-    (tc_in?' IN:'+tc_in:'')+(tc_out?' OUT:'+tc_out:'')+
-    (hrmis?' HRMIS:'+hrmis:'')+(pengganti?' PENGGANTI:Ya':'')+(note?' Nota:'+note:'')+
-    '<br><b style="padding:1px 6px;border-radius:3px;background:'+af.bg+';color:'+af.fg+'">AUDIT: '+af.txt.replace(/\n/,' | ')+'</b>'+
-    (fl.length?' · Flags:'+fl.join(', '):'');
+  const sh=getShift(bil,hari);
+  const fl=detectFlags(bil,hari);
+  document.getElementById('e-status').innerHTML=
+    `✅ Bil ${bil} · ${hari}/04 · Shift: ${SH_LBL[sh]} (${SH_TIME[sh]}) · Flags: ${fl.length?fl.map(f=>f.split(' ')[0]).join(', '):'Tiada'}`;
 
-  showToast(SUPA_OK?'Bil '+bil+' hari '+hari+' disimpan ✓':'Disimpan (local)','ok');
+  showToast(SUPA_OK?`Bil ${bil} hari ${hari} disimpan ke Supabase ✓`:`Bil ${bil} hari ${hari} disimpan (local)`,'ok');
   updateFlagCounts();
-
-  // Refresh grid jika terbuka
-  const mg=document.getElementById('master-grid');
-  if(mg&&mg.children.length>0) setTimeout(()=>renderGrid(MASTER,'master-grid'),200);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2998,49 +2737,9 @@ function procUpload(){
 // ════════════════════════════════════════════════════════════════
 const newUploads = {};
 
-// ════════════════════════════════════════════════════════════════
-// PDF TEXT EXTRACTOR — guna PDF.js
-// ════════════════════════════════════════════════════════════════
-async function readPdfAsText(file) {
-  try {
-    if(typeof pdfjsLib === 'undefined') {
-      console.warn('PDF.js tidak dimuatkan, cuba baca sebagai teks biasa');
-      return await file.text();
-    }
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-    let fullText = '';
-    for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const content = await page.getTextContent();
-      // Gabungkan teks dengan spasi, kekalkan baris baru antara items
-      let lastY = null;
-      let pageText = '';
-      content.items.forEach(item => {
-        if(lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-          pageText += '\n'; // baris baru bila Y berubah
-        }
-        pageText += item.str + ' ';
-        lastY = item.transform[5];
-      });
-      fullText += pageText + '\n--- Muka Surat ' + pageNum + ' ---\n';
-    }
-    return fullText;
-  } catch(e) {
-    console.error('Ralat baca PDF:', e);
-    try { return await file.text(); } catch(e2) { return ''; }
-  }
-}
-
 async function readFileAsText(file) {
   const fname = file.name.toLowerCase();
-
-  // PDF — guna PDF.js
-  if(fname.endsWith('.pdf')) {
-    return await readPdfAsText(file);
-  }
-
-  // .zip — cuba ekstrak _chat.txt atau fail .txt terbesar
+  // .zip — try to extract _chat.txt or largest .txt inside
   if(fname.endsWith('.zip')) {
     try {
       const ab = await file.arrayBuffer();
@@ -3048,6 +2747,7 @@ async function readFileAsText(file) {
       let bestTxt = '', bestLen = 0;
       let i = 0;
       while(i < bytes.length - 30) {
+        // Local file header signature: PK (0x50 0x4B 0x03 0x04)
         if(bytes[i]===0x50&&bytes[i+1]===0x4B&&bytes[i+2]===0x03&&bytes[i+3]===0x04) {
           const cMethod = bytes[i+8]|(bytes[i+9]<<8);
           const cSize   = bytes[i+18]|(bytes[i+19]<<8)|(bytes[i+20]<<16)|(bytes[i+21]<<24);
@@ -3057,6 +2757,7 @@ async function readFileAsText(file) {
           const fnBytes = bytes.slice(i+30, i+30+fnLen);
           const fn      = new TextDecoder().decode(fnBytes).toLowerCase();
           const dataStart = i + 30 + fnLen + extLen;
+          // Only uncompressed (method 0) txt files
           if(cMethod===0 && (fn.endsWith('.txt')||fn.includes('chat')) && uSize > bestLen) {
             bestTxt = new TextDecoder('utf-8',{fatal:false}).decode(bytes.slice(dataStart, dataStart+uSize));
             bestLen = uSize;
@@ -3067,21 +2768,8 @@ async function readFileAsText(file) {
       return bestTxt || new TextDecoder('utf-8',{fatal:false}).decode(bytes);
     } catch(e) { return ''; }
   }
-
-  // .notes / .txt dan lain-lain
+  // .notes / .note / .txt / .pdf — baca terus
   try { return await file.text(); } catch(e) { return ''; }
-}
-
-// ════════════════════════════════════════════════════════════════
-// HELPER: Padankan nama anggota dalam teks (flexible)
-// ════════════════════════════════════════════════════════════════
-function matchNamaInCtx(nama, ctx) {
-  const upper = ctx.toUpperCase();
-  const words = nama.toUpperCase().split(' ').filter(w => w.length > 3);
-  // Sekurang-kurangnya 2 patah perkataan panjang kena ada dalam teks
-  const longWords = words.filter(w => w.length > 4);
-  const checkWords = longWords.length >= 2 ? longWords.slice(0,2) : words.slice(0,2);
-  return checkWords.length > 0 && checkWords.every(w => upper.includes(w));
 }
 
 async function processAllUploads(){
@@ -3090,8 +2778,8 @@ async function processAllUploads(){
   const statEl  = document.getElementById('proc-all-stat');
   const logDiv  = document.getElementById('proc-log');
   const logBody = document.getElementById('proc-log-body');
-  if(btn)    { btn.disabled=true; btn.textContent='⏳ Memproses...'; }
-  if(logDiv)  { logDiv.style.display='block'; }
+  if(btn)   { btn.disabled=true; btn.textContent='⏳ Memproses...'; }
+  if(logDiv) { logDiv.style.display='block'; }
   if(logBody) { logBody.innerHTML=''; }
   let updated = 0;
 
@@ -3103,11 +2791,9 @@ async function processAllUploads(){
   };
   log('Memulakan pemprosesan...');
 
-  // ════════════════════════════════════════════════════════
-  // 1. MC Borang Semakan (PDF / gambar)
-  // ════════════════════════════════════════════════════════
+  // ── MC Borang Semakan ─────────────────────────────────────
   if(newUploads['mc-up']) {
-    log('📋 Membaca borang semakan MC...');
+    log('Membaca borang semakan MC...');
     const prog = document.getElementById('mc-up-prog');
     const bar  = document.getElementById('mc-up-bar');
     const msg  = document.getElementById('mc-up-msg');
@@ -3115,60 +2801,53 @@ async function processAllUploads(){
     let mcFound = 0;
     for(const file of newUploads['mc-up']) {
       try {
+        const text = await readFileAsText(file);
         if(msg) msg.textContent = 'Membaca '+file.name+'...';
         if(bar) bar.style.width = '20%';
-        const text = await readFileAsText(file);
-        if(!text.trim()){ log('MC: Fail kosong atau tidak dapat dibaca — '+file.name,'warn'); continue; }
         const lines = text.split('\n');
         lines.forEach((line, li) => {
-          // Cari tarikh dalam format DD/MM/YYYY atau DD/MM
-          const dMatches = line.match(/(\d{1,2})[\/-](\d{2})[\/-]?(\d{4})?/g);
+          const dMatches = line.match(/(\d{2})\/(\d{2})\/(\d{4})/g);
           if(!dMatches) return;
-          const ctx = lines.slice(Math.max(0,li-5),li+6).join(' ');
+          const ctx = lines.slice(Math.max(0,li-5),li+5).join(' ').toUpperCase();
           MASTER.forEach(m => {
-            if(!matchNamaInCtx(m.nama, ctx)) return;
-            dMatches.forEach(dt => {
-              // Support format DD/MM atau DD/MM/YYYY atau DD-MM-YYYY
-              const parts = dt.split(/[\/-]/);
-              const dd = parts[0].padStart(2,'0');
-              const mm = parts[1];
-              if(mm !== '04') return; // April sahaja
-              const hari = +dd;
-              if(hari<1||hari>30) return;
-              const exists = MC_DATA.some(mc=>mc.bil===m.bil&&mc.dari.startsWith(dd+'/04'));
-              if(!exists) {
-                const ctxUp = ctx.toUpperCase();
-                const kM = ctxUp.match(/(?:KLINIK|HOSPITAL|POLIKLINIK|KLINIK KESIHATAN|KK)\s+[A-Z][A-Z\s]{2,25}/);
-                const sM = ctxUp.match(/\b(?:NO\s*SIRI\s*:?\s*)?([A-Z]{1,4}\d{4,8})\b/);
-                const hM = ctxUp.match(/(\d{1,2})\s*HARI/);
-                const hari_mc = hM ? +hM[1] : 1;
-                MC_DATA.push({
-                  bil:m.bil, nama:m.nama, jab:m.jab, komp:m.komp,
-                  dari:dd+'/04', hingga:dd+'/04', hari:hari_mc,
-                  klinik: kM ? kM[0].trim().replace(/\s+/g,' ') : 'Klinik (semak manual)',
-                  no_siri: sM ? sM[1] : '–', jenis:'Bulan Ini', fail_pdf:file.name
-                });
-                if(DATA[m.bil]?.[hari]) {
-                  if(!DATA[m.bil][hari].kzp) DATA[m.bil][hari].kzp='MC';
-                  if(!DATA[m.bil][hari].kzk) DATA[m.bil][hari].kzk='MC';
+            const parts = m.nama.split(' ').filter(p=>p.length>3);
+            if(parts.slice(0,2).every(p=>ctx.includes(p))) {
+              dMatches.forEach(dt => {
+                const [dd,mm] = dt.split('/');
+                if(mm==='04') {
+                  const hari = +dd;
+                  if(hari>=1&&hari<=30) {
+                    const exists = MC_DATA.some(mc=>mc.bil===m.bil&&mc.dari.startsWith(dd+'/04'));
+                    if(!exists) {
+                      const kM = ctx.match(/KLINIK\s+[A-Z\s]{3,25}|HOSPITAL\s+[A-Z\s]{3,20}|POLIKLINIK\s+[A-Z\s]{3,20}/);
+                      const sM = ctx.match(/\b[A-Z]{1,4}\d{4,8}\b/);
+                      const hM = ctx.match(/(\d{1,2})\s*HARI/i);
+                      MC_DATA.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,
+                        dari:dd+'/04',hingga:dd+'/04',hari:hM?+hM[1]:1,
+                        klinik:kM?kM[0].trim().replace(/\s+/g,' '):'Klinik',
+                        no_siri:sM?sM[0]:'–',jenis:'Bulan Ini',fail_pdf:file.name});
+                      if(DATA[m.bil]?.[hari]) {
+                        if(!DATA[m.bil][hari].kzp) DATA[m.bil][hari].kzp='MC';
+                        if(!DATA[m.bil][hari].kzk) DATA[m.bil][hari].kzk='MC';
+                      }
+                      mcFound++; updated++;
+                      log('MC: '+m.nama+' hari '+hari,'ok');
+                    }
+                  }
                 }
-                mcFound++; updated++;
-                log('✅ MC: '+m.nama+' hari '+hari+' ('+hari_mc+' hari)','ok');
-              }
-            });
+              });
+            }
           });
         });
         if(bar) bar.style.width='100%';
         log('MC: '+mcFound+' rekod baru dari '+file.name, mcFound>0?'ok':'warn');
-      } catch(e) { log('❌ Ralat MC: '+e.message,'err'); }
+      } catch(e) { log('PDF MC: guna Register MC manual','warn'); }
     }
   }
 
-  // ════════════════════════════════════════════════════════
-  // 2. KZ Koperal — WhatsApp export / PDF / txt
-  // ════════════════════════════════════════════════════════
+  // ── KZ Koperal (.txt / .zip / .notes) ─────────────────────
   if(newUploads['kzk-new']) {
-    log('📱 Membaca KZ Koperal (WhatsApp / PDF)...');
+    log('Membaca KZ Koperal (WhatsApp)...');
     const prog = document.getElementById('kzk-prog');
     const bar  = document.getElementById('kzk-bar');
     const msg  = document.getElementById('kzk-msg');
@@ -3177,146 +2856,38 @@ async function processAllUploads(){
     for(const file of newUploads['kzk-new']) {
       try {
         if(msg) msg.textContent = 'Membaca '+file.name+'...';
-        const text = await readFileAsText(file);
-        if(!text.trim()){ log('KZK: Fail kosong — '+file.name,'warn'); continue; }
+        const text = await readFileAsText(file);  // handles .zip, .notes, .txt
         const lines = text.split('\n');
         let found = 0;
         if(bar) bar.style.width='40%';
-
-        // Detect format WhatsApp: "[DD/MM/YYYY, HH:MM] Nama: mesej"
-        //                    atau "DD/MM/YYYY, HH:MM - Nama: mesej"
-        const waRegex = /(?:\[)?(\d{1,2})[\/-](\d{1,2})[\/-](\d{4}).*?(?:\]\s*|-\s*)([^:]+?):\s*(.+)/;
-
         lines.forEach((line, li) => {
-          if(!line.trim()) return;
-          const lineUp = line.toUpperCase();
-          const ctx = lines.slice(Math.max(0,li-4),li+5).join(' ');
-
-          // ── Cuba format WhatsApp ──────────────────────────
-          const waMatch = line.match(waRegex);
-          if(waMatch) {
-            const dd = waMatch[1].padStart(2,'0');
-            const mm = waMatch[2].padStart(2,'0');
-            const sender = waMatch[4].toUpperCase();
-            const mesej  = waMatch[5].toUpperCase();
-
-            if(mm !== '04') return; // April sahaja
-            const hari = +dd;
-            if(hari<1||hari>30) return;
-
-            // Cari status dalam mesej
-            const statM = mesej.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|HADIR|LEWAT|CUTI|OFFDAY)\b/);
-            if(!statM) return;
-            const stat = statM[1]==='HADIR'?'✓':statM[1]==='CUTI'?'CR':statM[1];
-
-            // Padankan nama — dari sender ATAU nama dalam mesej
-            MASTER.forEach(m => {
-              if(DATA[m.bil]?.[hari] && !DATA[m.bil][hari].kzk) {
-                // Check sama ada nama anggota sebahagian dalam sender atau dalam mesej
-                const namaWords = m.nama.toUpperCase().split(' ').filter(w=>w.length>3);
-                const firstWord = namaWords[0]||'';
-                const inSender = firstWord && sender.includes(firstWord);
-                const inCtx    = matchNamaInCtx(m.nama, ctx);
-                if(inSender || inCtx) {
-                  DATA[m.bil][hari].kzk = stat; found++; updated++;
-                  log('✅ KZK: '+m.nama+' hari '+hari+' → '+stat,'ok');
+          // Cari tarikh & status dalam baris
+          const dateM = line.match(/(\d{1,2})\/04/);
+          const statM = line.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|✓|L)\b/i);
+          if(dateM && statM) {
+            const d    = +dateM[1];
+            const stat = statM[1].toUpperCase();
+            if(d>=1&&d<=30) {
+              const ctx = lines.slice(Math.max(0,li-3),li+3).join(' ').toUpperCase();
+              MASTER.forEach(m => {
+                const nm = m.nama.split(' ').filter(p=>p.length>3);
+                if(nm.slice(0,2).every(p=>ctx.includes(p))&&DATA[m.bil]?.[d]&&!DATA[m.bil][d].kzk) {
+                  DATA[m.bil][d].kzk = stat; found++; updated++;
+                  log('KZK: '+m.nama+' hari '+d+' → '+stat,'ok');
                 }
-              }
-            });
-            return;
-          }
-
-          // ── Format lain: cari tarikh + status dalam baris sama ──
-          const dateM = line.match(/(\d{1,2})[\/-](?:04|4)(?:[\/-](?:2026)?)?/);
-          const statM2 = lineUp.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|✓|L|HADIR|LEWAT)\b/);
-          if(dateM && statM2) {
-            const hari = +dateM[1];
-            const stat = statM2[1]==='HADIR'?'✓':statM2[1]==='L'?'LEWAT':statM2[1];
-            if(hari<1||hari>30) return;
-            MASTER.forEach(m => {
-              if(DATA[m.bil]?.[hari] && !DATA[m.bil][hari].kzk && matchNamaInCtx(m.nama, ctx)) {
-                DATA[m.bil][hari].kzk = stat; found++; updated++;
-                log('✅ KZK: '+m.nama+' hari '+hari+' → '+stat,'ok');
-              }
-            });
+              });
+            }
           }
         });
-
         if(bar) bar.style.width='100%';
         log('KZ Koperal: '+found+' rekod dari '+file.name, found>0?'ok':'warn');
-        if(found===0) log('⚠ KZK: Tiada rekod — pastikan nama anggota ada dalam fail, format: DD/04/YYYY','warn');
-      } catch(e) { log('❌ Ralat KZ Koperal: '+e.message,'err'); }
+      } catch(e) { log('Ralat KZ Koperal: '+e.message,'err'); }
     }
   }
 
-  // ════════════════════════════════════════════════════════
-  // 3. KZ Penyelia (PDF / txt)
-  // ════════════════════════════════════════════════════════
-  if(newUploads['kzp-new']) {
-    log('📄 Membaca KZ Penyelia (PDF)...');
-    const bar  = document.getElementById('kzp-bar');
-    const msg  = document.getElementById('kzp-msg');
-    const prog = document.getElementById('kzp-prog');
-    if(prog) prog.style.display='block';
-    if(bar) bar.style.width='10%';
-    let kzpFound = 0;
-    for(const file of newUploads['kzp-new']) {
-      try {
-        if(msg) msg.textContent = 'Membaca '+file.name+'...';
-        const text = await readFileAsText(file);
-        if(!text.trim()){
-          log('KZP: Fail kosong atau tidak dapat dibaca — '+file.name,'warn');
-          if(bar){ bar.style.width='100%'; bar.style.background='#d97706'; }
-          if(msg) msg.textContent = 'Fail tidak dapat dibaca — kemaskini manual';
-          continue;
-        }
-        if(bar) bar.style.width='40%';
-        const lines = text.split('\n');
-
-        // Scan setiap baris untuk nama + tarikh + status
-        lines.forEach((line, li) => {
-          if(!line.trim()) return;
-          const ctx = lines.slice(Math.max(0,li-5), li+6).join(' ');
-          const ctxUp = ctx.toUpperCase();
-
-          // Cari tarikh April
-          const dateMatches = [...ctxUp.matchAll(/(\d{1,2})[\/-]04(?:[\/-]2026)?/g)];
-          if(!dateMatches.length) return;
-
-          // Cari nama anggota dalam konteks
-          MASTER.forEach(m => {
-            if(!matchNamaInCtx(m.nama, ctx)) return;
-            dateMatches.forEach(dm => {
-              const hari = +dm[1];
-              if(hari<1||hari>30) return;
-              if(!DATA[m.bil]?.[hari]) return;
-              if(DATA[m.bil][hari].kzp) return; // dah ada, skip
-
-              // Cari status dalam konteks
-              const statM = ctxUp.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|✓|HADIR|LEWAT|CUTI REHAT)\b/);
-              const tick  = ctxUp.match(/✓|✔|CHECK|HADIR/);
-              let stat = '';
-              if(statM)     stat = statM[1]==='HADIR'?'✓':statM[1]==='CUTI REHAT'?'CR':statM[1];
-              else if(tick) stat = '✓';
-              else           stat = '✓'; // default: anggap hadir kalau nama ada
-
-              DATA[m.bil][hari].kzp = stat; kzpFound++; updated++;
-              log('✅ KZP: '+m.nama+' hari '+hari+' → '+stat,'ok');
-            });
-          });
-        });
-        if(bar){ bar.style.width='100%'; bar.style.background=kzpFound>0?'#16a34a':'#d97706'; }
-        log('KZ Penyelia: '+kzpFound+' rekod dari '+file.name, kzpFound>0?'ok':'warn');
-        if(kzpFound===0) log('⚠ KZP: Tiada rekod — PDF mungkin scan imej (bukan teks). Kemaskini manual.','warn');
-      } catch(e) { log('❌ Ralat KZ Penyelia: '+e.message,'err'); }
-    }
-  }
-
-  // ════════════════════════════════════════════════════════
-  // 4. Timecard (PDF / Excel / CSV)
-  // ════════════════════════════════════════════════════════
+  // ── Timecare ─────────────────────────────────────────────
   if(newUploads['tc-new']) {
-    log('🕐 Membaca Timecard...');
+    log('Membaca Timecare...');
     const prog = document.getElementById('tc-prog');
     const bar  = document.getElementById('tc-bar');
     const msg  = document.getElementById('tc-msg');
@@ -3326,83 +2897,60 @@ async function processAllUploads(){
       try {
         if(msg) msg.textContent = 'Membaca '+file.name+'...';
         const text = await readFileAsText(file);
-        if(!text.trim()){ log('TC: Fail kosong — '+file.name,'warn'); continue; }
         let found = 0;
-        const lines = text.split('\n');
-        if(bar) bar.style.width='40%';
-
-        // Nama semua anggota untuk lookup cepat
-        const namaLookup = MASTER.map(m=>({
-          m, first6: m.nama.split(' ')[0].substring(0,6).toUpperCase(),
-          words: m.nama.toUpperCase().split(' ').filter(w=>w.length>3)
-        }));
-
-        lines.forEach((line, li) => {
-          if(!line.trim()) return;
-          const lineUp = line.toUpperCase();
-
-          // Cari masa IN/OUT — format HH:MM
+        text.split('\n').forEach(line => {
           const times = line.match(/(\d{2}:\d{2})/g);
           if(!times||!times.length) return;
-
-          // Cari tarikh — pelbagai format
-          const dateM = line.match(/(\d{1,2})[\/-](?:04|4)[\/-]?(?:2026)?/) ||
-                        line.match(/APR(?:IL)?\s+(\d{1,2})/i);
+          const dateM = line.match(/(\d{1,2})\/(?:04|4)(?:\/2026)?/);
           if(!dateM) return;
-          const d = +(dateM[1]||dateM[2]);
-          if(!d||d<1||d>30) return;
-
-          // Padankan nama — lebih flexible
-          const ctx = lines.slice(Math.max(0,li-3),li+4).join(' ');
-          namaLookup.forEach(({m, first6, words}) => {
-            const matchFirst = lineUp.includes(first6);
-            const matchCtx   = matchNamaInCtx(m.nama, ctx);
-            if((matchFirst || matchCtx) && DATA[m.bil]?.[d]) {
-              let changed = false;
-              if(!DATA[m.bil][d].tc_in  && times[0]) { DATA[m.bil][d].tc_in  = times[0]; changed=true; }
-              if(!DATA[m.bil][d].tc_out && times[1]) { DATA[m.bil][d].tc_out = times[1]; changed=true; }
-              if(changed){ found++; updated++;
-                log('✅ TC: '+m.nama+' hari '+d+' IN:'+(DATA[m.bil][d].tc_in||'–')+' OUT:'+(DATA[m.bil][d].tc_out||'–'),'ok');
-              }
+          const d = +dateM[1];
+          if(d<1||d>30) return;
+          MASTER.forEach(m => {
+            if(line.toUpperCase().includes(m.nama.split(' ')[0].substring(0,6).toUpperCase())&&DATA[m.bil]?.[d]) {
+              if(!DATA[m.bil][d].tc_in&&times[0])  { DATA[m.bil][d].tc_in=times[0];  found++; updated++; }
+              if(!DATA[m.bil][d].tc_out&&times[1]) { DATA[m.bil][d].tc_out=times[1]; }
+              log('TC: '+m.nama+' hari '+d+' IN:'+times[0]+(times[1]?' OUT:'+times[1]:''),'ok');
             }
           });
         });
-
         if(bar) bar.style.width='100%';
-        log('Timecard: '+found+' rekod dari '+file.name, found>0?'ok':'warn');
-        if(found===0) log('⚠ TC: Tiada rekod. Jika PDF scan gambar, teks tidak dapat dibaca — perlukan format teks/Excel.','warn');
-      } catch(e) { log('❌ Ralat Timecard: '+e.message,'err'); }
+        log('Timecare: '+found+' rekod dari '+file.name, found>0?'ok':'warn');
+      } catch(e) { log('Ralat Timecare: '+e.message,'err'); }
     }
   }
 
-  // ════════════════════════════════════════════════════════
-  // 5. Save ke Supabase (jika connected)
-  // ════════════════════════════════════════════════════════
+  // ── KZ Penyelia PDF nota ──────────────────────────────────
+  if(newUploads['kzp-new']) {
+    const bar  = document.getElementById('kzp-bar');
+    const msg  = document.getElementById('kzp-msg');
+    const prog = document.getElementById('kzp-prog');
+    if(prog) prog.style.display='block';
+    if(bar)  { bar.style.width='100%'; bar.style.background='#d97706'; }
+    if(msg)    msg.textContent = 'PDF diterima — kemaskini manual untuk rekod tertentu';
+    log('KZ Penyelia PDF: OCR aktif selepas Edge Function disedia','warn');
+  }
+
+  // ── Save ke Supabase ──────────────────────────────────────
   if(typeof SUPA_OK!=='undefined'&&SUPA_OK&&updated>0) {
-    log('☁ Menyimpan '+updated+' rekod ke Supabase...');
+    log('Menyimpan '+updated+' rekod ke Supabase...');
     for(const m of MASTER)
       for(let d=1;d<=30;d++)
-        if(DATA[m.bil][d]?.kzk||DATA[m.bil][d]?.kzp||DATA[m.bil][d]?.tc_in||DATA[m.bil][d]?.tc_out)
+        if(DATA[m.bil][d]?.kzk||DATA[m.bil][d]?.tc_in||DATA[m.bil][d]?.tc_out)
           await saveToDB(m.bil,4,d);
     log('Supabase: tersimpan ✓','ok');
   }
 
-  // ════════════════════════════════════════════════════════
-  // 6. Kemaskini grid & summary
-  // ════════════════════════════════════════════════════════
-  log('🔄 Mengemaskini Master Listing...');
+  // ── Kemaskini grid ────────────────────────────────────────
+  log('Mengemaskini Master Listing...');
   updateFlagCounts();
   const mg = document.getElementById('master-grid');
-  if(mg && mg.children.length>0) renderGrid(MASTER,'master-grid');
+  if(mg) renderGrid(MASTER,'master-grid');
   if(btn) { btn.disabled=false; btn.textContent='Proses & Kemaskini'; }
-  const sum = updated>0
-    ? '✅ Selesai — '+updated+' rekod dikemaskini'
-    : '⚠ Selesai — 0 rekod. Semak format fail atau kemaskini manual.';
+  const sum = '✅ Selesai — '+updated+' rekod dikemaskini';
   if(statEl) statEl.textContent = sum;
-  log(sum, updated>0?'ok':'warn');
-  showToast(sum, updated>0?'ok':'warn');
+  log(sum,'ok');
+  showToast(sum,'ok');
 }
-
 
 function resetUploads(){
   Object.keys(newUploads).forEach(k=>delete newUploads[k]);
