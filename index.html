@@ -866,14 +866,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
               <div style="background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px">
                 <span style="font-size:20px">💬</span>
                 <div><div style="font-size:11.5px;font-weight:700">KZ Koperal (WhatsApp)</div>
-                <div style="font-size:8px;opacity:.75">Export chat .txt atau PDF · trace nama &amp; status harian</div></div>
+                <div style="font-size:8px;opacity:.75">Export chat · .txt / .zip / .notes (iPhone) / PDF</div></div>
               </div>
               <div style="padding:12px">
                 <div class="uzone" id="uz-kzk-new" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'kzk-new',this)" style="padding:20px 12px">
-                  <input type="file" accept=".pdf,.txt" onchange="fsel(this,'kzk-new')">
+                  <input type="file" accept=".pdf,.txt,.zip,.notes,.note" onchange="fsel(this,'kzk-new')">
                   <div style="font-size:28px;margin-bottom:6px">💬</div>
                   <div style="font-size:10px;font-weight:600;color:#374151">Drag &amp; Drop WhatsApp Export</div>
-                  <div style="font-size:8px;color:var(--gray);margin-top:2px">Format: .txt (Export Chat) atau PDF</div>
+                  <div style="font-size:8px;color:var(--gray);margin-top:2px">Format: .txt · .zip · .notes (iPhone) · PDF</div>
                   <div id="fn-kzk-new" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:5px"></div>
                 </div>
                 <div id="kzk-prog" style="display:none;margin-top:8px">
@@ -1013,7 +1013,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
               <div id="fn-kzp" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:3px"></div>
             </div>
             <div class="uzone" id="uz-kzk" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'kzk',this)">
-              <input type="file" accept=".pdf,.txt" onchange="fsel(this,'kzk')">
+              <input type="file" accept=".pdf,.txt,.zip,.notes,.note" onchange="fsel(this,'kzk')">
               <div style="font-size:26px;margin-bottom:5px">📱</div>
               <div style="font-size:10px;font-weight:600">KZ Koperal (WhatsApp)</div>
               <div style="font-size:8px;color:var(--gray)">Export chat / PDF</div>
@@ -2730,6 +2730,237 @@ function procUpload(){
   if(!requireAdmin()) return;
   const st=document.getElementById('proc-stat'); if(st) st.textContent='⏳ Memproses...';
   setTimeout(()=>{ if(st) st.textContent='✅ Selesai — data akan dikemaskini dalam grid.'; },1500);
+}
+
+// ════════════════════════════════════════════════════════════════
+// PROCESS ALL UPLOADS — auto-parse & kemaskini master file
+// ════════════════════════════════════════════════════════════════
+const newUploads = {};
+
+async function readFileAsText(file) {
+  const fname = file.name.toLowerCase();
+  // .zip — try to extract _chat.txt or largest .txt inside
+  if(fname.endsWith('.zip')) {
+    try {
+      const ab = await file.arrayBuffer();
+      const bytes = new Uint8Array(ab);
+      let bestTxt = '', bestLen = 0;
+      let i = 0;
+      while(i < bytes.length - 30) {
+        // Local file header signature: PK (0x50 0x4B 0x03 0x04)
+        if(bytes[i]===0x50&&bytes[i+1]===0x4B&&bytes[i+2]===0x03&&bytes[i+3]===0x04) {
+          const cMethod = bytes[i+8]|(bytes[i+9]<<8);
+          const cSize   = bytes[i+18]|(bytes[i+19]<<8)|(bytes[i+20]<<16)|(bytes[i+21]<<24);
+          const uSize   = bytes[i+22]|(bytes[i+23]<<8)|(bytes[i+24]<<16)|(bytes[i+25]<<24);
+          const fnLen   = bytes[i+26]|(bytes[i+27]<<8);
+          const extLen  = bytes[i+28]|(bytes[i+29]<<8);
+          const fnBytes = bytes.slice(i+30, i+30+fnLen);
+          const fn      = new TextDecoder().decode(fnBytes).toLowerCase();
+          const dataStart = i + 30 + fnLen + extLen;
+          // Only uncompressed (method 0) txt files
+          if(cMethod===0 && (fn.endsWith('.txt')||fn.includes('chat')) && uSize > bestLen) {
+            bestTxt = new TextDecoder('utf-8',{fatal:false}).decode(bytes.slice(dataStart, dataStart+uSize));
+            bestLen = uSize;
+          }
+          i = dataStart + (cMethod===0 ? uSize : cSize);
+        } else { i++; }
+      }
+      return bestTxt || new TextDecoder('utf-8',{fatal:false}).decode(bytes);
+    } catch(e) { return ''; }
+  }
+  // .notes / .note / .txt / .pdf — baca terus
+  try { return await file.text(); } catch(e) { return ''; }
+}
+
+async function processAllUploads(){
+  if(!requireAdmin()) return;
+  const btn     = document.getElementById('btn-proc-all');
+  const statEl  = document.getElementById('proc-all-stat');
+  const logDiv  = document.getElementById('proc-log');
+  const logBody = document.getElementById('proc-log-body');
+  if(btn)   { btn.disabled=true; btn.textContent='⏳ Memproses...'; }
+  if(logDiv) { logDiv.style.display='block'; }
+  if(logBody) { logBody.innerHTML=''; }
+  let updated = 0;
+
+  const log = (msg, type='info') => {
+    if(!logBody) return;
+    const c = type==='ok'?'#16a34a':type==='err'?'#dc2626':type==='warn'?'#d97706':'#374151';
+    logBody.innerHTML += `<div style="color:${c}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+    logBody.scrollTop = logBody.scrollHeight;
+  };
+  log('Memulakan pemprosesan...');
+
+  // ── MC Borang Semakan ─────────────────────────────────────
+  if(newUploads['mc-up']) {
+    log('Membaca borang semakan MC...');
+    const prog = document.getElementById('mc-up-prog');
+    const bar  = document.getElementById('mc-up-bar');
+    const msg  = document.getElementById('mc-up-msg');
+    if(prog) prog.style.display='block';
+    let mcFound = 0;
+    for(const file of newUploads['mc-up']) {
+      try {
+        const text = await readFileAsText(file);
+        if(msg) msg.textContent = 'Membaca '+file.name+'...';
+        if(bar) bar.style.width = '20%';
+        const lines = text.split('\n');
+        lines.forEach((line, li) => {
+          const dMatches = line.match(/(\d{2})\/(\d{2})\/(\d{4})/g);
+          if(!dMatches) return;
+          const ctx = lines.slice(Math.max(0,li-5),li+5).join(' ').toUpperCase();
+          MASTER.forEach(m => {
+            const parts = m.nama.split(' ').filter(p=>p.length>3);
+            if(parts.slice(0,2).every(p=>ctx.includes(p))) {
+              dMatches.forEach(dt => {
+                const [dd,mm] = dt.split('/');
+                if(mm==='04') {
+                  const hari = +dd;
+                  if(hari>=1&&hari<=30) {
+                    const exists = MC_DATA.some(mc=>mc.bil===m.bil&&mc.dari.startsWith(dd+'/04'));
+                    if(!exists) {
+                      const kM = ctx.match(/KLINIK\s+[A-Z\s]{3,25}|HOSPITAL\s+[A-Z\s]{3,20}|POLIKLINIK\s+[A-Z\s]{3,20}/);
+                      const sM = ctx.match(/\b[A-Z]{1,4}\d{4,8}\b/);
+                      const hM = ctx.match(/(\d{1,2})\s*HARI/i);
+                      MC_DATA.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,
+                        dari:dd+'/04',hingga:dd+'/04',hari:hM?+hM[1]:1,
+                        klinik:kM?kM[0].trim().replace(/\s+/g,' '):'Klinik',
+                        no_siri:sM?sM[0]:'–',jenis:'Bulan Ini',fail_pdf:file.name});
+                      if(DATA[m.bil]?.[hari]) {
+                        if(!DATA[m.bil][hari].kzp) DATA[m.bil][hari].kzp='MC';
+                        if(!DATA[m.bil][hari].kzk) DATA[m.bil][hari].kzk='MC';
+                      }
+                      mcFound++; updated++;
+                      log('MC: '+m.nama+' hari '+hari,'ok');
+                    }
+                  }
+                }
+              });
+            }
+          });
+        });
+        if(bar) bar.style.width='100%';
+        log('MC: '+mcFound+' rekod baru dari '+file.name, mcFound>0?'ok':'warn');
+      } catch(e) { log('PDF MC: guna Register MC manual','warn'); }
+    }
+  }
+
+  // ── KZ Koperal (.txt / .zip / .notes) ─────────────────────
+  if(newUploads['kzk-new']) {
+    log('Membaca KZ Koperal (WhatsApp)...');
+    const prog = document.getElementById('kzk-prog');
+    const bar  = document.getElementById('kzk-bar');
+    const msg  = document.getElementById('kzk-msg');
+    if(prog) prog.style.display='block';
+    if(bar) bar.style.width='10%';
+    for(const file of newUploads['kzk-new']) {
+      try {
+        if(msg) msg.textContent = 'Membaca '+file.name+'...';
+        const text = await readFileAsText(file);  // handles .zip, .notes, .txt
+        const lines = text.split('\n');
+        let found = 0;
+        if(bar) bar.style.width='40%';
+        lines.forEach((line, li) => {
+          // Cari tarikh & status dalam baris
+          const dateM = line.match(/(\d{1,2})\/04/);
+          const statM = line.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|✓|L)\b/i);
+          if(dateM && statM) {
+            const d    = +dateM[1];
+            const stat = statM[1].toUpperCase();
+            if(d>=1&&d<=30) {
+              const ctx = lines.slice(Math.max(0,li-3),li+3).join(' ').toUpperCase();
+              MASTER.forEach(m => {
+                const nm = m.nama.split(' ').filter(p=>p.length>3);
+                if(nm.slice(0,2).every(p=>ctx.includes(p))&&DATA[m.bil]?.[d]&&!DATA[m.bil][d].kzk) {
+                  DATA[m.bil][d].kzk = stat; found++; updated++;
+                  log('KZK: '+m.nama+' hari '+d+' → '+stat,'ok');
+                }
+              });
+            }
+          }
+        });
+        if(bar) bar.style.width='100%';
+        log('KZ Koperal: '+found+' rekod dari '+file.name, found>0?'ok':'warn');
+      } catch(e) { log('Ralat KZ Koperal: '+e.message,'err'); }
+    }
+  }
+
+  // ── Timecare ─────────────────────────────────────────────
+  if(newUploads['tc-new']) {
+    log('Membaca Timecare...');
+    const prog = document.getElementById('tc-prog');
+    const bar  = document.getElementById('tc-bar');
+    const msg  = document.getElementById('tc-msg');
+    if(prog) prog.style.display='block';
+    if(bar) bar.style.width='10%';
+    for(const file of newUploads['tc-new']) {
+      try {
+        if(msg) msg.textContent = 'Membaca '+file.name+'...';
+        const text = await readFileAsText(file);
+        let found = 0;
+        text.split('\n').forEach(line => {
+          const times = line.match(/(\d{2}:\d{2})/g);
+          if(!times||!times.length) return;
+          const dateM = line.match(/(\d{1,2})\/(?:04|4)(?:\/2026)?/);
+          if(!dateM) return;
+          const d = +dateM[1];
+          if(d<1||d>30) return;
+          MASTER.forEach(m => {
+            if(line.toUpperCase().includes(m.nama.split(' ')[0].substring(0,6).toUpperCase())&&DATA[m.bil]?.[d]) {
+              if(!DATA[m.bil][d].tc_in&&times[0])  { DATA[m.bil][d].tc_in=times[0];  found++; updated++; }
+              if(!DATA[m.bil][d].tc_out&&times[1]) { DATA[m.bil][d].tc_out=times[1]; }
+              log('TC: '+m.nama+' hari '+d+' IN:'+times[0]+(times[1]?' OUT:'+times[1]:''),'ok');
+            }
+          });
+        });
+        if(bar) bar.style.width='100%';
+        log('Timecare: '+found+' rekod dari '+file.name, found>0?'ok':'warn');
+      } catch(e) { log('Ralat Timecare: '+e.message,'err'); }
+    }
+  }
+
+  // ── KZ Penyelia PDF nota ──────────────────────────────────
+  if(newUploads['kzp-new']) {
+    const bar  = document.getElementById('kzp-bar');
+    const msg  = document.getElementById('kzp-msg');
+    const prog = document.getElementById('kzp-prog');
+    if(prog) prog.style.display='block';
+    if(bar)  { bar.style.width='100%'; bar.style.background='#d97706'; }
+    if(msg)    msg.textContent = 'PDF diterima — kemaskini manual untuk rekod tertentu';
+    log('KZ Penyelia PDF: OCR aktif selepas Edge Function disedia','warn');
+  }
+
+  // ── Save ke Supabase ──────────────────────────────────────
+  if(typeof SUPA_OK!=='undefined'&&SUPA_OK&&updated>0) {
+    log('Menyimpan '+updated+' rekod ke Supabase...');
+    for(const m of MASTER)
+      for(let d=1;d<=30;d++)
+        if(DATA[m.bil][d]?.kzk||DATA[m.bil][d]?.tc_in||DATA[m.bil][d]?.tc_out)
+          await saveToDB(m.bil,4,d);
+    log('Supabase: tersimpan ✓','ok');
+  }
+
+  // ── Kemaskini grid ────────────────────────────────────────
+  log('Mengemaskini Master Listing...');
+  updateFlagCounts();
+  const mg = document.getElementById('master-grid');
+  if(mg) renderGrid(MASTER,'master-grid');
+  if(btn) { btn.disabled=false; btn.textContent='Proses & Kemaskini'; }
+  const sum = '✅ Selesai — '+updated+' rekod dikemaskini';
+  if(statEl) statEl.textContent = sum;
+  log(sum,'ok');
+  showToast(sum,'ok');
+}
+
+function resetUploads(){
+  Object.keys(newUploads).forEach(k=>delete newUploads[k]);
+  ['kzp-new','kzk-new','tc-new','mc-up'].forEach(k=>{
+    const uz=document.getElementById('uz-'+k); if(uz) uz.classList.remove('done');
+    const fn=document.getElementById('fn-'+k); if(fn) fn.textContent='';
+  });
+  const btn=document.getElementById('btn-proc-all'); if(btn) btn.disabled=true;
+  const st=document.getElementById('proc-all-stat'); if(st) st.textContent='';
+  const ld=document.getElementById('proc-log'); if(ld) ld.style.display='none';
 }
 
 // ════════════════════════════════════════════════════════════════
