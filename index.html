@@ -255,11 +255,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 .nc-flag-cnt{font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700;background:var(--am-bg);color:var(--am-t)}
 
 /* Day cell — 4 layers */
-.dc{display:flex;flex-direction:column;min-width:30px;width:30px}
-.dc-sh{text-align:center;padding:2px 1px;font-size:7.5px;font-weight:700;border-bottom:1px solid rgba(0,0,0,.06)}
-.dc-kzp{text-align:center;padding:1px;font-size:7px;font-weight:600;border-bottom:1px solid rgba(0,0,0,.06)}
-.dc-kzk{text-align:center;padding:1px;font-size:7px;font-weight:600;border-bottom:1px solid rgba(0,0,0,.06)}
-.dc-fl{text-align:center;padding:1px 0;font-size:6px;font-weight:700;min-height:9px}
+.dc{display:flex;flex-direction:column;min-width:58px;width:58px}
+.dc-sh {text-align:center;padding:2px 2px;font-size:7.5px;font-weight:700;border-bottom:1px solid rgba(0,0,0,.08)}
+.dc-kzp{text-align:center;padding:1px 2px;font-size:7px;font-weight:600;border-bottom:1px solid rgba(0,0,0,.06)}
+.dc-kzk{text-align:center;padding:1px 2px;font-size:7px;font-weight:600;border-bottom:1px solid rgba(0,0,0,.06)}
+.dc-tc {text-align:center;padding:1px 2px;font-size:6px;border-bottom:1px solid rgba(0,0,0,.06);min-height:13px;line-height:1.4}
+.dc-mc {text-align:center;padding:1px 2px;font-size:6px;font-weight:600;border-bottom:1px solid rgba(0,0,0,.06);min-height:11px;background:#fffbeb}
+.dc-hr {text-align:center;padding:1px 2px;font-size:6px;font-weight:600;border-bottom:1px solid rgba(0,0,0,.06);min-height:11px;background:#eff6ff}
+.dc-af {text-align:center;padding:2px;font-size:5.5px;font-weight:700;min-height:14px;line-height:1.3}
+.dc-fl{display:none}
 
 /* Shift colours */
 .sh-pt{background:#fdf4ff;color:#7e22ce}
@@ -622,7 +626,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
           <span class="lg-i"><span class="fl sh-m"  style="padding:1px 4px">M</span>Malam</span>
           <span class="lg-i"><span class="fl sh-o"  style="padding:1px 4px">OF</span>Offday</span>
           &nbsp;<b style="color:var(--gray)">Flag:</b>
-          <span class="lg-i"><span class="fl fl-sp">SP</span>Single Punch</span>
+          <span class="lg-i" style="background:#f8fafc;border:1px solid var(--gbd);padding:2px 6px;border-radius:4px;font-size:8px;line-height:1.6">Lapisan per sel: <b>SH</b>=Shift · <b>KZP</b>=KZ Penyelia · <b>KZK</b>=KZ Koperal · <b>TC</b>=Timecare IN/OUT · <b>MC</b>=MC Diterima · <b>HR</b>=HRMIS · <b style="color:var(--navy)">AF</b>=Audit Final</span>
           <span class="lg-i"><span class="fl fl-lw">LW</span>Lewat</span>
           <span class="lg-i"><span class="fl fl-ia">IA</span>IN Awal</span>
           <span class="lg-i"><span class="fl fl-oa">OA</span>OUT Awal</span>
@@ -747,7 +751,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
       <div class="page" id="page-raya">
         <div class="notif info">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          <div><b>Anggota Bertugas Raya Aidilfitri 2026</b> — Fokus IKTAR, MHKL, RT sahaja. Hari Raya Aidilfitri: 20–21 Mac 2026 (tertakluk cerapan). Anggota yang bertugas pada hari HKA ini dikira OT — bukan cuti. Bilangan hari bekerja dikosongkan dalam rekod.</div>
+          <div><b>Anggota Bertugas Raya Aidilfitri 2026</b> — Fokus IKTAR, MHKL, RT sahaja. Hari Raya Aidilfitri: 20–21 Mac 2026. Jadual khas <b>19–30 Mac: Shift 12 Jam</b> (Siang 0700–1900 · Malam 1900–0700). Bertugas pada HKA = OT, bilangan dikosongkan. File raya diupload berasingan.</div>
         </div>
         <div id="raya-content"></div>
       </div>
@@ -1468,7 +1472,7 @@ function renderGrid(members, containerId){
         hdrs+=`<th class="${cls}">${d}<br><span style="font-size:6px;opacity:.7">${DOW_MS[dow]}</span></th>`;
         lyrs+=`<th style="min-width:30px">SH<br>P<br>K<br>F</th>`;
       }
-      hdrs+=`<th style="background:#1a2f52;min-width:24px;font-size:7px">H</th><th style="background:#1a2f52;font-size:7px">MC</th><th style="background:#1a2f52;font-size:7px">CR</th><th style="background:#1a2f52;font-size:7px">AB</th><th style="background:#1a2f52;font-size:7px">⚑</th>`;
+      hdrs+=`<th style="background:#1a2f52;min-width:26px;font-size:7px">Hadir</th><th style="background:#854d0e;font-size:7px">MC</th><th style="background:#1e40af;font-size:7px">CR</th><th style="background:#991b1b;font-size:7px">ABS</th><th style="background:#b45309;font-size:7px">Flag</th>`;
       lyrs+=`<th colspan="5" style="background:#1e293b"></th>`;
 
       let rows='';
@@ -1497,28 +1501,83 @@ function renderGrid(members, containerId){
           const kzkShow   = c.kzk||(sh==='O'?'OF':autoTick?'✓':'');
           const kzpCls2   = autoTick && !c.kzp ? 'kz-ok' : kzCls(c.kzp);
           const kzkCls2   = autoTick && !c.kzk ? 'kz-ok' : kzCls(c.kzk);
-          // ✓ thumb: hijau kecil jika ada punch & bukan TH/NHT
-          const hasThumb = (c.tc_in||c.tc_out) && sh!=='O' && !['TH','NHT'].includes(c.kzp);
-          const thumbTick = hasThumb?'<span style="color:#16a34a;font-weight:900;font-size:6px;margin-left:1px">✓</span>':'';
-          // IN/OUT time lines
-          const inLine  = c.tc_in  ? `<span style="color:#15803d;font-size:5.5px">${c.tc_in}</span>`
-                                   : (sh!=='O'&&!['TH','NHT','MC','CR','EL','K/P','CB','CTR'].includes(c.kzp)&&c.kzp!==''&&c.kzp!=='✓')?''
-                                   : '';
-          const outLine = c.tc_out ? `<span style="color:#1d4ed8;font-size:5.5px">${c.tc_out}</span>` : '';
-          const noIn  = !c.tc_in  && sh!=='O' && !['TH','NHT','MC','CR','EL','K/P','CB','CTR','OF','ABS','NHT','X'].includes(c.kzp) && c.tc_out;
-          const noOut = !c.tc_out && sh!=='O' && !['TH','NHT','MC','CR','EL','K/P','CB','CTR','OF','ABS','NHT','X'].includes(c.kzp) && c.tc_in;
-          const tcDisplay = (c.tc_in||c.tc_out) ? `<div style="text-align:center;line-height:1.3;font-size:5.5px;border-top:1px solid rgba(0,0,0,.05);padding:1px 0">
-            ${c.tc_in?`<span style="color:#15803d">${c.tc_in}</span>`:(noIn?'<span style="color:var(--red);font-size:5px">TiadaIN</span>':'')}
-            ${(c.tc_in&&c.tc_out)?'<br>':''}
-            ${c.tc_out?`<span style="color:#1d4ed8">${c.tc_out}</span>`:(noOut?'<span style="color:var(--red);font-size:5px">TiadaOUT</span>':'')}
-          </div>` : '';
-          cells+=`<td style="${bg}" title="Bil ${m.bil} · ${d}/04 · ${SH_LBL[sh]} ${SH_TIME[sh]}${c.tc_in?' | IN:'+c.tc_in:''}${c.tc_out?' | OUT:'+c.tc_out:''}${fl.length?' | Flag:'+fl.join(', '):''}">
+          // ── 7 LAPISAN: SH | KZP | KZK | TC | MC | HR | AF ─────────
+          // Layer 4: TIMECARE
+          const skipTC = ['TH','NHT','MC','CR','EL','K/P','CB','CTR','ABS','X'].includes(c.kzp);
+          const noIn  = !c.tc_in  && !skipTC && c.tc_out;
+          const noOut = !c.tc_out && !skipTC && c.tc_in;
+          let tcHtml = '';
+          if(sh==='O'){ tcHtml='<span style="color:#94a3b8;font-size:6px">OFFDAY</span>'; }
+          else if(['TH','NHT'].includes(c.kzp)){ tcHtml=`<span style="color:#9d174d;font-size:6px">${c.kzp}</span>`; }
+          else if(c.tc_in||c.tc_out){
+            tcHtml = `${c.tc_in?`<span style="color:#15803d;font-weight:700">${c.tc_in}</span>`:(noIn?'<span style="color:#dc2626;font-size:5.5px">Tiada IN</span>':'')}${c.tc_out?`<br><span style="color:#1d4ed8;font-weight:700">${c.tc_out}</span>`:(noOut?'<br><span style="color:#dc2626;font-size:5.5px">Tiada OUT</span>':'')}`;
+          } else if(!skipTC){ tcHtml='<span style="color:#94a3b8;font-size:6px">–</span>'; }
+
+          // Layer 5: MC DITERIMA
+          const mcRec = (typeof MC_DATA!=='undefined') ?
+            MC_DATA.find(mc=>mc.bil===m.bil && (mc.dari.startsWith(String(d).padStart(2,'0')+'/04')||mc.dari.startsWith(String(d).padStart(2,'0')+'/04')) && mc.jenis==='Bulan Ini') : null;
+          const mcHtml = mcRec ?
+            `<span style="color:#854d0e;font-weight:700;font-size:6px">MC ${mcRec.hari}H</span>`
+            : (c.kzp==='MC'||c.kzk==='MC' ? '<span style="color:#854d0e;font-size:6px">MC</span>' : '<span style="color:#94a3b8;font-size:6px">–</span>');
+
+          // Layer 6: CUTI HRMIS
+          const hrHtml = (c.kzp==='CR'||c.kzk==='CR') ?
+            '<span style="color:#1e40af;font-weight:700;font-size:6px">CR</span>' :
+            (c.kzp==='EL'||c.kzk==='EL') ? '<span style="color:#5b21b6;font-weight:700;font-size:6px">EL</span>' :
+            (c.kzp==='CTR'||c.kzk==='CTR') ? '<span style="color:#c2410c;font-weight:700;font-size:6px">CTR</span>' :
+            '<span style="color:#94a3b8;font-size:6px">–</span>';
+
+          // Layer 7: AUDIT FINAL — auto-decision
+          let afText='–', afBg='#f8fafc', afFg='#94a3b8';
+          if(sh==='O'){ afText='OFFDAY'; afBg='#f1f5f9'; afFg='#64748b'; }
+          else if(c.kzp==='TH'||c.kzk==='TH'){ afText='TAHAN TUGAS'; afBg='#fce7f3'; afFg='#9d174d'; }
+          else if(c.kzp==='NHT'||c.kzk==='NHT'){ afText='TIDAK HADIR'; afBg='#1c1917'; afFg='#fef2f2'; }
+          else if(c.kzp==='MC'||c.kzk==='MC'){
+            afText=mcRec?'MC SAH':'MC — SEMAK'; afBg=mcRec?'#fef9c3':'#292524'; afFg=mcRec?'#854d0e':'#fbbf24';
+          }
+          else if(c.kzp==='CR'||c.kzk==='CR'){ afText='CR SAH'; afBg='#dbeafe'; afFg='#1e40af'; }
+          else if(c.kzp==='EL'||c.kzk==='EL'){ afText='EL — ISI CUTI'; afBg='#ede9fe'; afFg='#5b21b6'; }
+          else if(c.kzp==='CTR'||c.kzk==='CTR'){ afText='CTR — ISI CUTI'; afBg='#fff7ed'; afFg='#c2410c'; }
+          else if(c.kzp==='K/P'||c.kzk==='K/P'){ afText='K/P'; afBg='#ecfdf5'; afFg='#065f46'; }
+          else if(['ABS','X'].includes(c.kzp)||['ABS','X'].includes(c.kzk)){
+            const hM=mcRec!==null; const hC=c.kzp==='CR'||c.kzk==='CR';
+            afText=hM?'MC SAH':hC?'CR SAH':'ABS — MOHON CUTI';
+            afBg=hM?'#fef9c3':hC?'#dbeafe':'#fee2e2'; afFg=hM?'#854d0e':hC?'#1e40af':'#991b1b';
+          }
+          else if(fl.some(f=>f.startsWith('LEWAT'))){
+            const lf=fl.find(f=>f.startsWith('LEWAT'));
+            afText=lf||'LEWAT'; afBg='#ffedd5'; afFg='#9a3412';
+          }
+          else if(fl.some(f=>f.startsWith('OUT LEWAT'))){
+            const of2=fl.find(f=>f.startsWith('OUT LEWAT'));
+            afText=of2||'OUT LEWAT'; afBg='#ffedd5'; afFg='#9a3412';
+          }
+          else if(fl.some(f=>f.startsWith('Tiada'))){
+            const sf=fl.find(f=>f.startsWith('Tiada'));
+            afText=sf||'SINGLE PUNCH'; afBg='#fef3c7'; afFg='#b45309';
+          }
+          else if(fl.some(f=>f.startsWith('IN AWAL'))){
+            afText=fl.find(f=>f.startsWith('IN AWAL'))||'IN AWAL'; afBg='#fff7ed'; afFg='#c2410c';
+          }
+          else if(c.kzp==='✓'||c.kzk==='✓'||(c.tc_in&&c.tc_out)){
+            afText='✓ SAH'; afBg='#dcfce7'; afFg='#166534';
+          }
+          else if(autoTick){ afText='✓'; afBg='#f0fdf4'; afFg='#16a34a'; }
+
+          const rowBg = (afFg==='#991b1b'||afFg==='#fef2f2')?'background:#fff5f5;':
+                        (afFg==='#9a3412')?'background:#fff7ed;':
+                        (afFg==='#b45309'||afFg==='#fbbf24')?'background:#fffbeb;':'';
+          const tooltip = `${m.nama} · ${d}/04 · ${SH_LBL[sh]}${c.kzp?' | KZP:'+c.kzp:''}${c.kzk?' | KZK:'+c.kzk:''}${c.tc_in?' | IN:'+c.tc_in:''}${c.tc_out?' | OUT:'+c.tc_out:''}${mcRec?' | MC:'+mcRec.klinik:''}${fl.length?' | '+fl.join('; '):''}`;
+
+          cells+=`<td style="${rowBg}" title="${tooltip}">
             <div class="dc">
-              <div class="dc-sh ${SH_CLS[sh]}">${SH_LBL[sh]}${thumbTick}</div>
+              <div class="dc-sh ${SH_CLS[sh]}">${SH_LBL[sh]}</div>
               <div class="dc-kzp ${kzpCls2}">${kzShort(kzpShow)||'&nbsp;'}</div>
               <div class="dc-kzk ${kzkCls2}">${kzShort(kzkShow)||'&nbsp;'}</div>
-              ${tcDisplay}
-              <div class="dc-fl">${flHtml}</div>
+              <div class="dc-tc">${tcHtml}</div>
+              <div class="dc-mc">${mcHtml}</div>
+              <div class="dc-hr">${hrHtml}</div>
+              <div class="dc-af" style="background:${afBg};color:${afFg};font-weight:700;font-size:5.5px;text-align:center;padding:2px;line-height:1.2;border-radius:0 0 2px 2px">${afText}</div>
             </div>
           </td>`;
         }
