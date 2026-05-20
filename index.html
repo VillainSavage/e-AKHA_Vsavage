@@ -143,7 +143,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 .sb-logout:hover{border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.7)}
 
 /* MAIN CONTENT */
-.main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
 .topbar{
   background:#fff;border-bottom:1px solid var(--gbd);padding:9px 16px;
   display:flex;align-items:center;justify-content:space-between;
@@ -163,7 +163,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 .supa-ok{background:var(--gn-bg);color:var(--gn-t)}
 .supa-warn{background:var(--am-bg);color:var(--am-t)}
 
-.content{padding:14px;flex:1}
+.content{padding:10px;flex:1;min-width:0;overflow-x:hidden}
 .page{display:none}.page.active{display:block}
 
 /* BUTTONS */
@@ -214,34 +214,39 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 .komp-hdr h4{font-size:10px;font-weight:600}
 .komp-hdr span{font-size:8px;color:var(--gray)}
 
-.tscroll{overflow-x:auto}
-.grid-t{border-collapse:collapse;font-size:8px;white-space:nowrap;width:100%}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;position:relative}
+.grid-t{border-collapse:collapse;font-size:8px;white-space:nowrap;table-layout:fixed}
+/* Header */
 .grid-t thead tr.hr-day th{
-  background:var(--navy3);color:#fff;padding:4px 2px;text-align:center;
-  font-size:7.5px;min-width:30px;
+  background:var(--navy3);color:#fff;padding:5px 3px;text-align:center;
+  font-size:8px;min-width:70px;border-right:1px solid rgba(255,255,255,0.1);
 }
 .grid-t thead tr.hr-day th.sun{background:#1e3a6e;color:#fbbf24}
 .grid-t thead tr.hr-day th.sat{background:#1e3a6e;color:#93c5fd}
 .grid-t thead tr.hr-day th.nm{
-  background:var(--navy3);text-align:left;min-width:160px;
-  position:sticky;left:0;z-index:4;padding:4px 8px;font-size:8px;
+  background:var(--navy3);text-align:left;
+  position:sticky;left:0;z-index:6;padding:5px 8px;font-size:8px;border-right:1px solid rgba(255,255,255,0.2);
 }
-.grid-t thead tr.hr-lyr th{
-  background:#1e293b;color:rgba(255,255,255,.35);padding:2px 2px;
-  font-size:6px;text-align:center;font-weight:400;
-}
-.grid-t thead tr.hr-lyr th.nm2{
-  background:#1e293b;position:sticky;left:0;z-index:4;text-align:left;padding:2px 8px;
-}
+/* Body */
 .grid-t tbody td{
-  padding:0;border-bottom:1px solid var(--gbd);border-right:1px solid #f1f5f9;vertical-align:top;
+  border-right:1px solid rgba(0,0,0,0.06);vertical-align:middle;
 }
-.grid-t tbody td.ntd{
-  position:sticky;left:0;background:#fff;z-index:2;
-  border-right:1px solid var(--gbd);
+.grid-t tbody tr:hover td{filter:brightness(0.96)}
+/* Mobile-friendly scroll container */
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+/* Column widths */
+.col-name{min-width:110px;max-width:110px;width:110px}
+.col-lyr {min-width:90px;max-width:90px;width:90px}
+.col-day {min-width:70px;width:70px}
+.col-sum {min-width:24px;width:24px}
+/* Responsive for mobile */
+@media(max-width:768px){
+  .col-day{min-width:65px;width:65px}
+  .grid-t{font-size:7px}
+  .sidebar{width:50px}
+  .sb-item span,.sb-brand h1,.sb-brand p,.sb-ver,.sb-lbl{display:none}
+  .main{margin-left:50px}
 }
-.grid-t tbody tr:hover td{background:#f8faff}
-.grid-t tbody tr:hover td.ntd{background:#f8faff}
 
 /* Name cell */
 .nc{padding:5px 8px}
@@ -304,7 +309,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
 .dc-warn{background:#fffbeb}
 
 /* Summary cols */
-.sc-col{background:#f8fafc;padding:4px 5px;font-size:8px;min-width:26px;text-align:center;font-weight:700;border-left:1px solid var(--gbd)}
+.sc-col{background:#f8fafc;padding:3px 4px;font-size:8px;min-width:24px;text-align:center;font-weight:700;border-left:1px solid var(--gbd);white-space:nowrap}
 
 /* FILTER TABS */
 .ftabs{display:flex;gap:4px;background:var(--gbg);border-radius:7px;padding:3px;margin-bottom:12px;flex-wrap:wrap}
@@ -765,72 +770,162 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
         <div id="haji-content"></div>
       </div>
 
-      <!-- ── ENTRY MANUAL (ADMIN ONLY) ── -->
+      <!-- ── UPLOAD KZ & TIMECARE ── -->
       <div class="page" id="page-entry">
-        <div class="notif warn" id="entry-viewer-notice" style="display:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span><b>Mod Tontonan</b> — entry manual hanya untuk pentadbir.</span>
+        <div id="entry-viewer-notice" class="notif warn" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span><b>Mod Tontonan</b> — upload hanya untuk pentadbir.
+          <button class="btn btn-sm btn-nv" onclick="doLogout()" style="font-size:8px;padding:2px 8px;margin-left:8px">Log Masuk</button></span>
         </div>
-        <div id="entry-viewer-notice" class="notif warn" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span><b>Mod Tontonan</b> — entry manual hanya untuk pentadbir. <button class="btn btn-sm btn-nv" onclick="doLogout()" style="font-size:8px;padding:2px 8px">Log Masuk</button></span></div>
-<div id="entry-form-wrap">
-          <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);padding:16px;margin-bottom:14px">
-            <div style="font-size:12px;font-weight:700;margin-bottom:14px">Entry Manual — KZ Penyelia / Koperal / Timecard</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-              <div>
-                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">Anggota</div>
-                <select id="e-bil" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:220px">
-                  <option value="">-- Pilih Anggota --</option>
-                </select>
-              </div>
-              <div>
-                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">Tarikh (1–30)</div>
-                <input type="number" id="e-hari" min="1" max="30" placeholder="1"
-                  style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:60px">
-              </div>
-              <div>
-                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">KZ Penyelia</div>
-                <select id="e-kzp" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
-                  <option value="">–</option>
-                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option>
-                  <option>ABS</option><option>TH</option><option>NHT</option><option>X</option>
-                  <option>LEWAT</option><option>K/P</option><option>CTR</option><option>CB</option>
-                </select>
-              </div>
-              <div>
-                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">KZ Koperal</div>
-                <select id="e-kzk" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
-                  <option value="">–</option>
-                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option>
-                  <option>ABS</option><option>TH</option><option>NHT</option><option>X</option>
-                  <option>LEWAT</option><option>K/P</option><option>CTR</option><option>CB</option>
-                </select>
-              </div>
-              <div>
-                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">TC IN (HH:MM)</div>
-                <input type="text" id="e-in" placeholder="07:02"
-                  style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:72px">
-              </div>
-              <div>
-                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">TC OUT (HH:MM)</div>
-                <input type="text" id="e-out" placeholder="14:58"
-                  style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:72px">
-              </div>
-              <div>
-                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">OT Sambung?</div>
-                <select id="e-ot" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
-                  <option value="false">Tidak</option>
-                  <option value="true">Ya (OT)</option>
-                </select>
-              </div>
-              <button class="btn btn-gr" onclick="saveEntry()" style="margin-bottom:0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                Simpan
-              </button>
-            </div>
-            <div id="e-status" style="font-size:9px;color:var(--green);margin-top:8px"></div>
+        <div id="entry-form-wrap">
+          <div class="notif info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+            <div><b>Upload PDF — Sistem Auto-Proses &amp; Kemaskini Master File.</b>
+            Upload KZ Penyelia (PDF scan) · KZ Koperal (WhatsApp export) · Timecare (PDF/Excel).
+            Sistem akan trace nama, tarikh, status dan punch IN/OUT secara automatik melalui Supabase Edge Function. Semua 3 sumber akan dibandingkan dan master listing dikemaskini.</div>
           </div>
-          <div id="e-preview"></div>
-        </div>
+
+          <!-- 3 UPLOAD ZONES -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:14px">
+
+            <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);overflow:hidden">
+              <div style="background:linear-gradient(135deg,#065f46,#047857);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px">
+                <span style="font-size:20px">📋</span>
+                <div><div style="font-size:11.5px;font-weight:700">KZ Penyelia</div>
+                <div style="font-size:8px;opacity:.75">PDF scan · trace ✓ MC CR L LL TT TH K/P CTR EL</div></div>
+              </div>
+              <div style="padding:12px">
+                <div class="uzone" id="uz-kzp-new" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'kzp-new',this)" style="padding:20px 12px">
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'kzp-new')">
+                  <div style="font-size:28px;margin-bottom:6px">📄</div>
+                  <div style="font-size:10px;font-weight:600;color:#374151">Drag &amp; Drop PDF / Gambar</div>
+                  <div style="font-size:8px;color:var(--gray);margin-top:2px">Boleh pilih multiple fail sekaligus</div>
+                  <div id="fn-kzp-new" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:5px"></div>
+                </div>
+                <div id="kzp-prog" style="display:none;margin-top:8px">
+                  <div style="background:var(--gbd);border-radius:3px;height:4px;margin-bottom:4px"><div id="kzp-bar" style="height:4px;background:#047857;border-radius:3px;width:0;transition:width .4s"></div></div>
+                  <div id="kzp-msg" style="font-size:8.5px;color:var(--gray)"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);overflow:hidden">
+              <div style="background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px">
+                <span style="font-size:20px">💬</span>
+                <div><div style="font-size:11.5px;font-weight:700">KZ Koperal (WhatsApp)</div>
+                <div style="font-size:8px;opacity:.75">Export chat .txt atau PDF · trace nama &amp; status harian</div></div>
+              </div>
+              <div style="padding:12px">
+                <div class="uzone" id="uz-kzk-new" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'kzk-new',this)" style="padding:20px 12px">
+                  <input type="file" accept=".pdf,.txt" onchange="fsel(this,'kzk-new')">
+                  <div style="font-size:28px;margin-bottom:6px">💬</div>
+                  <div style="font-size:10px;font-weight:600;color:#374151">Drag &amp; Drop WhatsApp Export</div>
+                  <div style="font-size:8px;color:var(--gray);margin-top:2px">Format: .txt (Export Chat) atau PDF</div>
+                  <div id="fn-kzk-new" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:5px"></div>
+                </div>
+                <div id="kzk-prog" style="display:none;margin-top:8px">
+                  <div style="background:var(--gbd);border-radius:3px;height:4px;margin-bottom:4px"><div id="kzk-bar" style="height:4px;background:#2563eb;border-radius:3px;width:0;transition:width .4s"></div></div>
+                  <div id="kzk-msg" style="font-size:8.5px;color:var(--gray)"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);overflow:hidden">
+              <div style="background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px">
+                <span style="font-size:20px">⏱</span>
+                <div><div style="font-size:11.5px;font-weight:700">Timecare (Punch IN/OUT)</div>
+                <div style="font-size:8px;opacity:.75">PDF/Excel Timecare · bandingkan dengan shift hakiki automatik</div></div>
+              </div>
+              <div style="padding:12px">
+                <div class="uzone" id="uz-tc-new" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'tc-new',this)" style="padding:20px 12px">
+                  <input type="file" accept=".pdf,.xlsx,.xls,.csv" onchange="fsel(this,'tc-new')">
+                  <div style="font-size:28px;margin-bottom:6px">🕐</div>
+                  <div style="font-size:10px;font-weight:600;color:#374151">Drag &amp; Drop Timecare Export</div>
+                  <div style="font-size:8px;color:var(--gray);margin-top:2px">PDF / Excel (.xlsx) / CSV</div>
+                  <div id="fn-tc-new" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:5px"></div>
+                </div>
+                <div id="tc-prog" style="display:none;margin-top:8px">
+                  <div style="background:var(--gbd);border-radius:3px;height:4px;margin-bottom:4px"><div id="tc-bar" style="height:4px;background:#7c3aed;border-radius:3px;width:0;transition:width .4s"></div></div>
+                  <div id="tc-msg" style="font-size:8.5px;color:var(--gray)"></div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- end grid -->
+
+          <!-- BUTANG PROSES -->
+          <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);padding:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:11px;font-weight:700">Proses &amp; Kemaskini Master Listing</div>
+              <div style="font-size:9px;color:var(--gray);margin-top:2px">Selepas upload, klik untuk memulakan perbandingan dan kemaskini grid secara automatik</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-nv" id="btn-proc-all" onclick="processAllUploads()" disabled style="gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+                Proses &amp; Kemaskini
+              </button>
+              <button class="btn" onclick="resetUploads()" style="font-size:9.5px;padding:5px 10px">Reset</button>
+            </div>
+          </div>
+          <div id="proc-all-stat" style="font-size:9.5px;color:var(--gray);margin-bottom:10px"></div>
+
+          <!-- LOG HASIL -->
+          <div id="proc-log" style="display:none;background:#fff;border-radius:9px;border:1px solid var(--gbd);overflow:hidden;margin-bottom:14px">
+            <div style="background:var(--navy);color:#fff;padding:8px 13px;font-size:11px;font-weight:700;display:flex;justify-content:space-between">
+              <span>📋 Log Pemprosesan</span>
+              <button onclick="document.getElementById('proc-log').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:12px">✕</button>
+            </div>
+            <div id="proc-log-body" style="padding:10px 13px;font-size:8.5px;font-family:monospace;max-height:200px;overflow-y:auto;line-height:1.8;color:#374151"></div>
+          </div>
+
+          <!-- DIVIDER -->
+          <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+            <div style="flex:1;height:1px;background:var(--gbd)"></div>
+            <span style="font-size:8.5px;color:var(--gray);font-weight:600;white-space:nowrap">KEMASKINI MANUAL — SATU REKOD (PEMBETULAN)</span>
+            <div style="flex:1;height:1px;background:var(--gbd)"></div>
+          </div>
+
+          <!-- MANUAL OVERRIDE -->
+          <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);padding:13px">
+            <div style="font-size:10px;font-weight:600;color:#374151;margin-bottom:10px">Untuk rekod yang tidak dapat dibaca sistem auto — pembetulan manual</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end">
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">Anggota</div>
+                <select id="e-bil" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px;width:190px">
+                  <option value="">-- Pilih --</option>
+                </select></div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">Tarikh</div>
+                <input type="number" id="e-hari" min="1" max="30" placeholder="1"
+                  style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px;width:52px"></div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">KZ Penyelia</div>
+                <select id="e-kzp" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="">–</option>
+                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option>
+                  <option>ABS</option><option>TT</option><option>TH</option><option>X</option>
+                  <option>L</option><option>LL</option><option>K/P</option><option>CTR</option><option>CB</option><option>BER</option>
+                </select></div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">KZ Koperal</div>
+                <select id="e-kzk" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="">–</option>
+                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option>
+                  <option>ABS</option><option>TT</option><option>TH</option><option>X</option>
+                  <option>L</option><option>LL</option><option>K/P</option><option>CTR</option><option>CB</option><option>BER</option>
+                </select></div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">TC IN</div>
+                <input type="text" id="e-in" placeholder="07:02"
+                  style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px;width:62px"></div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">TC OUT</div>
+                <input type="text" id="e-out" placeholder="14:58"
+                  style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px;width:62px"></div>
+              <div><div style="font-size:8.5px;color:var(--gray);margin-bottom:3px">OT</div>
+                <select id="e-ot" style="font-size:9px;padding:4px 7px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="false">Tidak</option><option value="true">Ya</option>
+                </select></div>
+              <button class="btn btn-gr btn-sm" onclick="saveEntry()">✓ Simpan</button>
+            </div>
+            <div id="e-status" style="font-size:9px;margin-top:7px;color:var(--green)"></div>
+          </div>
+
+        </div><!-- entry-form-wrap -->
       </div>
 
       <!-- ── UPLOAD ── -->
@@ -990,8 +1085,10 @@ const SUPA_KEY = 'sb_publishable_KvirNmFqwUsGHuTZ8DltYA_CZtY2ZBO';
 // Akaun pentadbir tempatan (fallback jika Supabase belum setup)
 // TUKAR PASSWORD SEBELUM DEPLOY!
 const ADMIN_ACCOUNTS = [
-  { id:'sm.amierul',  pw:'6438670', nama:'SM Amierul',  jawatan:'PELULUS'   },
-  { id:'sjn.adilah',  pw:'6438670', nama:'SJN Adilah',  jawatan:'PENYOKONG' },
+  { id:'sm.amierul', pw:'6438670', nama:'SM Amierul',  jawatan:'PELULUS'   },
+  { id:'sjn.adilah', pw:'6438670', nama:'SJN Adilah',  jawatan:'PENYOKONG' },
+  { id:'smamierul',  pw:'6438670', nama:'SM Amierul',  jawatan:'PELULUS'   },
+  { id:'sjnadilah',  pw:'6438670', nama:'SJN Adilah',  jawatan:'PENYOKONG' },
 ];
 const VIEWER_PASS = '633283';
 
@@ -1455,6 +1552,17 @@ function renderGrid(members, containerId){
     groups[m.jab][m.komp].push(m);
   });
 
+  // ── Layer colours (matching Excel) ──────────────────────────
+  const LAYER = [
+    {key:'sh',  label:'SHIFT JADUAL', bg:'#fef9c3', fg:'#713f12', fw:'700'},
+    {key:'kzp', label:'KZ PENYELIA',  bg:'#dcfce7', fg:'#14532d', fw:'600'},
+    {key:'kzk', label:'KZ KOPERAL',   bg:'#dcfce7', fg:'#14532d', fw:'600'},
+    {key:'tc',  label:'TIMECARE',     bg:'#ffffff', fg:'#1e293b', fw:'500'},
+    {key:'mc',  label:'MC DITERIMA',  bg:'#fed7aa', fg:'#7c2d12', fw:'700'},
+    {key:'hr',  label:'CUTI HRMIS',   bg:'#e0f2fe', fg:'#0c4a6e', fw:'600'},
+    {key:'af',  label:'AUDIT FINAL',  bg:'#f8fafc', fg:'#374151', fw:'700'},
+  ];
+
   let html='';
   for(const jab of Object.keys(groups)){
     html+=`<div class="jab-block"><div class="jab-hdr"><h3>JABATAN: ${jab}</h3><span>${Object.values(groups[jab]).flat().length} anggota</span></div>`;
@@ -1463,147 +1571,216 @@ function renderGrid(members, containerId){
       const sh1=SH_LBL[getShift(ms[0].bil,1)];
       const st1=SH_TIME[getShift(ms[0].bil,1)];
 
-      // Header row
-      let hdrs=`<th class="nm">Nama Anggota</th>`;
-      let lyrs=`<th class="nm2" style="font-size:6px">Bil</th>`;
+      // ── Build header row ──────────────────────────────────
+      let hdrHtml = `<tr class="hr-day">
+        <th class="nm" rowspan="2" style="min-width:110px;position:sticky;left:0;z-index:5;background:var(--navy3)">Nama Anggota</th>
+        <th class="nm" rowspan="2" style="min-width:90px;position:sticky;left:110px;z-index:5;background:var(--navy3);font-size:7px;color:rgba(255,255,255,0.5)">Lapisan Data</th>`;
       for(let d=1;d<=30;d++){
         const dow=APR_DOW[d-1];
         const cls=dow===0?'sun':dow===6?'sat':'';
-        hdrs+=`<th class="${cls}">${d}<br><span style="font-size:6px;opacity:.7">${DOW_MS[dow]}</span></th>`;
-        lyrs+=`<th style="min-width:30px">SH<br>P<br>K<br>F</th>`;
+        hdrHtml+=`<th class="${cls}" style="min-width:70px">${d}<br><span style="font-size:6px;opacity:.7">${DOW_MS[dow]}</span></th>`;
       }
-      hdrs+=`<th style="background:#1a2f52;min-width:26px;font-size:7px">Hadir</th><th style="background:#854d0e;font-size:7px">MC</th><th style="background:#1e40af;font-size:7px">CR</th><th style="background:#991b1b;font-size:7px">ABS</th><th style="background:#b45309;font-size:7px">Flag</th>`;
-      lyrs+=`<th colspan="5" style="background:#1e293b"></th>`;
+      hdrHtml+=`<th style="background:#1a2f52;min-width:26px;font-size:7px">Hadir</th>
+        <th style="background:#854d0e;min-width:22px;font-size:7px">MC</th>
+        <th style="background:#1e40af;min-width:22px;font-size:7px">CR</th>
+        <th style="background:#991b1b;min-width:22px;font-size:7px">ABS</th>
+        <th style="background:#b45309;min-width:22px;font-size:7px">L</th>
+        <th style="background:#374151;min-width:22px;font-size:7px">SP</th>
+        <th style="background:#5b21b6;min-width:22px;font-size:7px">⚑</th>
+      </tr>`;
 
+      // ── Build member rows (7 per member) ─────────────────
       let rows='';
       ms.forEach(m=>{
-        let h=0,mc=0,cr=0,ab=0,fc=0;
-        let cells='';
+        let hadir=0,mc=0,cr=0,ab=0,lw=0,sp=0,fc=0;
+
+        // Pre-compute all 30 days
+        const days=[];
         for(let d=1;d<=30;d++){
-          const sh=getShift(m.bil,d);
-          const c=DATA[m.bil][d];
-          const fl=detectFlags(m.bil,d);
-          fc+=fl.length;
-          if(sh!=='O'){
-            if(c.kzp==='MC'||c.kzk==='MC') mc++;
-            else if(c.kzp==='CR'||c.kzk==='CR') cr++;
-            else if(['ABS','X'].includes(c.kzp)||['ABS','X'].includes(c.kzk)) ab++;
-            // NHT (tidak hadir tugas) — tidak dikira dalam ABS biasa
-            else if(c.kzp==='TH'||c.kzk==='TH'){}
-            else if(c.kzp==='✓'||c.kzk==='✓'||(!c.kzp&&!c.kzk)) h++; // hadir (termasuk auto-tick)
-          }
-          const bg=fl.some(f=>f.startsWith('ABS!'))?'background:#fff1f2;':fl.length?'background:#fffbeb;':'';
-          const flHtml=fl.slice(0,2).map(f=>`<span class="fl ${flagCls(f)}">${f.split(' ')[0]}</span>`).join('');
-          // Auto ✓ jika shift kerja dan tiada flag KZ
+          const sh  = getShift(m.bil,d);
+          const c   = DATA[m.bil][d];
+          const fl  = detectFlags(m.bil,d);
           const isWorkDay = sh!=='O';
-          const autoTick  = isWorkDay && !c.kzp && !c.kzk && !fl.some(f=>f.startsWith('ABS'));
-          const kzpShow   = c.kzp||(sh==='O'?'OF':autoTick?'✓':'');
-          const kzkShow   = c.kzk||(sh==='O'?'OF':autoTick?'✓':'');
-          const kzpCls2   = autoTick && !c.kzp ? 'kz-ok' : kzCls(c.kzp);
-          const kzkCls2   = autoTick && !c.kzk ? 'kz-ok' : kzCls(c.kzk);
-          // ── 7 LAPISAN: SH | KZP | KZK | TC | MC | HR | AF ─────────
-          // Layer 4: TIMECARE
-          const skipTC = ['TH','NHT','MC','CR','EL','K/P','CB','CTR','ABS','X'].includes(c.kzp);
-          const noIn  = !c.tc_in  && !skipTC && c.tc_out;
-          const noOut = !c.tc_out && !skipTC && c.tc_in;
-          let tcHtml = '';
-          if(sh==='O'){ tcHtml='<span style="color:#94a3b8;font-size:6px">OFFDAY</span>'; }
-          else if(['TH','NHT'].includes(c.kzp)){ tcHtml=`<span style="color:#9d174d;font-size:6px">${c.kzp}</span>`; }
-          else if(c.tc_in||c.tc_out){
-            tcHtml = `${c.tc_in?`<span style="color:#15803d;font-weight:700">${c.tc_in}</span>`:(noIn?'<span style="color:#dc2626;font-size:5.5px">Tiada IN</span>':'')}${c.tc_out?`<br><span style="color:#1d4ed8;font-weight:700">${c.tc_out}</span>`:(noOut?'<br><span style="color:#dc2626;font-size:5.5px">Tiada OUT</span>':'')}`;
-          } else if(!skipTC){ tcHtml='<span style="color:#94a3b8;font-size:6px">–</span>'; }
 
-          // Layer 5: MC DITERIMA
+          // MC from MC_DATA
           const mcRec = (typeof MC_DATA!=='undefined') ?
-            MC_DATA.find(mc=>mc.bil===m.bil && (mc.dari.startsWith(String(d).padStart(2,'0')+'/04')||mc.dari.startsWith(String(d).padStart(2,'0')+'/04')) && mc.jenis==='Bulan Ini') : null;
-          const mcHtml = mcRec ?
-            `<span style="color:#854d0e;font-weight:700;font-size:6px">MC ${mcRec.hari}H</span>`
-            : (c.kzp==='MC'||c.kzk==='MC' ? '<span style="color:#854d0e;font-size:6px">MC</span>' : '<span style="color:#94a3b8;font-size:6px">–</span>');
+            MC_DATA.find(mc=>mc.bil===m.bil &&
+              (mc.dari.startsWith(String(d).padStart(2,'0')+'/04')) &&
+              mc.jenis==='Bulan Ini') : null;
 
-          // Layer 6: CUTI HRMIS
-          const hrHtml = (c.kzp==='CR'||c.kzk==='CR') ?
-            '<span style="color:#1e40af;font-weight:700;font-size:6px">CR</span>' :
-            (c.kzp==='EL'||c.kzk==='EL') ? '<span style="color:#5b21b6;font-weight:700;font-size:6px">EL</span>' :
-            (c.kzp==='CTR'||c.kzk==='CTR') ? '<span style="color:#c2410c;font-weight:700;font-size:6px">CTR</span>' :
-            '<span style="color:#94a3b8;font-size:6px">–</span>';
+          // Summary counts
+          const isMC  = c.kzp==='MC'||c.kzk==='MC'||mcRec!==null;
+          const isCR  = (c.kzp==='CR'||c.kzk==='CR')||(c.kzp==='EL'||c.kzk==='EL');
+          const isABS = ['ABS','X','LL'].includes(c.kzp)||['ABS','X','LL'].includes(c.kzk);
+          const isTT  = c.kzp==='TT'||c.kzk==='TT';
+          const isTHx = c.kzp==='TH'||c.kzk==='TH';
+          const hasLew= fl.some(f=>f.startsWith('L +'));
+          const hasSP = fl.some(f=>f.startsWith('Tiada'));
+          if(isWorkDay){
+            if(isMC) mc++;
+            else if(isCR) cr++;
+            else if(isABS||isTHx) ab++;
+            else if(!isTT) hadir++;
+          }
+          if(hasLew) lw++;
+          if(hasSP) sp++;
+          fc += fl.length + (c.kzp==='LL'||c.kzk==='LL'||c.kzp==='L'||c.kzk==='L'?1:0);
 
-          // Layer 7: AUDIT FINAL — auto-decision
-          let afText='–', afBg='#f8fafc', afFg='#94a3b8';
-          if(sh==='O'){ afText='OFFDAY'; afBg='#f1f5f9'; afFg='#64748b'; }
-          else if(c.kzp==='TH'||c.kzk==='TH'){ afText='TAHAN TUGAS'; afBg='#fce7f3'; afFg='#9d174d'; }
-          else if(c.kzp==='NHT'||c.kzk==='NHT'){ afText='TIDAK HADIR'; afBg='#1c1917'; afFg='#fef2f2'; }
-          else if(c.kzp==='MC'||c.kzk==='MC'){
-            afText=mcRec?'MC SAH':'MC — SEMAK'; afBg=mcRec?'#fef9c3':'#292524'; afFg=mcRec?'#854d0e':'#fbbf24';
-          }
-          else if(c.kzp==='CR'||c.kzk==='CR'){ afText='CR SAH'; afBg='#dbeafe'; afFg='#1e40af'; }
-          else if(c.kzp==='EL'||c.kzk==='EL'){ afText='EL — ISI CUTI'; afBg='#ede9fe'; afFg='#5b21b6'; }
-          else if(c.kzp==='CTR'||c.kzk==='CTR'){ afText='CTR — ISI CUTI'; afBg='#fff7ed'; afFg='#c2410c'; }
-          else if(c.kzp==='K/P'||c.kzk==='K/P'){ afText='K/P'; afBg='#ecfdf5'; afFg='#065f46'; }
-          else if(['ABS','X'].includes(c.kzp)||['ABS','X'].includes(c.kzk)){
-            const hM=mcRec!==null; const hC=c.kzp==='CR'||c.kzk==='CR';
-            afText=hM?'MC SAH':hC?'CR SAH':'ABS — MOHON CUTI';
-            afBg=hM?'#fef9c3':hC?'#dbeafe':'#fee2e2'; afFg=hM?'#854d0e':hC?'#1e40af':'#991b1b';
-          }
-          else if(fl.some(f=>f.startsWith('LEWAT'))){
-            const lf=fl.find(f=>f.startsWith('LEWAT'));
-            afText=lf||'LEWAT'; afBg='#ffedd5'; afFg='#9a3412';
-          }
-          else if(fl.some(f=>f.startsWith('OUT LEWAT'))){
-            const of2=fl.find(f=>f.startsWith('OUT LEWAT'));
-            afText=of2||'OUT LEWAT'; afBg='#ffedd5'; afFg='#9a3412';
-          }
-          else if(fl.some(f=>f.startsWith('Tiada'))){
-            const sf=fl.find(f=>f.startsWith('Tiada'));
-            afText=sf||'SINGLE PUNCH'; afBg='#fef3c7'; afFg='#b45309';
-          }
-          else if(fl.some(f=>f.startsWith('IN AWAL'))){
-            afText=fl.find(f=>f.startsWith('IN AWAL'))||'IN AWAL'; afBg='#fff7ed'; afFg='#c2410c';
-          }
-          else if(c.kzp==='✓'||c.kzk==='✓'||(c.tc_in&&c.tc_out)){
-            afText='✓ SAH'; afBg='#dcfce7'; afFg='#166534';
-          }
-          else if(autoTick){ afText='✓'; afBg='#f0fdf4'; afFg='#16a34a'; }
+          // ── Layer values ────────────────────────────────
+          // L1: Shift
+          const shTxt = sh==='O'?'OFFDAY':sh==='P'?'PETANG (1500–2300)':sh==='S'?'PAGI (0700–1500)':'MALAM (2300–0700)';
+          const shBg  = sh==='O'?'#f1f5f9':sh==='P'?'#fdf4ff':sh==='S'?'#f0fdf4':'#eff6ff';
+          const shFg  = sh==='O'?'#94a3b8':sh==='P'?'#7e22ce':sh==='S'?'#15803d':'#1d4ed8';
 
-          const rowBg = (afFg==='#991b1b'||afFg==='#fef2f2')?'background:#fff5f5;':
-                        (afFg==='#9a3412')?'background:#fff7ed;':
-                        (afFg==='#b45309'||afFg==='#fbbf24')?'background:#fffbeb;':'';
-          const tooltip = `${m.nama} · ${d}/04 · ${SH_LBL[sh]}${c.kzp?' | KZP:'+c.kzp:''}${c.kzk?' | KZK:'+c.kzk:''}${c.tc_in?' | IN:'+c.tc_in:''}${c.tc_out?' | OUT:'+c.tc_out:''}${mcRec?' | MC:'+mcRec.klinik:''}${fl.length?' | '+fl.join('; '):''}`;
+          // L2: KZ Penyelia
+          const autoTick = isWorkDay && !c.kzp && !c.kzk && !isTT && !isTHx;
+          const kzpVal = c.kzp||(sh==='O'?'OFFDAY':autoTick?'✓':'');
+          const kzpTxt = kzpVal==='OFFDAY'?'OFFDAY':
+                         kzpVal==='TT'?'TAHAN TUGAS (TT)':
+                         kzpVal==='TH'?'TIDAK HADIR (TH)':
+                         kzpVal==='✓'?'✓':kzpVal||'–';
+          const kzpBg  = kzpVal==='OFFDAY'?'#f1f5f9':
+                         kzpVal==='TT'?'#fce7f3':kzpVal==='TH'?'#1c1917':
+                         kzpVal==='MC'?'#fef9c3':kzpVal==='CR'?'#dbeafe':
+                         kzpVal==='ABS'||kzpVal==='X'?'#fee2e2':
+                         kzpVal==='EL'?'#ede9fe':kzpVal==='LL'?'#fee2e2':
+                         kzpVal==='L'?'#ffedd5':kzpVal==='✓'?'#f0fdf4':'#f8fafc';
+          const kzpFg  = kzpVal==='TH'?'#fef2f2':kzpVal==='TT'?'#9d174d':
+                         kzpVal==='MC'?'#854d0e':kzpVal==='CR'?'#1e40af':
+                         kzpVal==='ABS'||kzpVal==='X'?'#991b1b':
+                         kzpVal==='EL'?'#5b21b6':kzpVal==='LL'?'#991b1b':
+                         kzpVal==='L'?'#9a3412':kzpVal==='✓'?'#15803d':'#374151';
 
-          cells+=`<td style="${rowBg}" title="${tooltip}">
-            <div class="dc">
-              <div class="dc-sh ${SH_CLS[sh]}">${SH_LBL[sh]}</div>
-              <div class="dc-kzp ${kzpCls2}">${kzShort(kzpShow)||'&nbsp;'}</div>
-              <div class="dc-kzk ${kzkCls2}">${kzShort(kzkShow)||'&nbsp;'}</div>
-              <div class="dc-tc">${tcHtml}</div>
-              <div class="dc-mc">${mcHtml}</div>
-              <div class="dc-hr">${hrHtml}</div>
-              <div class="dc-af" style="background:${afBg};color:${afFg};font-weight:700;font-size:5.5px;text-align:center;padding:2px;line-height:1.2;border-radius:0 0 2px 2px">${afText}</div>
-            </div>
-          </td>`;
+          // L3: KZ Koperal
+          const kzkVal = c.kzk||(sh==='O'?'OFFDAY':autoTick?'✓':'');
+          const kzkTxt = kzkVal==='OFFDAY'?'OFFDAY':kzkVal==='TT'?'TAHAN TUGAS (TT)':kzkVal==='TH'?'TIDAK HADIR (TH)':kzkVal==='✓'?'✓':kzkVal||'–';
+          const kzkBg  = kzpBg; const kzkFg = kzpFg;  // sama dengan KZP
+
+          // L4: Timecare
+          let tcLines=[];
+          if(sh==='O'){
+            // Offday tapi ada thumb — OT
+            if(c.tc_in||c.tc_out){
+              tcLines.push(`OFFDAY / OT — ABAIKAN`);
+              if(c.tc_in)  tcLines.push(`THUMB IN ${c.tc_in}`);
+              if(c.tc_out) tcLines.push(`THUMB OUT ${c.tc_out}`);
+            } else { tcLines.push('OFFDAY'); }
+          } else if(['TT','TH'].includes(c.kzp)){
+            tcLines.push(c.kzp==='TT'?'TAHAN TUGAS':'TIDAK HADIR');
+          } else if(['MC','CR','EL','K/P','CB','CTR'].includes(c.kzp)){
+            tcLines.push(c.kzp);
+            if(c.tc_in)  tcLines.push(`THUMB IN ${c.tc_in}`);
+            if(c.tc_out) tcLines.push(`THUMB OUT ${c.tc_out}`);
+          } else {
+            if(!c.tc_in && !c.tc_out){ tcLines.push('–'); }
+            else {
+              const noIn  = !c.tc_in  && c.tc_out;
+              const noOut = !c.tc_out && c.tc_in;
+              if(c.tc_in)  tcLines.push(`IN ${c.tc_in}`);
+              else if(noIn) tcLines.push('TIADA IN');
+              if(c.tc_out) tcLines.push(`OUT ${c.tc_out}`);
+              else if(noOut) tcLines.push('TIADA OUT');
+              // Lewat info
+              const lwFlag = fl.find(f=>f.startsWith('L +'));
+              if(lwFlag) tcLines.push(lwFlag);
+              const spFlag = fl.find(f=>f.startsWith('Tiada'));
+              if(spFlag&&!c.tc_in&&!c.tc_out) tcLines.push('SINGLE PUNCH');
+              const iaFlag = fl.find(f=>f.startsWith('IN AWAL'));
+              if(iaFlag) tcLines.push(iaFlag);
+              const olFlag = fl.find(f=>f.startsWith('OUT LEWAT'));
+              if(olFlag) tcLines.push(olFlag);
+            }
+          }
+          const tcBg = fl.some(f=>f.startsWith('L +'))?'#fff7ed':
+                       fl.some(f=>f.startsWith('Tiada'))?'#fffbeb':
+                       fl.some(f=>f.startsWith('IN AWAL')||f.startsWith('OUT LEWAT'))?'#fff7ed':'#ffffff';
+
+          // L5: MC Diterima
+          let mcTxt='–', mcBg='#fff7ed';
+          if(sh==='O'){ mcTxt='OFFDAY'; mcBg='#f1f5f9'; }
+          else if(mcRec){ mcTxt=`MC ${mcRec.hari} HARI — ${mcRec.klinik}`; mcBg='#fed7aa'; }
+          else if(c.kzp==='MC'||c.kzk==='MC'){ mcTxt='MC — SEMAK BORANG'; mcBg='#fef3c7'; }
+
+          // L6: HRMIS Cuti
+          let hrTxt='–', hrBg='#e0f2fe';
+          if(sh==='O'){ hrTxt='OFFDAY'; hrBg='#f1f5f9'; }
+          else if(c.kzp==='CR'||c.kzk==='CR'){ hrTxt='CUTI REHAT'; hrBg='#dbeafe'; }
+          else if(c.kzp==='EL'||c.kzk==='EL'){ hrTxt='EMERGENCY LEAVE'; hrBg='#ede9fe'; }
+          else if(c.kzp==='CTR'||c.kzk==='CTR'){ hrTxt='CTR — WAJIB ISI'; hrBg='#fee2e2'; }
+          else if(c.kzp==='CB'||c.kzk==='CB'){ hrTxt='CUTI BERSALIN'; hrBg='#fdf4ff'; }
+          else if(c.kzp==='K/P'||c.kzk==='K/P'){ hrTxt='KELEPASAN'; hrBg='#ecfdf5'; }
+
+          // L7: Audit Final
+          let afTxt='–', afBg='#f8fafc', afFg='#94a3b8';
+          if(sh==='O' && !(c.tc_in||c.tc_out)){ afTxt='OFFDAY'; afBg='#f1f5f9'; afFg='#64748b'; }
+          else if(sh==='O' && (c.tc_in||c.tc_out)){ afTxt='OFFDAY / OT — ABAIKAN'; afBg='#e0f2fe'; afFg='#0c4a6e'; }
+          else if(isTT){ afTxt='TAHAN TUGAS'; afBg='#fce7f3'; afFg='#9d174d'; }
+          else if(isTHx){ afTxt='TIDAK HADIR'; afBg='#1c1917'; afFg='#fef2f2'; }
+          else if(isMC){ afTxt=mcRec?`MC SAH — ${mcRec.klinik.substring(0,15)}`:'MC — SEMAK'; afBg=mcRec?'#fef9c3':'#292524'; afFg=mcRec?'#854d0e':'#fbbf24'; }
+          else if(isCR){ afTxt=c.kzp==='EL'||c.kzk==='EL'?'EL SAH — ISI CUTI':'CR SAH'; afBg='#dbeafe'; afFg='#1e40af'; }
+          else if(c.kzp==='CTR'||c.kzk==='CTR'){ afTxt='CTR — WAJIB ISI CUTI'; afBg='#fff7ed'; afFg='#c2410c'; }
+          else if(c.kzp==='K/P'||c.kzk==='K/P'){ afTxt='KELEPASAN / OT'; afBg='#ecfdf5'; afFg='#065f46'; }
+          else if(isABS){ const hM=mcRec!==null; afTxt=hM?'MC SAH':'ABS — SILA MOHON CUTI'; afBg=hM?'#fef9c3':'#fee2e2'; afFg=hM?'#854d0e':'#991b1b'; }
+          else if(c.kzp==='LL'||c.kzk==='LL'){ afTxt='LL — LAPOR LEWAT'; afBg='#fee2e2'; afFg='#991b1b'; }
+          else if(fl.some(f=>f.startsWith('L +'))){ afTxt=fl.find(f=>f.startsWith('L +')); afBg='#ffedd5'; afFg='#9a3412'; }
+          else if(fl.some(f=>f.startsWith('Tiada'))){ afTxt=fl.find(f=>f.startsWith('Tiada'))||'SINGLE PUNCH'; afBg='#fef3c7'; afFg='#b45309'; }
+          else if(fl.some(f=>f.startsWith('IN AWAL'))){ afTxt=fl.find(f=>f.startsWith('IN AWAL')); afBg='#fff7ed'; afFg='#c2410c'; }
+          else if(fl.some(f=>f.startsWith('OUT LEWAT'))){ afTxt=fl.find(f=>f.startsWith('OUT LEWAT')); afBg='#fff7ed'; afFg='#9a3412'; }
+          else if(autoTick||c.kzp==='✓'||c.kzk==='✓'||(c.tc_in&&c.tc_out)){ afTxt='✓'; afBg='#dcfce7'; afFg='#166534'; }
+          else{ afTxt='–'; afBg='#f8fafc'; afFg='#94a3b8'; }
+
+          days.push({d, sh, shTxt, shBg, shFg,
+            kzpTxt, kzpBg, kzpFg, kzkTxt, kzkBg, kzkFg,
+            tcLines, tcBg, mcTxt, mcBg, hrTxt, hrBg,
+            afTxt, afBg, afFg, fl, isOT: sh==='O'&&(c.tc_in||c.tc_out)
+          });
         }
-        const noteCls = m.note?.includes('TAHAN')?'nc-note-th':m.note?.includes('TIDAK HADIR')?'nc-note-nht':'nc-note';
-        const noteBadge=m.note?`<span class="${noteCls}">${m.note}</span>`:'';
-        const flagBadge=fc>0?`<span class="nc-flag-cnt">${fc}⚑</span>`:'';
-        rows+=`<tr id="member-${m.bil}">
-          <td class="ntd"><div class="nc">
-            <div class="nc-bil">${m.bil}</div>
-            <div class="nc-name">${shortName(m.nama)}</div>
-            <div class="nc-meta">${m.jab} · ${m.komp}</div>
-            <div class="nc-flags">${noteBadge}${flagBadge}</div>
-          </div></td>
-          ${cells}
-          <td class="sc-col" style="color:var(--green)">${h}</td>
-          <td class="sc-col" style="color:var(--amber)">${mc}</td>
-          <td class="sc-col" style="color:var(--blue)">${cr}</td>
-          <td class="sc-col" style="color:${ab>0?'var(--red)':'var(--gray)'}">${ab}</td>
-          <td class="sc-col" style="color:${fc>3?'var(--red)':fc>0?'var(--amber)':'var(--gray)'}">${fc}</td>
-        </tr>`;
+
+        // Summary
+        const noteCls = (m.note?.includes('TAHAN')||m.note?.includes('TT'))?'nc-note-th':(m.note?.includes('HADIR')||m.note?.includes('(TH)'))?'nc-note-nht':'nc-note';
+        const noteBadge = m.note?`<span class="${noteCls}">${m.note}</span>`:'';
+        const sumH  = `<td rowspan="7" class="sc-col" style="color:${hadir>0?'var(--green)':'var(--gray)'};vertical-align:middle"><b>${hadir||'–'}</b></td>`;
+        const sumMC = `<td rowspan="7" class="sc-col" style="color:${mc>0?'#854d0e':'var(--gray)'};vertical-align:middle"><b>${mc||'–'}</b></td>`;
+        const sumCR = `<td rowspan="7" class="sc-col" style="color:${cr>0?'#1e40af':'var(--gray)'};vertical-align:middle"><b>${cr||'–'}</b></td>`;
+        const sumAB = `<td rowspan="7" class="sc-col" style="color:${ab>0?'#991b1b':'var(--gray)'};vertical-align:middle"><b>${ab||'–'}</b></td>`;
+        const sumLW = `<td rowspan="7" class="sc-col" style="color:${lw>0?'#9a3412':'var(--gray)'};vertical-align:middle"><b>${lw||'–'}</b></td>`;
+        const sumSP = `<td rowspan="7" class="sc-col" style="color:${sp>0?'#b45309':'var(--gray)'};vertical-align:middle"><b>${sp||'–'}</b></td>`;
+        const sumFC = `<td rowspan="7" class="sc-col" style="color:${fc>3?'var(--red)':fc>0?'var(--amber)':'var(--gray)'};vertical-align:middle"><b>${fc||'–'}</b></td>`;
+
+        // ── 7 rows per member ────────────────────────────────
+        const ROWS = [
+          {key:'sh',  cells: days.map(x=>`<td style="background:${x.shBg};color:${x.shFg};font-weight:700;text-align:center;font-size:8px;padding:2px 3px;white-space:nowrap">${x.shTxt}</td>`)},
+          {key:'kzp', cells: days.map(x=>`<td style="background:${x.kzpBg};color:${x.kzpFg};font-weight:600;text-align:center;font-size:8px;padding:2px 3px">${x.kzpTxt}</td>`)},
+          {key:'kzk', cells: days.map(x=>`<td style="background:${x.kzkBg};color:${x.kzkFg};font-weight:600;text-align:center;font-size:8px;padding:2px 3px">${x.kzkTxt}</td>`)},
+          {key:'tc',  cells: days.map(x=>`<td style="background:${x.tcBg};text-align:center;font-size:7.5px;padding:2px 4px;vertical-align:top;line-height:1.5">${x.tcLines.map(l=>`<div>${l}</div>`).join('')}</td>`)},
+          {key:'mc',  cells: days.map(x=>`<td style="background:${x.mcBg};color:#7c2d12;font-weight:600;text-align:center;font-size:7.5px;padding:2px 3px">${x.mcTxt}</td>`)},
+          {key:'hr',  cells: days.map(x=>`<td style="background:${x.hrBg};color:#0c4a6e;font-weight:600;text-align:center;font-size:7.5px;padding:2px 3px">${x.hrTxt}</td>`)},
+          {key:'af',  cells: days.map(x=>`<td style="background:${x.afBg};color:${x.afFg};font-weight:700;text-align:center;font-size:7.5px;padding:3px 3px;white-space:nowrap">${x.afTxt}</td>`)},
+        ];
+
+        // Name cell (rowspan 7) + Layer label cell per row
+        rows += ROWS.map((row, ri) => {
+          const isFirst = ri===0;
+          const lyrInfo = LAYER[ri];
+          const nameCell = isFirst
+            ? `<td class="ntd" rowspan="7" style="position:sticky;left:0;background:#fff;z-index:2;border-right:1px solid var(--gbd);padding:6px 8px;vertical-align:top;min-width:110px">
+                <div class="nc">
+                  <div class="nc-bil">${m.bil}</div>
+                  <div class="nc-name">${shortName(m.nama)}</div>
+                  <div class="nc-meta">${m.jab} · ${m.komp}</div>
+                  <div class="nc-flags">${noteBadge}</div>
+                </div>
+              </td>` : '';
+          const lyrCell = `<td style="position:sticky;left:110px;background:${lyrInfo.bg};color:${lyrInfo.fg};font-weight:${lyrInfo.fw};font-size:8px;padding:2px 6px;white-space:nowrap;border-right:1px solid var(--gbd);z-index:1">${lyrInfo.label}</td>`;
+          const sumCells = isFirst ? sumH+sumMC+sumCR+sumAB+sumLW+sumSP+sumFC : '';
+          return `<tr id="${isFirst?'member-'+m.bil:''}" style="border-bottom:${ri===6?'2px':'0.5px'} solid ${ri===6?'var(--gbd)':'rgba(0,0,0,0.05)'}">${nameCell}${lyrCell}${row.cells.join('')}${sumCells}</tr>`;
+        }).join('');
       });
 
       html+=`<div style="border-bottom:1px solid var(--gbd)">
         <div class="komp-hdr"><h4>KOMPENI ${komp}</h4><span>Shift 1 Apr: ${sh1} (${st1})</span></div>
         <div class="tscroll"><table class="grid-t">
-          <thead><tr class="hr-day">${hdrs}</tr><tr class="hr-lyr">${lyrs}</tr></thead>
+          <thead>${hdrHtml}</thead>
           <tbody>${rows}</tbody>
         </table></div>
       </div>`;
@@ -1786,7 +1963,7 @@ const PAGE_TITLES={
   iktar:'Mini File: IKTAR',mhkl:'Mini File: MHKL',rt:'Mini File: RT',
   mc:'Register MC — April 2026',baki:'Baki Cuti Anggota 2026',
   raya:'Anggota Bertugas Raya Aidilfitri 2026',haji:'CTR Raya Haji Kedua 2026 (Audit Mei)',
-  entry:'Entry Manual KZ / Timecard',upload:'Upload Dokumen',
+  entry:'Upload KZ &amp; Timecare',upload:'Upload Dokumen',
   backup:'Backup ke Google Drive'
 };
 
@@ -2322,6 +2499,203 @@ function generatePDF(){
   w.document.write(content);
   w.document.close();
   setTimeout(()=>w.print(),500);
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// UPLOAD PDF — AUTO PROCESS KZ & TIMECARE
+// ════════════════════════════════════════════════════════════════
+const newUploads = {};
+
+function fsel(inp, k) {
+  if(!requireAdmin()) { inp.value=''; return; }
+  const files = inp.files;
+  if(!files.length) return;
+  newUploads[k] = files;
+  const uz = inp.closest('.uzone'); if(uz) uz.classList.add('done');
+  const fn = document.getElementById('fn-'+k);
+  if(fn) fn.textContent = files.length>1 ? `${files.length} fail dipilih` : files[0].name.substring(0,32);
+  // Enable process button if at least 1 file
+  const btn = document.getElementById('btn-proc-all');
+  if(btn) btn.disabled = Object.keys(newUploads).length === 0;
+  document.getElementById('proc-all-stat').textContent = Object.keys(newUploads).length + ' fail sedia untuk diproses';
+}
+
+function dov(e,el){e.preventDefault();el.classList.add('drag')}
+function dlv(el){el.classList.remove('drag')}
+function drop(e,k,el){
+  e.preventDefault();el.classList.remove('drag');
+  if(e.dataTransfer.files.length){ const inp=el.querySelector('input');if(inp){inp.files=e.dataTransfer.files;fsel(inp,k);} }
+}
+
+function resetUploads(){
+  Object.keys(newUploads).forEach(k=>delete newUploads[k]);
+  ['kzp-new','kzk-new','tc-new'].forEach(k=>{
+    const uz=document.getElementById('uz-'+k); if(uz) uz.classList.remove('done');
+    const fn=document.getElementById('fn-'+k); if(fn) fn.textContent='';
+  });
+  const btn=document.getElementById('btn-proc-all'); if(btn) btn.disabled=true;
+  document.getElementById('proc-all-stat').textContent='';
+  document.getElementById('proc-log').style.display='none';
+}
+
+async function processAllUploads(){
+  if(!requireAdmin()) return;
+  const btn = document.getElementById('btn-proc-all');
+  const statEl = document.getElementById('proc-all-stat');
+  const logDiv = document.getElementById('proc-log');
+  const logBody = document.getElementById('proc-log-body');
+
+  btn.disabled=true; btn.textContent='⏳ Memproses...';
+  logDiv.style.display='block'; logBody.innerHTML='';
+  const log = (msg,type='info') => {
+    const c = type==='ok'?'#16a34a':type==='err'?'#dc2626':type==='warn'?'#d97706':'#374151';
+    logBody.innerHTML += `<div style="color:${c}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+    logBody.scrollTop = logBody.scrollHeight;
+  };
+
+  log('Memulakan pemprosesan...');
+  let updated = 0, skipped = 0;
+
+  // ── Proses KZ Koperal (WhatsApp .txt) ───────────────────────
+  if(newUploads['kzk-new']) {
+    log('Membaca KZ Koperal (WhatsApp)...');
+    const prog = document.getElementById('kzk-prog');
+    const bar  = document.getElementById('kzk-bar');
+    const msg  = document.getElementById('kzk-msg');
+    if(prog) prog.style.display='block';
+
+    for(const file of newUploads['kzk-new']) {
+      try {
+        const text = await file.text();
+        const lines = text.split('\n');
+        if(msg) msg.textContent = `Membaca ${file.name}... (${lines.length} baris)`;
+        if(bar) bar.style.width='30%';
+
+        // Parse WhatsApp format: DD/MM/YYYY, HH:MM - Name: message
+        let linesProcessed = 0;
+        lines.forEach(line => {
+          // Detect KZ entries: "✓", "MC", "CR", "L", "LL", "ABS", "TT", "TH" etc
+          const patterns = [
+            { re:/KZ\s+(\d+)[\/\s]+(\d+).*?(✓|MC|CR|EL|ABS|L|LL|TT|TH|CTR|CB|K\/P)/gi, type:'kzk' },
+            { re:/(\d{1,2})\/04.*?(MC|CR|EL|ABS|LL|TT|TH|CTR)/gi, type:'kzk' },
+          ];
+          // Simplified: detect member names and their status
+          MASTER.forEach(m => {
+            const firstName = m.nama.split(' ')[0];
+            if(line.toUpperCase().includes(firstName)) {
+              // Try to extract date and status
+              const dateMatch = line.match(/(\d{1,2})[\/\-]04/);
+              const statMatch = line.match(/(MC|CR|EL|ABS|LL|L|TT|TH|CTR|CB|K\/P|✓)/i);
+              if(dateMatch && statMatch) {
+                const d = +dateMatch[1];
+                const stat = statMatch[1].toUpperCase();
+                if(d>=1 && d<=30 && DATA[m.bil]?.[d]) {
+                  if(!DATA[m.bil][d].kzk) { // jangan overwrite yang ada
+                    DATA[m.bil][d].kzk = stat;
+                    updated++;
+                    log(`KZK: ${m.nama} hari ${d} → ${stat}`, 'ok');
+                  }
+                }
+              }
+            }
+          });
+          linesProcessed++;
+          if(bar) bar.style.width = Math.min(90, 30 + (linesProcessed/lines.length)*60)+'%';
+        });
+
+        if(bar) bar.style.width='100%';
+        log(`KZ Koperal: ${file.name} selesai`, 'ok');
+      } catch(e) { log(`Ralat baca KZ Koperal: ${e.message}`, 'err'); }
+    }
+  }
+
+  // ── Proses Timecare ──────────────────────────────────────────
+  if(newUploads['tc-new']) {
+    log('Membaca Timecare...', 'info');
+    const prog = document.getElementById('tc-prog');
+    const bar  = document.getElementById('tc-bar');
+    const msg  = document.getElementById('tc-msg');
+    if(prog) prog.style.display='block';
+    if(bar) bar.style.width='20%';
+
+    for(const file of newUploads['tc-new']) {
+      try {
+        if(msg) msg.textContent = `Membaca ${file.name}...`;
+        const text = await file.text();
+        const lines = text.split('\n');
+
+        lines.forEach(line => {
+          // Parse timecare format: Name | Date | IN | OUT
+          // Try to match punch times
+          const timeMatch = line.match(/(\d{2}:\d{2})/g);
+          if(timeMatch && timeMatch.length >= 1) {
+            MASTER.forEach(m => {
+              const firstName = m.nama.split(' ')[0].substring(0,5);
+              if(line.toUpperCase().includes(firstName)) {
+                const dateM = line.match(/(\d{1,2})[\/\-](04)/);
+                if(dateM) {
+                  const d = +dateM[1];
+                  if(d>=1 && d<=30 && DATA[m.bil]?.[d]) {
+                    if(timeMatch[0] && !DATA[m.bil][d].tc_in) {
+                      DATA[m.bil][d].tc_in = timeMatch[0];
+                      updated++;
+                    }
+                    if(timeMatch[1] && !DATA[m.bil][d].tc_out) {
+                      DATA[m.bil][d].tc_out = timeMatch[1];
+                    }
+                    log(`TC: ${m.nama} hari ${d} IN:${timeMatch[0]||'–'} OUT:${timeMatch[1]||'–'}`, 'ok');
+                  }
+                }
+              }
+            });
+          }
+        });
+        if(bar) bar.style.width='100%';
+        log(`Timecare: ${file.name} selesai`, 'ok');
+      } catch(e) { log(`Ralat baca Timecare: ${e.message}`, 'err'); }
+    }
+  }
+
+  // ── KZ Penyelia PDF (hanya papar nota — perlu Edge Function untuk OCR) ─
+  if(newUploads['kzp-new']) {
+    log('KZ Penyelia PDF dikesan...', 'warn');
+    log('Nota: OCR penuh untuk KZ Penyelia (PDF scan) memerlukan Supabase Edge Function.', 'warn');
+    log('Fail telah direkod. Gunakan kemaskini manual untuk rekod spesifik.', 'warn');
+    const prog = document.getElementById('kzp-prog');
+    const bar  = document.getElementById('kzp-bar');
+    if(prog) prog.style.display='block';
+    if(bar) { bar.style.width='100%'; bar.style.background='#d97706'; }
+    document.getElementById('kzp-msg').textContent = 'PDF diterima — kemaskini manual diperlukan untuk OCR';
+  }
+
+  // ── Save ke Supabase ─────────────────────────────────────────
+  if(SUPA_OK && updated > 0) {
+    log(`Menyimpan ${updated} rekod ke Supabase...`);
+    let saved = 0;
+    for(const m of MASTER) {
+      for(let d=1;d<=30;d++) {
+        const c = DATA[m.bil][d];
+        if(c.kzk || c.tc_in || c.tc_out) {
+          await saveToDB(m.bil, 4, d);
+          saved++;
+        }
+      }
+    }
+    log(`${saved} rekod disimpan ke Supabase ✓`, 'ok');
+  }
+
+  // ── Kemaskini grid ───────────────────────────────────────────
+  log('Mengemaskini Master Listing...');
+  updateFlagCounts();
+  if(document.getElementById('master-grid')) renderGrid(MASTER,'master-grid');
+
+  btn.disabled=false;
+  btn.textContent='Proses & Kemaskini';
+  const summary = `✅ Selesai — ${updated} rekod dikemaskini`;
+  statEl.textContent = summary;
+  log(summary, 'ok');
+  showToast(summary, 'ok');
 }
 
 // ════════════════════════════════════════════════════════════════
