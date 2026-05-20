@@ -702,7 +702,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;mi
       <div class="page" id="page-master">
         <div class="notif info">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
-          <span>Master File — semua 52 anggota. Sel: Baris 1=Shift · Baris 2=KZ Penyelia · Baris 3=KZ Koperal · Baris 4=Flag TC</span>
+          <span>Master File — semua 52 anggota. Format: Bil · Jabatan · Kompeni · Nama · Lapisan Data · Hari 1–30. Lapisan: SHIFT JADUAL, KZ PENYELIA, KZ KOPERAL, TIMECARE, MC DITERIMA, CUTI HRMIS, AUDIT FINAL</span>
         </div>
         <div class="leg">
           <b style="color:var(--gray)">Shift:</b>
@@ -1394,6 +1394,7 @@ async function bootApp(){
   await loadBulan(4);
   populateDropdown();
   renderDash();
+  renderMasterGrid();
   updateFlagCounts();
 }
 
@@ -2148,238 +2149,200 @@ function nl(txt){ return (txt||'').split('\n').join('<br>'); }
 
 function renderMasterGrid(){
   const con=document.getElementById('master-grid');
-  if(!con){return;}
-  con.innerHTML='';
+  if(!con) return;
 
-  const LYRS=['SHIFT JADUAL','KZ PENYELIA','KZ KOPERAL','TIMECARE','MC DITERIMA','CUTI HRMIS','AUDIT FINAL'];
-  const LYRST=[
-    'font-weight:700;background:#e0e7ff;color:#1e3a8a',
-    'background:#f0fdf4;color:#166534',
-    'background:#f0fdf4;color:#166534',
-    'background:#fff7ed;color:#9a3412',
-    'background:#fef9c3;color:#92400e',
-    'background:#dbeafe;color:#1e40af',
-    'background:#dcfce7;color:#166534;font-weight:700',
+  const LAYERS=[
+    {key:'shift', label:'SHIFT JADUAL'},
+    {key:'kzp',   label:'KZ PENYELIA'},
+    {key:'kzk',   label:'KZ KOPERAL'},
+    {key:'tc',    label:'TIMECARE'},
+    {key:'mc',    label:'MC DITERIMA'},
+    {key:'hr',    label:'CUTI HRMIS'},
+    {key:'af',    label:'AUDIT FINAL'}
   ];
+  const layerStyle={
+    shift:'background:#dbeafe;color:#1e3a8a;font-weight:800',
+    kzp:'background:#ecfdf5;color:#166534;font-weight:700',
+    kzk:'background:#ecfdf5;color:#166534;font-weight:700',
+    tc:'background:#fff7ed;color:#92400e;font-weight:700',
+    mc:'background:#fef3c7;color:#92400e;font-weight:700',
+    hr:'background:#dbeafe;color:#1e40af;font-weight:700',
+    af:'background:#dcfce7;color:#166534;font-weight:800'
+  };
 
-  function getD(bil,d){return DATA[bil]&&DATA[bil][d]?DATA[bil][d]:{kzp:'',kzk:'',tc_in:'',tc_out:'',ot_sambung:false,flags:[]};}
-  function sMC(bil,d){return(MC_APR||[]).filter(function(mc){return mc.bil===bil&&d>=mc.dari&&d<=mc.hingga;});}
-  function sHR(bil,d){return(HR_APR||[]).filter(function(h){return h.bil===bil&&d>=h.dari&&d<=h.hingga;});}
+  const MC_MAP=buildMCmap();
+  const HR_MAP=buildHRmap();
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const br=s=>esc(s).replace(/\n/g,'<br>');
+  const dayObj=(bil,d)=>DATA[bil]?.[d] || {kzp:'',kzk:'',tc_in:'',tc_out:'',ot_sambung:false,flags:[]};
+  const mcOn=(bil,d)=>(MC_MAP[bil]||[]).filter(r=>r.d===d);
+  const hrOn=(bil,d)=>(HR_MAP[bil]||[]).filter(r=>r.d===d);
+  const isDocKZ=v=>['MC','CR','EL','K/P','CTR','CB','TH','NHT','ABS','X','LEWAT'].includes(v||'');
+  const isThumb=(c)=>!!(c.tc_in||c.tc_out);
+  const hasDoc=(mc,hr)=>mc.length>0||hr.length>0;
 
-  function shL(sh){return{P:'Petang',S:'Pagi',M:'Malam',O:'OFFDAY'}[sh]||'OFFDAY';}
-  function shC(sh){return{P:'lyr-shift sh-pt',S:'lyr-shift sh-pg',M:'lyr-shift sh-m',O:'lyr-shift sh-o'}[sh]||'lyr-shift sh-o';}
-  function kC(v,sh){
-    if(sh==='O')return 'lyr-kz-off';
-    if(!v||v==='✓')return 'lyr-kz-ok';
-    var m={MC:'lyr-kz-mc',CR:'lyr-kz-cr',ABS:'lyr-kz-abs',NHT:'lyr-kz-nht',TH:'lyr-kz-th',
-           EL:'lyr-kz-el',LEWAT:'lyr-kz-lw','K/P':'lyr-kz-kp',CTR:'lyr-kz-ctr',X:'lyr-kz-abs'};
-    return m[v]||'lyr-kz-ok';
+  function shiftText(sh){return sh==='P'?'Petang':sh==='S'?'Pagi':sh==='M'?'Malam':'OFFDAY';}
+  function shiftCls(sh){return sh==='P'?'lyr-shift sh-pt':sh==='S'?'lyr-shift sh-pg':sh==='M'?'lyr-shift sh-m':'lyr-shift sh-o';}
+  function kzText(v,sh){
+    if(sh==='O') return 'OFFDAY';
+    if(!v) return '✓';
+    if(v==='LEWAT') return 'LW';
+    if(v==='NHT') return 'TIDAK HADIR';
+    if(v==='TH') return 'TAHAN TUGAS';
+    if(v==='X') return 'X LAPORAN';
+    return v;
   }
-  function nl(t){return(t||'').replace(/\n/g,'<br>');}
-
-  function getTCdata(sh,tcIn,tcOut,flags){
+  function kzClass(v,sh){
+    if(sh==='O') return 'lyr-kz-off';
+    if(!v||v==='✓') return 'lyr-kz-ok';
+    return ({MC:'lyr-kz-mc',CR:'lyr-kz-cr',ABS:'lyr-kz-abs',NHT:'lyr-kz-nht',TH:'lyr-kz-th',EL:'lyr-kz-el',LEWAT:'lyr-kz-lw','K/P':'lyr-kz-kp',CTR:'lyr-kz-ctr',CB:'lyr-kz-ctr',X:'lyr-kz-abs'}[v]||'lyr-kz-ok');
+  }
+  function tcData(sh,c,flags){
+    const tin=c.tc_in||'';
+    const tout=c.tc_out||'';
     if(sh==='O'){
-      if(tcIn||tcOut)return{t:'OFFDAY/OT\nABAIKAN\nTHUMB '+(tcIn||tcOut),c:'lyr-tc-ot'};
-      return{t:'OFFDAY',c:'lyr-tc-off'};
+      if(tin||tout) return {t:'OFFDAY / OT\nABAIKAN\n'+(tin?'THUMB IN '+tin:'')+(tout?'\nTHUMB OUT '+tout:''), cls:'lyr-tc-ot'};
+      return {t:'OFFDAY', cls:'lyr-tc-off'};
     }
-    if(!tcIn&&!tcOut)return{t:'',c:''};
-    var spI=flags.find(function(f){return f.indexOf('SP IN')===0;});
-    var spO=flags.find(function(f){return f.indexOf('SP OUT')===0;});
-    var lw=flags.find(function(f){return f.indexOf('LEWAT')===0;});
-    var tI=flags.find(function(f){return f.indexOf('TLS IN')===0;});
-    var tO=flags.find(function(f){return f.indexOf('TLS OUT')===0;});
-    var oa=flags.find(function(f){return f.indexOf('OUT AWAL')===0;});
-    var ia=flags.find(function(f){return f.indexOf('IN AWAL')===0;});
-    if(spO)return{t:'SP THUMB OUT\n'+tcOut,c:'lyr-tc-sp'};
-    if(spI)return{t:'SP THUMB IN\n'+tcIn,c:'lyr-tc-sp'};
-    var lines=[],c='lyr-tc-ok';
-    if(lw){lines.push('LEWAT IN '+tcIn);c='lyr-tc-lewat';}
-    if(oa){lines.push('OUT >1J '+tcOut);c='lyr-tc-out1j';}
-    if(tI){lines.push('TLS IN '+tcIn);c='lyr-tc-tls';}
-    if(tO){lines.push('TLS OUT '+tcOut);c='lyr-tc-tls';}
-    if(ia){lines.push('IN AWAL '+tcIn);c='lyr-tc-lewat';}
+    if(!tin&&!tout) return {t:'✗ ABS', cls:'lyr-tc-abs'};
+    const spI=flags.find(f=>f.startsWith('SP IN'));
+    const spO=flags.find(f=>f.startsWith('SP OUT'));
+    const lw =flags.find(f=>f.startsWith('LEWAT'));
+    const tls=flags.find(f=>f.startsWith('TLS'));
+    const oa =flags.find(f=>f.startsWith('OUT AWAL'));
+    const ia =flags.find(f=>f.startsWith('IN AWAL'));
+    if(spI) return {t:'SINGLE PUNCH IN\n'+tin, cls:'lyr-tc-sp'};
+    if(spO) return {t:'SINGLE PUNCH OUT\n'+tout+(sh==='M'?' (+1)':''), cls:'lyr-tc-sp'};
+    let lines=[], cls='lyr-tc-ok';
+    if(lw){lines.push('LEWAT IN '+tin);cls='lyr-tc-lewat';}
+    if(oa){lines.push('OUT >1J '+tout);cls='lyr-tc-out1j';}
+    if(tls){lines.push('THUMB LUAR SHIFT');cls='lyr-tc-tls';}
+    if(ia){lines.push('IN AWAL '+tin);cls='lyr-tc-lewat';}
     if(!lines.length){
-      if(tcIn)lines.push('IN '+tcIn);
-      if(tcOut)lines.push('OUT '+tcOut+(sh==='M'?' (+1)':''));
+      if(tin) lines.push('IN '+tin);
+      if(tout) lines.push('OUT '+tout+(sh==='M'?' (+1)':''));
+    }else{
+      if(tin && !lines.join(' ').includes(tin)) lines.push('IN '+tin);
+      if(tout && !lines.join(' ').includes(tout)) lines.push('OUT '+tout+(sh==='M'?' (+1)':''));
     }
-    return{t:lines.join('\n'),c:c};
+    return {t:lines.join('\n'), cls};
   }
-
-  function getMCdata(sh,mcRec){
-    if(sh==='O')return{t:'OFFDAY',c:'lyr-mc-off2'};
-    if(!mcRec.length)return{t:'',c:''};
-    return{t:'✓ MC\n'+(mcRec[0].klinik||'').substring(0,18),c:'lyr-mc-sah'};
-  }
-
-  function getHRdata(sh,hrRec){
-    if(sh==='O')return{t:'OFFDAY',c:'lyr-hr-off'};
-    if(!hrRec.length)return{t:'',c:''};
-    return{t:hrRec[0].jenis||'CR',c:'lyr-hr-ok'};
-  }
-
-  function getAFdata(sh,kzp,kzk,tcIn,tcOut,mcRec,hrRec,flags){
+  function mcData(sh,mc){
     if(sh==='O'){
-      if(tcIn||tcOut)return{t:'OFFDAY / OT\nABAIKAN',c:'lyr-af-ot'};
-      return{t:'OFFDAY',c:'lyr-af-off'};
+      if(mc.length) return {t:'MC OFFDAY\nSEMAK TARIKH', cls:'lyr-mc-off'};
+      return {t:'OFFDAY', cls:'lyr-mc-off2'};
     }
-    if(kzp==='TH'||kzk==='TH')return{t:'TAHAN TUGAS',c:'lyr-af-th'};
-    if(kzp==='NHT'||kzk==='NHT')return{t:'TIDAK HADIR\nTUGAS',c:'lyr-af-nht'};
-    if(kzp==='K/P'||kzk==='K/P')return{t:'KELEPASAN /\nPELEPASAN',c:'lyr-af-cr'};
-    if(kzp==='CTR'||kzk==='CTR')return{t:'CUTI TANPA\nREKOD',c:'lyr-af-warn'};
-    if(kzp==='CB'||kzk==='CB')return{t:'CUTI BERSALIN',c:'lyr-af-cr'};
-    if(mcRec.length){
-      if(tcIn||tcOut)return{t:'MC SAH\n⚠ ADA THUMB\nSEMAK',c:'lyr-af-warn'};
-      return{t:'MC SAH',c:'lyr-af-mc'};
+    if(!mc.length) return {t:'', cls:''};
+    return {t:'MC\n'+(mc[0].klinik||'').slice(0,18), cls:'lyr-mc-sah'};
+  }
+  function hrData(sh,hr){
+    if(sh==='O'){
+      if(hr.length) return {t:(hr[0].jenis||'CR')+' OFFDAY\nSEMAK TARIKH', cls:'lyr-hr-ok'};
+      return {t:'OFFDAY', cls:'lyr-hr-off'};
     }
-    if(hrRec.length){
-      var j=hrRec[0].jenis||'CR';
-      if(tcIn||tcOut)return{t:j+' SAH\n⚠ ADA THUMB\nSEMAK',c:'lyr-af-warn'};
-      return{t:j+' SAH',c:'lyr-af-cr'};
+    if(!hr.length) return {t:'', cls:''};
+    return {t:hr[0].jenis||'CR', cls:'lyr-hr-ok'};
+  }
+  function auditFinal(sh,c,flags,mc,hr){
+    const kzp=c.kzp||'', kzk=c.kzk||'';
+    const thumb=isThumb(c);
+    if(sh==='O'){
+      if(mc.length) return {t:'MC OFFDAY\nSEMAK TARIKH SIJIL', cls:'lyr-af-warn'};
+      if(hr.length) return {t:(hr[0].jenis||'CR')+' OFFDAY\nSEMAK TARIKH CUTI', cls:'lyr-af-warn'};
+      if(thumb) return {t:'OFFDAY / OT\nABAIKAN', cls:'lyr-af-ot'};
+      return {t:'OFFDAY', cls:'lyr-af-off'};
     }
-    if((kzp==='MC'||kzk==='MC')&&!mcRec.length)return{t:'MC BELUM\nDITERIMA\nSILA HANTAR',c:'lyr-af-abs'};
-    if((kzp==='CR'||kzk==='CR')&&!hrRec.length)return{t:'CUTI BELUM\nSUBMIT\nSILA SEMAK',c:'lyr-af-warn'};
-    var isAbs=['ABS','X','NHT'].indexOf(kzp)>-1||['ABS','X','NHT'].indexOf(kzk)>-1||flags.some(function(f){return f.indexOf('ABS!')===0;});
-    if(isAbs)return{t:'✗ ABS\nMOHON HANTAR\nMC / CUTI',c:'lyr-af-abs'};
-    if(kzp==='EL'||kzk==='EL')return{t:'EL BELUM\nDISUBMIT',c:'lyr-af-warn'};
-    if(!kzp&&!kzk&&!tcIn&&!tcOut)return{t:'X LAPORAN\nKPL - SEMAK',c:'lyr-af-semak'};
-    var sp=flags.find(function(f){return f.indexOf('SP ')===0;});
-    var lw=flags.find(function(f){return f.indexOf('LEWAT')===0;});
-    var tls=flags.find(function(f){return f.indexOf('TLS')===0;});
-    var oa=flags.find(function(f){return f.indexOf('OUT AWAL')===0;});
-    var ia=flags.find(function(f){return f.indexOf('IN AWAL')===0;});
-    if(sp)return{t:sp.substring(0,30),c:'lyr-af-sp'};
-    if(tls)return{t:tls.substring(0,22),c:'lyr-af-tls'};
-    if(lw)return{t:lw.substring(0,22),c:'lyr-af-lewat'};
-    if(oa)return{t:oa.substring(0,22),c:'lyr-af-lewat'};
-    if(ia)return{t:ia.substring(0,22),c:'lyr-af-semak'};
-    return{t:'✓',c:'lyr-af-ok'};
+    if(kzp==='TH'||kzk==='TH') return {t:'TAHAN TUGAS', cls:'lyr-af-th'};
+    if(kzp==='NHT'||kzk==='NHT') return {t:'TIDAK HADIR\nTUGAS', cls:'lyr-af-nht'};
+    if(kzp==='K/P'||kzk==='K/P') return {t:'KELEPASAN /\nPELEPASAN', cls:'lyr-af-cr'};
+    if(kzp==='CTR'||kzk==='CTR') return {t:'CUTI TANPA\nREKOD', cls:'lyr-af-warn'};
+    if(kzp==='CB'||kzk==='CB') return {t:'CUTI BERSALIN', cls:'lyr-af-cr'};
+    if(mc.length){
+      if(thumb) return {t:'MC SAH\n⚠ ADA THUMB\nSEMAK', cls:'lyr-af-warn'};
+      return {t:'MC SAH', cls:'lyr-af-mc'};
+    }
+    if(hr.length){
+      const j=hr[0].jenis||'CR';
+      if(thumb) return {t:j+' SAH\n⚠ ADA THUMB\nSEMAK', cls:'lyr-af-warn'};
+      return {t:j+' SAH', cls:'lyr-af-cr'};
+    }
+    if((kzp==='MC'||kzk==='MC') && !mc.length) return {t:'MC BELUM\nDITERIMA\nSILA HANTAR', cls:'lyr-af-abs'};
+    if((kzp==='CR'||kzk==='CR'||kzp==='EL'||kzk==='EL') && !hr.length) return {t:'CUTI BELUM\nSUBMIT\nSILA SEMAK', cls:'lyr-af-warn'};
+    if(kzp==='ABS'||kzk==='ABS'||kzp==='X'||kzk==='X'||(!thumb && !hasDoc(mc,hr))) return {t:(kzp==='X'||kzk==='X'?'X LAPORAN KPL\n':'')+'✗ ABS\nMOHON HANTAR\nMC/CUTI', cls:'lyr-af-abs'};
+    const sp=flags.find(f=>f.startsWith('SP'));
+    const tls=flags.find(f=>f.startsWith('TLS'));
+    const lw=flags.find(f=>f.startsWith('LEWAT'));
+    const oa=flags.find(f=>f.startsWith('OUT AWAL'));
+    const ia=flags.find(f=>f.startsWith('IN AWAL'));
+    if(sp) return {t:sp.replace('SP','SINGLE PUNCH').slice(0,36), cls:'lyr-af-sp'};
+    if(tls) return {t:'THUMB LUAR\nSHIFT - SEMAK', cls:'lyr-af-tls'};
+    if(lw) return {t:'LEWAT - SEMAK', cls:'lyr-af-lewat'};
+    if(oa) return {t:'OUT >1J - SEMAK', cls:'lyr-af-lewat'};
+    if(ia) return {t:'IN AWAL - SEMAK', cls:'lyr-af-semak'};
+    return {t:'✓', cls:'lyr-af-ok'};
+  }
+  function cellHtml(d, cls, txt){
+    return `<td class="mg-cell ${cls||''}" style="min-width:72px;max-width:82px;white-space:normal;word-break:break-word;line-height:1.25;vertical-align:middle">${txt?br(txt):'&nbsp;'}</td>`;
   }
 
-  function buildDayCell(li,day){
-    var sh=day.sh,c='',t='',es='';
-    if(li===0){t=shL(sh);c=shC(sh);es='font-weight:700';}
-    else if(li===1){t=day.kzpE||'&nbsp;';c=kC(day.kzp,sh);}
-    else if(li===2){t=day.kzkE||'&nbsp;';c=kC(day.kzk,sh);}
-    else if(li===3){t=nl(day.tc.t)||'&nbsp;';c=day.tc.c||'';}
-    else if(li===4){t=nl(day.mc.t)||'&nbsp;';c=day.mc.c||'';}
-    else if(li===5){t=nl(day.hr.t)||'&nbsp;';c=day.hr.c||'';}
-    else if(li===6){t=nl(day.af.t)||'&nbsp;';c=day.af.c||'';es='font-weight:700';}
-    return '<td class="mg-cell '+c+'" style="font-size:7px;line-height:1.4;vertical-align:middle;'+es+'">'+t+'</td>';
-  }
-
-  ['IKTAR','MHKL','RT'].forEach(function(jab){
-    var jabM=MASTER.filter(function(m){return m.jab===jab;});
-    var wrapDiv=document.createElement('div');
-    wrapDiv.style.marginBottom='20px';
-    wrapDiv.innerHTML='<div class="jab-hdr"><h3>JABATAN: '+jab+'</h3><span>'+jabM.length+' anggota</span></div>';
-
-    ['ALPHA','BRAVO','CHARLIE','DELTA'].forEach(function(komp){
-      var mems=jabM.filter(function(m){return m.komp===komp;});
-      if(!mems.length)return;
-
-      var kDiv=document.createElement('div');
-      kDiv.style.borderBottom='1px solid var(--gbd)';
-      var sh1=shL(getShift(mems[0].bil,1));
-      var st1=SH_TIME[getShift(mems[0].bil,1)];
-      kDiv.innerHTML='<div class="komp-hdr"><h4>KOMPENI '+komp+'</h4><span>Shift 1 Apr: '+sh1+' ('+st1+')</span></div>';
-
-      var scrollDiv=document.createElement('div');
-      scrollDiv.className='mg-wrap';
-
-      // Build header
-      var tbl='<table class="mg-table"><thead><tr>';
-      tbl+='<th style="min-width:22px;font-size:7px;position:sticky;left:0;z-index:6;background:var(--navy3)">Bil</th>';
-      tbl+='<th style="min-width:40px;font-size:7px;position:sticky;left:22px;z-index:6;background:var(--navy3)">Jab</th>';
-      tbl+='<th style="min-width:55px;font-size:7px;position:sticky;left:62px;z-index:6;background:var(--navy3)">Komp</th>';
-      tbl+='<th class="mg-name" style="position:sticky;left:117px;z-index:6">Nama Anggota</th>';
-      tbl+='<th style="min-width:80px;font-size:7px;background:#1e2d4a;white-space:nowrap">Lapisan Data</th>';
-      for(var d=1;d<=30;d++){
-        var dow=APR_DOW[d-1];
-        var dc=dow===0?'dow-sun':dow===6?'dow-sat':'';
-        tbl+='<th class="'+dc+'" style="min-width:72px">'+d+'<br><span style="font-size:5.5px;opacity:.7">'+DOW_MS[dow]+'</span></th>';
-      }
-      ['H','MC','CR','AB','TH','⚑'].forEach(function(s){
-        tbl+='<th style="min-width:20px;font-size:7px;background:#1a2f52">'+s+'</th>';
-      });
-      tbl+='</tr></thead><tbody>';
-
-      mems.forEach(function(m,mi){
-        if(mi>0)tbl+='<tr class="mg-sep-anggota"><td colspan="'+(5+30+6)+'" style="height:6px;background:#e8edf2;padding:0"></td></tr>';
-
-        // Pre-compute days
-        var days=[];
-        var sumH=0,sumMC=0,sumCR=0,sumAB=0,sumTH=0,sumFL=0;
-        for(var d=1;d<=30;d++){
-          var sh=getShift(m.bil,d);
-          var cell=getD(m.bil,d);
-          var kzp=cell.kzp||'';
-          var kzk=cell.kzk||'';
-          var tcIn=cell.tc_in||'';
-          var tcOut=cell.tc_out||'';
-          var flags=detectFlags(m.bil,d);
-          var mcRec=sMC(m.bil,d);
-          var hrRec=sHR(m.bil,d);
-          var autoTick=sh!=='O'&&!kzp&&!kzk&&!flags.some(function(f){return f.indexOf('ABS!')===0;})&&!mcRec.length&&!hrRec.length;
-          var kzpE=kzp||(sh==='O'?'OFFDAY':autoTick?'✓':'');
-          var kzkE=kzk||(sh==='O'?'OFFDAY':autoTick?'✓':'');
-          var tc=getTCdata(sh,tcIn,tcOut,flags);
-          var mc=getMCdata(sh,mcRec);
-          var hr=getHRdata(sh,hrRec);
-          var af=getAFdata(sh,kzp,kzk,tcIn,tcOut,mcRec,hrRec,flags);
-          if(sh!=='O'){
-            if(kzp==='TH'||kzk==='TH'||kzp==='NHT'||kzk==='NHT')sumTH++;
-            else if(mcRec.length)sumMC++;
-            else if(hrRec.length||kzp==='CR')sumCR++;
-            else if(['ABS','X','NHT'].indexOf(kzp)>-1||flags.some(function(f){return f.indexOf('ABS!')===0;}))sumAB++;
-            else sumH++;
-          }
-          sumFL+=flags.length;
-          days.push({d:d,sh:sh,kzp:kzp,kzk:kzk,kzpE:kzpE,kzkE:kzkE,tc:tc,mc:mc,hr:hr,af:af});
-        }
-
-        // Build 7 rows
-        for(var li=0;li<7;li++){
-          tbl+='<tr>';
-          // Fixed left cols — only on layer 0, rowspan 7
-          if(li===0){
-            var noteHtml=m.note?'<div style="margin-top:3px;background:var(--rd-bg);color:var(--rd-t);padding:1px 4px;border-radius:3px;font-size:6.5px;font-weight:700">'+m.note+'</div>':'';
-            tbl+='<td class="mg-cell" rowspan="7" style="text-align:center;font-weight:700;font-size:8px;vertical-align:middle;position:sticky;left:0;z-index:3;background:#fff;border-right:1px solid var(--gbd)">'+m.bil+'</td>';
-            tbl+='<td class="mg-cell" rowspan="7" style="text-align:center;font-size:7px;vertical-align:middle;position:sticky;left:22px;z-index:3;background:#fff;border-right:1px solid var(--gbd)">'+m.jab+'</td>';
-            tbl+='<td class="mg-cell" rowspan="7" style="text-align:center;font-size:7px;vertical-align:middle;position:sticky;left:62px;z-index:3;background:#fff;border-right:1px solid var(--gbd)">'+m.komp+'</td>';
-            tbl+='<td class="mg-cell" rowspan="7" style="text-align:left;vertical-align:top;padding:5px 7px;position:sticky;left:117px;z-index:3;background:#fff;border-right:2px solid var(--navy)">'
-              +'<div style="font-size:6.5px;color:var(--gray)">Bil '+m.bil+'</div>'
-              +'<div style="font-size:8.5px;font-weight:700;color:var(--navy);line-height:1.3;margin-top:1px">'+m.nama+'</div>'
-              +'<div style="font-size:7px;color:var(--gray);margin-top:1px">'+m.jab+' · '+m.komp+'</div>'
-              +noteHtml
-              +'</td>';
-          }
-          // Lapisan label
-          tbl+='<td style="padding:2px 6px;font-size:7px;font-weight:600;white-space:nowrap;border:1px solid #e2e8f0;'+LYRST[li]+'">'+LYRS[li]+'</td>';
-          // Day cells
-          for(var di=0;di<days.length;di++){
-            tbl+=buildDayCell(li,days[di]);
-          }
-          // Summary cols — only on layer 0, rowspan 7
-          if(li===0){
-            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:var(--green)">'+sumH+'</td>';
-            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:var(--amber)">'+sumMC+'</td>';
-            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:var(--blue)">'+sumCR+'</td>';
-            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:'+(sumAB>0?'var(--red)':'var(--gray)')+'">'+sumAB+'</td>';
-            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:var(--purple)">'+sumTH+'</td>';
-            tbl+='<td class="mg-sum" rowspan="7" style="vertical-align:middle;color:'+(sumFL>3?'var(--red)':sumFL>0?'var(--amber)':'var(--gray)')+'">'+sumFL+'</td>';
-          }
-          tbl+='</tr>';
-        }
-      });
-
-      tbl+='<tr class="mg-sep-komp"><td colspan="'+(5+30+6)+'" style="height:12px;background:#dde3ea;padding:0"></td></tr>';
-      tbl+='</tbody></table>';
-      scrollDiv.innerHTML=tbl;
-      kDiv.appendChild(scrollDiv);
-      wrapDiv.appendChild(kDiv);
-    });
-    con.appendChild(wrapDiv);
+  const ordered=MASTER.slice().sort((a,b)=>{
+    const j=(a.jab||'').localeCompare(b.jab||''); if(j) return j;
+    const order={ALPHA:1,BRAVO:2,CHARLIE:3,DELTA:4};
+    return (order[a.komp]-order[b.komp]) || a.bil-b.bil;
   });
+
+  let html=`<div class="jab-block"><div class="jab-hdr"><h3>MASTER AUDIT KEHADIRAN — SEMUA JABATAN</h3><span>${ordered.length} anggota · 7 lapisan data</span></div><div class="mg-wrap"><table class="mg-table"><thead><tr>`;
+  html+=`<th style="min-width:38px;position:sticky;left:0;z-index:7;background:var(--navy3)">Bil</th>`;
+  html+=`<th style="min-width:70px;position:sticky;left:38px;z-index:7;background:var(--navy3)">Jabatan</th>`;
+  html+=`<th style="min-width:74px;position:sticky;left:108px;z-index:7;background:var(--navy3)">Kompeni</th>`;
+  html+=`<th style="min-width:245px;text-align:left;position:sticky;left:182px;z-index:7;background:var(--navy3)">Nama Anggota</th>`;
+  html+=`<th style="min-width:105px;background:#1e293b">Lapisan Data</th>`;
+  for(let d=1;d<=30;d++){
+    const dow=APR_DOW[d-1], cls=dow===0?'dow-sun':dow===6?'dow-sat':'';
+    html+=`<th class="${cls}" style="min-width:72px">${d}<br><span style="font-size:5.5px;opacity:.7">${DOW_MS[dow]}</span></th>`;
+  }
+  html+=`</tr></thead><tbody>`;
+
+  let prevKomp='';
+  ordered.forEach((m,idx)=>{
+    if(idx>0){
+      const gap=(prevKomp!==m.komp)?10:5;
+      html+=`<tr class="mg-sep-${prevKomp!==m.komp?'komp':'anggota'}"><td colspan="35" style="height:${gap}px;background:${prevKomp!==m.komp?'#e2e8f0':'#f8fafc'};padding:0;border:none"></td></tr>`;
+    }
+    prevKomp=m.komp;
+    const days=[];
+    for(let d=1;d<=30;d++){
+      const sh=getShift(m.bil,d);
+      const c=dayObj(m.bil,d);
+      const flags=detectFlags(m.bil,d);
+      const mc=mcOn(m.bil,d);
+      const hr=hrOn(m.bil,d);
+      days.push({sh,c,flags,mc,hr,tc:tcData(sh,c,flags),mcD:mcData(sh,mc),hrD:hrData(sh,hr),af:auditFinal(sh,c,flags,mc,hr)});
+    }
+    LAYERS.forEach((ly,li)=>{
+      html+=`<tr class="${li===0?'mg-row-name':''}">`;
+      if(li===0){
+        const note=m.note?`<div style="margin-top:3px;background:var(--rd-bg);color:var(--rd-t);padding:1px 4px;border-radius:3px;font-size:6.5px;font-weight:700">${esc(m.note)}</div>`:'';
+        html+=`<td rowspan="7" class="mg-cell" style="position:sticky;left:0;z-index:4;background:#fff;text-align:center;font-weight:800;border-right:1px solid var(--gbd);vertical-align:middle">${m.bil}</td>`;
+        html+=`<td rowspan="7" class="mg-cell" style="position:sticky;left:38px;z-index:4;background:#fff;text-align:center;font-weight:700;border-right:1px solid var(--gbd);vertical-align:middle">${esc(m.jab)}</td>`;
+        html+=`<td rowspan="7" class="mg-cell" style="position:sticky;left:108px;z-index:4;background:#fff;text-align:center;font-weight:700;border-right:1px solid var(--gbd);vertical-align:middle">${esc(m.komp)}</td>`;
+        html+=`<td rowspan="7" class="mg-cell" style="position:sticky;left:182px;z-index:4;background:#fff;text-align:left;font-weight:800;color:var(--navy);border-right:2px solid var(--navy);vertical-align:top;padding:6px 8px"><div style="font-size:8.5px;line-height:1.3">${esc(m.nama)}</div><div style="font-size:7px;color:var(--gray);margin-top:2px">${esc(m.jab)} · ${esc(m.komp)}</div>${note}</td>`;
+      }
+      html+=`<td class="mg-cell" style="min-width:105px;text-align:left;position:sticky;left:427px;z-index:3;${layerStyle[ly.key]};border-right:2px solid var(--gbd);font-size:7px">${ly.label}</td>`;
+      days.forEach(day=>{
+        if(ly.key==='shift') html+=cellHtml(day.sh, shiftCls(day.sh), shiftText(day.sh));
+        else if(ly.key==='kzp') html+=cellHtml(day.c.kzp, kzClass(day.c.kzp,day.sh), kzText(day.c.kzp,day.sh));
+        else if(ly.key==='kzk') html+=cellHtml(day.c.kzk, kzClass(day.c.kzk,day.sh), kzText(day.c.kzk,day.sh));
+        else if(ly.key==='tc') html+=cellHtml(day.tc.t, day.tc.cls, day.tc.t);
+        else if(ly.key==='mc') html+=cellHtml(day.mcD.t, day.mcD.cls, day.mcD.t);
+        else if(ly.key==='hr') html+=cellHtml(day.hrD.t, day.hrD.cls, day.hrD.t);
+        else if(ly.key==='af') html+=cellHtml(day.af.t, day.af.cls, day.af.t);
+      });
+      html+=`</tr>`;
+    });
+  });
+  html+=`</tbody></table></div></div>`;
+  con.innerHTML=html;
 }
 
 // ════════════════════════════════════════════════════════════════
