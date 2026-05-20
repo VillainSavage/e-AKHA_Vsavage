@@ -1421,10 +1421,8 @@ function auditFinalDisplay(bil, d){
   const kzSaysCuti = hasKzCode(c, ['MC','EL','CR']);
   if(kzSaysCuti && thumb){
     if(pengg && !hasMC && !hrOK)
-      return {txt:'FLAG — SILA MOHON CUTI
-(ADA PENGGANTI DI POS)', bg:'#7f1d1d', fg:'#fecaca'};
-    return {txt:'WARNING — KZ CUTI
-TETAPI ADA THUMB', bg:'#78350f', fg:'#fef3c7'};
+      return {txt:'FLAG — SILA MOHON CUTI\n(ADA PENGGANTI DI POS)', bg:'#7f1d1d', fg:'#fecaca'};
+    return {txt:'WARNING — KZ CUTI\nTETAPI ADA THUMB', bg:'#78350f', fg:'#fef3c7'};
   }
 
   // ── KZ lapor MC / EL / CR ────────────────────────────────────
@@ -1436,11 +1434,9 @@ TETAPI ADA THUMB', bg:'#78350f', fg:'#fef3c7'};
     // Kedua-dua ada
     if(hasMC && hrOK)    return {txt:'MC SAH / HRMIS SAH', bg:'#14532d', fg:'#bbf7d0'};
     // Ada MC atau HRMIS tapi ada thumb — masih SAH tapi perlu semak
-    if((hasMC||hrOK) && thumb) return {txt:'SEMAK KZ
-(ADA THUMB)', bg:'#713f12', fg:'#fef3c7'};
+    if((hasMC||hrOK) && thumb) return {txt:'SEMAK KZ\n(ADA THUMB)', bg:'#713f12', fg:'#fef3c7'};
     // Tiada MC dan tiada HRMIS
-    if(!hasMC && !hrOK)  return {txt:'SILA MOHON CUTI
-(TIADA MC/HRMIS)', bg:'#7f1d1d', fg:'#fecaca'};
+    if(!hasMC && !hrOK)  return {txt:'SILA MOHON CUTI\n(TIADA MC/HRMIS)', bg:'#7f1d1d', fg:'#fecaca'};
     return {txt:'SEMAK KZ', bg:'#713f12', fg:'#fef3c7'};
   }
 
@@ -1465,11 +1461,9 @@ TETAPI ADA THUMB', bg:'#78350f', fg:'#fef3c7'};
     // Priority 2: HRMIS sah → HRMIS SAH
     if(hrOK)       return {txt:'HRMIS SAH', bg:'#1e3a5f', fg:'#93c5fd'};
     // Priority 3: Ada catatan manual → SEMAK
-    if(manual)     return {txt:'SEMAK
-(ADA CATATAN MANUAL)', bg:'#1c3a1c', fg:'#bbf7d0'};
+    if(manual)     return {txt:'SEMAK\n(ADA CATATAN MANUAL)', bg:'#1c3a1c', fg:'#bbf7d0'};
     // Priority 4: KZ kata MC/EL/CR tapi tiada dokumen
-    if(kzSaysCuti) return {txt:'SILA MOHON CUTI
-(KZ CUTI/TIADA DOKUMEN)', bg:'#7f1d1d', fg:'#fecaca'};
+    if(kzSaysCuti) return {txt:'SILA MOHON CUTI\n(KZ CUTI/TIADA DOKUMEN)', bg:'#7f1d1d', fg:'#fecaca'};
     // Priority 5: ABS tanpa apa-apa
     return {txt:'ABS — SILA MOHON CUTI', bg:'#991b1b', fg:'#fee2e2'};
   }
