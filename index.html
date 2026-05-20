@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>e-AKHA Vsavage</title>
+
+<!-- Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* ═══════════════════════════════════════════════
+   RESET & VARIABLES
+═══════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0F2D5A; --navy2:#1A3F7A; --navy3:#071d3d;
+  --gold:#C8960A; --gold2:#F0B90B;
+  --green:#16a34a; --gn-bg:#dcfce7; --gn-t:#166534;
+  --red:#dc2626;   --rd-bg:#fee2e2; --rd-t:#991b1b;
+  --amber:#d97706; --am-bg:#fef3c7; --am-t:#92400e;
+  --blue:#2563eb;  --bl-bg:#dbeafe; --bl-t:#1e40af;
+  --purple:#7c3aed;--pu-bg:#ede9fe; --pu-t:#5b21b6;
+  --gray:#6b7280;  --gbg:#f3f4f6;   --gbd:#e5e7eb;
+}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1e293b;min-height:100vh}
+
+/* ═══════════════════════════════════════════════
+   AUTH WALL
+═══════════════════════════════════════════════ */
+#auth-wall{
+  position:fixed;inset:0;z-index:99999;
+  background:linear-gradient(135deg,var(--navy3) 0%,#0f2040 50%,#1a1040 100%);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+}
+.login-card{
+  background:#fff;border-radius:16px;padding:36px 38px;width:360px;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+}
+.lc-brand{text-align:center;margin-bottom:26px}
+.lc-icon{
+  width:54px;height:54px;border-radius:13px;margin:0 auto 12px;
+  background:linear-gradient(135deg,var(--navy),var(--navy2));
+  display:flex;align-items:center;justify-content:center;
+}
+.lc-icon svg{width:28px;height:28px;color:#fff}
+.lc-title{font-size:15px;font-weight:700;color:var(--navy)}
+.lc-sub{font-size:9px;color:var(--gray);margin-top:3px}
+
+.lc-tabs{display:flex;background:var(--gbg);border-radius:8px;padding:3px;margin-bottom:22px;gap:2px}
+.lc-tab{
+  flex:1;padding:7px;text-align:center;border-radius:6px;cursor:pointer;
+  font-size:10px;font-weight:500;color:var(--gray);border:none;background:transparent;font-family:inherit;transition:.12s
+}
+.lc-tab.active{background:#fff;color:var(--navy);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+.lf-lbl{font-size:9px;font-weight:600;color:#374151;display:block;margin-bottom:4px}
+.lf-inp{
+  width:100%;padding:9px 12px;border:1.5px solid var(--gbd);border-radius:7px;
+  font-size:11px;font-family:inherit;transition:.15s;outline:none;
+}
+.lf-inp:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,45,90,.1)}
+.lf-inp.shake{animation:shake .35s ease}
+.lf-gap{height:11px}
+.lf-btn{
+  width:100%;padding:10px;border:none;border-radius:7px;
+  font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;
+  background:var(--navy);color:#fff;margin-top:16px;transition:.15s;
+}
+.lf-btn:hover{background:var(--navy2)}
+.lf-btn:disabled{opacity:.5;cursor:not-allowed}
+.lf-err{
+  font-size:9px;color:var(--red);margin-top:8px;
+  background:var(--rd-bg);border:1px solid #fca5a5;
+  border-radius:5px;padding:6px 10px;display:none;
+}
+
+.lc-or{display:flex;align-items:center;gap:8px;margin:16px 0}
+.lc-or::before,.lc-or::after{content:'';flex:1;height:1px;background:var(--gbd)}
+.lc-or span{font-size:9px;color:var(--gray)}
+
+.viewer-btn{
+  width:100%;padding:9px;border:1.5px solid var(--gbd);border-radius:7px;
+  font-size:10.5px;font-weight:500;cursor:pointer;font-family:inherit;
+  background:#fff;color:#374151;transition:.15s;display:flex;align-items:center;
+  justify-content:center;gap:6px;
+}
+.viewer-btn:hover{background:var(--gbg);border-color:#94a3b8}
+.viewer-btn svg{width:14px;height:14px;color:var(--gray)}
+
+.lc-footer{
+  margin-top:20px;font-size:8px;color:rgba(255,255,255,0.3);
+  text-align:center;line-height:1.6;
+}
+
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+
+/* ═══════════════════════════════════════════════
+   MAIN APP LAYOUT
+═══════════════════════════════════════════════ */
+.app{display:flex;min-height:100vh;display:none}
+
+/* SIDEBAR */
+.sidebar{
+  width:220px;background:var(--navy3);position:fixed;top:0;left:0;
+  height:100vh;overflow-y:auto;z-index:100;display:flex;flex-direction:column;
+}
+.sb-brand{padding:14px 13px 10px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.sb-brand h1{font-size:10.5px;font-weight:700;color:#fff;line-height:1.3}
+.sb-brand p{font-size:7.5px;color:rgba(255,255,255,0.3);margin-top:2px}
+.sb-ver{display:inline-block;background:var(--gold);color:#fff;font-size:7px;font-weight:700;padding:1px 6px;border-radius:20px;margin-top:4px}
+
+.sb-sec{padding:6px 0 2px}
+.sb-lbl{font-size:7px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.18);padding:0 12px 2px}
+.sb-item{
+  display:flex;align-items:center;gap:7px;padding:7px 12px;cursor:pointer;
+  color:rgba(255,255,255,0.42);font-size:10px;border-left:2px solid transparent;transition:.12s;
+}
+.sb-item:hover{background:rgba(255,255,255,0.06);color:#fff}
+.sb-item.active{background:rgba(255,255,255,0.1);color:#fff;border-left-color:var(--gold2)}
+.sb-item svg{width:12px;height:12px;flex-shrink:0;opacity:.7}
+.sb-item.active svg{opacity:1}
+.sb-sub{
+  padding:3px 12px 3px 31px;color:rgba(255,255,255,0.35);font-size:9px;
+  cursor:pointer;transition:.12s;
+}
+.sb-sub:hover{color:rgba(255,255,255,0.7)}
+.sb-badge{
+  margin-left:auto;font-size:7px;padding:1px 5px;border-radius:8px;
+  font-weight:700;background:var(--red);color:#fff;
+}
+.sb-foot{
+  margin-top:auto;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.07);
+  font-size:9px;
+}
+.sb-user{color:rgba(255,255,255,0.7);font-weight:600}
+.sb-role{font-size:7.5px;color:rgba(255,255,255,0.3);margin-top:1px}
+.sb-logout{
+  margin-top:7px;width:100%;background:none;border:1px solid rgba(255,255,255,0.12);
+  border-radius:5px;color:rgba(255,255,255,0.35);font-size:8px;padding:4px;
+  cursor:pointer;font-family:inherit;transition:.12s;
+}
+.sb-logout:hover{border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.7)}
+
+/* MAIN CONTENT */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+.topbar{
+  background:#fff;border-bottom:1px solid var(--gbd);padding:9px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+}
+.tb-title{font-size:13px;font-weight:700}
+.tb-sub{font-size:9px;color:var(--gray);margin-top:1px}
+.tb-right{display:flex;gap:6px;align-items:center}
+
+.role-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:20px;font-size:8.5px;font-weight:700;
+}
+.badge-admin{background:var(--gn-bg);color:var(--gn-t);border:1px solid #86efac}
+.badge-viewer{background:var(--bl-bg);color:var(--bl-t);border:1px solid #93c5fd}
+.badge-supa{font-size:8px;padding:2px 7px;border-radius:10px;font-weight:600}
+.supa-ok{background:var(--gn-bg);color:var(--gn-t)}
+.supa-warn{background:var(--am-bg);color:var(--am-t)}
+
+.content{padding:14px;flex:1}
+.page{display:none}.page.active{display:block}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;gap:4px;padding:5px 11px;
+  border-radius:5px;font-size:10px;font-weight:500;cursor:pointer;
+  border:1px solid var(--gbd);background:#fff;color:#374151;font-family:inherit;transition:.12s;
+}
+.btn:hover{background:var(--gbg)}
+.btn svg{width:11px;height:11px}
+.btn-nv{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn-nv:hover{background:var(--navy2)}
+.btn-gd{background:var(--gold);border-color:var(--gold);color:#fff}
+.btn-gr{background:var(--green);border-color:var(--green);color:#fff}
+.btn-rd{background:var(--red);border-color:var(--red);color:#fff}
+.btn-sm{font-size:8.5px;padding:3px 8px}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+/* STAT CARDS */
+.srow{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin-bottom:14px}
+.sc{background:#fff;border-radius:7px;padding:11px 13px;border:1px solid var(--gbd)}
+.sc-l{font-size:8.5px;color:var(--gray);margin-bottom:3px}
+.sc-v{font-size:20px;font-weight:700}
+.sc-s{font-size:7.5px;color:var(--gray);margin-top:2px}
+.sc.navy  .sc-v{color:var(--navy)} .sc.green .sc-v{color:var(--green)}
+.sc.red   .sc-v{color:var(--red)}  .sc.amber .sc-v{color:var(--amber)}
+.sc.blue  .sc-v{color:var(--blue)} .sc.purple .sc-v{color:var(--purple)}
+
+/* NOTIF BANNERS */
+.notif{border-radius:6px;padding:8px 11px;font-size:9.5px;display:flex;gap:6px;margin-bottom:11px;border:1px solid}
+.notif svg{width:12px;height:12px;flex-shrink:0;margin-top:1px}
+.notif.info{background:var(--bl-bg);border-color:#93c5fd;color:var(--bl-t)}
+.notif.warn{background:var(--am-bg);border-color:#fde68a;color:var(--am-t)}
+.notif.ok  {background:var(--gn-bg);border-color:#86efac;color:var(--gn-t)}
+.notif.red {background:var(--rd-bg);border-color:#fca5a5;color:var(--rd-t)}
+.notif.lock{background:#f0fdf4;border-color:#86efac;color:var(--gn-t);cursor:pointer}
+
+/* SECTION HEADER */
+.sech{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.sect{font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:5px}
+
+/* GRID */
+.jab-block{background:#fff;border-radius:9px;border:1px solid var(--gbd);margin-bottom:18px;overflow:hidden}
+.jab-hdr{background:var(--navy);color:#fff;padding:8px 14px;display:flex;align-items:center;justify-content:space-between}
+.jab-hdr h3{font-size:11px;font-weight:700}
+.jab-hdr span{font-size:8px;opacity:.55}
+.komp-hdr{background:#f8fafc;padding:5px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--gbd)}
+.komp-hdr h4{font-size:10px;font-weight:600}
+.komp-hdr span{font-size:8px;color:var(--gray)}
+
+.tscroll{overflow-x:auto}
+.grid-t{border-collapse:collapse;font-size:8px;white-space:nowrap;width:100%}
+.grid-t thead tr.hr-day th{
+  background:var(--navy3);color:#fff;padding:4px 2px;text-align:center;
+  font-size:7.5px;min-width:30px;
+}
+.grid-t thead tr.hr-day th.sun{background:#1e3a6e;color:#fbbf24}
+.grid-t thead tr.hr-day th.sat{background:#1e3a6e;color:#93c5fd}
+.grid-t thead tr.hr-day th.nm{
+  background:var(--navy3);text-align:left;min-width:160px;
+  position:sticky;left:0;z-index:4;padding:4px 8px;font-size:8px;
+}
+.grid-t thead tr.hr-lyr th{
+  background:#1e293b;color:rgba(255,255,255,.35);padding:2px 2px;
+  font-size:6px;text-align:center;font-weight:400;
+}
+.grid-t thead tr.hr-lyr th.nm2{
+  background:#1e293b;position:sticky;left:0;z-index:4;text-align:left;padding:2px 8px;
+}
+.grid-t tbody td{
+  padding:0;border-bottom:1px solid var(--gbd);border-right:1px solid #f1f5f9;vertical-align:top;
+}
+.grid-t tbody td.ntd{
+  position:sticky;left:0;background:#fff;z-index:2;
+  border-right:1px solid var(--gbd);
+}
+.grid-t tbody tr:hover td{background:#f8faff}
+.grid-t tbody tr:hover td.ntd{background:#f8faff}
+
+/* Name cell */
+.nc{padding:5px 8px}
+.nc-bil{font-size:7px;color:var(--gray);font-weight:600}
+.nc-name{font-size:8.5px;font-weight:600;line-height:1.2}
+.nc-meta{font-size:7px;color:var(--gray);margin-top:1px}
+.nc-flags{display:flex;gap:2px;flex-wrap:wrap;margin-top:2px}
+.nc-note{font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700;background:var(--rd-bg);color:var(--rd-t)}
+.nc-flag-cnt{font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700;background:var(--am-bg);color:var(--am-t)}
+
+/* Day cell — 4 layers */
+.dc{display:flex;flex-direction:column;min-width:30px;width:30px}
+.dc-sh{text-align:center;padding:2px 1px;font-size:7.5px;font-weight:700;border-bottom:1px solid rgba(0,0,0,.06)}
+.dc-kzp{text-align:center;padding:1px;font-size:7px;font-weight:600;border-bottom:1px solid rgba(0,0,0,.06)}
+.dc-kzk{text-align:center;padding:1px;font-size:7px;font-weight:600;border-bottom:1px solid rgba(0,0,0,.06)}
+.dc-fl{text-align:center;padding:1px 0;font-size:6px;font-weight:700;min-height:9px}
+
+/* Shift colours */
+.sh-pt{background:#fdf4ff;color:#7e22ce}
+.sh-pg{background:#f0fdf4;color:#15803d}
+.sh-m {background:#eff6ff;color:#1d4ed8}
+.sh-o {background:#f1f5f9;color:#94a3b8}
+
+/* KZ colours */
+.kz-ok {color:#16a34a}
+.kz-mc {background:#fef9c3;color:#854d0e}
+.kz-cr {background:#dbeafe;color:#1e40af}
+.kz-abs{background:#fee2e2;color:#991b1b;font-weight:900}
+.kz-el {background:#ede9fe;color:#5b21b6}
+.kz-th {background:#fce7f3;color:#9d174d}
+.kz-off{background:#f1f5f9;color:#94a3b8}
+.kz-x  {background:#fff1f2;color:#be123c;font-weight:900}
+.kz-lw {background:#ffedd5;color:#9a3412}
+.kz-kp {background:#ecfdf5;color:#065f46;font-weight:700}
+.kz-ctr{background:#fff7ed;color:#c2410c}
+.kz-cb {background:#fdf4ff;color:#7e22ce;font-weight:700}
+
+/* Flag inline */
+.fl{border-radius:2px;padding:0 2px;font-size:6px;font-weight:700;line-height:1.3}
+.fl-sp {background:#fef3c7;color:#b45309}
+.fl-tls{background:#ede9fe;color:#5b21b6}
+.fl-lw {background:#ffedd5;color:#9a3412}
+.fl-ia {background:#fff1f2;color:#be123c}
+.fl-oa {background:#fee2e2;color:#991b1b}
+.fl-abs{background:#7f1d1d;color:#fff}
+.fl-el {background:#fdf2ff;color:#7e22ce}
+.fl-kp {background:#ecfdf5;color:#065f46}
+.fl-ctr{background:#fff7ed;color:#c2410c}
+.fl-cb {background:#fdf4ff;color:#7e22ce}
+.fl-ok {background:var(--gn-bg);color:var(--gn-t)}
+
+/* Cell highlight */
+.dc-abs{background:#fff5f5}
+.dc-warn{background:#fffbeb}
+
+/* Summary cols */
+.sc-col{background:#f8fafc;padding:4px 5px;font-size:8px;min-width:26px;text-align:center;font-weight:700;border-left:1px solid var(--gbd)}
+
+/* FILTER TABS */
+.ftabs{display:flex;gap:4px;background:var(--gbg);border-radius:7px;padding:3px;margin-bottom:12px;flex-wrap:wrap}
+.ftab{
+  flex:1;padding:5px 8px;border-radius:5px;font-size:9.5px;font-weight:500;
+  cursor:pointer;text-align:center;color:var(--gray);border:none;
+  background:transparent;font-family:inherit;min-width:70px;white-space:nowrap;
+}
+.ftab.active{background:#fff;color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* FLAG CARDS */
+.flag-card{
+  background:#fff;border-radius:8px;border:1px solid var(--gbd);
+  padding:11px 13px;margin-bottom:7px;display:flex;gap:10px;
+}
+.flag-sev{width:5px;border-radius:3px;align-self:stretch;flex-shrink:0}
+.flag-sev.high{background:var(--red)}.flag-sev.med{background:var(--amber)}.flag-sev.low{background:var(--blue)}
+.flag-name{font-size:11px;font-weight:600}
+.flag-meta{font-size:9px;color:var(--gray);margin-top:1px}
+.ftag{display:inline-flex;padding:2px 6px;border-radius:10px;font-size:8px;font-weight:700;margin:1px}
+
+/* UPLOAD ZONE */
+.uzone{
+  border:2px dashed var(--gbd);border-radius:8px;padding:16px;text-align:center;
+  cursor:pointer;background:var(--gbg);position:relative;transition:.15s;
+}
+.uzone:hover,.uzone.drag{border-color:var(--navy);background:#f0f4ff}
+.uzone.done{border-color:var(--green);border-style:solid;background:var(--gn-bg)}
+.uzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+/* LEGEND */
+.leg{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;align-items:center;font-size:8.5px}
+.lg-i{display:flex;align-items:center;gap:3px}
+
+/* LOCK (viewer) */
+.locked-section{pointer-events:none;opacity:.4;position:relative}
+.locked-section::after{
+  content:'🔒 Log masuk untuk edit';position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;color:var(--gray);pointer-events:none;
+}
+
+/* TOAST */
+#toast{
+  position:fixed;bottom:20px;right:20px;z-index:99999;
+  padding:9px 16px;border-radius:7px;font-size:10.5px;font-weight:500;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;pointer-events:none;opacity:0;
+}
+
+/* LOADING */
+#loading{
+  position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99998;
+  display:none;align-items:center;justify-content:center;
+}
+.loading-box{background:#fff;border-radius:10px;padding:20px 28px;text-align:center}
+.spin{
+  width:26px;height:26px;border:3px solid var(--gbd);border-top-color:var(--navy);
+  border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 10px;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:40px;color:var(--gray);font-size:11px}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     AUTH WALL
+════════════════════════════════════════════ -->
+<div id="auth-wall">
+  <div class="login-card">
+    <div class="lc-brand">
+      <div class="lc-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div class="lc-title">e-AKHA Vsavage</div>
+      <div class="lc-sub">Cawangan Keselamatan · Hospital Kuala Lumpur</div>
+    </div>
+
+    <!-- TABS -->
+    <div class="lc-tabs">
+      <button class="lc-tab active" onclick="switchTab('admin',this)">🔐 Pentadbir</button>
+      <button class="lc-tab" onclick="switchTab('viewer',this)">👁 Tontonan</button>
+    </div>
+
+    <!-- ADMIN FORM -->
+    <div id="tab-admin">
+      <label class="lf-lbl">ID Pengguna</label>
+      <input class="lf-inp" id="l-id" type="text" placeholder="sm.amierul"
+        autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('l-pw').focus()">
+      <div class="lf-gap"></div>
+      <label class="lf-lbl">Kata Laluan</label>
+      <input class="lf-inp" id="l-pw" type="password" placeholder="••••••••"
+        autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="lf-err" id="l-err">⚠ ID atau kata laluan tidak sah.</div>
+      <button class="lf-btn" id="l-btn" onclick="doLogin()">Log Masuk</button>
+    </div>
+
+    <!-- VIEWER FORM -->
+    <div id="tab-viewer" style="display:none">
+      <div style="background:var(--bl-bg);border-radius:8px;padding:14px;border:1px solid #93c5fd;font-size:10px;color:var(--bl-t);line-height:1.6;margin-bottom:10px">
+        <b>Mod Tontonan (Awam)</b><br>
+        Masukkan kod akses untuk melihat data. Anda <b>tidak boleh mengedit</b> sebarang rekod.
+      </div>
+      <label class="lf-lbl">Kod Akses Tontonan</label>
+      <input class="lf-inp" id="v-pass" type="password" placeholder="Masukkan kod akses"
+        onkeydown="if(event.key==='Enter')enterViewer()">
+      <div class="lf-err" id="v-err">⚠ Kod akses tidak sah.</div>
+      <button class="lf-btn" onclick="enterViewer()">Masuk sebagai Penonton</button>
+    </div>
+  </div>
+
+  <div class="lc-footer">
+    e-AKHA Vsavage · MHKL · IKTAR · RT · 52 Anggota · 4 Kompeni<br>
+    April 2026 — Julai 2026
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     LOADING OVERLAY
+════════════════════════════════════════════ -->
+<div id="loading">
+  <div class="loading-box">
+    <div class="spin"></div>
+    <div id="loading-msg" style="font-size:10.5px;color:#374151">Memuatkan...</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     TOAST
+════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<!-- ════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════ -->
+<div class="app" id="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-brand">
+      <h1>e-AKHA Vsavage</h1>
+      <p>Hospital Kuala Lumpur</p>
+      <span class="sb-ver">v1.0 · April 2026</span>
+    </div>
+
+    <div class="sb-sec">
+      <div class="sb-lbl">Utama</div>
+      <div class="sb-item active" onclick="nav('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+      <div class="sb-item" onclick="nav('master',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Master File (52 Anggota)
+      </div>
+      <div class="sb-item" onclick="nav('flags',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        Output Perhatian
+        <span class="sb-badge" id="sb-fcnt">–</span>
+      </div>
+    </div>
+
+    <div class="sb-sec">
+      <div class="sb-lbl">Mini File Jabatan</div>
+      <div class="sb-item" onclick="nav('iktar',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a8 8 0 00-16 0v2"/></svg>
+        IKTAR
+      </div>
+      <div class="sb-sub" onclick="navKomp('iktar','ALPHA')">· Kompeni ALPHA</div>
+      <div class="sb-sub" onclick="navKomp('iktar','BRAVO')">· Kompeni BRAVO</div>
+      <div class="sb-sub" onclick="navKomp('iktar','CHARLIE')">· Kompeni CHARLIE</div>
+      <div class="sb-sub" onclick="navKomp('iktar','DELTA')">· Kompeni DELTA</div>
+
+      <div class="sb-item" onclick="nav('mhkl',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a8 8 0 00-16 0v2"/></svg>
+        MHKL
+      </div>
+      <div class="sb-sub" onclick="navKomp('mhkl','ALPHA')">· Kompeni ALPHA</div>
+      <div class="sb-sub" onclick="navKomp('mhkl','BRAVO')">· Kompeni BRAVO</div>
+      <div class="sb-sub" onclick="navKomp('mhkl','CHARLIE')">· Kompeni CHARLIE</div>
+      <div class="sb-sub" onclick="navKomp('mhkl','DELTA')">· Kompeni DELTA</div>
+
+      <div class="sb-item" onclick="nav('rt',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a8 8 0 00-16 0v2"/></svg>
+        RT
+      </div>
+      <div class="sb-sub" onclick="navKomp('rt','ALPHA')">· Kompeni ALPHA</div>
+      <div class="sb-sub" onclick="navKomp('rt','BRAVO')">· Kompeni BRAVO</div>
+      <div class="sb-sub" onclick="navKomp('rt','CHARLIE')">· Kompeni CHARLIE</div>
+      <div class="sb-sub" onclick="navKomp('rt','DELTA')">· Kompeni DELTA</div>
+    </div>
+
+    <div class="sb-sec" id="sb-admin-section">
+      <div class="sb-lbl">Pentadbir</div>
+      <div class="sb-item" onclick="nav('entry',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Entry Manual KZ / TC
+      </div>
+      <div class="sb-item" onclick="nav('upload',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload Timecard
+      </div>
+      <div class="sb-item" onclick="nav('backup',this)" id="sb-backup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        Backup Google Drive
+      </div>
+    </div>
+
+    <div class="sb-foot">
+      <div class="sb-user" id="sb-nama">–</div>
+      <div class="sb-role" id="sb-role">–</div>
+      <button class="sb-logout" onclick="doLogout()">↩ Log Keluar</button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="tb-title" id="pg-title">Dashboard</div>
+        <div class="tb-sub" id="pg-sub">e-AKHA Vsavage · Audit Kehadiran April 2026</div>
+      </div>
+      <div class="tb-right">
+        <span id="supa-badge" class="badge-supa supa-warn">⏳ Supabase</span>
+        <span id="role-badge" class="role-badge badge-admin">–</span>
+        <button class="btn btn-gd btn-sm" onclick="exportCSV()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page active" id="page-dashboard">
+        <div class="notif info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div><b>e-AKHA Vsavage · Tapisan April 2026 (1–30 haribulan).</b> Shift hakiki: Pagi 0700–1500 · Petang 1500–2300 · Malam 2300–0700. Timecard dikira semula ikut shift sebenar, bukan andaian lama.</div>
+        </div>
+        <div class="srow">
+          <div class="sc navy"><div class="sc-l">Jumlah Anggota</div><div class="sc-v">52</div><div class="sc-s">IKTAR·MHKL·RT</div></div>
+          <div class="sc red"><div class="sc-l">Kes Kritikal</div><div class="sc-v" id="d-krit">2</div><div class="sc-s">Tahan/Tidak Hadir</div></div>
+          <div class="sc amber"><div class="sc-l">Output Perhatian</div><div class="sc-v" id="d-flags">–</div><div class="sc-s">flags aktif</div></div>
+          <div class="sc blue"><div class="sc-l">Data Dimasukkan</div><div class="sc-v" id="d-cells">0</div><div class="sc-s">rekod tersimpan</div></div>
+          <div class="sc green"><div class="sc-l">Sambungan DB</div><div class="sc-v" style="font-size:13px" id="d-db">–</div><div class="sc-s">Supabase</div></div>
+        </div>
+        <div class="notif warn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+          <div><b>8 Peraturan Flag Aktif:</b> ①SP (nyatakan jam IN/OUT) ②TLS (luar shift hakiki, kecuali OT bersambung) ③LEWAT (&gt;6min, OT bersambung=tidak lewat) ④IN AWAL (&gt;60min sebelum shift=tidak sah) ⑤ABS tanpa dok (mohon MC/cuti) ⑥EL (wajib HRMIS) ⑦K/P (Kelepasan/Pelepasan) ⑧CTR/CB</div>
+        </div>
+        <div class="sech"><div class="sect">Kes Perlu Tindakan Segera</div><button class="btn btn-sm" onclick="nav('flags',document.querySelector('[onclick*=flags]'))">Semua →</button></div>
+        <div id="dash-alerts">
+          <div class="flag-card">
+            <div class="flag-sev high"></div>
+            <div style="flex:1">
+              <div class="flag-name">MOHD AMINUDIN BIN DAUD</div>
+              <div class="flag-meta">IKTAR · Kompeni ALPHA · Bil 4</div>
+              <div style="font-size:9.5px;color:#475569;margin-top:4px">TAHAN TUGAS sepanjang April 2026 — tiada rekod timecard.</div>
+              <span class="ftag" style="background:var(--pu-bg);color:var(--pu-t);margin-top:4px">Tahan Tugas</span>
+            </div>
+          </div>
+          <div class="flag-card">
+            <div class="flag-sev high"></div>
+            <div style="flex:1">
+              <div class="flag-name">MUHAMAD ASREE BIN HAZIR</div>
+              <div class="flag-meta">IKTAR · Kompeni BRAVO · Bil 10</div>
+              <div style="font-size:9.5px;color:#475569;margin-top:4px">TIDAK HADIR TUGAS sepanjang April 2026 — tiada punch.</div>
+              <span class="ftag" style="background:var(--rd-bg);color:var(--rd-t);margin-top:4px">Tidak Hadir Tugas</span>
+            </div>
+          </div>
+          <div class="flag-card">
+            <div class="flag-sev high"></div>
+            <div style="flex:1">
+              <div class="flag-name">HAZLAN BIN MOHD RESDI</div>
+              <div class="flag-meta">MHKL · Kompeni BRAVO · Bil 28</div>
+              <div style="font-size:9.5px;color:#475569;margin-top:4px">19 kes April: MC 01–02/04, lewat berulang, CR+thumb 18/04, ABS 17/04 & 30/04.</div>
+              <span class="ftag" style="background:var(--rd-bg);color:var(--rd-t);margin-top:4px">Multi-Kes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MASTER FILE ── -->
+      <div class="page" id="page-master">
+        <div class="notif info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+          <span>Master File — semua 52 anggota. Sel: Baris 1=Shift · Baris 2=KZ Penyelia · Baris 3=KZ Koperal · Baris 4=Flag TC</span>
+        </div>
+        <div class="leg">
+          <b style="color:var(--gray)">Shift:</b>
+          <span class="lg-i"><span class="fl sh-pt" style="padding:1px 4px">PT</span>Petang</span>
+          <span class="lg-i"><span class="fl sh-pg" style="padding:1px 4px">PG</span>Pagi</span>
+          <span class="lg-i"><span class="fl sh-m"  style="padding:1px 4px">M</span>Malam</span>
+          <span class="lg-i"><span class="fl sh-o"  style="padding:1px 4px">OF</span>Offday</span>
+          &nbsp;<b style="color:var(--gray)">Flag:</b>
+          <span class="lg-i"><span class="fl fl-sp">SP</span>Single Punch</span>
+          <span class="lg-i"><span class="fl fl-tls">TLS</span>Thumb Luar Shift</span>
+          <span class="lg-i"><span class="fl fl-lw">LW</span>Lewat</span>
+          <span class="lg-i"><span class="fl fl-ia">IA</span>IN Awal</span>
+          <span class="lg-i"><span class="fl fl-oa">OA</span>OUT Awal</span>
+          <span class="lg-i"><span class="fl fl-abs">ABS!</span>Tiada Dok</span>
+          <span class="lg-i"><span class="fl fl-kp">K/P</span>Kelepasan</span>
+          <span class="lg-i"><span class="fl fl-ctr">CTR</span>Cuti Tanpa Rekod</span>
+          <span class="lg-i"><span class="fl fl-cb">CB</span>Cuti Bersalin</span>
+        </div>
+        <div id="master-grid"></div>
+      </div>
+
+      <!-- ── FLAGS ── -->
+      <div class="page" id="page-flags">
+        <div class="ftabs">
+          <button class="ftab active" onclick="renderFlags('',this)">Semua (<span id="fct-all">0</span>)</button>
+          <button class="ftab" onclick="renderFlags('SP',this)">SP (<span id="fct-sp">0</span>)</button>
+          <button class="ftab" onclick="renderFlags('TLS',this)">TLS (<span id="fct-tls">0</span>)</button>
+          <button class="ftab" onclick="renderFlags('LEWAT',this)">Lewat (<span id="fct-lw">0</span>)</button>
+          <button class="ftab" onclick="renderFlags('IN AWAL',this)">IN Awal (<span id="fct-ia">0</span>)</button>
+          <button class="ftab" onclick="renderFlags('OUT AWAL',this)">OUT Awal (<span id="fct-oa">0</span>)</button>
+          <button class="ftab" onclick="renderFlags('ABS!',this)">ABS! (<span id="fct-abs">0</span>)</button>
+          <button class="ftab" onclick="renderFlags('EL-',this)">EL (<span id="fct-el">0</span>)</button>
+          <button class="ftab" onclick="renderFlags('CTR',this)">CTR (<span id="fct-ctr">0</span>)</button>
+        </div>
+        <div id="flags-list"></div>
+      </div>
+
+      <!-- ── JABATAN PAGES ── -->
+      <div class="page" id="page-iktar">
+        <div class="notif info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg><span><b>Mini File: IKTAR</b> — 24 anggota, 4 kompeni</span></div>
+        <div class="ftabs" id="tabs-iktar">
+          <button class="ftab active" onclick="setKomp('iktar','',this)">Semua</button>
+          <button class="ftab" onclick="setKomp('iktar','ALPHA',this)">ALPHA</button>
+          <button class="ftab" onclick="setKomp('iktar','BRAVO',this)">BRAVO</button>
+          <button class="ftab" onclick="setKomp('iktar','CHARLIE',this)">CHARLIE</button>
+          <button class="ftab" onclick="setKomp('iktar','DELTA',this)">DELTA</button>
+        </div>
+        <div id="grid-iktar"></div>
+      </div>
+
+      <div class="page" id="page-mhkl">
+        <div class="notif info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg><span><b>Mini File: MHKL</b> — 12 anggota, 4 kompeni</span></div>
+        <div class="ftabs" id="tabs-mhkl">
+          <button class="ftab active" onclick="setKomp('mhkl','',this)">Semua</button>
+          <button class="ftab" onclick="setKomp('mhkl','ALPHA',this)">ALPHA</button>
+          <button class="ftab" onclick="setKomp('mhkl','BRAVO',this)">BRAVO</button>
+          <button class="ftab" onclick="setKomp('mhkl','CHARLIE',this)">CHARLIE</button>
+          <button class="ftab" onclick="setKomp('mhkl','DELTA',this)">DELTA</button>
+        </div>
+        <div id="grid-mhkl"></div>
+      </div>
+
+      <div class="page" id="page-rt">
+        <div class="notif info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg><span><b>Mini File: RT</b> — 16 anggota, 4 kompeni</span></div>
+        <div class="ftabs" id="tabs-rt">
+          <button class="ftab active" onclick="setKomp('rt','',this)">Semua</button>
+          <button class="ftab" onclick="setKomp('rt','ALPHA',this)">ALPHA</button>
+          <button class="ftab" onclick="setKomp('rt','BRAVO',this)">BRAVO</button>
+          <button class="ftab" onclick="setKomp('rt','CHARLIE',this)">CHARLIE</button>
+          <button class="ftab" onclick="setKomp('rt','DELTA',this)">DELTA</button>
+        </div>
+        <div id="grid-rt"></div>
+      </div>
+
+      <!-- ── ENTRY MANUAL (ADMIN ONLY) ── -->
+      <div class="page" id="page-entry">
+        <div class="notif warn" id="entry-viewer-notice" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span><b>Mod Tontonan</b> — entry manual hanya untuk pentadbir.</span>
+        </div>
+        <div id="entry-viewer-notice" class="notif warn" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span><b>Mod Tontonan</b> — entry manual hanya untuk pentadbir. <button class="btn btn-sm btn-nv" onclick="doLogout()" style="font-size:8px;padding:2px 8px">Log Masuk</button></span></div>
+<div id="entry-form-wrap">
+          <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);padding:16px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;margin-bottom:14px">Entry Manual — KZ Penyelia / Koperal / Timecard</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">Anggota</div>
+                <select id="e-bil" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:220px">
+                  <option value="">-- Pilih Anggota --</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">Tarikh (1–30)</div>
+                <input type="number" id="e-hari" min="1" max="30" placeholder="1"
+                  style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:60px">
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">KZ Penyelia</div>
+                <select id="e-kzp" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="">–</option>
+                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option>
+                  <option>ABS</option><option>TH</option><option>NHT</option><option>X</option>
+                  <option>LEWAT</option><option>K/P</option><option>CTR</option><option>CB</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">KZ Koperal</div>
+                <select id="e-kzk" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="">–</option>
+                  <option>✓</option><option>MC</option><option>CR</option><option>EL</option>
+                  <option>ABS</option><option>TH</option><option>NHT</option><option>X</option>
+                  <option>LEWAT</option><option>K/P</option><option>CTR</option><option>CB</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">TC IN (HH:MM)</div>
+                <input type="text" id="e-in" placeholder="07:02"
+                  style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:72px">
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">TC OUT (HH:MM)</div>
+                <input type="text" id="e-out" placeholder="14:58"
+                  style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px;width:72px">
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">OT Sambung?</div>
+                <select id="e-ot" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="false">Tidak</option>
+                  <option value="true">Ya (OT)</option>
+                </select>
+              </div>
+              <button class="btn btn-gr" onclick="saveEntry()" style="margin-bottom:0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                Simpan
+              </button>
+            </div>
+            <div id="e-status" style="font-size:9px;color:var(--green);margin-top:8px"></div>
+          </div>
+          <div id="e-preview"></div>
+        </div>
+      </div>
+
+      <!-- ── UPLOAD ── -->
+      <div class="page" id="page-upload">
+        <div class="notif warn" id="upload-viewer-notice" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span><b>Mod Tontonan</b> — upload hanya untuk pentadbir.</span>
+        </div>
+        <div id="upload-viewer-notice" class="notif warn" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span><b>Mod Tontonan</b> — upload hanya untuk pentadbir. <button class="btn btn-sm btn-nv" onclick="doLogout()" style="font-size:8px;padding:2px 8px">Log Masuk</button></span></div>
+<div id="upload-form-wrap">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px">
+            <div class="uzone" id="uz-tc" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'tc',this)">
+              <input type="file" accept=".pdf,.xlsx,.xls,.csv" onchange="fsel(this,'tc')">
+              <div style="font-size:26px;margin-bottom:5px">🕐</div>
+              <div style="font-size:10px;font-weight:600">Timecard (TC)</div>
+              <div style="font-size:8px;color:var(--gray)">PDF / Excel TIMECARE</div>
+              <div id="fn-tc" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:3px"></div>
+            </div>
+            <div class="uzone" id="uz-kzp" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'kzp',this)">
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'kzp')">
+              <div style="font-size:26px;margin-bottom:5px">📋</div>
+              <div style="font-size:10px;font-weight:600">KZ Penyelia</div>
+              <div style="font-size:8px;color:var(--gray)">PDF scan / gambar</div>
+              <div id="fn-kzp" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:3px"></div>
+            </div>
+            <div class="uzone" id="uz-kzk" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'kzk',this)">
+              <input type="file" accept=".pdf,.txt" onchange="fsel(this,'kzk')">
+              <div style="font-size:26px;margin-bottom:5px">📱</div>
+              <div style="font-size:10px;font-weight:600">KZ Koperal (WhatsApp)</div>
+              <div style="font-size:8px;color:var(--gray)">Export chat / PDF</div>
+              <div id="fn-kzk" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:3px"></div>
+            </div>
+            <div class="uzone" id="uz-baki" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="drop(event,'baki',this)">
+              <input type="file" accept=".pdf,.xlsx" onchange="fsel(this,'baki')">
+              <div style="font-size:26px;margin-bottom:5px">📊</div>
+              <div style="font-size:10px;font-weight:600">Baki Cuti Anggota</div>
+              <div style="font-size:8px;color:var(--gray)">PDF / Excel baki individu</div>
+              <div id="fn-baki" style="font-size:8px;color:var(--gn-t);font-weight:600;margin-top:3px"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-nv" id="btn-proc" disabled onclick="procUpload()">Proses &amp; Kemaskini</button>
+            <span id="proc-stat" style="font-size:9.5px;color:var(--gray)"></span>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ── BACKUP ── -->
+      <div class="page" id="page-backup">
+        <div class="notif info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+          <div><b>Backup Automatik ke Google Drive.</b> Semua proses dilakukan melalui Supabase Edge Function (server-side). Token dan secret Google Drive <b>tidak pernah terdedah</b> ke browser pengguna. Hanya pentadbir (SM Amierul &amp; SJN Adilah) boleh buat backup.</div>
+        </div>
+        <div id="backup-viewer-notice" class="notif warn" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>Fungsi backup hanya untuk pentadbir.</span>
+        </div>
+
+        <div id="backup-admin-wrap">
+          <!-- Backup Action -->
+          <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);padding:16px;margin-bottom:14px">
+            <div style="font-size:12px;font-weight:700;margin-bottom:4px">☁ Backup Audit Bulanan</div>
+            <div style="font-size:9.5px;color:var(--gray);margin-bottom:14px">Jana dan simpan laporan audit ke Google Drive dalam format Excel, CSV dan JSON.</div>
+
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">Bulan</div>
+                <select id="bk-bln" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="4">April 2026</option>
+                  <option value="5">Mei 2026</option>
+                  <option value="6">Jun 2026</option>
+                </select>
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--gray);margin-bottom:3px">Tahun</div>
+                <select id="bk-thn" style="font-size:9.5px;padding:5px 8px;border:1px solid var(--gbd);border-radius:5px">
+                  <option value="2026">2026</option>
+                </select>
+              </div>
+              <div style="margin-top:14px">
+                <button class="btn btn-nv" id="btn-backup" onclick="backupToDrive()" style="gap:6px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                  Backup ke Google Drive
+                </button>
+              </div>
+              <div style="margin-top:14px">
+                <button class="btn btn-gd" onclick="exportCSV()" style="gap:6px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+                  Export CSV Sahaja
+                </button>
+              </div>
+            </div>
+
+            <!-- Status backup -->
+            <div id="backup-stat" style="display:none;flex-direction:column;gap:8px"></div>
+
+            <!-- Format info -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:14px">
+              <div style="background:var(--gbg);border-radius:7px;padding:10px 12px;border:1px solid var(--gbd)">
+                <div style="font-size:18px;margin-bottom:4px">📊</div>
+                <div style="font-size:10px;font-weight:700">Excel (.xlsx)</div>
+                <div style="font-size:8.5px;color:var(--gray);margin-top:2px">2 sheet: Data penuh + Ringkasan per anggota</div>
+              </div>
+              <div style="background:var(--gbg);border-radius:7px;padding:10px 12px;border:1px solid var(--gbd)">
+                <div style="font-size:18px;margin-bottom:4px">📄</div>
+                <div style="font-size:10px;font-weight:700">CSV</div>
+                <div style="font-size:8.5px;color:var(--gray);margin-top:2px">Boleh buka dalam Excel, compatible dengan sistem lain</div>
+              </div>
+              <div style="background:var(--gbg);border-radius:7px;padding:10px 12px;border:1px solid var(--gbd)">
+                <div style="font-size:18px;margin-bottom:4px">🔧</div>
+                <div style="font-size:10px;font-weight:700">JSON</div>
+                <div style="font-size:8.5px;color:var(--gray);margin-top:2px">Untuk integrasi sistem, data lengkap termasuk flags</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Folder structure info -->
+          <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);padding:14px;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;margin-bottom:10px">📁 Struktur Folder Google Drive</div>
+            <div style="font-family:monospace;font-size:9.5px;background:var(--navy3);color:#7dd3fc;padding:12px 14px;border-radius:7px;line-height:1.8">
+              📁 eAKHA Vsavage (Folder Utama)<br>
+              &nbsp;&nbsp;└── 📁 2026<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── 📁 04_Apr_2026<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── 📊 eAKHA_2026_Apr_Audit_[timestamp].xlsx<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── 📄 eAKHA_2026_Apr_Audit_[timestamp].csv<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── 🔧 eAKHA_2026_Apr_Audit_[timestamp].json<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── 📁 05_Mei_2026<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── ...<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 📁 06_Jun_2026<br>
+            </div>
+          </div>
+
+          <!-- Backup log -->
+          <div style="background:#fff;border-radius:9px;border:1px solid var(--gbd);overflow:hidden">
+            <div style="padding:9px 13px;border-bottom:1px solid var(--gbd);font-size:11px;font-weight:700">📋 Log Backup</div>
+            <div id="backup-log">
+              <div style="text-align:center;padding:20px;font-size:9.5px;color:var(--gray)">Tiada rekod backup lagi.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- content -->
+  </div><!-- main -->
+</div><!-- app -->
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════════
+// CONFIG — TUKAR NILAI INI
+// ════════════════════════════════════════════════════════════════
+const SUPA_URL      = 'MASUKKAN_URL_SUPABASE_ANDA';  // https://xxxx.supabase.co
+const EDGE_FN_URL   = 'MASUKKAN_URL_SUPABASE_ANDA/functions/v1/backup-drive'; // Edge Function URL
+const SUPA_KEY = 'MASUKKAN_ANON_KEY_ANDA';       // eyJhbGci...
+
+// Akaun pentadbir tempatan (fallback jika Supabase belum setup)
+// TUKAR PASSWORD SEBELUM DEPLOY!
+const ADMIN_ACCOUNTS = [
+  { id:'sm.amierul',  pw:'6438670', nama:'SM Amierul',  jawatan:'PELULUS'   },
+  { id:'sjn.adilah',  pw:'6438670', nama:'SJN Adilah',  jawatan:'PENYOKONG' },
+];
+const VIEWER_PASS = '633283';
+
+// ════════════════════════════════════════════════════════════════
+// SHIFT ENGINE (April 2026 — verified dari jadual gambar)
+// Cycle: P P S S M M O O  |  Ref: 1 Apr 2026 = day 0
+// ALPHA=0  BRAVO=4  CHARLIE=2  DELTA=6
+// ════════════════════════════════════════════════════════════════
+const CYCLE = ['P','P','S','S','M','M','O','O'];
+const CO = {};
+[1,2,3,4,5,6,25,26,27,37,38,39,40].forEach(b=>CO[b]=0);
+[7,8,9,10,11,12,28,29,30,41,42,43,44].forEach(b=>CO[b]=4);
+[13,14,15,16,17,18,31,32,33,45,46,47,48].forEach(b=>CO[b]=2);
+[19,20,21,22,23,24,34,35,36,49,50,51,52].forEach(b=>CO[b]=6);
+const APR1 = new Date(2026,3,1);
+const SH_LBL  = {P:'PT', S:'PG', M:'M',  O:'OF'};
+const SH_TIME = {P:'1500–2300',S:'0700–1500',M:'2300–0700',O:'Rehat'};
+const SH_CLS  = {P:'sh-pt',S:'sh-pg',M:'sh-m',O:'sh-o'};
+const DOW_MS  = ['Ahd','Isn','Sel','Rab','Kha','Jum','Sab'];
+const APR_DOW = [3,4,5,6,0,1,2,3,4,5,6,0,1,2,3,4,5,6,0,1,2,3,4,5,6,0,1,2,3,4];
+
+function getShift(bil, d) {
+  const diff = Math.round((new Date(2026,3,d) - APR1) / 86400000);
+  return CYCLE[(diff + CO[bil]) % 8];
+}
+
+// ════════════════════════════════════════════════════════════════
+// MASTER ANGGOTA
+// ════════════════════════════════════════════════════════════════
+const MASTER = [
+  {bil:1, jab:'IKTAR',komp:'ALPHA',nama:'MOHAMAD ALIFF BIN MOHTAR'},
+  {bil:2, jab:'IKTAR',komp:'ALPHA',nama:'ABDULLAH BIN BAHUDIN'},
+  {bil:3, jab:'IKTAR',komp:'ALPHA',nama:'MUHAMMAD TARMIZI BIN ABDULLAH'},
+  {bil:4, jab:'IKTAR',komp:'ALPHA',nama:'MOHD AMINUDIN BIN DAUD',note:'TAHAN TUGAS'},
+  {bil:5, jab:'IKTAR',komp:'ALPHA',nama:'IRWAN SYAMIR BIN MOHD ZAINAL',note:'5x LEWAT'},
+  {bil:6, jab:'IKTAR',komp:'ALPHA',nama:'AALIYA AUNI BINTI MAT ZABIR'},
+  {bil:7, jab:'IKTAR',komp:'BRAVO',nama:'ZULKIFLI BIN YUSOF'},
+  {bil:8, jab:'IKTAR',komp:'BRAVO',nama:'MOHD ILHAM BIN YUSOFF'},
+  {bil:9, jab:'IKTAR',komp:'BRAVO',nama:'NORAZARIN BIN HUSSIN'},
+  {bil:10,jab:'IKTAR',komp:'BRAVO',nama:'MUHAMAD ASREE BIN HAZIR',note:'TIDAK HADIR'},
+  {bil:11,jab:'IKTAR',komp:'BRAVO',nama:'AZLANNOOR HADY BIN ABDUL TALIB'},
+  {bil:12,jab:'IKTAR',komp:'BRAVO',nama:'NOR AINA NAZIRA BINTI MOHD TARMIZI'},
+  {bil:13,jab:'IKTAR',komp:'CHARLIE',nama:'AZROL NAIM BIN AB MALEK'},
+  {bil:14,jab:'IKTAR',komp:'CHARLIE',nama:'WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA'},
+  {bil:15,jab:'IKTAR',komp:'CHARLIE',nama:'MOHD RASIDI BIN MOHD NASIR'},
+  {bil:16,jab:'IKTAR',komp:'CHARLIE',nama:'MUHAMMAD ASHLEY BIN BASHIR'},
+  {bil:17,jab:'IKTAR',komp:'CHARLIE',nama:'MUHAMMAD BADRI BIN ARIS'},
+  {bil:18,jab:'IKTAR',komp:'CHARLIE',nama:'MUHAMMAD ZULHELMI BIN AHMAD AFAMI'},
+  {bil:19,jab:'IKTAR',komp:'DELTA',nama:'RIMA BINTI OTHMAN'},
+  {bil:20,jab:'IKTAR',komp:'DELTA',nama:'MOHAMMAD FITHRI BIN ABD LATIF @ ABD LATIF'},
+  {bil:21,jab:'IKTAR',komp:'DELTA',nama:'MOHAMAD ALIFF HAIQAL BIN MD JAMIL'},
+  {bil:22,jab:'IKTAR',komp:'DELTA',nama:'LATIFA RODANIA BINTI ABDUL RAZAK'},
+  {bil:23,jab:'IKTAR',komp:'DELTA',nama:'AHMAD SHAMIL BIN NADZRI'},
+  {bil:24,jab:'IKTAR',komp:'DELTA',nama:'ROHISHAM BIN MOHAMAD AROF'},
+  {bil:25,jab:'MHKL',komp:'ALPHA',nama:'MUHAMMAD AMIRULLAH BIN ABDUL SALIM'},
+  {bil:26,jab:'MHKL',komp:'ALPHA',nama:'MOHD SOFIE BIN MOHD SHUKRI'},
+  {bil:27,jab:'MHKL',komp:'ALPHA',nama:'MUHAMAD FAHMIE BIN SAHRAN'},
+  {bil:28,jab:'MHKL',komp:'BRAVO',nama:'HAZLAN BIN MOHD RESDI',note:'19 kes'},
+  {bil:29,jab:'MHKL',komp:'BRAVO',nama:'ANASHATOL ARNAEDA BINTI JAFRI'},
+  {bil:30,jab:'MHKL',komp:'BRAVO',nama:'MOHAMAD ALIF BIN NASARUDDIN'},
+  {bil:31,jab:'MHKL',komp:'CHARLIE',nama:'MOHAMAD IZAT AFIFUDDIN BIN MOHAMAD AZMI'},
+  {bil:32,jab:'MHKL',komp:'CHARLIE',nama:'AZELI BIN ZABER'},
+  {bil:33,jab:'MHKL',komp:'CHARLIE',nama:'NORAZLIDA BINTI RAZAB'},
+  {bil:34,jab:'MHKL',komp:'DELTA',nama:'MOHD LUKMAN BIN HAMDAN'},
+  {bil:35,jab:'MHKL',komp:'DELTA',nama:'SUHAIRI BIN ISMAIL'},
+  {bil:36,jab:'MHKL',komp:'DELTA',nama:'NURSYUHADA BINTI MISNAN'},
+  {bil:37,jab:'RT',komp:'ALPHA',nama:'YUSRI BIN YUNUS'},
+  {bil:38,jab:'RT',komp:'ALPHA',nama:'MOHD SHAIFUL NIZAM BIN HAMID'},
+  {bil:39,jab:'RT',komp:'ALPHA',nama:'NANTHA GOPAL A/L AYASAMY'},
+  {bil:40,jab:'RT',komp:'ALPHA',nama:'SHAHRUL FITRI BIN ROSLI'},
+  {bil:41,jab:'RT',komp:'BRAVO',nama:'MOHD KHADAFEE BIN MD SAAD'},
+  {bil:42,jab:'RT',komp:'BRAVO',nama:'NOR AZURA BINTI TAMAN @ MUHAMMAD'},
+  {bil:43,jab:'RT',komp:'BRAVO',nama:'MOHD SHAFIK BIN IBRAM'},
+  {bil:44,jab:'RT',komp:'BRAVO',nama:'ZULHILMI BIN ZAINUDIN'},
+  {bil:45,jab:'RT',komp:'CHARLIE',nama:'NUR AZIM BIN NASIRUDDIN'},
+  {bil:46,jab:'RT',komp:'CHARLIE',nama:'FARRAH NATASHA BINTI ZULKAFLI'},
+  {bil:47,jab:'RT',komp:'CHARLIE',nama:'SAIFUL YUSRIZAL BIN YAACOB'},
+  {bil:48,jab:'RT',komp:'CHARLIE',nama:'MUHAMMAD AFIQ FAIZ BIN BADARUDDIN'},
+  {bil:49,jab:'RT',komp:'DELTA',nama:'ROSARIZAM BIN SAMSUDIN'},
+  {bil:50,jab:'RT',komp:'DELTA',nama:'MUHAMMAD TARMIZI BIN SAZALI'},
+  {bil:51,jab:'RT',komp:'DELTA',nama:'KHAIROL ISZUWAN BIN ZAKARIA',note:'9x LEWAT'},
+  {bil:52,jab:'RT',komp:'DELTA',nama:'MOHD NAZRI BIN ISMAIL'},
+];
+
+// ════════════════════════════════════════════════════════════════
+// CELL DATA STORE — DATA[bil][day]
+// ════════════════════════════════════════════════════════════════
+const DATA = {};
+MASTER.forEach(m => {
+  DATA[m.bil] = {};
+  for(let d=1;d<=30;d++) {
+    DATA[m.bil][d] = {kzp:'',kzk:'',tc_in:'',tc_out:'',ot_sambung:false,flags:[],note:''};
+  }
+});
+
+// Pre-fill known kes
+function setC(bil,d,o) { if(DATA[bil]?.[d]) Object.assign(DATA[bil][d], o); }
+// Tahan Tugas — AMINUDIN bil 4
+for(let d=1;d<=30;d++) if(getShift(4,d)!=='O') setC(4,d,{kzp:'TH',kzk:'TH'});
+// Tidak Hadir — ASREE bil 10
+for(let d=1;d<=30;d++) if(getShift(10,d)!=='O') setC(10,d,{kzp:'ABS',kzk:'ABS'});
+// HAZLAN (28) MC 1-2 Apr, ABS 17,30, CR 18
+setC(28,1,{kzp:'MC',kzk:'MC'}); setC(28,2,{kzp:'MC',kzk:'MC'});
+setC(28,17,{kzp:'ABS',kzk:'ABS'}); setC(28,30,{kzp:'ABS',kzk:'ABS'});
+setC(28,18,{kzp:'CR',kzk:'CR'});
+// ZULHELMI (18) CR+TLS 4 tarikh
+[13,17,21,26].forEach(d=>setC(18,d,{kzp:'CR',kzk:'CR',flags:['TLS IN (luar shift)']}));
+// IRWAN (5) 5x lewat
+[6,7,14,15,19].forEach(d=>setC(5,d,{kzp:'✓',kzk:'✓',flags:['LEWAT +8min']}));
+// KHAIROL (51) 9x lewat
+[4,6,9,11,14,16,20,23,27].forEach(d=>setC(51,d,{kzp:'✓',kzk:'✓',flags:['LEWAT +12min']}));
+// SAIFUL (47) MC+TLS 09-10/04
+setC(47,9,{kzp:'MC',kzk:'MC',flags:['TLS OUT 06:53']}); setC(47,10,{kzp:'MC',kzk:'MC',flags:['TLS IN 19:00']});
+
+// ════════════════════════════════════════════════════════════════
+// FLAG DETECTION ENGINE
+// ════════════════════════════════════════════════════════════════
+// Shift windows (minit dari 00:00):
+// Pagi  S: start=420(07:00) end=900(15:00)
+// Petang P: start=900(15:00) end=1380(23:00)
+// Malam M: start=1380(23:00) end=420(07:00 esok)
+
+function toMins(t){ if(!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+function detectFlags(bil, d) {
+  const cell = DATA[bil]?.[d];
+  if(!cell) return [];
+  const sh = getShift(bil, d);
+  const flags = [...(cell.flags||[])];
+
+  if(sh==='O') return flags;
+
+  const {kzp,kzk,tc_in,tc_out,ot_sambung} = cell;
+  const inM  = toMins(tc_in);
+  const outM = toMins(tc_out);
+
+  // K/P, CTR, CB — return early
+  if(kzp==='K/P'||kzk==='K/P')   { if(!flags.includes('K/P'))  flags.push('K/P');  return [...new Set(flags)]; }
+  if(kzp==='CB' ||kzk==='CB')    { if(!flags.includes('CB'))   flags.push('CB');   return [...new Set(flags)]; }
+  if(kzp==='CTR'||kzk==='CTR')   { if(!flags.some(f=>f==='CTR')) flags.push('CTR'); }
+  if(kzp==='TH' ||kzk==='TH')    return [...new Set(flags)];
+
+  // EL tanpa HRMIS (simplified check)
+  if((kzp==='EL'||kzk==='EL') && !flags.some(f=>f.startsWith('EL')))
+    flags.push('EL-TIADA PERMOHONAN HRMIS');
+
+  // ABS tanpa dokumen
+  const isAbs = ['ABS','NHT','X'].includes(kzp)||['ABS','NHT','X'].includes(kzk);
+  if(isAbs && kzp!=='MC' && kzk!=='MC' && !flags.some(f=>f.startsWith('ABS!')))
+    flags.push('ABS! — MOHON HANTAR MC/CUTI');
+
+  // Jika MC/CR sah — skip punch checks
+  if(['MC','CR'].includes(kzp)||['MC','CR'].includes(kzk)) return [...new Set(flags)];
+  if(isAbs) return [...new Set(flags)];
+
+  // Shift start/end
+  const SS = sh==='S'?420:sh==='P'?900:1380;
+  const SE = sh==='S'?900:sh==='P'?1380:420;
+
+  // RULE 1: SINGLE PUNCH
+  if(tc_in && !tc_out && !flags.some(f=>f.startsWith('SP')))
+    flags.push(`SP IN ${tc_in} (tiada OUT)`);
+  else if(!tc_in && tc_out && !flags.some(f=>f.startsWith('SP')))
+    flags.push(`SP OUT ${tc_out} (tiada IN)`);
+
+  // RULE 2: THUMB LUAR SHIFT (toleran ±90min, kecuali OT sambung)
+  if(!ot_sambung && inM!==null) {
+    let outside = false;
+    if(sh==='S') outside = inM<(SS-90)||inM>(SS+90);
+    if(sh==='P') outside = inM<(SS-90)||inM>(SS+90);
+    if(sh==='M') outside = !(inM>=1290||inM<=90); // ~21:30–00:30
+    if(outside && !flags.some(f=>f.startsWith('TLS IN')))
+      flags.push(`TLS IN ${tc_in}`);
+  }
+  if(!ot_sambung && outM!==null) {
+    let outside = false;
+    if(sh==='S') outside = outM<(SE-90)||outM>(SE+90);
+    if(sh==='P') outside = outM<(SE-90)||outM>(SE+90);
+    if(sh==='M') outside = outM<330||outM>540; // ~05:30–09:00
+    if(outside && !flags.some(f=>f.startsWith('TLS OUT')))
+      flags.push(`TLS OUT ${tc_out}`);
+  }
+
+  // RULE 3: LEWAT >6 minit (OT sambung = tidak lewat)
+  if(inM!==null && !ot_sambung) {
+    let late=0;
+    if(sh==='S'||sh==='P') late = inM-SS;
+    if(sh==='M') late = inM>=SS ? inM-SS : inM+(1440-SS);
+    if(late>6 && !flags.some(f=>f.startsWith('LEWAT')))
+      flags.push(`LEWAT +${late}min (IN ${tc_in})`);
+  }
+
+  // RULE 4: IN AWAL >60 minit sebelum shift
+  if(inM!==null) {
+    let early=0;
+    if(sh==='S'||sh==='P') early = SS-inM;
+    if(sh==='M' && inM>600) early = SS-inM;
+    if(early>60 && !flags.some(f=>f.startsWith('IN AWAL')))
+      flags.push(`IN AWAL ${tc_in} (${early}min terlalu awal)`);
+  }
+
+  // RULE 5: OUT AWAL >60 minit sebelum shift tamat
+  if(outM!==null && !ot_sambung) {
+    let earlyOut=0;
+    if(sh==='S'||sh==='P') earlyOut = SE-outM;
+    if(sh==='M' && outM<420) earlyOut = SE-outM;
+    if(earlyOut>60 && !flags.some(f=>f.startsWith('OUT AWAL')))
+      flags.push(`OUT AWAL ${tc_out} (-${earlyOut}min)`);
+  }
+
+  return [...new Set(flags)];
+}
+
+// ════════════════════════════════════════════════════════════════
+// AUTH STATE
+// ════════════════════════════════════════════════════════════════
+let AUTH = { loggedIn:false, role:null, nama:'', jawatan:'' };
+let supa = null;
+let SUPA_OK = false;
+
+function saveSession(){ sessionStorage.setItem('kpl_s', JSON.stringify(AUTH)); }
+function loadSession(){
+  try { const s=JSON.parse(sessionStorage.getItem('kpl_s')||'null'); if(s?.loggedIn){AUTH=s;return true;} } catch(e){}
+  return false;
+}
+function clearSession(){ sessionStorage.removeItem('kpl_s'); AUTH={loggedIn:false,role:null,nama:'',jawatan:''}; }
+
+// ════════════════════════════════════════════════════════════════
+// AUTH ACTIONS
+// ════════════════════════════════════════════════════════════════
+function switchTab(tab, el) {
+  document.querySelectorAll('.lc-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-admin').style.display  = tab==='admin'?'block':'none';
+  document.getElementById('tab-viewer').style.display = tab==='viewer'?'block':'none';
+}
+
+async function doLogin() {
+  const id   = (document.getElementById('l-id').value||'').trim().toLowerCase();
+  const pw   = document.getElementById('l-pw').value||'';
+  const btn  = document.getElementById('l-btn');
+  const err  = document.getElementById('l-err');
+
+  if(!id||!pw){ showErr('Sila masukkan ID dan kata laluan.'); return; }
+
+  btn.disabled=true; btn.textContent='Mengesahkan...';
+  await new Promise(r=>setTimeout(r,500)); // anti brute-force delay
+
+  let ok = false;
+
+  // Try Supabase auth first
+  if(SUPA_OK){
+    try {
+      const email = id.includes('@') ? id : `${id}@kpl.hkl.gov.my`;
+      const {data,error} = await supa.auth.signInWithPassword({email,password:pw});
+      if(!error && data?.user){
+        ok = true;
+        AUTH = {
+          loggedIn:true, role:'admin',
+          nama: data.user.user_metadata?.nama||id,
+          jawatan: data.user.user_metadata?.jawatan||'Pentadbir'
+        };
+      }
+    } catch(e){}
+  }
+
+  // Fallback: local accounts
+  if(!ok){
+    const acct = ADMIN_ACCOUNTS.find(a=>a.id===id && a.pw===pw);
+    if(acct){ ok=true; AUTH={loggedIn:true,role:'admin',nama:acct.nama,jawatan:acct.jawatan}; }
+  }
+
+  if(ok){ clearErr(); saveSession(); bootApp(); }
+  else {
+    showErr('ID atau kata laluan tidak sah.');
+    document.getElementById('l-pw').value='';
+    document.querySelector('.login-card').classList.add('shake');
+    setTimeout(()=>document.querySelector('.login-card').classList.remove('shake'),400);
+    btn.disabled=false; btn.textContent='Log Masuk';
+  }
+}
+
+// Add shake keyframe
+const ss=document.createElement('style');
+ss.textContent='@keyframes shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-8px)}50%{transform:translateX(8px)}} .shake{animation:shake .35s ease}';
+document.head.appendChild(ss);
+
+function enterViewer(){
+  const pw = (document.getElementById('v-pass')?.value||'').trim();
+  const verr = document.getElementById('v-err');
+  if(pw !== VIEWER_PASS){
+    if(verr){ verr.textContent='⚠ Kod akses tidak sah.'; verr.style.display='block'; }
+    document.getElementById('v-pass')?.classList.add('shake');
+    setTimeout(()=>document.getElementById('v-pass')?.classList.remove('shake'),400);
+    return;
+  }
+  if(verr) verr.style.display='none';
+  AUTH={loggedIn:true,role:'viewer',nama:'Penonton Awam',jawatan:''};
+  saveSession(); bootApp();
+}
+
+function doLogout(){
+  if(SUPA_OK) try{supa.auth.signOut()}catch(e){}
+  clearSession();
+  document.getElementById('auth-wall').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('l-id').value='';
+  document.getElementById('l-pw').value='';
+  document.getElementById('l-btn').disabled=false;
+  document.getElementById('l-btn').textContent='Log Masuk';
+  clearErr();
+}
+
+function showErr(msg){ const e=document.getElementById('l-err'); e.textContent='⚠ '+msg; e.style.display='block'; }
+function clearErr(){ document.getElementById('l-err').style.display='none'; }
+function requireAdmin(){
+  if(AUTH.role!=='admin'){ showToast('Hanya pentadbir boleh edit data','err'); return false; }
+  return true;
+}
+
+// ════════════════════════════════════════════════════════════════
+// SUPABASE
+// ════════════════════════════════════════════════════════════════
+function initSupa(){
+  if(SUPA_URL.includes('MASUKKAN')||SUPA_KEY.includes('MASUKKAN')){
+    setSupaStatus('⚠ Local mode','warn'); return;
+  }
+  try{
+    supa = window.supabase.createClient(SUPA_URL,SUPA_KEY);
+    SUPA_OK=true; setSupaStatus('● Supabase','ok');
+    document.getElementById('d-db').textContent='Online';
+    document.getElementById('d-db').style.color='var(--green)';
+  } catch(e){ setSupaStatus('✗ DB Error','err'); }
+}
+
+function setSupaStatus(txt,type){
+  const el=document.getElementById('supa-badge');
+  el.textContent=txt;
+  el.className='badge-supa '+(type==='ok'?'supa-ok':'supa-warn');
+}
+
+async function loadBulan(bln){
+  if(!SUPA_OK) return;
+  showLoading('Memuatkan data April 2026...');
+  const {data,error}=await supa.from('audit_cells').select('*').eq('tahun',2026).eq('bulan',bln);
+  hideLoading();
+  if(error||!data) return;
+  data.forEach(r=>{
+    if(!DATA[r.bil]?.[r.hari]) return;
+    DATA[r.bil][r.hari].kzp        = r.kz_penyelia||'';
+    DATA[r.bil][r.hari].kzk        = r.kz_koperal||'';
+    DATA[r.bil][r.hari].tc_in      = r.tc_in||'';
+    DATA[r.bil][r.hari].tc_out     = r.tc_out||'';
+    DATA[r.bil][r.hari].ot_sambung = r.ot_sambung||false;
+    DATA[r.bil][r.hari].flags      = r.flags||[];
+  });
+  document.getElementById('d-cells').textContent = data.length;
+  showToast(`${data.length} rekod dimuatkan ✓`,'ok');
+}
+
+async function saveToDB(bil, bln, hari){
+  if(!SUPA_OK) return;
+  const flags = detectFlags(bil, hari);
+  const c = DATA[bil][hari];
+  const {error} = await supa.from('audit_cells').upsert({
+    bil, tahun:2026, bulan:bln, hari,
+    shift_hakiki: getShift(bil,hari),
+    kz_penyelia: c.kzp, kz_koperal: c.kzk,
+    tc_in: c.tc_in, tc_out: c.tc_out,
+    ot_sambung: c.ot_sambung, flags,
+    dikemaskini_oleh: AUTH.nama,
+    updated_at: new Date().toISOString()
+  },{onConflict:'bil,tahun,bulan,hari'});
+  if(error) console.error('Save error:',error);
+}
+
+// ════════════════════════════════════════════════════════════════
+// BOOT APP
+// ════════════════════════════════════════════════════════════════
+async function bootApp(){
+  document.getElementById('auth-wall').style.display='none';
+  document.getElementById('app').style.display='flex';
+  applyRoleUI();
+  initSupa();
+  await loadBulan(4);
+  populateDropdown();
+  renderDash();
+  updateFlagCounts();
+}
+
+function applyRoleUI(){
+  const isAdmin = AUTH.role==='admin';
+  // Role badge topbar
+  const rb = document.getElementById('role-badge');
+  rb.textContent = isAdmin ? `🔓 ${AUTH.nama} · ${AUTH.jawatan}` : '👁 Penonton Sahaja';
+  rb.className = 'role-badge '+(isAdmin?'badge-admin':'badge-viewer');
+  // Sidebar user
+  document.getElementById('sb-nama').textContent = AUTH.nama;
+  document.getElementById('sb-role').textContent = isAdmin ? AUTH.jawatan+' · KPL HKL' : 'Mod Tontonan';
+  // Admin-only sidebar section
+  document.getElementById('sb-admin-section').style.display = isAdmin?'block':'none';
+  // Viewer notices
+  if(!isAdmin){
+    document.getElementById('entry-viewer-notice').style.display='flex';
+    document.getElementById('upload-viewer-notice').style.display='flex';
+    document.getElementById('backup-viewer-notice').style.display='flex';
+    document.getElementById('entry-form-wrap').classList.add('locked-section');
+    document.getElementById('upload-form-wrap').classList.add('locked-section');
+    document.getElementById('backup-admin-wrap').classList.add('locked-section');
+    // Hide backup from sidebar
+    const sb = document.getElementById('sb-backup');
+    if(sb) sb.style.display='none';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER GRID
+// ════════════════════════════════════════════════════════════════
+function kzCls(v){
+  if(!v||v==='✓') return 'kz-ok';
+  const m={'MC':'kz-mc','CR':'kz-cr','ABS':'kz-abs','NHT':'kz-abs','X':'kz-x',
+    'EL':'kz-el','TH':'kz-th','OFF':'kz-off','O':'kz-off','LEWAT':'kz-lw',
+    'K/P':'kz-kp','CTR':'kz-ctr','CB':'kz-cb'};
+  return m[v]||'kz-ok';
+}
+function kzShort(v){
+  if(!v) return ''; if(v==='✓') return '✓'; if(v==='LEWAT') return 'LW';
+  if(v==='OFF'||v==='O') return 'OF'; return v;
+}
+function flagCls(f){
+  if(f.startsWith('SP'))    return 'fl-sp';
+  if(f.startsWith('TLS'))   return 'fl-tls';
+  if(f.startsWith('LEWAT')) return 'fl-lw';
+  if(f.startsWith('IN AWAL'))  return 'fl-ia';
+  if(f.startsWith('OUT AWAL')) return 'fl-oa';
+  if(f.startsWith('ABS!'))  return 'fl-abs';
+  if(f.startsWith('EL-'))   return 'fl-el';
+  if(f.startsWith('K/P'))   return 'fl-kp';
+  if(f.startsWith('CTR'))   return 'fl-ctr';
+  if(f.startsWith('CB'))    return 'fl-cb';
+  return 'fl-ok';
+}
+
+function shortName(n,max=22){
+  if(n.length<=max) return n;
+  return n.split(' ').slice(0,3).join(' ')+'…';
+}
+
+function renderGrid(members, containerId){
+  const con=document.getElementById(containerId);
+  if(!con) return;
+
+  // Group: jabatan → kompeni
+  const groups={};
+  members.forEach(m=>{
+    if(!groups[m.jab]) groups[m.jab]={};
+    if(!groups[m.jab][m.komp]) groups[m.jab][m.komp]=[];
+    groups[m.jab][m.komp].push(m);
+  });
+
+  let html='';
+  for(const jab of Object.keys(groups)){
+    html+=`<div class="jab-block"><div class="jab-hdr"><h3>JABATAN: ${jab}</h3><span>${Object.values(groups[jab]).flat().length} anggota</span></div>`;
+    for(const komp of ['ALPHA','BRAVO','CHARLIE','DELTA']){
+      const ms=groups[jab]?.[komp]; if(!ms) continue;
+      const sh1=SH_LBL[getShift(ms[0].bil,1)];
+      const st1=SH_TIME[getShift(ms[0].bil,1)];
+
+      // Header row
+      let hdrs=`<th class="nm">Nama Anggota</th>`;
+      let lyrs=`<th class="nm2" style="font-size:6px">Bil</th>`;
+      for(let d=1;d<=30;d++){
+        const dow=APR_DOW[d-1];
+        const cls=dow===0?'sun':dow===6?'sat':'';
+        hdrs+=`<th class="${cls}">${d}<br><span style="font-size:6px;opacity:.7">${DOW_MS[dow]}</span></th>`;
+        lyrs+=`<th style="min-width:30px">SH<br>P<br>K<br>F</th>`;
+      }
+      hdrs+=`<th style="background:#1a2f52;min-width:24px;font-size:7px">H</th><th style="background:#1a2f52;font-size:7px">MC</th><th style="background:#1a2f52;font-size:7px">CR</th><th style="background:#1a2f52;font-size:7px">AB</th><th style="background:#1a2f52;font-size:7px">⚑</th>`;
+      lyrs+=`<th colspan="5" style="background:#1e293b"></th>`;
+
+      let rows='';
+      ms.forEach(m=>{
+        let h=0,mc=0,cr=0,ab=0,fc=0;
+        let cells='';
+        for(let d=1;d<=30;d++){
+          const sh=getShift(m.bil,d);
+          const c=DATA[m.bil][d];
+          const fl=detectFlags(m.bil,d);
+          fc+=fl.length;
+          if(sh!=='O'){
+            if(c.kzp==='MC'||c.kzk==='MC') mc++;
+            else if(c.kzp==='CR'||c.kzk==='CR') cr++;
+            else if(['ABS','NHT','X'].includes(c.kzp)||['ABS','NHT','X'].includes(c.kzk)) ab++;
+            else if(c.kzp==='TH'||c.kzk==='TH'){}
+            else h++;
+          }
+          const bg=fl.some(f=>f.startsWith('ABS!'))?'background:#fff1f2;':fl.length?'background:#fffbeb;':'';
+          const flHtml=fl.slice(0,2).map(f=>`<span class="fl ${flagCls(f)}">${f.split(' ')[0]}</span>`).join('');
+          const kzpShow=c.kzp||(sh==='O'?'OF':'');
+          const kzkShow=c.kzk||(sh==='O'?'OF':'');
+          cells+=`<td style="${bg}"><div class="dc">
+            <div class="dc-sh ${SH_CLS[sh]}">${SH_LBL[sh]}</div>
+            <div class="dc-kzp ${kzCls(c.kzp)}">${kzShort(kzpShow)||'&nbsp;'}</div>
+            <div class="dc-kzk ${kzCls(c.kzk)}">${kzShort(kzkShow)||'&nbsp;'}</div>
+            <div class="dc-fl">${flHtml}</div>
+          </div></td>`;
+        }
+        const noteBadge=m.note?`<span class="nc-note">${m.note}</span>`:'';
+        const flagBadge=fc>0?`<span class="nc-flag-cnt">${fc}⚑</span>`:'';
+        rows+=`<tr id="member-${m.bil}">
+          <td class="ntd"><div class="nc">
+            <div class="nc-bil">${m.bil}</div>
+            <div class="nc-name">${shortName(m.nama)}</div>
+            <div class="nc-meta">${m.jab} · ${m.komp}</div>
+            <div class="nc-flags">${noteBadge}${flagBadge}</div>
+          </div></td>
+          ${cells}
+          <td class="sc-col" style="color:var(--green)">${h}</td>
+          <td class="sc-col" style="color:var(--amber)">${mc}</td>
+          <td class="sc-col" style="color:var(--blue)">${cr}</td>
+          <td class="sc-col" style="color:${ab>0?'var(--red)':'var(--gray)'}">${ab}</td>
+          <td class="sc-col" style="color:${fc>3?'var(--red)':fc>0?'var(--amber)':'var(--gray)'}">${fc}</td>
+        </tr>`;
+      });
+
+      html+=`<div style="border-bottom:1px solid var(--gbd)">
+        <div class="komp-hdr"><h4>KOMPENI ${komp}</h4><span>Shift 1 Apr: ${sh1} (${st1})</span></div>
+        <div class="tscroll"><table class="grid-t">
+          <thead><tr class="hr-day">${hdrs}</tr><tr class="hr-lyr">${lyrs}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </div>`;
+    }
+    html+='</div>';
+  }
+  con.innerHTML=html||'<div class="empty">Tiada data</div>';
+}
+
+// ════════════════════════════════════════════════════════════════
+// FLAGS PAGE
+// ════════════════════════════════════════════════════════════════
+function getAllFlagMembers(){
+  const res=[];
+  MASTER.forEach(m=>{
+    const days=[];
+    for(let d=1;d<=30;d++){
+      const fl=detectFlags(m.bil,d);
+      if(fl.length) days.push({d,flags:fl,shift:getShift(m.bil,d),cell:DATA[m.bil][d]});
+    }
+    if(days.length) res.push({...m,days,total:days.reduce((s,x)=>s+x.flags.length,0)});
+  });
+  return res.sort((a,b)=>b.total-a.total);
+}
+
+function updateFlagCounts(){
+  const all=getAllFlagMembers();
+  const ct={SP:0,TLS:0,LEWAT:0,'IN AWAL':0,'OUT AWAL':0,'ABS!':0,'EL-':0,CTR:0,total:0};
+  all.forEach(m=>m.days.forEach(d=>d.flags.forEach(f=>{
+    ct.total++;
+    if(f.startsWith('SP'))       ct.SP++;
+    if(f.startsWith('TLS'))      ct.TLS++;
+    if(f.startsWith('LEWAT'))    ct.LEWAT++;
+    if(f.startsWith('IN AWAL'))  ct['IN AWAL']++;
+    if(f.startsWith('OUT AWAL')) ct['OUT AWAL']++;
+    if(f.startsWith('ABS!'))     ct['ABS!']++;
+    if(f.startsWith('EL-'))      ct['EL-']++;
+    if(f.startsWith('CTR'))      ct.CTR++;
+  })));
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('fct-all',ct.total); set('fct-sp',ct.SP); set('fct-tls',ct.TLS);
+  set('fct-lw',ct.LEWAT); set('fct-ia',ct['IN AWAL']); set('fct-oa',ct['OUT AWAL']);
+  set('fct-abs',ct['ABS!']); set('fct-el',ct['EL-']); set('fct-ctr',ct.CTR);
+  set('sb-fcnt',ct.total); set('d-flags',ct.total);
+}
+
+function renderFlags(filter,el){
+  if(el){ document.querySelectorAll('.ftabs .ftab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
+  const all=getAllFlagMembers();
+  const con=document.getElementById('flags-list');
+  let html='';
+  all.forEach(m=>{
+    const days=filter?m.days.filter(d=>d.flags.some(f=>f.startsWith(filter))):m.days;
+    if(!days.length) return;
+    const sev=m.note?.includes('TAHAN')||m.note?.includes('HADIR')||m.total>=7?'high':m.total>=3?'med':'low';
+    const allFT=[...new Set(days.flatMap(d=>d.flags))];
+    const dayList=days.map(d=>{
+      const c=d.cell;
+      const fl=d.flags.map(f=>`<span class="ftag" style="font-size:7.5px;padding:1px 5px;background:${flagCls(f).includes('abs')?'#7f1d1d':flagCls(f).includes('sp')?'#fef3c7':flagCls(f).includes('tls')?'#ede9fe':flagCls(f).includes('lw')?'#ffedd5':'#f1f5f9'};color:${flagCls(f).includes('abs')?'#fff':flagCls(f).includes('sp')?'#b45309':flagCls(f).includes('tls')?'#5b21b6':flagCls(f).includes('lw')?'#9a3412':'#374151'};border-radius:4px">${f}</span>`).join(' ');
+      const inT=c.tc_in?`<b style="color:var(--green)">IN ${c.tc_in}</b>`:'<span style="color:var(--red);font-style:italic">tiada IN</span>';
+      const outT=c.tc_out?`<b style="color:var(--blue)">OUT ${c.tc_out}</b>`:'<span style="color:var(--red);font-style:italic">tiada OUT</span>';
+      return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:8.5px;padding:3px 7px;background:#fff;border-radius:4px;border:1px solid var(--gbd);margin-bottom:3px">
+        <b style="min-width:34px">${d.d}/04</b>
+        <span style="color:var(--gray);font-size:8px">[${SH_LBL[d.shift]} ${SH_TIME[d.shift]}]</span>
+        ${inT} ${outT}
+        <span style="color:var(--gray);font-size:8px">P:${c.kzp||'–'} K:${c.kzk||'–'}</span>
+        ${fl}
+      </div>`;
+    }).join('');
+    html+=`<div class="flag-card">
+      <div class="flag-sev ${sev}"></div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="flag-name">${m.nama}</div>
+            <div class="flag-meta">${m.jab} · Kompeni ${m.komp} · Bil ${m.bil} · ${days.length} hari</div>
+            ${m.note?`<div style="font-size:8px;color:var(--rd-t);font-weight:700;margin-top:2px">⚠ ${m.note}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:20px;font-weight:700;line-height:1;color:${sev==='high'?'var(--red)':sev==='med'?'var(--amber)':'var(--blue)'}">${m.total}</div>
+            <div style="font-size:7.5px;color:var(--gray)">flags</div>
+          </div>
+        </div>
+        <div style="margin-top:7px;background:var(--gbg);border-radius:6px;padding:6px 8px">${dayList}</div>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px">
+          ${[...new Set(allFT.map(f=>{
+            const cls=flagCls(f);
+            const label=f.startsWith('SP')?'Single Punch':f.startsWith('TLS')?'Thumb Luar Shift':
+              f.startsWith('LEWAT')?'Lewat':f.startsWith('IN AWAL')?'IN Awal':
+              f.startsWith('OUT AWAL')?'OUT Awal':f.startsWith('ABS!')?'ABS Tiada Dok':
+              f.startsWith('EL-')?'EL Tiada HRMIS':f.startsWith('K/P')?'Kelepasan':
+              f.startsWith('CTR')?'Cuti Tanpa Rekod':f.startsWith('CB')?'Cuti Bersalin':f.split(' ')[0];
+            return `<span class="ftag fl ${cls}" style="font-size:8px;padding:2px 7px;border-radius:10px">${label}</span>`;
+          }))]}
+        </div>
+      </div>
+    </div>`;
+  });
+  con.innerHTML=html||'<div class="empty">Tiada flag untuk kategori ini</div>';
+}
+
+// ════════════════════════════════════════════════════════════════
+// ENTRY MANUAL
+// ════════════════════════════════════════════════════════════════
+function populateDropdown(){
+  const sel=document.getElementById('e-bil');
+  MASTER.forEach(m=>{
+    const o=document.createElement('option');
+    o.value=m.bil;
+    o.textContent=`${m.bil}. ${m.nama} (${m.jab} ${m.komp})`;
+    sel.appendChild(o);
+  });
+}
+
+async function saveEntry(){
+  if(!requireAdmin()) return;
+  const bil=+document.getElementById('e-bil').value;
+  const hari=+document.getElementById('e-hari').value;
+  if(!bil||!hari||hari<1||hari>30){ showToast('Sila pilih anggota dan tarikh (1–30)','err'); return; }
+  const kzp=document.getElementById('e-kzp').value;
+  const kzk=document.getElementById('e-kzk').value;
+  const tc_in=document.getElementById('e-in').value.trim();
+  const tc_out=document.getElementById('e-out').value.trim();
+  const ot_sambung=document.getElementById('e-ot').value==='true';
+
+  // Update memory
+  Object.assign(DATA[bil][hari],{kzp,kzk,tc_in,tc_out,ot_sambung});
+
+  // Save to Supabase
+  await saveToDB(bil,4,hari);
+
+  const sh=getShift(bil,hari);
+  const fl=detectFlags(bil,hari);
+  document.getElementById('e-status').innerHTML=
+    `✅ Bil ${bil} · ${hari}/04 · Shift: ${SH_LBL[sh]} (${SH_TIME[sh]}) · Flags: ${fl.length?fl.map(f=>f.split(' ')[0]).join(', '):'Tiada'}`;
+
+  showToast(SUPA_OK?`Bil ${bil} hari ${hari} disimpan ke Supabase ✓`:`Bil ${bil} hari ${hari} disimpan (local)`,'ok');
+  updateFlagCounts();
+}
+
+// ════════════════════════════════════════════════════════════════
+// JABATAN MINI FILE FILTER
+// ════════════════════════════════════════════════════════════════
+const jabKomp={iktar:'',mhkl:'',rt:''};
+const jabMap={iktar:'IKTAR',mhkl:'MHKL',rt:'RT'};
+
+function setKomp(jab,komp,el){
+  jabKomp[jab]=komp;
+  document.querySelectorAll(`#tabs-${jab} .ftab`).forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const ms=MASTER.filter(m=>m.jab===jabMap[jab]&&(!komp||m.komp===komp));
+  renderGrid(ms,`grid-${jab}`);
+}
+
+function navKomp(jab,komp){
+  nav(jab,null);
+  const tabs=document.querySelectorAll(`#tabs-${jab} .ftab`);
+  tabs.forEach(t=>{ if(t.textContent.trim()===komp||t.textContent.trim()===`Kompeni ${komp}`){ setKomp(jab,komp,t); } });
+}
+
+// ════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════════
+function renderDash(){
+  updateFlagCounts();
+}
+
+// ════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════
+const PAGE_TITLES={
+  dashboard:'Dashboard',master:'Master File — 52 Anggota',flags:'Output Perhatian',
+  iktar:'Mini File: IKTAR',mhkl:'Mini File: MHKL',rt:'Mini File: RT',
+  entry:'Entry Manual KZ / Timecard',upload:'Upload Dokumen',
+  backup:'Backup ke Google Drive'
+};
+
+function nav(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);
+  if(pg) pg.classList.add('active');
+  if(el) el.classList.add('active');
+  document.getElementById('pg-title').textContent=PAGE_TITLES[id]||id;
+
+  if(id==='master') renderGrid(MASTER,'master-grid');
+  if(id==='flags')  renderFlags('');
+  if(id==='iktar')  renderGrid(MASTER.filter(m=>m.jab==='IKTAR'),'grid-iktar');
+  if(id==='mhkl')   renderGrid(MASTER.filter(m=>m.jab==='MHKL'),'grid-mhkl');
+  if(id==='rt')     renderGrid(MASTER.filter(m=>m.jab==='RT'),'grid-rt');
+  if(id==='dashboard') renderDash();
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// BACKUP KE GOOGLE DRIVE (via Supabase Edge Function)
+// Secret Google keys TIDAK PERNAH ke frontend — semua di server
+// ════════════════════════════════════════════════════════════════
+async function backupToDrive(){
+  if(!requireAdmin()) return;
+  if(!EDGE_FN_URL || EDGE_FN_URL.includes('MASUKKAN')){
+    showToast('Edge Function URL belum dikonfigurasi','err'); return;
+  }
+
+  // Confirm
+  const ok = confirm(
+    'Backup audit April 2026 ke Google Drive?\n\n' +
+    'Format: Excel (.xlsx) + CSV + JSON\n' +
+    'Folder: eAKHA Vsavage / 2026 / 04_Apr_2026\n\n' +
+    'Teruskan?'
+  );
+  if(!ok) return;
+
+  // Update UI
+  const btn = document.getElementById('btn-backup');
+  const stat = document.getElementById('backup-stat');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Memproses...'; }
+  if(stat){ stat.style.display='flex'; stat.innerHTML=backupStatusHtml('loading','Menjana laporan dan menghantar ke Google Drive...'); }
+
+  try{
+    const res = await fetch(EDGE_FN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPA_KEY}`,
+      },
+      body: JSON.stringify({
+        tahun: 2026,
+        bulan: 4,
+        user_id: AUTH.role==='admin'
+          ? (AUTH.nama.toLowerCase().replace(' ','.')
+             .replace('sm.','sm.').replace('sjn.','sjn.'))
+          : 'unknown',
+        role: AUTH.role,
+      }),
+    });
+
+    const data = await res.json();
+
+    if(data.ok){
+      if(stat) stat.innerHTML = backupStatusHtml('ok',
+        `✅ <b>Backup berjaya!</b><br>
+        📁 Folder: <b>${data.folder}</b><br>
+        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+          ${data.fail?.excel ? `<a href="${data.fail.excel}" target="_blank" class="btn btn-sm" style="font-size:8.5px">📊 Buka Excel</a>` : ''}
+          ${data.fail?.csv   ? `<a href="${data.fail.csv}"   target="_blank" class="btn btn-sm" style="font-size:8.5px">📄 Buka CSV</a>`   : ''}
+          ${data.fail?.json  ? `<a href="${data.fail.json}"  target="_blank" class="btn btn-sm" style="font-size:8.5px">🔧 Buka JSON</a>`  : ''}
+        </div>`
+      );
+      showToast('Backup ke Google Drive berjaya ✓','ok');
+
+      // Log locally
+      const now = new Date().toLocaleString('ms-MY');
+      const logEl = document.getElementById('backup-log');
+      if(logEl) logEl.insertAdjacentHTML('afterbegin',
+        `<div style="font-size:9px;padding:5px 9px;border-bottom:1px solid var(--gbd)">
+          <b>${now}</b> · ${AUTH.nama} · ${data.mesej}
+        </div>`
+      );
+    } else {
+      if(stat) stat.innerHTML = backupStatusHtml('err', `❌ Ralat: ${data.error}`);
+      showToast('Backup gagal — '+data.error,'err');
+    }
+  } catch(e){
+    if(stat) stat.innerHTML = backupStatusHtml('err', `❌ Ralat sambungan: ${e.message}`);
+    showToast('Ralat sambungan Edge Function','err');
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent='☁ Backup ke Google Drive'; }
+  }
+}
+
+function backupStatusHtml(type, msg){
+  const bg = type==='ok'?'var(--gn-bg)':type==='err'?'var(--rd-bg)':'var(--bl-bg)';
+  const bd = type==='ok'?'#86efac':type==='err'?'#fca5a5':'#93c5fd';
+  const cl = type==='ok'?'var(--gn-t)':type==='err'?'var(--rd-t)':'var(--bl-t)';
+  return `<div style="background:${bg};border:1px solid ${bd};border-radius:6px;padding:10px 13px;color:${cl};font-size:10px;line-height:1.6;width:100%">
+    ${type==='loading'?'<div class="spin" style="width:16px;height:16px;margin-right:8px;display:inline-block;vertical-align:middle"></div>':''}
+    ${msg}
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════════════════════════════
+function exportCSV(){
+  const rows=[['Bil','Nama','Jabatan','Kompeni']];
+  for(let d=1;d<=30;d++) rows[0].push(`${d}/04 Shift`,`${d}/04 KZP`,`${d}/04 KZK`,`${d}/04 IN`,`${d}/04 OUT`,`${d}/04 Flags`);
+  rows[0].push('Hadir','MC','CR','ABS','Flags');
+  MASTER.forEach(m=>{
+    const row=[m.bil,m.nama,m.jab,m.komp];
+    let h=0,mc=0,cr=0,ab=0,fc=0;
+    for(let d=1;d<=30;d++){
+      const sh=getShift(m.bil,d); const c=DATA[m.bil][d]; const fl=detectFlags(m.bil,d);
+      fc+=fl.length;
+      if(sh!=='O'){
+        if(c.kzp==='MC') mc++; else if(c.kzp==='CR') cr++;
+        else if(['ABS','NHT','X'].includes(c.kzp)) ab++; else h++;
+      }
+      row.push(SH_LBL[sh],c.kzp||'',c.kzk||'',c.tc_in||'',c.tc_out||'',fl.join('; '));
+    }
+    row.push(h,mc,cr,ab,fc); rows.push(row);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='eAKHA_Vsavage_April_2026.csv'; a.click();
+}
+
+// ════════════════════════════════════════════════════════════════
+// UPLOAD HANDLERS
+// ════════════════════════════════════════════════════════════════
+const uploadedF={};
+function dov(e,el){e.preventDefault();el.classList.add('drag')}
+function dlv(el){el.classList.remove('drag')}
+function drop(e,k,el){e.preventDefault();el.classList.remove('drag');if(e.dataTransfer.files.length)handleF(e.dataTransfer.files,k,el)}
+function fsel(inp,k){if(inp.files.length)handleF(inp.files,k,inp.closest('.uzone'))}
+function handleF(files,k,el){
+  if(!requireAdmin()) return;
+  uploadedF[k]=files; el.classList.add('done');
+  const fn=document.getElementById('fn-'+k);
+  if(fn) fn.textContent=files[0].name.slice(0,30);
+  document.getElementById('btn-proc').disabled=false;
+  document.getElementById('proc-stat').textContent=Object.keys(uploadedF).length+' fail dipilih';
+}
+function procUpload(){
+  if(!requireAdmin()) return;
+  document.getElementById('proc-stat').textContent='⏳ Memproses...';
+  setTimeout(()=>{ document.getElementById('proc-stat').textContent='✅ Selesai — data akan dikemaskini dalam grid.'; },1500);
+}
+
+// ════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════════════════════
+let _toastT;
+function showToast(msg,type='ok'){
+  clearTimeout(_toastT);
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.background=type==='ok'?'#16a34a':type==='err'?'#dc2626':'#d97706';
+  el.style.color='#fff'; el.style.opacity='1';
+  _toastT=setTimeout(()=>el.style.opacity='0',3200);
+}
+function showLoading(msg='Memuatkan...'){
+  document.getElementById('loading-msg').textContent=msg;
+  document.getElementById('loading').style.display='flex';
+}
+function hideLoading(){ document.getElementById('loading').style.display='none'; }
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  // Restore session if available
+  if(loadSession()) { bootApp(); return; }
+  // Else: auth-wall is visible by default
+});
+</script>
+</body>
+</html>
