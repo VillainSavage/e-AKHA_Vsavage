@@ -7,6 +7,9 @@
 
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- PDF.js untuk ekstrak teks dari PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(typeof pdfjsLib!=="undefined"){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";}</script>
 
 <style>
 /* ═══════════════════════════════════════════════
@@ -2995,9 +2998,49 @@ function procUpload(){
 // ════════════════════════════════════════════════════════════════
 const newUploads = {};
 
+// ════════════════════════════════════════════════════════════════
+// PDF TEXT EXTRACTOR — guna PDF.js
+// ════════════════════════════════════════════════════════════════
+async function readPdfAsText(file) {
+  try {
+    if(typeof pdfjsLib === 'undefined') {
+      console.warn('PDF.js tidak dimuatkan, cuba baca sebagai teks biasa');
+      return await file.text();
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+    let fullText = '';
+    for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const content = await page.getTextContent();
+      // Gabungkan teks dengan spasi, kekalkan baris baru antara items
+      let lastY = null;
+      let pageText = '';
+      content.items.forEach(item => {
+        if(lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+          pageText += '\n'; // baris baru bila Y berubah
+        }
+        pageText += item.str + ' ';
+        lastY = item.transform[5];
+      });
+      fullText += pageText + '\n--- Muka Surat ' + pageNum + ' ---\n';
+    }
+    return fullText;
+  } catch(e) {
+    console.error('Ralat baca PDF:', e);
+    try { return await file.text(); } catch(e2) { return ''; }
+  }
+}
+
 async function readFileAsText(file) {
   const fname = file.name.toLowerCase();
-  // .zip — try to extract _chat.txt or largest .txt inside
+
+  // PDF — guna PDF.js
+  if(fname.endsWith('.pdf')) {
+    return await readPdfAsText(file);
+  }
+
+  // .zip — cuba ekstrak _chat.txt atau fail .txt terbesar
   if(fname.endsWith('.zip')) {
     try {
       const ab = await file.arrayBuffer();
@@ -3005,7 +3048,6 @@ async function readFileAsText(file) {
       let bestTxt = '', bestLen = 0;
       let i = 0;
       while(i < bytes.length - 30) {
-        // Local file header signature: PK (0x50 0x4B 0x03 0x04)
         if(bytes[i]===0x50&&bytes[i+1]===0x4B&&bytes[i+2]===0x03&&bytes[i+3]===0x04) {
           const cMethod = bytes[i+8]|(bytes[i+9]<<8);
           const cSize   = bytes[i+18]|(bytes[i+19]<<8)|(bytes[i+20]<<16)|(bytes[i+21]<<24);
@@ -3015,7 +3057,6 @@ async function readFileAsText(file) {
           const fnBytes = bytes.slice(i+30, i+30+fnLen);
           const fn      = new TextDecoder().decode(fnBytes).toLowerCase();
           const dataStart = i + 30 + fnLen + extLen;
-          // Only uncompressed (method 0) txt files
           if(cMethod===0 && (fn.endsWith('.txt')||fn.includes('chat')) && uSize > bestLen) {
             bestTxt = new TextDecoder('utf-8',{fatal:false}).decode(bytes.slice(dataStart, dataStart+uSize));
             bestLen = uSize;
@@ -3026,8 +3067,21 @@ async function readFileAsText(file) {
       return bestTxt || new TextDecoder('utf-8',{fatal:false}).decode(bytes);
     } catch(e) { return ''; }
   }
-  // .notes / .note / .txt / .pdf — baca terus
+
+  // .notes / .txt dan lain-lain
   try { return await file.text(); } catch(e) { return ''; }
+}
+
+// ════════════════════════════════════════════════════════════════
+// HELPER: Padankan nama anggota dalam teks (flexible)
+// ════════════════════════════════════════════════════════════════
+function matchNamaInCtx(nama, ctx) {
+  const upper = ctx.toUpperCase();
+  const words = nama.toUpperCase().split(' ').filter(w => w.length > 3);
+  // Sekurang-kurangnya 2 patah perkataan panjang kena ada dalam teks
+  const longWords = words.filter(w => w.length > 4);
+  const checkWords = longWords.length >= 2 ? longWords.slice(0,2) : words.slice(0,2);
+  return checkWords.length > 0 && checkWords.every(w => upper.includes(w));
 }
 
 async function processAllUploads(){
@@ -3036,8 +3090,8 @@ async function processAllUploads(){
   const statEl  = document.getElementById('proc-all-stat');
   const logDiv  = document.getElementById('proc-log');
   const logBody = document.getElementById('proc-log-body');
-  if(btn)   { btn.disabled=true; btn.textContent='⏳ Memproses...'; }
-  if(logDiv) { logDiv.style.display='block'; }
+  if(btn)    { btn.disabled=true; btn.textContent='⏳ Memproses...'; }
+  if(logDiv)  { logDiv.style.display='block'; }
   if(logBody) { logBody.innerHTML=''; }
   let updated = 0;
 
@@ -3049,9 +3103,11 @@ async function processAllUploads(){
   };
   log('Memulakan pemprosesan...');
 
-  // ── MC Borang Semakan ─────────────────────────────────────
+  // ════════════════════════════════════════════════════════
+  // 1. MC Borang Semakan (PDF / gambar)
+  // ════════════════════════════════════════════════════════
   if(newUploads['mc-up']) {
-    log('Membaca borang semakan MC...');
+    log('📋 Membaca borang semakan MC...');
     const prog = document.getElementById('mc-up-prog');
     const bar  = document.getElementById('mc-up-bar');
     const msg  = document.getElementById('mc-up-msg');
@@ -3059,53 +3115,60 @@ async function processAllUploads(){
     let mcFound = 0;
     for(const file of newUploads['mc-up']) {
       try {
-        const text = await readFileAsText(file);
         if(msg) msg.textContent = 'Membaca '+file.name+'...';
         if(bar) bar.style.width = '20%';
+        const text = await readFileAsText(file);
+        if(!text.trim()){ log('MC: Fail kosong atau tidak dapat dibaca — '+file.name,'warn'); continue; }
         const lines = text.split('\n');
         lines.forEach((line, li) => {
-          const dMatches = line.match(/(\d{2})\/(\d{2})\/(\d{4})/g);
+          // Cari tarikh dalam format DD/MM/YYYY atau DD/MM
+          const dMatches = line.match(/(\d{1,2})[\/-](\d{2})[\/-]?(\d{4})?/g);
           if(!dMatches) return;
-          const ctx = lines.slice(Math.max(0,li-5),li+5).join(' ').toUpperCase();
+          const ctx = lines.slice(Math.max(0,li-5),li+6).join(' ');
           MASTER.forEach(m => {
-            const parts = m.nama.split(' ').filter(p=>p.length>3);
-            if(parts.slice(0,2).every(p=>ctx.includes(p))) {
-              dMatches.forEach(dt => {
-                const [dd,mm] = dt.split('/');
-                if(mm==='04') {
-                  const hari = +dd;
-                  if(hari>=1&&hari<=30) {
-                    const exists = MC_DATA.some(mc=>mc.bil===m.bil&&mc.dari.startsWith(dd+'/04'));
-                    if(!exists) {
-                      const kM = ctx.match(/KLINIK\s+[A-Z\s]{3,25}|HOSPITAL\s+[A-Z\s]{3,20}|POLIKLINIK\s+[A-Z\s]{3,20}/);
-                      const sM = ctx.match(/\b[A-Z]{1,4}\d{4,8}\b/);
-                      const hM = ctx.match(/(\d{1,2})\s*HARI/i);
-                      MC_DATA.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,
-                        dari:dd+'/04',hingga:dd+'/04',hari:hM?+hM[1]:1,
-                        klinik:kM?kM[0].trim().replace(/\s+/g,' '):'Klinik',
-                        no_siri:sM?sM[0]:'–',jenis:'Bulan Ini',fail_pdf:file.name});
-                      if(DATA[m.bil]?.[hari]) {
-                        if(!DATA[m.bil][hari].kzp) DATA[m.bil][hari].kzp='MC';
-                        if(!DATA[m.bil][hari].kzk) DATA[m.bil][hari].kzk='MC';
-                      }
-                      mcFound++; updated++;
-                      log('MC: '+m.nama+' hari '+hari,'ok');
-                    }
-                  }
+            if(!matchNamaInCtx(m.nama, ctx)) return;
+            dMatches.forEach(dt => {
+              // Support format DD/MM atau DD/MM/YYYY atau DD-MM-YYYY
+              const parts = dt.split(/[\/-]/);
+              const dd = parts[0].padStart(2,'0');
+              const mm = parts[1];
+              if(mm !== '04') return; // April sahaja
+              const hari = +dd;
+              if(hari<1||hari>30) return;
+              const exists = MC_DATA.some(mc=>mc.bil===m.bil&&mc.dari.startsWith(dd+'/04'));
+              if(!exists) {
+                const ctxUp = ctx.toUpperCase();
+                const kM = ctxUp.match(/(?:KLINIK|HOSPITAL|POLIKLINIK|KLINIK KESIHATAN|KK)\s+[A-Z][A-Z\s]{2,25}/);
+                const sM = ctxUp.match(/\b(?:NO\s*SIRI\s*:?\s*)?([A-Z]{1,4}\d{4,8})\b/);
+                const hM = ctxUp.match(/(\d{1,2})\s*HARI/);
+                const hari_mc = hM ? +hM[1] : 1;
+                MC_DATA.push({
+                  bil:m.bil, nama:m.nama, jab:m.jab, komp:m.komp,
+                  dari:dd+'/04', hingga:dd+'/04', hari:hari_mc,
+                  klinik: kM ? kM[0].trim().replace(/\s+/g,' ') : 'Klinik (semak manual)',
+                  no_siri: sM ? sM[1] : '–', jenis:'Bulan Ini', fail_pdf:file.name
+                });
+                if(DATA[m.bil]?.[hari]) {
+                  if(!DATA[m.bil][hari].kzp) DATA[m.bil][hari].kzp='MC';
+                  if(!DATA[m.bil][hari].kzk) DATA[m.bil][hari].kzk='MC';
                 }
-              });
-            }
+                mcFound++; updated++;
+                log('✅ MC: '+m.nama+' hari '+hari+' ('+hari_mc+' hari)','ok');
+              }
+            });
           });
         });
         if(bar) bar.style.width='100%';
         log('MC: '+mcFound+' rekod baru dari '+file.name, mcFound>0?'ok':'warn');
-      } catch(e) { log('PDF MC: guna Register MC manual','warn'); }
+      } catch(e) { log('❌ Ralat MC: '+e.message,'err'); }
     }
   }
 
-  // ── KZ Koperal (.txt / .zip / .notes) ─────────────────────
+  // ════════════════════════════════════════════════════════
+  // 2. KZ Koperal — WhatsApp export / PDF / txt
+  // ════════════════════════════════════════════════════════
   if(newUploads['kzk-new']) {
-    log('Membaca KZ Koperal (WhatsApp)...');
+    log('📱 Membaca KZ Koperal (WhatsApp / PDF)...');
     const prog = document.getElementById('kzk-prog');
     const bar  = document.getElementById('kzk-bar');
     const msg  = document.getElementById('kzk-msg');
@@ -3114,38 +3177,146 @@ async function processAllUploads(){
     for(const file of newUploads['kzk-new']) {
       try {
         if(msg) msg.textContent = 'Membaca '+file.name+'...';
-        const text = await readFileAsText(file);  // handles .zip, .notes, .txt
+        const text = await readFileAsText(file);
+        if(!text.trim()){ log('KZK: Fail kosong — '+file.name,'warn'); continue; }
         const lines = text.split('\n');
         let found = 0;
         if(bar) bar.style.width='40%';
+
+        // Detect format WhatsApp: "[DD/MM/YYYY, HH:MM] Nama: mesej"
+        //                    atau "DD/MM/YYYY, HH:MM - Nama: mesej"
+        const waRegex = /(?:\[)?(\d{1,2})[\/-](\d{1,2})[\/-](\d{4}).*?(?:\]\s*|-\s*)([^:]+?):\s*(.+)/;
+
         lines.forEach((line, li) => {
-          // Cari tarikh & status dalam baris
-          const dateM = line.match(/(\d{1,2})\/04/);
-          const statM = line.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|✓|L)\b/i);
-          if(dateM && statM) {
-            const d    = +dateM[1];
-            const stat = statM[1].toUpperCase();
-            if(d>=1&&d<=30) {
-              const ctx = lines.slice(Math.max(0,li-3),li+3).join(' ').toUpperCase();
-              MASTER.forEach(m => {
-                const nm = m.nama.split(' ').filter(p=>p.length>3);
-                if(nm.slice(0,2).every(p=>ctx.includes(p))&&DATA[m.bil]?.[d]&&!DATA[m.bil][d].kzk) {
-                  DATA[m.bil][d].kzk = stat; found++; updated++;
-                  log('KZK: '+m.nama+' hari '+d+' → '+stat,'ok');
+          if(!line.trim()) return;
+          const lineUp = line.toUpperCase();
+          const ctx = lines.slice(Math.max(0,li-4),li+5).join(' ');
+
+          // ── Cuba format WhatsApp ──────────────────────────
+          const waMatch = line.match(waRegex);
+          if(waMatch) {
+            const dd = waMatch[1].padStart(2,'0');
+            const mm = waMatch[2].padStart(2,'0');
+            const sender = waMatch[4].toUpperCase();
+            const mesej  = waMatch[5].toUpperCase();
+
+            if(mm !== '04') return; // April sahaja
+            const hari = +dd;
+            if(hari<1||hari>30) return;
+
+            // Cari status dalam mesej
+            const statM = mesej.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|HADIR|LEWAT|CUTI|OFFDAY)\b/);
+            if(!statM) return;
+            const stat = statM[1]==='HADIR'?'✓':statM[1]==='CUTI'?'CR':statM[1];
+
+            // Padankan nama — dari sender ATAU nama dalam mesej
+            MASTER.forEach(m => {
+              if(DATA[m.bil]?.[hari] && !DATA[m.bil][hari].kzk) {
+                // Check sama ada nama anggota sebahagian dalam sender atau dalam mesej
+                const namaWords = m.nama.toUpperCase().split(' ').filter(w=>w.length>3);
+                const firstWord = namaWords[0]||'';
+                const inSender = firstWord && sender.includes(firstWord);
+                const inCtx    = matchNamaInCtx(m.nama, ctx);
+                if(inSender || inCtx) {
+                  DATA[m.bil][hari].kzk = stat; found++; updated++;
+                  log('✅ KZK: '+m.nama+' hari '+hari+' → '+stat,'ok');
                 }
-              });
-            }
+              }
+            });
+            return;
+          }
+
+          // ── Format lain: cari tarikh + status dalam baris sama ──
+          const dateM = line.match(/(\d{1,2})[\/-](?:04|4)(?:[\/-](?:2026)?)?/);
+          const statM2 = lineUp.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|✓|L|HADIR|LEWAT)\b/);
+          if(dateM && statM2) {
+            const hari = +dateM[1];
+            const stat = statM2[1]==='HADIR'?'✓':statM2[1]==='L'?'LEWAT':statM2[1];
+            if(hari<1||hari>30) return;
+            MASTER.forEach(m => {
+              if(DATA[m.bil]?.[hari] && !DATA[m.bil][hari].kzk && matchNamaInCtx(m.nama, ctx)) {
+                DATA[m.bil][hari].kzk = stat; found++; updated++;
+                log('✅ KZK: '+m.nama+' hari '+hari+' → '+stat,'ok');
+              }
+            });
           }
         });
+
         if(bar) bar.style.width='100%';
         log('KZ Koperal: '+found+' rekod dari '+file.name, found>0?'ok':'warn');
-      } catch(e) { log('Ralat KZ Koperal: '+e.message,'err'); }
+        if(found===0) log('⚠ KZK: Tiada rekod — pastikan nama anggota ada dalam fail, format: DD/04/YYYY','warn');
+      } catch(e) { log('❌ Ralat KZ Koperal: '+e.message,'err'); }
     }
   }
 
-  // ── Timecard ─────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════
+  // 3. KZ Penyelia (PDF / txt)
+  // ════════════════════════════════════════════════════════
+  if(newUploads['kzp-new']) {
+    log('📄 Membaca KZ Penyelia (PDF)...');
+    const bar  = document.getElementById('kzp-bar');
+    const msg  = document.getElementById('kzp-msg');
+    const prog = document.getElementById('kzp-prog');
+    if(prog) prog.style.display='block';
+    if(bar) bar.style.width='10%';
+    let kzpFound = 0;
+    for(const file of newUploads['kzp-new']) {
+      try {
+        if(msg) msg.textContent = 'Membaca '+file.name+'...';
+        const text = await readFileAsText(file);
+        if(!text.trim()){
+          log('KZP: Fail kosong atau tidak dapat dibaca — '+file.name,'warn');
+          if(bar){ bar.style.width='100%'; bar.style.background='#d97706'; }
+          if(msg) msg.textContent = 'Fail tidak dapat dibaca — kemaskini manual';
+          continue;
+        }
+        if(bar) bar.style.width='40%';
+        const lines = text.split('\n');
+
+        // Scan setiap baris untuk nama + tarikh + status
+        lines.forEach((line, li) => {
+          if(!line.trim()) return;
+          const ctx = lines.slice(Math.max(0,li-5), li+6).join(' ');
+          const ctxUp = ctx.toUpperCase();
+
+          // Cari tarikh April
+          const dateMatches = [...ctxUp.matchAll(/(\d{1,2})[\/-]04(?:[\/-]2026)?/g)];
+          if(!dateMatches.length) return;
+
+          // Cari nama anggota dalam konteks
+          MASTER.forEach(m => {
+            if(!matchNamaInCtx(m.nama, ctx)) return;
+            dateMatches.forEach(dm => {
+              const hari = +dm[1];
+              if(hari<1||hari>30) return;
+              if(!DATA[m.bil]?.[hari]) return;
+              if(DATA[m.bil][hari].kzp) return; // dah ada, skip
+
+              // Cari status dalam konteks
+              const statM = ctxUp.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|K\/P|BER|✓|HADIR|LEWAT|CUTI REHAT)\b/);
+              const tick  = ctxUp.match(/✓|✔|CHECK|HADIR/);
+              let stat = '';
+              if(statM)     stat = statM[1]==='HADIR'?'✓':statM[1]==='CUTI REHAT'?'CR':statM[1];
+              else if(tick) stat = '✓';
+              else           stat = '✓'; // default: anggap hadir kalau nama ada
+
+              DATA[m.bil][hari].kzp = stat; kzpFound++; updated++;
+              log('✅ KZP: '+m.nama+' hari '+hari+' → '+stat,'ok');
+            });
+          });
+        });
+        if(bar){ bar.style.width='100%'; bar.style.background=kzpFound>0?'#16a34a':'#d97706'; }
+        log('KZ Penyelia: '+kzpFound+' rekod dari '+file.name, kzpFound>0?'ok':'warn');
+        if(kzpFound===0) log('⚠ KZP: Tiada rekod — PDF mungkin scan imej (bukan teks). Kemaskini manual.','warn');
+      } catch(e) { log('❌ Ralat KZ Penyelia: '+e.message,'err'); }
+    }
+  }
+
+  // ════════════════════════════════════════════════════════
+  // 4. Timecard (PDF / Excel / CSV)
+  // ════════════════════════════════════════════════════════
   if(newUploads['tc-new']) {
-    log('Membaca Timecard...');
+    log('🕐 Membaca Timecard...');
     const prog = document.getElementById('tc-prog');
     const bar  = document.getElementById('tc-bar');
     const msg  = document.getElementById('tc-msg');
@@ -3155,60 +3326,83 @@ async function processAllUploads(){
       try {
         if(msg) msg.textContent = 'Membaca '+file.name+'...';
         const text = await readFileAsText(file);
+        if(!text.trim()){ log('TC: Fail kosong — '+file.name,'warn'); continue; }
         let found = 0;
-        text.split('\n').forEach(line => {
+        const lines = text.split('\n');
+        if(bar) bar.style.width='40%';
+
+        // Nama semua anggota untuk lookup cepat
+        const namaLookup = MASTER.map(m=>({
+          m, first6: m.nama.split(' ')[0].substring(0,6).toUpperCase(),
+          words: m.nama.toUpperCase().split(' ').filter(w=>w.length>3)
+        }));
+
+        lines.forEach((line, li) => {
+          if(!line.trim()) return;
+          const lineUp = line.toUpperCase();
+
+          // Cari masa IN/OUT — format HH:MM
           const times = line.match(/(\d{2}:\d{2})/g);
           if(!times||!times.length) return;
-          const dateM = line.match(/(\d{1,2})\/(?:04|4)(?:\/2026)?/);
+
+          // Cari tarikh — pelbagai format
+          const dateM = line.match(/(\d{1,2})[\/-](?:04|4)[\/-]?(?:2026)?/) ||
+                        line.match(/APR(?:IL)?\s+(\d{1,2})/i);
           if(!dateM) return;
-          const d = +dateM[1];
-          if(d<1||d>30) return;
-          MASTER.forEach(m => {
-            if(line.toUpperCase().includes(m.nama.split(' ')[0].substring(0,6).toUpperCase())&&DATA[m.bil]?.[d]) {
-              if(!DATA[m.bil][d].tc_in&&times[0])  { DATA[m.bil][d].tc_in=times[0];  found++; updated++; }
-              if(!DATA[m.bil][d].tc_out&&times[1]) { DATA[m.bil][d].tc_out=times[1]; }
-              log('TC: '+m.nama+' hari '+d+' IN:'+times[0]+(times[1]?' OUT:'+times[1]:''),'ok');
+          const d = +(dateM[1]||dateM[2]);
+          if(!d||d<1||d>30) return;
+
+          // Padankan nama — lebih flexible
+          const ctx = lines.slice(Math.max(0,li-3),li+4).join(' ');
+          namaLookup.forEach(({m, first6, words}) => {
+            const matchFirst = lineUp.includes(first6);
+            const matchCtx   = matchNamaInCtx(m.nama, ctx);
+            if((matchFirst || matchCtx) && DATA[m.bil]?.[d]) {
+              let changed = false;
+              if(!DATA[m.bil][d].tc_in  && times[0]) { DATA[m.bil][d].tc_in  = times[0]; changed=true; }
+              if(!DATA[m.bil][d].tc_out && times[1]) { DATA[m.bil][d].tc_out = times[1]; changed=true; }
+              if(changed){ found++; updated++;
+                log('✅ TC: '+m.nama+' hari '+d+' IN:'+(DATA[m.bil][d].tc_in||'–')+' OUT:'+(DATA[m.bil][d].tc_out||'–'),'ok');
+              }
             }
           });
         });
+
         if(bar) bar.style.width='100%';
         log('Timecard: '+found+' rekod dari '+file.name, found>0?'ok':'warn');
-      } catch(e) { log('Ralat Timecard: '+e.message,'err'); }
+        if(found===0) log('⚠ TC: Tiada rekod. Jika PDF scan gambar, teks tidak dapat dibaca — perlukan format teks/Excel.','warn');
+      } catch(e) { log('❌ Ralat Timecard: '+e.message,'err'); }
     }
   }
 
-  // ── KZ Penyelia PDF nota ──────────────────────────────────
-  if(newUploads['kzp-new']) {
-    const bar  = document.getElementById('kzp-bar');
-    const msg  = document.getElementById('kzp-msg');
-    const prog = document.getElementById('kzp-prog');
-    if(prog) prog.style.display='block';
-    if(bar)  { bar.style.width='100%'; bar.style.background='#d97706'; }
-    if(msg)    msg.textContent = 'PDF diterima — kemaskini manual untuk rekod tertentu';
-    log('KZ Penyelia PDF: OCR aktif selepas Edge Function disedia','warn');
-  }
-
-  // ── Save ke Supabase ──────────────────────────────────────
+  // ════════════════════════════════════════════════════════
+  // 5. Save ke Supabase (jika connected)
+  // ════════════════════════════════════════════════════════
   if(typeof SUPA_OK!=='undefined'&&SUPA_OK&&updated>0) {
-    log('Menyimpan '+updated+' rekod ke Supabase...');
+    log('☁ Menyimpan '+updated+' rekod ke Supabase...');
     for(const m of MASTER)
       for(let d=1;d<=30;d++)
-        if(DATA[m.bil][d]?.kzk||DATA[m.bil][d]?.tc_in||DATA[m.bil][d]?.tc_out)
+        if(DATA[m.bil][d]?.kzk||DATA[m.bil][d]?.kzp||DATA[m.bil][d]?.tc_in||DATA[m.bil][d]?.tc_out)
           await saveToDB(m.bil,4,d);
     log('Supabase: tersimpan ✓','ok');
   }
 
-  // ── Kemaskini grid ────────────────────────────────────────
-  log('Mengemaskini Master Listing...');
+  // ════════════════════════════════════════════════════════
+  // 6. Kemaskini grid & summary
+  // ════════════════════════════════════════════════════════
+  log('🔄 Mengemaskini Master Listing...');
   updateFlagCounts();
   const mg = document.getElementById('master-grid');
-  if(mg) renderGrid(MASTER,'master-grid');
+  if(mg && mg.children.length>0) renderGrid(MASTER,'master-grid');
   if(btn) { btn.disabled=false; btn.textContent='Proses & Kemaskini'; }
-  const sum = '✅ Selesai — '+updated+' rekod dikemaskini';
+  const sum = updated>0
+    ? '✅ Selesai — '+updated+' rekod dikemaskini'
+    : '⚠ Selesai — 0 rekod. Semak format fail atau kemaskini manual.';
   if(statEl) statEl.textContent = sum;
-  log(sum,'ok');
-  showToast(sum,'ok');
+  log(sum, updated>0?'ok':'warn');
+  showToast(sum, updated>0?'ok':'warn');
 }
+
 
 function resetUploads(){
   Object.keys(newUploads).forEach(k=>delete newUploads[k]);
