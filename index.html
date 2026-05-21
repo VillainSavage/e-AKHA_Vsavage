@@ -174,6 +174,7 @@ body{
 .badge-owner{background:rgba(200,150,10,0.2);color:var(--gold2);border:1px solid rgba(200,150,10,0.4)}
 .badge-admin{background:rgba(5,150,105,0.15);color:#34d399;border:1px solid rgba(5,150,105,0.3)}
 .badge-viewer{background:rgba(37,99,235,0.15);color:#93c5fd;border:1px solid rgba(37,99,235,0.3)}
+.badge-owner-full{background:rgba(218,112,214,0.2);color:#f472b6;border:1px solid rgba(236,72,153,0.3)}
 .supa-badge{font-size:8px;padding:2px 8px;border-radius:10px;font-weight:600}
 .supa-ok{background:rgba(5,150,105,0.15);color:#34d399}
 .supa-warn{background:rgba(217,119,6,0.15);color:#fbbf24}
@@ -208,7 +209,7 @@ body{
 .stat-lbl{font-size:8px;color:rgba(255,255,255,0.4);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
 .stat-val{font-size:22px;font-weight:700;line-height:1}
 .stat-sub{font-size:7.5px;color:rgba(255,255,255,0.3);margin-top:2px}
-.sv-gold{color:var(--gold2)}.sv-green{color:#34d399}.sv-red{color:#fca5a5}.sv-amber{color:#fbbf24}.sv-blue{color:#93c5fd}.sv-purple{color:#c4b5fd}
+.sv-gold{color:var(--gold2)}.sv-green{color:#34d399}.sv-red{color:#fca5a5}.sv-amber{color:#fbbf24}.sv-blue{color:#93c5fd}.sv-purple{color:#c4b5fd}.sv-pink{color:#f472b6}
 
 /* NOTIF */
 .notif{border-radius:6px;padding:8px 12px;font-size:9.5px;display:flex;gap:7px;margin-bottom:10px;border:1px solid;line-height:1.5}
@@ -249,6 +250,8 @@ body{
 #mob-menu{display:none;background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;padding:4px;margin-right:6px}
 .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
 .mob-overlay.show{display:block}
+
+.cred-box{background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.2);border-radius:7px;padding:10px 12px;margin:6px 0;font-size:8.5px;line-height:1.5;color:rgba(255,255,255,0.8)}
 </style>
 </head>
 <body>
@@ -276,7 +279,7 @@ body{
     <!-- Admin form -->
     <div id="at-admin">
       <label class="lf-lbl">ID Pengguna</label>
-      <input class="lf-inp" id="l-id" type="text" placeholder="smamierul / sjnadilah / tuannajib"
+      <input class="lf-inp" id="l-id" type="text" placeholder="sjnadilah / smamierul / tuannajib"
         autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('l-pw').focus()">
       <div class="lf-gap"></div>
       <label class="lf-lbl">Kata Laluan</label>
@@ -320,6 +323,11 @@ body{
       <div class="sb-item" onclick="nav('upload',this)">⬆ Upload Dokumen</div>
       <div class="sb-item" onclick="nav('manual',this)">+ Entry Manual</div>
     </div>
+    <div class="sb-sec" id="sb-owner-sec" style="display:none">
+      <div class="sb-lbl">Pemilik Penuh</div>
+      <div class="sb-item" onclick="nav('settings',this)">⚙ Tetapan Sistem</div>
+      <div class="sb-item" onclick="nav('users',this)">👥 Pengurusan Pengguna</div>
+    </div>
     <div class="sb-foot">
       <div class="sb-user" id="sb-nama">–</div>
       <div class="sb-role-txt" id="sb-role">–</div>
@@ -338,7 +346,7 @@ body{
         </div>
       </div>
       <div class="tb-right">
-        <span class="supa-badge supa-warn" id="supa-badge">⏳ DB</span>
+        <span class="supa-badge supa-ok" id="supa-badge">✓ Siap</span>
         <span class="role-badge" id="role-badge">–</span>
       </div>
     </div>
@@ -356,15 +364,41 @@ body{
     <div class="stat-card"><div class="stat-lbl">Status Sistem</div><div class="stat-val sv-green">✓ Siap</div><div class="stat-sub">Authentication aktif</div></div>
   </div>
   <div class="panel">
-    <div class="panel-hdr"><span class="panel-title">📝 Maklumat Sistem</span></div>
-    <div class="panel-body" id="dash-info" style="font-size:9.5px;line-height:1.6;color:rgba(255,255,255,0.7)">
-      <p>✓ Sistem autentikasi berfungsi</p>
-      <p>✓ Peran admin dan penonton tersedia</p>
-      <p>✓ Simpanan sesi dalam browser (localStorage)</p>
-      <p style="margin-top:8px;color:#34d399"><b>Demo Akaun:</b></p>
-      <p>👤 <b>Admin:</b> smamierul / password123</p>
-      <p>👤 <b>Admin:</b> sjnadilah / password123</p>
-      <p>👁 <b>Penonton:</b> viewer123</p>
+    <div class="panel-hdr"><span class="panel-title">📝 Maklumat Sistem & Akaun</span></div>
+    <div class="panel-body" style="font-size:9.5px;line-height:1.6;color:rgba(255,255,255,0.7)">
+      <p style="margin-bottom:12px">✓ Sistem autentikasi berfungsi</p>
+      <p style="margin-bottom:12px">✓ Tiga peringkat akses: <b>Pemilik Penuh</b> · <b>Pentadbir</b> · <b>Penonton</b></p>
+      <p style="margin-bottom:12px">✓ Simpanan sesi dalam browser (localStorage)</p>
+      
+      <p style="margin-top:14px;margin-bottom:8px;color:#f472b6;font-weight:600;font-size:10px">👑 PEMILIK PENUH (Akses Lengkap):</p>
+      <div class="cred-box">
+        <p><b>Nama:</b> sjnadilah</p>
+        <p><b>Kata Laluan:</b> 912012</p>
+        <p style="font-size:8px;margin-top:4px;color:#f0abfc">• Penuh akses ke semua sistem</p>
+        <p style="font-size:8px;color:#f0abfc">• Pengurus pengguna</p>
+        <p style="font-size:8px;color:#f0abfc">• Tetapan sistem</p>
+      </div>
+      
+      <p style="margin-top:12px;margin-bottom:8px;color:#34d399;font-weight:600;font-size:10px">🔐 PENTADBIR (Pengurusan Data):</p>
+      <div class="cred-box" style="background:rgba(5,150,105,0.1);border-color:rgba(5,150,105,0.2)">
+        <p><b>Nama:</b> smamierul</p>
+        <p><b>Kata Laluan:</b> 6438670</p>
+        <p style="font-size:8px;margin-top:4px;color:#6ee7b7">• Upload dokumen</p>
+        <p style="font-size:8px;color:#6ee7b7">• Entry manual</p>
+      </div>
+      <div class="cred-box" style="background:rgba(5,150,105,0.1);border-color:rgba(5,150,105,0.2);margin-top:6px">
+        <p><b>Nama:</b> tuannajib</p>
+        <p><b>Kata Laluan:</b> 633233</p>
+        <p style="font-size:8px;margin-top:4px;color:#6ee7b7">• Upload dokumen</p>
+        <p style="font-size:8px;color:#6ee7b7">• Entry manual</p>
+      </div>
+      
+      <p style="margin-top:12px;margin-bottom:8px;color:#93c5fd;font-weight:600;font-size:10px">👁 PENONTON (Baca Sahaja):</p>
+      <div class="cred-box" style="background:rgba(37,99,235,0.1);border-color:rgba(37,99,235,0.2)">
+        <p><b>Kod Akses:</b> viewer123</p>
+        <p style="font-size:8px;margin-top:4px;color:#60a5fa">• Paparan dashboard</p>
+        <p style="font-size:8px;color:#60a5fa">• Master file baca sahaja</p>
+      </div>
     </div>
   </div>
 </div>
@@ -421,6 +455,32 @@ body{
   </div>
 </div>
 
+<!-- TETAPAN SISTEM -->
+<div class="page" id="page-settings">
+  <div class="panel">
+    <div class="panel-hdr"><span class="panel-title">⚙ Tetapan Sistem</span></div>
+    <div class="panel-body">
+      <div class="empty-state">
+        <div class="empty-icon">⚙️</div>
+        Tetapan sistem akan dipaparkan di sini (Pemilik Penuh sahaja)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PENGURUSAN PENGGUNA -->
+<div class="page" id="page-users">
+  <div class="panel">
+    <div class="panel-hdr"><span class="panel-title">👥 Pengurusan Pengguna</span></div>
+    <div class="panel-body">
+      <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        Pengurusan pengguna akan dipaparkan di sini (Pemilik Penuh sahaja)
+      </div>
+    </div>
+  </div>
+</div>
+
     </div>
   </div>
 </div>
@@ -435,11 +495,11 @@ body{
 let currentUser = null;
 let userRole = null;
 
-// Demo Credentials (for testing)
-const DEMO_ADMINS = {
-  'smamierul': 'password123',
-  'sjnadilah': 'password123',
-  'tuannajib': 'password123'
+// Account Credentials with Roles
+const ACCOUNTS = {
+  'sjnadilah': { password: '912012', role: 'owner' },
+  'smamierul': { password: '6438670', role: 'admin' },
+  'tuannajib': { password: '633233', role: 'admin' }
 };
 
 const VIEWER_PASS = 'viewer123';
@@ -508,10 +568,9 @@ function doLogin() {
     return;
   }
   
-  // Simulate async operation
   setTimeout(() => {
-    if (DEMO_ADMINS[id] && DEMO_ADMINS[id] === pw) {
-      loginUser(id, 'admin');
+    if (ACCOUNTS[id] && ACCOUNTS[id].password === pw) {
+      loginUser(id, ACCOUNTS[id].role);
     } else {
       showError(err, 'ID atau kata laluan tidak sah');
       btn.disabled = false;
@@ -546,7 +605,6 @@ function loginUser(username, role) {
   currentUser = username;
   userRole = role;
   
-  // Save session
   localStorage.setItem('eakha_session', JSON.stringify({
     user: username,
     role: role,
@@ -563,14 +621,12 @@ function doLogout() {
     currentUser = null;
     userRole = null;
     
-    // Reset forms
     document.getElementById('l-id').value = '';
     document.getElementById('l-pw').value = '';
     document.getElementById('v-pw').value = '';
     document.getElementById('l-err').style.display = 'none';
     document.getElementById('v-err').style.display = 'none';
     
-    // Reset auth tabs
     document.querySelectorAll('.auth-tab').forEach((t, i) => {
       t.classList.toggle('active', i === 0);
     });
@@ -591,37 +647,51 @@ function showApp() {
   document.getElementById('auth-wall').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   
-  // Update UI
   updateUserDisplay();
   setupAppPermissions();
 }
 
 function updateUserDisplay() {
   document.getElementById('sb-nama').textContent = currentUser;
-  document.getElementById('sb-role').textContent = 
-    userRole === 'admin' ? '👤 Pentadbir' : '👁 Penonton';
   
-  const roleBadge = document.getElementById('role-badge');
-  if (userRole === 'admin') {
-    roleBadge.className = 'role-badge badge-admin';
-    roleBadge.textContent = '🟢 PENTADBIR';
+  let roleName = '–';
+  let roleBadgeClass = '';
+  let roleBadgeText = '';
+  
+  if (userRole === 'owner') {
+    roleName = '👑 Pemilik Penuh';
+    roleBadgeClass = 'role-badge badge-owner-full';
+    roleBadgeText = '⭐ PEMILIK PENUH';
+  } else if (userRole === 'admin') {
+    roleName = '🔐 Pentadbir';
+    roleBadgeClass = 'role-badge badge-admin';
+    roleBadgeText = '🟢 PENTADBIR';
   } else {
-    roleBadge.className = 'role-badge badge-viewer';
-    roleBadge.textContent = '🔵 PENONTON';
+    roleName = '👁 Penonton';
+    roleBadgeClass = 'role-badge badge-viewer';
+    roleBadgeText = '🔵 PENONTON';
   }
   
-  const supaDiv = document.getElementById('supa-badge');
-  supaDiv.className = 'supa-badge supa-ok';
-  supaDiv.textContent = '✓ Siap';
+  document.getElementById('sb-role').textContent = roleName;
+  
+  const roleBadge = document.getElementById('role-badge');
+  roleBadge.className = roleBadgeClass;
+  roleBadge.textContent = roleBadgeText;
 }
 
 function setupAppPermissions() {
   const adminSec = document.getElementById('sb-admin-sec');
+  const ownerSec = document.getElementById('sb-owner-sec');
   
   if (userRole === 'viewer') {
     adminSec.style.display = 'none';
-  } else {
+    ownerSec.style.display = 'none';
+  } else if (userRole === 'admin') {
     adminSec.style.display = 'block';
+    ownerSec.style.display = 'none';
+  } else if (userRole === 'owner') {
+    adminSec.style.display = 'block';
+    ownerSec.style.display = 'block';
   }
 }
 
@@ -643,13 +713,14 @@ function nav(page, el) {
     targetPage.classList.add('active');
   }
   
-  // Update title
   const titles = {
     'dashboard': 'Dashboard',
     'master': 'Master File',
     'output': 'Output Perhatian',
     'upload': 'Upload Dokumen',
-    'manual': 'Entry Manual'
+    'manual': 'Entry Manual',
+    'settings': 'Tetapan Sistem',
+    'users': 'Pengurusan Pengguna'
   };
   
   document.getElementById('pg-title').textContent = titles[page] || 'e-AKHA';
