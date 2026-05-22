@@ -1680,6 +1680,32 @@ function togForm(id){ const f=document.getElementById(id); if(f) f.style.display
 // Supports: PDF text-based, PDF scan/image, TXT, CSV, XLSX-preview,
 //           ZIP (WhatsApp export), .notes/.note
 // ══════════════════════════════════════════════════════════════
+// ── OCR DATE NORMALIZER ───────────────────────────────────
+function normDate(txt){
+  // Fix common OCR date errors: O→0, I→1, l→1, S→5
+  return txt.replace(/O/g,'0').replace(/I/g,'1').replace(/l/g,'1')
+            .replace(/S/g,'5').replace(/B/g,'8');
+}
+function findDates04(txt){
+  // Find all day numbers that are April dates in garbled text
+  // Match: 1-30 followed by /04 or /4 or -04, with OCR tolerance
+  var clean=txt.replace(/[OIlSB]/g,function(c){
+    return c==='O'?'0':c==='I'||c==='l'?'1':c==='S'?'5':'8';
+  });
+  var hits=[];
+  var pat=/(\d{1,2})[\/-](0?4)[\/-]?(?:2[0O]2[6-9])?/g;
+  var m;
+  while((m=pat.exec(clean))!==null){
+    var d=parseInt(m[1]);
+    if(d>=1&&d<=30) hits.push(d);
+  }
+  // Also check standalone day numbers near "04" or "APRIL"
+  if(txt.toUpperCase().includes('APRIL')||txt.toUpperCase().includes('APR')){
+    var dayPat=/\b([1-9]|[12]\d|30)\b/g;
+    while((m=dayPat.exec(clean))!==null) hits.push(parseInt(m[1]));
+  }
+  return [...new Set(hits)].sort(function(a,b){return a-b;});
+}
 async function readFile(file, logFn){
   const fn=file.name.toLowerCase();
   const log=logFn||(()=>{});
@@ -1804,277 +1830,329 @@ async function procAll(){
   log('Memulakan pemprosesan...');
 
   // MC
-  // matchNama helper
+  // ── FUZZY OCR NAME MATCHING ──────────────────────────────
+  // Handles OCR noise: V→U, 0→O, 1→I, rn→m, etc.
+  function normOCR(s){
+    return s.toUpperCase()
+      .replace(/0/g,'O').replace(/1/g,'I').replace(/5/g,'S')
+      .replace(/8/g,'B').replace(/RN/g,'M').replace(/VV/g,'W')
+      .replace(/[^A-Z\s]/g,' ').replace(/\s+/g,' ').trim();
+  }
+  function levenSim(a,b){
+    // Simple similarity: count matching chars / max length
+    if(!a||!b) return 0;
+    if(a===b) return 1;
+    var len=Math.max(a.length,b.length); if(len===0) return 1;
+    var match=0;
+    for(var i=0;i<Math.min(a.length,b.length);i++) if(a[i]===b[i]) match++;
+    return match/len;
+  }
+  function wordSim(w,text){
+    // Check if word appears in text with up to 1 char error (OCR tolerance)
+    if(text.includes(w)) return true;
+    if(w.length<5) return false;
+    // Sliding window: look for near-match
+    for(var i=0;i<=text.length-w.length+1;i++){
+      var chunk=text.substring(i,i+w.length);
+      if(levenSim(w,chunk)>=0.8) return true;
+    }
+    return false;
+  }
   function matchNama(ctx,m){
-    const up=ctx.toUpperCase();
-    const pts=m.nama.split(' ').filter(p=>p.length>3);
-    if(pts.length>=2&&pts.slice(0,2).every(p=>up.includes(p))) return true;
+    var up=normOCR(ctx);
+    var nama=normOCR(m.nama);
+    var pts=nama.split(' ').filter(function(p){return p.length>3;});
+    // Exact substring check (fastest)
+    if(pts.length>=2&&pts.slice(0,2).every(function(p){return up.includes(p);})) return true;
     if(pts.length>=1&&pts[0].length>5&&up.includes(pts[0])) return true;
+    // Fuzzy check (OCR tolerance)
+    if(pts.length>=2&&pts.slice(0,2).every(function(p){return wordSim(p,up);})) return true;
+    // Bil number check: "BIL 5" or "#5" or just "5." at line start
+    var bilPats=['BIL'+m.bil,'BIL '+m.bil,'NO '+m.bil,'NO.'+m.bil,
+                 ' '+m.bil+' ',' '+m.bil+'.',' '+m.bil+'\t'];
+    if(bilPats.some(function(p){return up.includes(p);})) return true;
     return false;
   }
   function pbar2(k,pct){const el=document.getElementById('pf-'+k);if(el)el.style.width=pct+'%';}
   function pshow2(k){const p=document.getElementById('pb-'+k),m=document.getElementById('pm-'+k);if(p)p.style.display='block';if(m)m.style.display='block';}
   function pmsg2(k,t){const m=document.getElementById('pm-'+k);if(m)m.textContent=t;}
 
-  // MC
-  if(UF['mc']){
-    log('Membaca MC Hard Copy (PDF+OCR)...','info'); pshow2('mc'); let n=0;
-    for(const file of Array.from(UF['mc'])){
-      pmsg2('mc','Membaca '+file.name+'...'); pbar2('mc',20);
-      const txt=await readFile(file,log); pbar2('mc',75);
-      log('MC teks: '+txt.length+' chars dari '+file.name,'info');
-      if(!txt.trim()){ log('MC: Fail kosong atau gagal dibaca','warn'); continue; }
-      const lines=txt.split('\n');
-      lines.forEach((line,li)=>{
-        const allDM=[...line.matchAll(/(\d{1,2})[\/-](\d{1,2})[\/-]?(\d{2,4})?/g)];
-        if(!allDM.length) return;
-        const ctx=lines.slice(Math.max(0,li-8),li+8).join(' ');
-        MASTER.forEach(m=>{
-          if(!matchNama(ctx,m)) return;
-          allDM.forEach(dm=>{
-            const dd=dm[1].padStart(2,'0'), mm=(dm[2]||'').padStart(2,'0');
-            if(mm!=='04') return;
-            const hari=+dd; if(hari<1||hari>30) return;
-            if(MC_DATA.some(mc=>+mc.bil===m.bil&&mc.dari.startsWith(dd+'/04'))) return;
-            const cu=ctx.toUpperCase();
-            const kM=cu.match(/(?:KLINIK|HOSPITAL|POLIKLINIK)\s+([A-Z][A-Z\s]{2,24})/);
-            const sM=cu.match(/\b([A-Z]{1,4}\d{5,9}|\d{6,9})\b/);
-            const hM=cu.match(/(\d{1,2})\s*(?:HARI|DAY)/i);
-            MC_DATA.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,
-              dari:dd+'/04',hingga:dd+'/04',hari:hM?+hM[1]:1,
+  // ── UNIVERSAL OCR PARSER HELPER ──────────────────────────
+  function parseOCRText(txt, type, logFn){
+    // Normalize OCR artifacts
+    var norm=txt.replace(/\r/g,'')
+      .replace(/[^\x20-\x7E\n\u00C0-\u024F]/g,' ')
+      .replace(/  +/g,' ');
+    var lines=norm.split('\n');
+    var results=[]; // [{member, day, value}]
+
+    // Build normalized master names for fuzzy matching
+    var normMaster=MASTER.map(function(m){
+      return {m:m, parts:normOCR(m.nama).split(' ').filter(function(p){return p.length>3;})};
+    });
+
+    function findMember(ctx){
+      var ctxN=normOCR(ctx);
+      for(var i=0;i<normMaster.length;i++){
+        var nm=normMaster[i];
+        if(!nm.parts.length) continue;
+        // Try exact
+        if(nm.parts.slice(0,2).every(function(p){return ctxN.includes(p);})) return nm.m;
+        // Try first long word
+        if(nm.parts[0].length>5&&wordSim(nm.parts[0],ctxN)) return nm.m;
+        // Try bil
+        var b=nm.m.bil;
+        if(ctxN.match(new RegExp('\\\\b'+b+'\\\\b'))) return nm.m;
+      }
+      return null;
+    }
+
+    if(type==='mc'){
+      // Find member + date pairs
+      lines.forEach(function(line,li){
+        var ctx=lines.slice(Math.max(0,li-6),li+6).join(' ');
+        var member=findMember(ctx);
+        if(!member) return;
+        var days=findDates04(ctx);
+        if(!days.length) return;
+        var cu=ctx.toUpperCase();
+        var kM=cu.match(/(?:KLINIK|HOSPITAL|POLIKLINIK|KLINK|HOSP)\s+([A-Z][A-Z\s]{2,22})/);
+        var sM=cu.match(/\b([A-Z]{1,4}\d{5,9}|\d{6,9})\b/);
+        var hM=cu.match(/(\d{1,2})\s*(?:HARI|DAYS?|DAY)/i);
+        days.forEach(function(d){
+          if(d>=1&&d<=30&&!MC_DATA.some(function(mc){return +mc.bil===member.bil&&mc.dari.startsWith(String(d).padStart(2,'0')+'/04');})){
+            MC_DATA.push({bil:member.bil,nama:member.nama,jab:member.jab,komp:member.komp,
+              dari:String(d).padStart(2,'0')+'/04',hingga:String(d).padStart(2,'0')+'/04',
+              hari:hM?+hM[1]:1,
               klinik:kM?kM[1].trim().replace(/\s+/g,' '):'Klinik',
               siri:sM?sM[1]:'-',jenis:'Bulan Ini'});
-            if(D[m.bil]?.[hari]){if(!D[m.bil][hari].kzp)D[m.bil][hari].kzp='MC';if(!D[m.bil][hari].kzk)D[m.bil][hari].kzk='MC';}
-            n++;updated++;
-            log('\u2713 MC: '+m.nama+' hari '+hari+' - '+(kM?kM[1].trim():'Klinik'),'ok');
-          });
+            if(D[member.bil]&&D[member.bil][d]){
+              if(!D[member.bil][d].kzp)D[member.bil][d].kzp='MC';
+              if(!D[member.bil][d].kzk)D[member.bil][d].kzk='MC';
+            }
+            results.push({member:member,d:d,val:'MC'});
+          }
         });
       });
+    }
+
+    if(type==='kzp'||type==='kzk'){
+      var ST_PAT=/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|BER|HADIR|LEWAT|TIDAK HADIR|CUTI|SAKIT)\b/gi;
+      var target=type==='kzp'?'kzp':'kzk';
+      lines.forEach(function(line,li){
+        var up=line.toUpperCase().trim();
+        if(!up||up.length<3) return;
+        var ctx=lines.slice(Math.max(0,li-5),li+5).join(' ');
+        var member=findMember(ctx);
+        // Get status
+        var stM=up.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|BER|HADIR|LEWAT|TIDAK HADIR)\b/);
+        if(!stM) return;
+        var st=stM[1]==='HADIR'?'\u2713':stM[1]==='TIDAK HADIR'?'TH':stM[1];
+        // Get dates from context
+        var days=findDates04(ctx);
+        if(!days.length) return;
+        if(!member) member=findMember(line);
+        if(!member) return;
+        days.forEach(function(d){
+          if(d>=1&&d<=30&&D[member.bil]&&D[member.bil][d]&&!D[member.bil][d][target]){
+            D[member.bil][d][target]=normK(st)||st;
+            results.push({member:member,d:d,val:st});
+          }
+        });
+        // Tabular: row of statuses
+        var tokens=up.split(/[\s|,;\t]+/);
+        var dayOff=0;
+        var inData=false;
+        tokens.forEach(function(tok){
+          if(/^\d{1,2}$/.test(tok)&&+tok>=1&&+tok<=30){dayOff=+tok-1;inData=true;return;}
+          var sm=tok.match(/^(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|BER|[\u2713\u2717\-])$/);
+          if(sm){dayOff++;inData=true;var day=dayOff;if(day<1||day>30)return;
+            var fs=sm[1]==='HADIR'||sm[1]==='\u2713'?'\u2713':sm[1]==='\u2717'||sm[1]==='-'?'ABS':sm[1];
+            if(D[member.bil]&&D[member.bil][day]&&!D[member.bil][day][target]){
+              D[member.bil][day][target]=normK(fs)||fs;
+              results.push({member:member,d:day,val:fs});
+            }
+          }
+        });
+      });
+    }
+
+    if(type==='tc'){
+      // Parse TIMECARD: find name, date, IN time, OUT time
+      var tcMap={};
+      var curBil=null, curD=0;
+      lines.forEach(function(line,li){
+        var up2=line.toUpperCase();
+        // Member detection
+        var m2=findMember(line);
+        if(m2){curBil=m2.bil; if(!tcMap[curBil])tcMap[curBil]={};}
+        // Date detection
+        var dM=findDates04(line);
+        if(dM.length) curD=dM[0];
+        else {var dm2=line.match(/^\s*(\d{1,2})\s*$/);if(dm2&&+dm2[1]>=1&&+dm2[1]<=30)curD=+dm2[1];}
+        // Times
+        var times=line.match(/(\d{2}:\d{2})/g);
+        if(times&&curBil&&curD>=1&&curD<=30){
+          if(!tcMap[curBil][curD])tcMap[curBil][curD]=[];
+          tcMap[curBil][curD].push.apply(tcMap[curBil][curD],times);
+        }
+        // Full row: date name tIn tOut
+        var row=line.match(/(\d{1,2})[\/\-](04)[^\d]*(\d{2}:\d{2})[^\d]*(\d{2}:\d{2})/);
+        if(row){
+          var d2=+row[1];
+          var ctx2=lines.slice(Math.max(0,li-3),li+3).join(' ');
+          var m3=findMember(ctx2);
+          if(m3&&D[m3.bil]&&D[m3.bil][d2]&&!D[m3.bil][d2].tc_in){
+            D[m3.bil][d2].tc_in=row[3];D[m3.bil][d2].tc_out=row[4];
+            results.push({member:m3,d:d2,val:row[3]+'/'+row[4]});
+          }
+        }
+      });
+      // Apply tcMap with shift-based selection
+      Object.keys(tcMap).forEach(function(bilS){
+        var bil=+bilS; if(!MASTER.find(function(x){return x.bil===bil;})) return;
+        Object.keys(tcMap[bilS]).forEach(function(dS){
+          var d=+dS; var times2=tcMap[bilS][dS];
+          if(!D[bil]||!D[bil][d]||D[bil][d].tc_in||!times2.length) return;
+          var sh=gSh(bil,d);
+          var shSt=sh==='S'?420:sh==='P'?900:1380;
+          var shEn=sh==='S'?900:sh==='P'?1380:420;
+          var bI=times2[0],bO=times2[times2.length-1]||'';
+          if(times2.length>2){
+            var bIx=null,bOx=null,di=9999,dO=9999;
+            times2.forEach(function(t){
+              var tm=toMins(t);
+              var da=Math.abs(tm-shSt);if(da<di){di=da;bIx=t;}
+              var db=Math.abs(tm-shEn);if(db<dO){dO=db;bOx=t;}
+            });
+            bI=bIx||times2[0];bO=bOx!==bIx?bOx:times2[times2.length-1];
+          }
+          if(bI){D[bil][d].tc_in=bI;D[bil][d].tc_out=bO||'';}
+          var m4=MASTER.find(function(x){return x.bil===bil;});
+          if(bI) results.push({member:m4,d:d,val:bI+'/'+(bO||'?')});
+        });
+      });
+    }
+
+    if(type==='hrmis'){
+      var CT_MAP={'CUTI REHAT':'CR','CUTI SAKIT':'MC','EMERGENCY LEAVE':'EL',
+        'CUTI TANPA REKOD':'CTR','CUTI BERSALIN':'CB','EL':'EL',
+        'CR':'CR','MC':'MC','CTR':'CTR','CB':'CB','CBR':'CBR'};
+      lines.forEach(function(line,li){
+        var ctx=lines.slice(Math.max(0,li-5),li+5).join(' ');
+        var days=findDates04(ctx);
+        if(!days.length) return;
+        var member=findMember(ctx);
+        if(!member) return;
+        var cu=ctx.toUpperCase(); var ct='CR';
+        for(var k in CT_MAP){if(cu.includes(k)){ct=CT_MAP[k];break;}}
+        days.forEach(function(d){
+          if(d>=1&&d<=30&&D[member.bil]&&D[member.bil][d]&&!D[member.bil][d].hrmis){
+            D[member.bil][d].hrmis=ct+' SAH';
+            if(!D[member.bil][d].kzp)D[member.bil][d].kzp=ct;
+            if(!D[member.bil][d].kzk)D[member.bil][d].kzk=ct;
+            results.push({member:member,d:d,val:ct});
+          }
+        });
+      });
+    }
+
+    return results;
+  }
+
+  // ── MC HARD COPY ─────────────────────────────────────────
+  if(UF['mc']){
+    log('\ud83c\udfe5 Membaca MC (Auto OCR)...','info'); pshow2('mc'); var n=0;
+    for(var fi=0;fi<Array.from(UF['mc']).length;fi++){
+      var file=Array.from(UF['mc'])[fi];
+      pmsg2('mc','Auto-baca: '+file.name+'...');pbar2('mc',10);
+      var txt=await readFile(file,log);pbar2('mc',75);
+      log('MC: '+txt.length+' chars dari '+file.name,'info');
+      if(!txt.trim()){log('MC: Fail kosong','warn');continue;}
+      var res=parseOCRText(txt,'mc',log);
+      res.forEach(function(r){n++;updated++;log('\u2713 MC: '+r.member.nama+' hari '+r.d,'ok');});
       pbar2('mc',100);
       log('MC: '+n+' rekod dari '+file.name,n>0?'ok':'warn');
-      if(n===0) log('MC: Tiada rekod sepadan. Cuba semak nama dalam fail vs Master Listing','warn');
+      if(n===0) log('MC: Nama dalam PDF tidak sepadan Master Listing — semak ejaan','warn');
     }
   }
 
-  // KZ PENYELIA — Auto OCR (PDF.js text + Tesseract scan)
+  // ── KZ PENYELIA ──────────────────────────────────────────
   if(UF['kzp']){
-    log('Membaca KZ Penyelia — Auto PDF.js + Tesseract OCR...','info');
-    pshow2('kzp'); let n=0;
-    for(const file of Array.from(UF['kzp'])){
-      pmsg2('kzp','Auto-baca: '+file.name+' — PDF.js text extract + Tesseract OCR jika scan...');
-      pbar2('kzp',5);
-      const txt=await readFile(file,log);
-      pbar2('kzp',80);
-      if(!txt||!txt.trim()){ log('KZP: Fail kosong/gagal dibaca','err'); continue; }
-      log('KZP teks: '+txt.length+' chars','info');
-      const lines=txt.split('\n');
-      let curM=null;
-      lines.forEach(function(line,li){
-        const up=line.toUpperCase().trim();
-        if(!up||up.length<2) return;
-        // Detect member in this line
-        MASTER.forEach(function(m){ if(matchNama(up,m)) curM=m; });
-        // Method A: explicit date + status in same line
-        const stA=up.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|K\/P|BER|HADIR|LEWAT|TIDAK HADIR)\b/);
-        const dA=up.match(/(\d{1,2})[\/\-](04)[\/\-]?(?:2026)?/);
-        if(stA&&dA){
-          const d=+dA[1]; if(d<1||d>30) return;
-          const st=stA[1]==='HADIR'?'\u2713':stA[1]==='TIDAK HADIR'?'TH':stA[1];
-          const ctx=lines.slice(Math.max(0,li-4),li+4).join(' ');
-          MASTER.forEach(function(m){
-            if(!matchNama(ctx,m)) return;
-            if(D[m.bil]&&D[m.bil][d]&&!D[m.bil][d].kzp){
-              D[m.bil][d].kzp=normK(st)||st; n++;updated++;
-              log('\u2713 KZP: '+m.nama+' hari '+d+' \u2192 '+st,'ok');
-            }
-          });
-        }
-        // Method B: tabular — row of statuses for current member
-        if(curM&&!dA){
-          const tokens=up.split(/[\s|,;\t]+/);
-          let dayOff=0;
-          tokens.forEach(function(tok){
-            if(/^\d{1,2}$/.test(tok)&&+tok>=1&&+tok<=30){ dayOff=+tok-1; return; }
-            const sm=tok.match(/^(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|BER|HADIR|LEWAT|[\u2713\u2717\-])$/);
-            if(sm){
-              dayOff++;
-              const day=dayOff; if(day<1||day>30) return;
-              const rawSt=sm[1];
-              const fs=rawSt==='HADIR'||rawSt==='\u2713'?'\u2713':rawSt==='\u2717'||rawSt==='-'?'ABS':rawSt;
-              if(D[curM.bil]&&D[curM.bil][day]&&!D[curM.bil][day].kzp){
-                D[curM.bil][day].kzp=normK(fs)||fs; n++;updated++;
-                log('\u2713 KZP(tab): '+curM.nama+' hari '+day+' \u2192 '+fs,'ok');
-              }
-            }
-          });
-        }
-      });
-      // Method C: scan entire text for name+date+status proximity
-      if(n===0){
-        log('KZP: Cuba kaedah imbas penuh...','info');
-        MASTER.forEach(function(m){
-          const pts=m.nama.split(' ').filter(function(p){return p.length>3;});
-          const idx2=txt.toUpperCase().indexOf(pts[0]);
-          if(idx2<0) return;
-          const seg=txt.substring(Math.max(0,idx2-20),idx2+400);
-          const dms=[...seg.matchAll(/(\d{1,2})[\/\-](04)[\/\-]?(?:2026)?[^\n]{0,40}?\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|BER|HADIR|LEWAT)\b/gi)];
-          dms.forEach(function(dm){
-            const d=+dm[1]; if(d<1||d>30) return;
-            const st=dm[3].toUpperCase()==='HADIR'?'\u2713':dm[3].toUpperCase();
-            if(D[m.bil]&&D[m.bil][d]&&!D[m.bil][d].kzp){
-              D[m.bil][d].kzp=normK(st)||st; n++;updated++;
-              log('\u2713 KZP(imbas): '+m.nama+' hari '+d+' \u2192 '+st,'ok');
-            }
-          });
-        });
-      }
+    log('\ud83d\udcc4 Membaca KZ Penyelia (Auto OCR)...','info');pshow2('kzp');var n=0;
+    for(var fi=0;fi<Array.from(UF['kzp']).length;fi++){
+      var file=Array.from(UF['kzp'])[fi];
+      pmsg2('kzp','Auto-baca OCR: '+file.name+' (sabar ya, PDF scan ambil masa)...');pbar2('kzp',5);
+      var txt=await readFile(file,log);pbar2('kzp',80);
+      log('KZP: '+txt.length+' chars','info');
+      if(!txt.trim()){log('KZP: Fail kosong','warn');continue;}
+      var res=parseOCRText(txt,'kzp',log);
+      res.forEach(function(r){n++;updated++;log('\u2713 KZP: '+r.member.nama+' hari '+r.d+' \u2192 '+r.val,'ok');});
       pbar2('kzp',100);
-      log('KZ Penyelia: '+n+' rekod dari '+file.name,n>0?'ok':'warn');
-      if(n===0){
-        log('KZP: Format tidak dikesan. Pastikan nama sepadan Master Listing.','warn');
-        log('KZP tip: Format paling mudah: setiap baris = "NAMA | DD/04 | STATUS"','warn');
-      }
+      log('KZ Penyelia: '+n+' rekod',n>0?'ok':'warn');
+      if(n===0) log('KZP: Cuba format "NAMA | DD/04 | STATUS" atau semak format dokumen','warn');
     }
   }
 
-  // KZ KOPERAL
+  // ── KZ KOPERAL ───────────────────────────────────────────
   if(UF['kzk']){
-    log('Membaca KZ Koperal (WhatsApp+OCR)...','info'); pshow2('kzk'); let n=0;
-    for(const file of Array.from(UF['kzk'])){
-      pmsg2('kzk','Membaca '+file.name+'...'); pbar2('kzk',10);
-      const txt=await readFile(file,log); pbar2('kzk',65);
-      log('KZK teks: '+txt.length+' chars','info');
-      if(!txt.trim()){ log('KZK: Fail kosong','warn'); continue; }
-      const lines=txt.split('\n');
-      let waDate='';
-      lines.forEach((line,li)=>{
-        const waDt=line.match(/^[\["]?(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-        if(waDt) waDate=waDt[1].padStart(2,'0')+'/'+(waDt[2]||'04').padStart(2,'0');
-        const stM=line.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|K\/P|BER|HADIR|SAKIT|CUTI|LEWAT|TIDAK HADIR)\b/i);
-        if(!stM) return;
-        const rawSt=stM[1].toUpperCase();
-        const st=rawSt==='HADIR'?'\u2713':rawSt==='SAKIT'?'MC':rawSt==='TIDAK HADIR'?'TH':rawSt;
-        const ctx=lines.slice(Math.max(0,li-5),li+5).join(' ');
-        const dM=ctx.match(/(\d{1,2})[\/\-](04)[\/\-]?(?:2026)?/)||
-                 (waDate.endsWith('/04')?[null,waDate.split('/')[0],'04']:null);
-        if(!dM) return;
-        const d=+dM[1]; if(d<1||d>30) return;
-        MASTER.forEach(m=>{
-          if(!matchNama(ctx,m)) return;
-          if(D[m.bil]?.[d]&&!D[m.bil][d].kzk){D[m.bil][d].kzk=normK(st)||st;n++;updated++;log('\u2713 KZK: '+m.nama+' hari '+d+' \u2192 '+st,'ok');}
-        });
-      });
+    log('\ud83d\udcac Membaca KZ Koperal (WhatsApp+OCR)...','info');pshow2('kzk');var n=0;
+    for(var fi=0;fi<Array.from(UF['kzk']).length;fi++){
+      var file=Array.from(UF['kzk'])[fi];
+      pmsg2('kzk','Auto-baca: '+file.name+'...');pbar2('kzk',10);
+      var txt=await readFile(file,log);pbar2('kzk',65);
+      log('KZK: '+txt.length+' chars','info');
+      if(!txt.trim()){log('KZK: Fail kosong','warn');continue;}
+      var res=parseOCRText(txt,'kzk',log);
+      res.forEach(function(r){n++;updated++;log('\u2713 KZK: '+r.member.nama+' hari '+r.d+' \u2192 '+r.val,'ok');});
       pbar2('kzk',100);
       log('KZ Koperal: '+n+' rekod',n>0?'ok':'warn');
     }
   }
 
-  // TIMECARD
+  // ── TIMECARD ─────────────────────────────────────────────
   if(UF['tc']){
-    log('Membaca TIMECARD (PDF+OCR+Excel)...','info'); pshow2('tc'); let n=0;
-    for(const file of Array.from(UF['tc'])){
-      pmsg2('tc','Membaca '+file.name+'...'); pbar2('tc',10);
-      const txt=await readFile(file,log); pbar2('tc',60);
-      log('TC teks: '+txt.length+' chars','info');
-      if(!txt.trim()){ log('TC: Fail kosong','warn'); continue; }
-      const lines=txt.split('\n');
-      const tcMap={};
-      let curBil=null, curD=0;
-      lines.forEach((line,li)=>{
-        const up=line.toUpperCase();
-        MASTER.forEach(m=>{ if(matchNama(up,m)){curBil=m.bil;if(!tcMap[curBil])tcMap[curBil]={};} });
-        const dM=line.match(/(\d{1,2})[\/\-](04)[\/\-]?(?:2026)?/);
-        if(dM) curD=+dM[1];
-        else{ const dm=line.match(/^\s*(\d{1,2})\s*$/);if(dm&&+dm[1]>=1&&+dm[1]<=30)curD=+dm[1]; }
-        const times=line.match(/(\d{2}:\d{2})/g);
-        if(times&&curBil&&curD>=1&&curD<=30){
-          if(!tcMap[curBil][curD])tcMap[curBil][curD]=[];
-          tcMap[curBil][curD].push(...times);
-        }
-        // Full row: date name tIn tOut
-        const row=line.match(/(\d{1,2})[\/\-](04)[^\d]*(\d{2}:\d{2})[^\d]*(\d{2}:\d{2})/);
-        if(row){
-          const d2=+row[1];
-          const ctx2=lines.slice(Math.max(0,li-3),li+3).join(' ');
-          MASTER.forEach(m=>{
-            if(!matchNama(ctx2,m)) return;
-            if(D[m.bil]?.[d2]&&!D[m.bil][d2].tc_in){
-              D[m.bil][d2].tc_in=row[3];D[m.bil][d2].tc_out=row[4];
-              if(!tcMap[m.bil])tcMap[m.bil]={};
-              tcMap[m.bil][d2]=[row[3],row[4]];
-              n++;updated++;log('\u2713 TC(row): '+m.nama+' hari '+d2+' IN:'+row[3]+' OUT:'+row[4],'ok');
-            }
-          });
-        }
-      });
-      // Apply tcMap
-      Object.entries(tcMap).forEach(([bilS,dates])=>{
-        const bil=+bilS;if(!MASTER.find(x=>x.bil===bil))return;
-        Object.entries(dates).forEach(([dS,times])=>{
-          const d=+dS;if(!D[bil]?.[d]||D[bil][d].tc_in)return;
-          if(!times.length)return;
-          const sh=gSh(bil,d);
-          const shSt=sh==='S'?420:sh==='P'?900:1380;
-          const shEn=sh==='S'?900:sh==='P'?1380:420;
-          let bI=times[0],bO=times[times.length-1]||'';
-          if(times.length>2){
-            let bIx=null,bOx=null,di=9999,dO=9999;
-            times.forEach(t=>{
-              const tm=toMins(t);
-              const da=Math.abs(tm-shSt);if(da<di){di=da;bIx=t;}
-              const db=Math.abs(tm-shEn);if(db<dO){dO=db;bOx=t;}
-            });
-            bI=bIx||times[0];bO=bOx!==bIx?bOx:times[times.length-1];
-          }
-          D[bil][d].tc_in=bI;D[bil][d].tc_out=bO;
-          n++;updated++;
-          const m=MASTER.find(x=>x.bil===bil);
-          log('\u2713 TC: '+(m?m.nama:bil)+' hari '+d+' IN:'+bI+(bO?' OUT:'+bO:''),'ok');
-        });
-      });
+    log('\u23f1 Membaca TIMECARD (Auto OCR)...','info');pshow2('tc');var n=0;
+    for(var fi=0;fi<Array.from(UF['tc']).length;fi++){
+      var file=Array.from(UF['tc'])[fi];
+      pmsg2('tc','Auto-baca: '+file.name+' (918 muka surat — sedang diproses)...');pbar2('tc',5);
+      // Process in chunks to avoid browser freeze
+      var txt=await readFile(file,log);pbar2('tc',60);
+      log('TC: '+txt.length+' chars','info');
+      if(!txt.trim()){log('TC: Fail kosong','warn');continue;}
+      // Chunk processing for large files
+      var chunkSize=50000;
+      var totalChunks=Math.ceil(txt.length/chunkSize);
+      for(var ci=0;ci<totalChunks;ci++){
+        var chunk=txt.substring(ci*chunkSize,(ci+1)*chunkSize);
+        pbar2('tc',60+Math.round(ci/totalChunks*35));
+        var res=parseOCRText(chunk,'tc',log);
+        res.forEach(function(r){n++;updated++;log('\u2713 TC: '+r.member.nama+' hari '+r.d+' = '+r.val,'ok');});
+        // Yield to browser
+        await new Promise(function(r){setTimeout(r,0);});
+      }
       pbar2('tc',100);
       log('TIMECARD: '+n+' rekod dari '+file.name,n>0?'ok':'warn');
-      if(n===0) log('TC: Format: [Nama] [Tarikh/04] [HH:MM] [HH:MM]. Guna Export CSV/Excel jika ada.','warn');
+      if(n===0) log('TC: Pastikan format: Nama | Tarikh/04 | HH:MM | HH:MM dalam fail','warn');
     }
   }
 
-  // HRMIS
+  // ── HRMIS ────────────────────────────────────────────────
   if(UF['hr']){
-    log('Membaca HRMIS (PDF+OCR)...','info'); pshow2('hr'); let n=0;
-    for(const file of Array.from(UF['hr'])){
-      pmsg2('hr','Membaca '+file.name+'...'); pbar2('hr',10);
-      const txt=await readFile(file,log); pbar2('hr',65);
-      log('HRMIS teks: '+txt.length+' chars','info');
-      if(!txt.trim()){ log('HRMIS: Fail kosong','warn'); continue; }
-      const ctMap={'CUTI REHAT':'CR','CUTI SAKIT':'MC','EMERGENCY LEAVE':'EL','CUTI TANPA REKOD':'CTR','CUTI BERSALIN':'CB','EL':'EL','CR':'CR','MC':'MC','CTR':'CTR','CB':'CB','CBR':'CBR'};
-      const lines=txt.split('\n');
-      lines.forEach((line,li)=>{
-        const ctx=lines.slice(Math.max(0,li-5),li+5).join(' ');
-        const dMs=[...ctx.matchAll(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/g)];
-        if(!dMs.length) return;
-        const cu=ctx.toUpperCase(); let ct='CR';
-        for(const[k,v] of Object.entries(ctMap)){if(cu.includes(k)){ct=v;break;}}
-        MASTER.forEach(m=>{
-          if(!matchNama(ctx,m)) return;
-          dMs.forEach(dm=>{
-            const dd=dm[1].padStart(2,'0'),mm=dm[2].padStart(2,'0');
-            if(mm!=='04') return;
-            const hari=+dd;if(hari<1||hari>30)return;
-            if(D[m.bil]?.[hari]&&!D[m.bil][hari].hrmis){
-              D[m.bil][hari].hrmis=ct+' SAH';
-              if(!D[m.bil][hari].kzp)D[m.bil][hari].kzp=ct;
-              if(!D[m.bil][hari].kzk)D[m.bil][hari].kzk=ct;
-              n++;updated++;log('\u2713 HRMIS: '+m.nama+' hari '+hari+' \u2192 '+ct+' SAH','ok');
-            }
-          });
-        });
-      });
+    log('\ud83d\udcc4 Membaca HRMIS (Auto OCR)...','info');pshow2('hr');var n=0;
+    for(var fi=0;fi<Array.from(UF['hr']).length;fi++){
+      var file=Array.from(UF['hr'])[fi];
+      pmsg2('hr','Auto-baca: '+file.name+'...');pbar2('hr',10);
+      var txt=await readFile(file,log);pbar2('hr',65);
+      log('HRMIS: '+txt.length+' chars','info');
+      if(!txt.trim()){log('HRMIS: Fail kosong','warn');continue;}
+      var res=parseOCRText(txt,'hrmis',log);
+      res.forEach(function(r){n++;updated++;log('\u2713 HRMIS: '+r.member.nama+' hari '+r.d+' \u2192 '+r.val,'ok');});
       pbar2('hr',100);
       log('HRMIS: '+n+' rekod',n>0?'ok':'warn');
     }
   }
 
-  // Save
   try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
   try{localStorage.setItem('eakha_mc',JSON.stringify(MC_DATA));}catch(e){}
   if(SUPA_OK&&updated>0){
