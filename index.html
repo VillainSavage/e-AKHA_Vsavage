@@ -6,7 +6,7 @@
 <title>e-AKHA Vsavage — Sistem Audit Kehadiran KPL</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -640,7 +640,7 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
             <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'kzp')">
             <div class="uz-ic">📄</div>
             <div class="uz-t">KZ Penyelia</div>
-            <div class="uz-s">PDF scan · trace ✓ MC CR L LL TT TH K/P CTR EL</div>
+            <div class="uz-s">Auto OCR · PDF scan/gambar/text · Tesseract baca automatik</div>
             <div class="uz-fn" id="fn-kzp"></div>
           </div>
           <div class="pbar" id="pb-kzp"><div class="pfill" id="pf-kzp" style="background:#059669"></div></div>
@@ -688,7 +688,7 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
             <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'mc')">
             <div class="uz-ic">📋</div>
             <div class="uz-t">Borang Semakan MC</div>
-            <div class="uz-s">PDF · Auto-fill MC DITERIMA semua tarikh</div>
+            <div class="uz-s">PDF (auto OCR jika scan) · Auto-fill semua tarikh MC</div>
             <div class="uz-fn" id="fn-mc"></div>
           </div>
           <div class="pbar" id="pb-mc"><div class="pfill" id="pf-mc" style="background:#ea580c"></div></div>
@@ -704,7 +704,7 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
             <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'hr')">
             <div class="uz-ic">📑</div>
             <div class="uz-t">Cuti HRMIS</div>
-            <div class="uz-s">PDF / Screenshot · auto-fill Cuti HRMIS</div>
+            <div class="uz-s">PDF / Screenshot (auto OCR) · auto-fill Cuti HRMIS</div>
             <div class="uz-fn" id="fn-hr"></div>
           </div>
           <div class="pbar" id="pb-hr"><div class="pfill" id="pf-hr" style="background:#1d4ed8"></div></div>
@@ -1861,7 +1861,7 @@ async function procAll(){
     log('Membaca KZ Penyelia — Auto PDF.js + Tesseract OCR...','info');
     pshow2('kzp'); let n=0;
     for(const file of Array.from(UF['kzp'])){
-      pmsg2('kzp','Membaca '+file.name+' (PDF scan mungkin ambil 1-2 minit)...');
+      pmsg2('kzp','Auto-baca: '+file.name+' — PDF.js text extract + Tesseract OCR jika scan...');
       pbar2('kzp',5);
       const txt=await readFile(file,log);
       pbar2('kzp',80);
@@ -2091,6 +2091,13 @@ async function procAll(){
   const sum='✅ Selesai - '+updated+' rekod dikemaskini';
   const ps=document.getElementById('proc-stat'); if(ps) ps.textContent=sum;
   log(sum,'ok'); toast(sum,'ok');
+  // Update upload zone visual feedback
+  Object.keys(UF).forEach(function(k){
+    var uz=document.getElementById('uz-'+k);
+    if(uz) uz.style.borderColor='#059669';
+    var fn2=document.getElementById('fn-'+k);
+    if(fn2&&fn2.textContent) fn2.style.color='#34d399';
+  });
 }
 
 async function procRaya(){
@@ -2543,6 +2550,12 @@ document.addEventListener('DOMContentLoaded',function(){
   // Init PDF.js worker
   if(window.pdfjsLib){
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    console.log('PDF.js v3.11 ready - OCR enabled');
+  } else {
+    console.warn('PDF.js not loaded - OCR may not work');
+  }
+  if(window.Tesseract){
+    console.log('Tesseract.js ready - image OCR enabled');
   }
   initSupa();
   if(loadSess()){ bootApp(); return; }
