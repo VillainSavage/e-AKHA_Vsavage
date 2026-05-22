@@ -1756,7 +1756,7 @@ async function ocrPDF(pdf, fname, log){
   for(let p=1;p<=numPages;p++){
     try{
       const page=await pdf.getPage(p);
-      const vp=page.getViewport({scale:2.0});
+      const vp=page.getViewport({scale:2.5});
       const canvas=document.createElement('canvas');
       canvas.width=vp.width; canvas.height=vp.height;
       const ctx=canvas.getContext('2d');
@@ -1856,30 +1856,84 @@ async function procAll(){
     }
   }
 
-  // KZ PENYELIA
+  // KZ PENYELIA — Auto OCR (PDF.js text + Tesseract scan)
   if(UF['kzp']){
-    log('Membaca KZ Penyelia (PDF+OCR)...','info'); pshow2('kzp'); let n=0;
+    log('Membaca KZ Penyelia — Auto PDF.js + Tesseract OCR...','info');
+    pshow2('kzp'); let n=0;
     for(const file of Array.from(UF['kzp'])){
-      pmsg2('kzp','Membaca '+file.name+'...'); pbar2('kzp',10);
-      const txt=await readFile(file,log); pbar2('kzp',75);
+      pmsg2('kzp','Membaca '+file.name+' (PDF scan mungkin ambil 1-2 minit)...');
+      pbar2('kzp',5);
+      const txt=await readFile(file,log);
+      pbar2('kzp',80);
+      if(!txt||!txt.trim()){ log('KZP: Fail kosong/gagal dibaca','err'); continue; }
       log('KZP teks: '+txt.length+' chars','info');
-      if(!txt.trim()){ log('KZP: Fail kosong','warn'); continue; }
       const lines=txt.split('\n');
-      lines.forEach((line,li)=>{
-        const stM=line.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|K\/P|BER|HADIR|LEWAT)\b/i);
-        if(!stM) return;
-        const st=stM[1].toUpperCase()==='HADIR'?'\u2713':stM[1].toUpperCase();
-        const ctx=lines.slice(Math.max(0,li-4),li+4).join(' ');
-        const dM=ctx.match(/(\d{1,2})[\/\-](04)[\/\-]?(?:2026)?/);
-        if(!dM) return;
-        const d=+dM[1]; if(d<1||d>30) return;
-        MASTER.forEach(m=>{
-          if(!matchNama(ctx,m)) return;
-          if(D[m.bil]?.[d]&&!D[m.bil][d].kzp){D[m.bil][d].kzp=normK(st)||st;n++;updated++;log('\u2713 KZP: '+m.nama+' hari '+d+' \u2192 '+st,'ok');}
-        });
+      let curM=null;
+      lines.forEach(function(line,li){
+        const up=line.toUpperCase().trim();
+        if(!up||up.length<2) return;
+        // Detect member in this line
+        MASTER.forEach(function(m){ if(matchNama(up,m)) curM=m; });
+        // Method A: explicit date + status in same line
+        const stA=up.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|K\/P|BER|HADIR|LEWAT|TIDAK HADIR)\b/);
+        const dA=up.match(/(\d{1,2})[\/\-](04)[\/\-]?(?:2026)?/);
+        if(stA&&dA){
+          const d=+dA[1]; if(d<1||d>30) return;
+          const st=stA[1]==='HADIR'?'\u2713':stA[1]==='TIDAK HADIR'?'TH':stA[1];
+          const ctx=lines.slice(Math.max(0,li-4),li+4).join(' ');
+          MASTER.forEach(function(m){
+            if(!matchNama(ctx,m)) return;
+            if(D[m.bil]&&D[m.bil][d]&&!D[m.bil][d].kzp){
+              D[m.bil][d].kzp=normK(st)||st; n++;updated++;
+              log('\u2713 KZP: '+m.nama+' hari '+d+' \u2192 '+st,'ok');
+            }
+          });
+        }
+        // Method B: tabular — row of statuses for current member
+        if(curM&&!dA){
+          const tokens=up.split(/[\s|,;\t]+/);
+          let dayOff=0;
+          tokens.forEach(function(tok){
+            if(/^\d{1,2}$/.test(tok)&&+tok>=1&&+tok<=30){ dayOff=+tok-1; return; }
+            const sm=tok.match(/^(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|BER|HADIR|LEWAT|[\u2713\u2717\-])$/);
+            if(sm){
+              dayOff++;
+              const day=dayOff; if(day<1||day>30) return;
+              const rawSt=sm[1];
+              const fs=rawSt==='HADIR'||rawSt==='\u2713'?'\u2713':rawSt==='\u2717'||rawSt==='-'?'ABS':rawSt;
+              if(D[curM.bil]&&D[curM.bil][day]&&!D[curM.bil][day].kzp){
+                D[curM.bil][day].kzp=normK(fs)||fs; n++;updated++;
+                log('\u2713 KZP(tab): '+curM.nama+' hari '+day+' \u2192 '+fs,'ok');
+              }
+            }
+          });
+        }
       });
+      // Method C: scan entire text for name+date+status proximity
+      if(n===0){
+        log('KZP: Cuba kaedah imbas penuh...','info');
+        MASTER.forEach(function(m){
+          const pts=m.nama.split(' ').filter(function(p){return p.length>3;});
+          const idx2=txt.toUpperCase().indexOf(pts[0]);
+          if(idx2<0) return;
+          const seg=txt.substring(Math.max(0,idx2-20),idx2+400);
+          const dms=[...seg.matchAll(/(\d{1,2})[\/\-](04)[\/\-]?(?:2026)?[^\n]{0,40}?\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|BER|HADIR|LEWAT)\b/gi)];
+          dms.forEach(function(dm){
+            const d=+dm[1]; if(d<1||d>30) return;
+            const st=dm[3].toUpperCase()==='HADIR'?'\u2713':dm[3].toUpperCase();
+            if(D[m.bil]&&D[m.bil][d]&&!D[m.bil][d].kzp){
+              D[m.bil][d].kzp=normK(st)||st; n++;updated++;
+              log('\u2713 KZP(imbas): '+m.nama+' hari '+d+' \u2192 '+st,'ok');
+            }
+          });
+        });
+      }
       pbar2('kzp',100);
-      log('KZ Penyelia: '+n+' rekod',n>0?'ok':'warn');
+      log('KZ Penyelia: '+n+' rekod dari '+file.name,n>0?'ok':'warn');
+      if(n===0){
+        log('KZP: Format tidak dikesan. Pastikan nama sepadan Master Listing.','warn');
+        log('KZP tip: Format paling mudah: setiap baris = "NAMA | DD/04 | STATUS"','warn');
+      }
     }
   }
 
@@ -2485,7 +2539,11 @@ function showLoad(m){ document.getElementById('ld-msg').textContent=m||'Memuatka
 function hideLoad(){ document.getElementById('loading').style.display='none'; }
 
 // ── INIT ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',function(){
+  // Init PDF.js worker
+  if(window.pdfjsLib){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
   initSupa();
   if(loadSess()){ bootApp(); return; }
   document.getElementById('auth-wall').style.display='flex';
