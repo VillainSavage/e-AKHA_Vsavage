@@ -664,6 +664,18 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
     <div><b>Upload fail → Klik PROSES &amp; KEMASKINI MASTER FILE.</b> Sistem baca automatik (text extraction atau OCR), bandingkan dengan semua lapisan, dan update Master File 7 lapisan. Manual entry hanya untuk pembetulan.</div>
   </div>
+  <!-- STORED FILES PANEL -->
+  <div class="panel" style="margin-bottom:10px">
+    <div class="ph" style="background:rgba(0,0,0,.4)">
+      <span class="ph-title">&#x1F4E6; Fail Tersimpan</span>
+      <div style="display:flex;gap:5px;align-items:center">
+        <span id="sf-total-badge" style="font-size:7.5px;color:rgba(255,255,255,.3)">0 fail</span>
+        <button class="btn btn-sm" style="font-size:7.5px" id="btn-sf-clear" onclick="clearAllStored()">Buang Semua</button>
+      </div>
+    </div>
+    <div class="pb" id="sf-list"><div class="sf-empty">Tiada fail tersimpan. Upload fail di bawah.</div></div>
+  </div>
+
   <div id="upload-wrap">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-bottom:12px">
 
@@ -1731,20 +1743,30 @@ function dov(e,el){e.preventDefault();el.classList.add('drag')}
 function dlv(el){el.classList.remove('drag')}
 function dropF(e,k,el){ e.preventDefault();el.classList.remove('drag');if(e.dataTransfer.files.length){const i=el.querySelector('input');if(i){i.files=e.dataTransfer.files;fsel(i,k);}}}
 
-function fsel(inp,k){
-  if(!['kzp','kzk','tc','mc','hr','baki-up','raya','raya-tc','ctr','ctr-up','mhaji','man'].includes(k)){ return; }
+async function fsel(inp,k){
+  if(!['kzp','kzk','tc','mc','hr','baki-up','raya','raya-tc','ctr','ctr-up','mhaji','man'].includes(k)) return;
   if(['kzp','kzk','tc','mc','hr','baki-up','ctr-up','man'].includes(k)&&!reqAdmin()){inp.value='';return;}
   if(!inp.files.length) return;
-  UF[k]=inp.files;
-  const uz=document.getElementById('uz-'+k); if(uz) uz.classList.add('done');
-  const fn=document.getElementById('fn-'+k);
-  if(fn) fn.textContent=inp.files.length>1?inp.files.length+' fail dipilih':inp.files[0].name.substring(0,32);
-  const bp=document.getElementById('btn-proc'); if(bp) bp.disabled=false;
-  const bs=document.getElementById('btn-raya'); if(bs) bs.disabled=false;
-  const bc=document.getElementById('btn-ctr'); if(bc) bc.disabled=false;
-  const ps=document.getElementById('proc-stat'); if(ps) ps.textContent=Object.keys(UF).length+' fail sedia untuk diproses';
+  var fnEl=document.getElementById('fn-'+k);
+  var saved=0;
+  for(var i=0;i<inp.files.length;i++){
+    var file=inp.files[i];
+    if(fnEl) fnEl.textContent='Menyimpan '+file.name+'...';
+    var rec=await storeFile(k,file);
+    if(rec){
+      saved++;
+      if(!Array.isArray(UF[k])) UF[k]=[file]; else UF[k].push(file);
+    }
+  }
+  var uz=document.getElementById('uz-'+k); if(uz) uz.classList.add('done');
+  if(fnEl) fnEl.textContent=inp.files.length>1?inp.files.length+' fail disimpan':inp.files[0].name.substring(0,26)+' \u2713';
+  var bp=document.getElementById('btn-proc'); if(bp) bp.disabled=false;
+  var br=document.getElementById('btn-recompare'); if(br) br.disabled=false;
+  var ps=document.getElementById('proc-stat');
+  if(ps) ps.textContent=saved+' fail disimpan. Klik PROSES untuk update Master File.';
+  renderStoredFiles();
+  toast(saved+' fail disimpan \u2713','ok');
 }
-
 function togForm(id){ const f=document.getElementById(id); if(f) f.style.display=f.style.display==='none'?'block':'none'; }
 
 // ══════════════════════════════════════════════════════════════
@@ -1919,6 +1941,24 @@ async function procAll(){
   let updated=0;
   const log=(m,t)=>addLog(lb,m,t||'info');
   log('Memulakan pemprosesan...');
+  // Load stored files from IndexedDB into UF
+  var storedFiles=await loadStoredFiles();
+  if(storedFiles.length>0){
+    log('Memuatkan '+storedFiles.length+' fail tersimpan...','info');
+    for(var sfi=0;sfi<storedFiles.length;sfi++){
+      var sf=storedFiles[sfi]; var sfo=b64ToFile(sf);
+      if(!sfo) continue;
+      if(!Array.isArray(UF[sf.k])) UF[sf.k]=[];
+      if(!UF[sf.k].some(function(f){return f.name===sfo.name;})) UF[sf.k].push(sfo);
+    }
+    log('Fail dimuat: '+Object.keys(UF).join(', '),'ok');
+  }
+  if(Object.keys(UF).length===0){
+    log('Tiada fail. Sila upload dahulu.','warn');
+    if(btn){btn.disabled=false;btn.textContent='PROSES & KEMASKINI MASTER FILE';}
+    return;
+  }
+
 
   // MC
   // ── NAME MATCHING ENGINE v2 ─────────────────────────────────
@@ -2371,6 +2411,10 @@ async function procAll(){
   const sum='✅ Selesai - '+updated+' rekod dikemaskini';
   const ps=document.getElementById('proc-stat'); if(ps) ps.textContent=sum;
   log(sum,'ok'); toast(sum,'ok');
+  // Mark stored files as processed
+  var sAll=await loadStoredFiles();
+  for(var sAi=0;sAi<sAll.length;sAi++) await updateFileStatus(sAll[sAi].id,'diproses');
+  renderStoredFiles();
   // Update upload zone visual feedback
   Object.keys(UF).forEach(function(k){
     var uz=document.getElementById('uz-'+k);
@@ -2836,6 +2880,46 @@ function saveAnggota(){
   var afDiv=document.getElementById('ag-form');if(afDiv)afDiv.style.display='none';
   renderAnggota();toast('Anggota dikemaskini \u2713','ok');
 }
+// ══ PERSISTENT FILE STORAGE (IndexedDB) ══
+var IDB_NAME='eakha_files',IDB_VER=1,IDB_STORE='files',idb=null;
+function openIDB(){return new Promise(function(res,rej){if(idb){res(idb);return;}var req=indexedDB.open(IDB_NAME,IDB_VER);req.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains(IDB_STORE))db.createObjectStore(IDB_STORE,{keyPath:'id'});};req.onsuccess=function(e){idb=e.target.result;res(idb);};req.onerror=function(){rej(req.error);};});}
+async function storeFile(k,file){try{var db=await openIDB();var ab=await file.arrayBuffer();var byt=new Uint8Array(ab);var ch=8192,bp=[];for(var i=0;i<byt.length;i+=ch)bp.push(String.fromCharCode.apply(null,byt.subarray(i,i+ch)));var b64=btoa(bp.join(''));var rec={id:k+'_'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_').substring(0,40),k:k,name:file.name,size:file.size,type:file.type||'',b64:b64,stored:new Date().toISOString(),status:'tersimpan'};await new Promise(function(res,rej){var tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(rec);tx.oncomplete=res;tx.onerror=rej;});return rec;}catch(e){console.error('storeFile:',e);return null;}}
+async function loadStoredFiles(){try{var db=await openIDB();return await new Promise(function(res,rej){var tx=db.transaction(IDB_STORE,'readonly');var req=tx.objectStore(IDB_STORE).getAll();req.onsuccess=function(){res(req.result||[]);};req.onerror=rej;});}catch(e){return[];}}
+async function deleteStoredFile(id){try{var db=await openIDB();await new Promise(function(res,rej){var tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).delete(id);tx.oncomplete=res;tx.onerror=rej;});}catch(e){}}
+async function updateFileStatus(id,status){try{var db=await openIDB();var tx=db.transaction(IDB_STORE,'readwrite');var st=tx.objectStore(IDB_STORE);var req=st.get(id);req.onsuccess=function(){var rec=req.result;if(rec){rec.status=status;st.put(rec);}};}catch(e){}}
+function b64ToFile(rec){try{var bin=atob(rec.b64);var byt=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)byt[i]=bin.charCodeAt(i);return new File([byt.buffer],rec.name,{type:rec.type||'application/octet-stream'});}catch(e){return null;}}
+var FILE_LABELS={kzp:'KZ Penyelia',kzk:'KZ Koperal',tc:'TIMECARD',mc:'MC Hard Copy',hr:'Cuti HRMIS','baki-up':'Baki Cuti','ctr-up':'CTR Raya Haji',man:'Dokumen Manual'};
+var FILE_ICONS={kzp:'\uD83D\uDCC4',kzk:'\uD83D\uDCAC',tc:'\u23F1',mc:'\uD83C\uDFE5',hr:'\uD83D\uDCC1','baki-up':'\uD83D\uDCC8','ctr-up':'\uD83D\uDDBC',man:'\uD83D\uDCDD'};
+function fmtSz(b){if(b<1024)return b+'B';if(b<1048576)return Math.round(b/1024)+'KB';return (b/1048576).toFixed(1)+'MB';}
+function fmtDt(s){try{return new Date(s).toLocaleString('ms-MY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return s;}}
+async function renderStoredFiles(){
+  var con=document.getElementById('sf-list'); if(!con) return;
+  var badge=document.getElementById('sf-total-badge');
+  var files=await loadStoredFiles();
+  if(badge) badge.textContent=files.length+' fail';
+  if(!files.length){con.innerHTML='<div class="sf-empty">Tiada fail tersimpan. Upload fail di bawah untuk simpan.</div>';return;}
+  var G={};
+  files.forEach(function(f){var cat=FILE_LABELS[f.k]||f.k;if(!G[cat])G[cat]=[];G[cat].push(f);});
+  var html='';
+  Object.keys(G).forEach(function(cat){
+    var items=G[cat];
+    html+='<div class="sf-sect-title"><span>'+cat+'</span><span class="sf-count">'+items.length+'</span></div>';
+    items.forEach(function(f){
+      var sc=f.status==='diproses'?'sf-ok':f.status==='memproses'?'sf-proc-st':'sf-wait';
+      var st=f.status==='diproses'?'&#x2713; Diproses':f.status==='memproses'?'&#x27F3; Memproses':'&#x25CF; Tersimpan';
+      html+='<div class="sf-card '+(f.status==='diproses'?'sf-ready':'')+'" id="sfc-'+f.id+'">'+
+        '<div style="flex:1;min-width:0"><div class="sf-name" title="'+f.name+'">'+f.name+'</div>'+
+        '<div class="sf-meta">'+(FILE_LABELS[f.k]||f.k)+' &middot; '+fmtSz(f.size)+' &middot; '+fmtDt(f.stored)+'</div></div>'+
+        '<span class="sf-status '+sc+'">'+st+'</span>'+
+        '<button class="btn btn-sm" style="font-size:7px;padding:2px 5px;margin-left:4px" onclick="delSF(\''+f.id+'\')">&#x2715;</button>'+
+      '</div>';
+    });
+  });
+  con.innerHTML=html;
+}
+async function delSF(id){await deleteStoredFile(id);renderStoredFiles();toast('Fail dibuang','ok');}
+async function clearAllStored(){if(!confirm('Buang semua fail tersimpan?'))return;var ff=await loadStoredFiles();for(var i=0;i<ff.length;i++)await deleteStoredFile(ff[i].id);renderStoredFiles();toast('Semua fail dibuang','ok');}
+
 // ── NAVIGATION ───────────────────────────────────────────────────
 const PG_TITLES={
   dash:'Dashboard',master:'Master File (52 Anggota)',output:'Output Perhatian',
@@ -2863,6 +2947,7 @@ function nav(el){
   if(pg==='baki') renderBaki();
   if(pg==='raya') renderRaya();
   if(pg==='haji'||pg==='manual-haji'){ renderHaji(); renderManualHaji(); }
+  if(pg==='upload') renderStoredFiles();
   if(pg==='anggota'){ renderAnggota(); if(AUTH.role==='admin'){var ab=document.getElementById('btn-ag-add');if(ab)ab.style.display='inline-flex';} }
   if(pg==='dash') renderDash();
 }
