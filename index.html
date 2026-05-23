@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -729,7 +730,7 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
         <div class="ph" style="background:rgba(6,78,59,.55)"><span class="ph-title">📋 KZ Penyelia</span><span style="font-size:7.5px;color:rgba(255,255,255,.4)">Lapisan 2</span></div>
         <div class="pb">
           <div class="uzone" id="uz-kzp" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'kzp',this)">
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'kzp')">
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" multiple onchange="fsel(this,'kzp')">
             <div class="uz-ic">📄</div>
             <div class="uz-t">KZ Penyelia</div>
             <div class="uz-s">Auto OCR · PDF scan/gambar/text · Tesseract baca automatik</div>
@@ -2281,216 +2282,405 @@ async function procAll(){
 
   // ── KZ PENYELIA PARSER ───────────────────────────────────────
   if(UF['kzp']){
-    log('📄 Membaca KZ Penyelia (Auto OCR)...','info');
-    pshow2('kzp'); var n=0;
+    log('\ud83d\udcc4 Membaca KZ Penyelia...','info');
+    pshow2('kzp'); var nKzp=0;
     for(var fi=0;fi<Array.from(UF['kzp']).length;fi++){
       var file=Array.from(UF['kzp'])[fi];
-      pmsg2('kzp','Auto-baca OCR: '+file.name+' (PDF scan — sabar ya)...');
+      var fn2kzp=file.name.toLowerCase();
+      pmsg2('kzp','Auto-baca: '+file.name+'...');
       pbar2('kzp',5);
-      var txt=await readFile(file,log);
+
+      // ── XLSX: KZ PENYELIA TEMPLATE ───────────────────────
+      if(fn2kzp.endsWith('.xlsx')||fn2kzp.endsWith('.xls')){
+        if(!window.XLSX){ log('SheetJS belum dimuat — tunggu saat','err'); continue; }
+        var xlsxResults=await parseKZPExcel(file,log);
+        if(xlsxResults&&xlsxResults.length){
+          xlsxResults.forEach(function(r){ nKzp++;updated++; });
+          log('\u2713 KZP XLSX: '+xlsxResults.length+' rekod dari '+file.name,'ok');
+        } else {
+          log('KZP XLSX: Tiada rekod dijumpai. Pastikan tarikh diisi di baris 2.','warn');
+        }
+        pbar2('kzp',100);
+        continue;
+      }
+
+      // ── PDF/IMAGE: OCR ───────────────────────────────────
+      var txtkzp=await readFile(file,log);
       pbar2('kzp',80);
-      if(!txt||!txt.trim()){log('KZP: Fail kosong','warn');continue;}
-      log('KZP: '+txt.length+' chars','info');
-      var lines=txt.split('\n');
-      var curM=null;
-      lines.forEach(function(line,li){
-        var up=line.toUpperCase().replace(/[*_~]/g,'').trim();
-        if(!up||up.length<2) return;
-        // Detect member
-        for(var mi=0;mi<MASTER.length;mi++){
-          if(smartMatch(up,MASTER[mi])){curM=MASTER[mi];break;}
-        }
-        // Status + date in same line
-        var stM=up.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|K\/P|BER|HADIR|LEWAT|TIDAK HADIR)\b/);
-        if(!stM) return;
-        var st=stM[1]==='HADIR'?'\u2713':stM[1]==='TIDAK HADIR'?'TH':stM[1];
-        var ctx=lines.slice(Math.max(0,li-4),li+4).join(' ');
-        var days=findAllDates(ctx);
-        if(!days.length&&curM) return;
-        var member=null;
-        for(var mi=0;mi<MASTER.length;mi++){
-          if(smartMatch(ctx,MASTER[mi])){member=MASTER[mi];break;}
-        }
-        if(!member) member=curM;
-        if(!member) return;
-        days.forEach(function(d){
-          if(d>=1&&d<=30&&D[member.bil]&&D[member.bil][d]&&!D[member.bil][d].kzp){
-            D[member.bil][d].kzp=normK(st)||st; n++;updated++;
-            log('\u2713 KZP: '+member.nama+' hari '+d+' \u2192 '+st,'ok');
-          }
-        });
+      if(!txtkzp||!txtkzp.trim()){ log('KZP: Fail kosong','warn'); continue; }
+      log('KZP PDF: '+txtkzp.length+' chars','info');
+
+      // ── Extract header: date, kompeni, shift ────────────────
+      var kzpDay=0, kzpKomp='', kzpShift='';
+      var headerLines=txtkzp.split('\n').slice(0,8);
+      headerLines.forEach(function(hl){
+        var hlUp=hl.toUpperCase();
+        // Date: DD/MM/YYYY or "TARIKH ... 01/04/2026"
+        var dm=hl.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
+        if(dm){ var dd=+dm[1],mm=+dm[2],yy=+dm[3];if(yy<100)yy+=2000;if(mm!==4&&dd<=12){var t=dd;dd=mm;mm=t;}if(mm===4&&dd>=1&&dd<=30){kzpDay=dd;} }
+        // Kompeni: KOMPENI ALPHA / BRAVO / CHARLIE / DELTA
+        var km=hlUp.match(/KOMPENI\s+(ALPHA|BRAVO|CHARLIE|DELTA)/);
+        if(km) kzpKomp=km[1];
+        // Shift: 0700-1500 / 1500-2300 / 2300-0700
+        var sm=hl.match(/(07|0700)[:\-](15|1500)|(15|1500)[:\-](23|2300)|(23|2300)[:\-](07|0700)/);
+        if(sm) kzpShift=sm[0];
+        // SHIFT text
+        var st2=hlUp.match(/SHIFT[:\s]*(PAGI|PETANG|MALAM)/);
+        if(st2&&!kzpShift) kzpShift=st2[1];
       });
-      pbar2('kzp',100);
-      log('KZ Penyelia: '+n+' rekod',n>0?'ok':'warn');
-    }
-  }
+      if(kzpDay>0) log('KZP header: hari='+kzpDay+' kompeni='+(kzpKomp||'?')+' shift='+(kzpShift||'?'),'info');
 
-  // ── KZ KOPERAL (WhatsApp) PARSER ────────────────────────────
-  // Format WA: "DD/MM/YYYY, HH:MM am/pm - Sender: message"
-  // Status patterns:
-  //   "PB RASIDI -MC"
-  //   "1) KONST PB SHAHRUL (MC)"
-  //   "*KPL/PB HAZLAN ❌ (EL)*"
-  //   "2.PB TARMIZI (MC)"
-  //   "1) K/PB ALIFF HAIQAL *MC*"
-  if(UF['kzk']){
-    log('💬 Membaca KZ Koperal (WhatsApp + ZIP DEFLATE)...','info');
-    pshow2('kzk'); var n=0;
-    for(var fi=0;fi<Array.from(UF['kzk']).length;fi++){
-      var file=Array.from(UF['kzk'])[fi];
-      pmsg2('kzk','Auto-baca: '+file.name+' (ZIP DEFLATE + format WhatsApp)...');
-      pbar2('kzk',10);
-      var txt=await readFile(file,log);
-      pbar2('kzk',60);
-      if(!txt||!txt.trim()){log('KZK: Fail kosong atau gagal decompress','err');continue;}
-      log('KZK: '+txt.length+' chars dari '+file.name,'info');
-      var lines=txt.split('\n');
-      var curDay=0, curMonth=0;
+      // ── Parse each line for name + status ───────────────────
+      var linesKzp=txtkzp.split('\n');
+      var curSectStat='\u2713'; // default: HADIR
+      var RANK_PAT_PDF=/^(?:\d+[.)]\s*)?(?:KPL\/PB|LKPL\/PB|KONST\/PB|PEL\.PB|PPB|L\/KPL|K\/PB|LKPL|KPL|KONST|PEL|PB)\s*/i;
+      var STATUS_PAT=/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|K\/P|BER|LEWAT|TIDAK HADIR)\b/i;
+      var SECT_PAT=/(ANGGOTA\s+CR|ANGGOTA\s+MC|ANGGOTA\s+EL|TIDAK HADIR|TAHAN TUGAS|CR\/|MC\/|EL\/)|(ANGGOTA\s+HAKIKI|BERTUGAS|KEKUATAN)/i;
+      var TIME_PAT=/\b(\d{2}:\d{2})\b/;
 
-      lines.forEach(function(line,li){
-        // Clean: remove markdown formatting + non-ASCII
-        var clean=line.replace(/[*_~\[\]]/g,'')
-                      .replace(/[\u200B-\u200F\uFEFF]/g,'')
-                      .replace(/[^\x20-\x7E\u00C0-\u024F]/g,' ').trim();
-        if(clean.length<3) return;
-        var up=clean.toUpperCase();
+      linesKzp.forEach(function(line,li){
+        var up=line.toUpperCase().trim();
+        if(!up||up.length<3) return;
 
-        // 1. Extract WA header date: "DD/MM/YYYY, HH:MM"
-        var waDm=clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        if(waDm){curDay=+waDm[1];curMonth=+waDm[2];return;}
+        // Section change detection
+        var sectM=SECT_PAT.exec(up);
+        if(sectM){
+          curSectStat=sectM[2]?'\u2713':'CR';
+          if(/MC/.test(up)) curSectStat='MC';
+          else if(/EL/.test(up)) curSectStat='EL';
+          else if(/TH|TIDAK HADIR/.test(up)) curSectStat='TH';
+          else if(/TT|TAHAN TUGAS/.test(up)) curSectStat='TT';
+          return;
+        }
 
-        // 2. Skip non-status lines (rondaan reports, media)
-        if(up.includes('RONDAAN')||up.includes('MEDIA OMITTED')||up.includes('SELESAI RONDAAN')) return;
+        // Skip non-name lines
+        if(/^(?:TARIKH|SHIFT|KOMPENI|NAMA PENYELIA|BANGUNAN|JABATAN|UNIT|JUMLAH|WAKTU|CUTI|PELEPASAN|IUN)\b/.test(up)) return;
+        if(/^\d{1,2}[\/\.\-]\d{1,2}/.test(up)) return; // Date line
 
-        // 3. Find status keyword
-        var stM=clean.match(/[\s\(\-](MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|LEWAT|mc|cr|el)\b/);
-        if(!stM) stM=clean.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|LEWAT)\b/i);
-        if(!stM) return;
-        var st=stM[1].toUpperCase();
+        // Extract inline status FIRST (e.g. "AMINUDIN MC" or "MC  AMINUDIN")
+        var inlineSt=null;
+        var stM=STATUS_PAT.exec(line);
+        if(stM){ inlineSt=stM[1].toUpperCase(); }
 
-        // 4. Determine date to use
-        var useDay=curDay;
-        if(curMonth!==4){
-          // Look for April date in line itself
-          var apD=findAllDates(clean);
-          if(apD.length) useDay=apD[0];
-          else return; // No April date found
+        // Extract time note
+        var timeM=TIME_PAT.exec(line);
+
+        // Clean name: remove numbering + rank
+        var namePart=line.replace(/^\d+[.)]\s*/,'').replace(RANK_PAT_PDF,'').trim();
+        // Remove status code if at end
+        if(inlineSt) namePart=namePart.replace(new RegExp('\\b'+inlineSt+'\\b','i'),'').trim();
+        namePart=namePart.replace(/[\/\\\(\)\.]+$/,'').trim();
+        if(namePart.length<4) return;
+
+        // Determine effective status
+        var effSt=inlineSt||curSectStat;
+
+        // Determine day: use header day if we have it, else scan context
+        var useDay=kzpDay;
+        if(!useDay){
+          var days=findAllDates(line+' '+linesKzp.slice(Math.max(0,li-3),li).join(' '));
+          if(days.length) useDay=days[0];
         }
         if(!useDay||useDay<1||useDay>30) return;
 
-        // 5. Find member using bestMatch (handles RASIDI, BADRI, SHAHRUL etc.)
-        // Remove rank prefix first for cleaner matching
-        var msgClean=clean.replace(/^\d+[.)]\s*/,'')
-                          .replace(/\b(?:KPL\/PB|L\/KPL|K\/PB|P\/PB|KONST|KOST|PB|KPL|L\/K)\s+/gi,'');
-        var member=bestMatch(msgClean)||bestMatch(clean);
-        if(!member) return;
+        // Find member — use KZP_REF as fallback
+        var mem=bestMatchWithRef(namePart, kzpKomp)||bestMatchWithRef(line, kzpKomp);
+        if(!mem) return;
 
-        if(D[member.bil]&&D[member.bil][useDay]&&!D[member.bil][useDay].kzk){
-          D[member.bil][useDay].kzk=normK(st)||st;
-          n++;updated++;
-          log('\u2713 KZK: '+member.nama+' hari '+useDay+'/04 \u2192 '+st+' ['+clean.substring(0,40)+']','ok');
+        if(D[mem.bil]&&D[mem.bil][useDay]&&!D[mem.bil][useDay].kzp){
+          D[mem.bil][useDay].kzp=normK(effSt)||effSt;
+          if(!D[mem.bil][useDay].kzk) D[mem.bil][useDay].kzk=D[mem.bil][useDay].kzp;
+          if(timeM) D[mem.bil][useDay].note=(D[mem.bil][useDay].note||'')+' ['+timeM[0]+']';
+          nKzp++;updated++;
+          log('\u2713 KZP: '+mem.nama+' hari '+useDay+'/04 \u2192 '+effSt+(timeM?' ['+timeM[0]+']':''),'ok');
         }
       });
+
+      pbar2('kzp',100);
+      log('KZ Penyelia (PDF): '+nKzp+' rekod dari '+file.name,nKzp>0?'ok':'warn');
+      if(nKzp===0) log('KZP: OCR teks tidak cukup. Cuba imbas semula dalam resolusi lebih tinggi.','warn');
+    }
+    // n alias for summary
+    var n=nKzp;
+  }
+
+  if(UF['kzk']){
+    log('💬 Membaca KZ Koperal (WhatsApp)...','info');
+    pshow2('kzk'); var nKzk=0;
+    for(var fi=0;fi<Array.from(UF['kzk']).length;fi++){
+      var file=Array.from(UF['kzk'])[fi];
+      pmsg2('kzk','Auto-baca: '+file.name+'...');
+      pbar2('kzk',10);
+      var txt=await readFile(file,log);
+      pbar2('kzk',60);
+      if(!txt||!txt.trim()){log('KZK: Fail kosong','warn');continue;}
+      log('KZK: '+txt.length+' chars','info');
+
+      var lines=txt.split('\n');
+      var curDay=0, curMo=0;
+      // Sections: 'hadir' | 'mc' | 'cr' | 'el' | 'abs' | 'ot' | null
+      var curSect='hadir';
+      var curStatus='\u2713'; // default hadir
+
+      // SECTION DETECTION keywords
+      function detectSect(up){
+        if(/HAKIKI|BERTUGAS|KEHADIRAN|KEKUATAN/.test(up)) return {s:'hadir',v:'\u2713'};
+        if(/ANGGOTA OT|KERJA LEBIH MASA/.test(up)) return {s:'ot',v:'\u2713'};
+        if(/TIDAK BERTUGAS|TIDAK HADIR/.test(up)) return {s:'abs',v:'ABS'};
+        if(/CR\/|CG\/|CTR\/|MC\/|EL\/|ANGGOTA\s+CR|ANGGOTA\s+MC/.test(up)) return {s:'cuti',v:'CR'};
+        if(/\bMC\b/.test(up)&&/SENARAI|ANGGOTA|SEKSYEN/.test(up)) return {s:'mc',v:'MC'};
+        if(/\bCR\b/.test(up)&&/SENARAI|ANGGOTA/.test(up)) return {s:'cr',v:'CR'};
+        if(/\bEL\b/.test(up)&&/SENARAI|ANGGOTA/.test(up)) return {s:'el',v:'EL'};
+        if(/\bTH\b|TIDAK HADIR/.test(up)) return {s:'th',v:'TH'};
+        return null;
+      }
+
+      lines.forEach(function(line,li){
+        // Strip markdown + emojis
+        var clean=line.replace(/[*_~\u200B-\u200F\uFEFF]/g,'')
+                      .replace(/[\u{1F000}-\u{1FFFF}]/gu,' ')
+                      .replace(/[\u2600-\u27BF]/g,' ')
+                      .trim();
+        var up=clean.toUpperCase();
+        if(clean.length<2) return;
+
+        // ── DATE DETECTION ──────────────────────────────────
+        // *11.04.2026* or *SABTU 11/04/2026* or just dates
+        var dm=clean.match(/(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})/);
+        if(dm){
+          var dd=+dm[1], mm=+dm[2], yy=+dm[3];
+          if(yy<100) yy+=2000;
+          // Also handle MM/DD format by checking which is day vs month
+          if(mm>12&&dd<=12){var tmp=dd;dd=mm;mm=tmp;}
+          if(mm===4&&dd>=1&&dd<=30){ curDay=dd; curMo=4; }
+          else if(mm!==4&&dd>=1&&dd<=30&&yy===2026){ curDay=dd; curMo=mm; }
+        }
+
+        // ── SECTION DETECTION ────────────────────────────────
+        var sect=detectSect(up);
+        if(sect){ curSect=sect.s; curStatus=sect.v; return; }
+
+        // Skip header-only lines (date lines, header labels)
+        if(up.match(/^[\*\s]*(JABATAN|KOMPENI|SHIFT|HRS|ANGGOTA HAKIKI|KEKUATAN|MHKL|IKTAR|RT|ALPHA|BRAVO|CHARLIE|DELTA)\b/)) return;
+
+        // ── NAME DETECTION ───────────────────────────────────
+        // Patterns: "1) KPL PB YUSRI" or "1. KPL/PB LUKMAN ✅" or "1) PB AMINUDDIN *(TH)*"
+        // Remove numbering: "1)" "1." "2)" etc at start
+        var namePart=clean.replace(/^\d+[.)]\s*/,'');
+        // Remove rank prefixes
+        namePart=namePart.replace(/\b(?:KPL\/PB|L\/KPL|LKPL|K\/PB|P\/PB|KONST|KOST|PB|KPL|L\/K|PPB|LKP)\s+/gi,'');
+        // Remove tick/cross/OT suffixes
+        var hasTick=clean.includes('\u2705')||clean.includes('OK')||clean.includes('\u2713');
+        var hasCross=clean.includes('\u274C')||clean.includes('X)');
+        var hasOT=up.includes('(OT)')||up.includes('OT)');
+        namePart=namePart.replace(/[\u2705\u274C\u2713\u2714]/g,'').trim();
+        // Extract inline status: *(TH)* or (MC) or (CR) etc
+        var inlineSt=null;
+        var ism=namePart.match(/\(?(TH|TT|MC|EL|CR|CTR|LL|L|ABS|CB)\)?/i);
+        if(ism){inlineSt=ism[1].toUpperCase();namePart=namePart.replace(ism[0],'').trim();}
+        // Remove remaining punctuation at end
+        namePart=namePart.replace(/[.,:;*\(\)]+$/,'').trim();
+
+        if(namePart.length<3) return;
+        if(curDay<1||curDay>30||curMo!==4) return;
+
+        // Determine effective status
+        var effStatus=inlineSt||
+                      (hasCross?'ABS':
+                      (curSect==='abs'?'ABS':
+                      (curSect==='mc'?'MC':
+                      (curSect==='cr'?'CR':
+                      (curSect==='el'?'EL':
+                      (curSect==='th'?'TH':
+                      (curSect==='cuti'?'CR':
+                      '\u2713')))))));
+
+        // Find member
+        var member=bestMatchWithRef(namePart,curSect==="hadir"?curSect:"")||bestMatchWithRef(line,"");
+        if(!member) return;
+
+        if(D[member.bil]&&D[member.bil][curDay]){
+          if(!D[member.bil][curDay].kzk){
+            D[member.bil][curDay].kzk=normK(effStatus)||effStatus;
+            // Sync KZP if empty
+            if(!D[member.bil][curDay].kzp) D[member.bil][curDay].kzp=D[member.bil][curDay].kzk;
+            nKzk++;updated++;
+            log('\u2713 KZK: '+member.nama+' hari '+curDay+'/04 \u2192 '+effStatus+(hasOT?' (OT)':''),'ok');
+          }
+        }
+      });
+
       pbar2('kzk',100);
-      log('KZ Koperal: '+n+' rekod dari '+file.name,n>0?'ok':'warn');
+      log('KZ Koperal: '+nKzk+' rekod dari '+file.name,nKzk>0?'ok':'warn');
+      if(nKzk===0) log('KZK: Tiada nama sepadan. Fail direkod untuk semak manual.','warn');
     }
   }
 
-  // ── TIMECARD PARSER ─────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // TIMECARD PARSER — Tabular format
+  // Row: "DD-MM-YYYY Day Workday Sche  HH:MM HH:MM HH:MM HH:MM"
+  // Columns: Date | DayType | Sche | In | Break | Resume | Out | OT | Done | Work | OvertimeDiffOT | LateIn/EarlyOut | LeaveTaken
+  // ══════════════════════════════════════════════════════════
   if(UF['tc']){
-    log('⏱ Membaca TIMECARD (Auto OCR + chunk)...','info');
-    pshow2('tc'); var n=0;
+    log('\u23f1 Membaca TIMECARD...','info');
+    pshow2('tc'); var nTc=0;
     for(var fi=0;fi<Array.from(UF['tc']).length;fi++){
       var file=Array.from(UF['tc'])[fi];
-      pmsg2('tc','Auto-baca: '+file.name+' (918 muka surat, proses dalam chunk)...');
+      pmsg2('tc','Auto-baca: '+file.name+'...');
       pbar2('tc',5);
       var txt=await readFile(file,log);
       pbar2('tc',55);
       if(!txt||!txt.trim()){log('TC: Fail kosong','warn');continue;}
       log('TC: '+txt.length+' chars dari '+file.name,'info');
 
-      // Process in 50K chunks to avoid freeze
-      var chunkSize=50000, chunks=Math.ceil(txt.length/chunkSize);
-      var tcMap={};  // {bil: {day: [times]}}
-      var curBil=null, curD=0;
+      var lines=txt.split('\n');
+      var curMember=null;
 
+      // Process in chunks for large files
+      var chunkSz=40000, chunks=Math.ceil(txt.length/chunkSz);
       for(var ci=0;ci<chunks;ci++){
-        var chunk=txt.substring(ci*chunkSize,(ci+1)*chunkSize);
-        pbar2('tc',55+Math.round(ci/chunks*35));
+        var chunk=txt.substring(ci*chunkSz,(ci+1)*chunkSz);
+        pbar2('tc',55+Math.round(ci/chunks*38));
         var clines=chunk.split('\n');
 
-        clines.forEach(function(line,li){
-          var up=line.toUpperCase();
-          // Member detection
-          for(var mi=0;mi<MASTER.length;mi++){
-            if(smartMatch(line,MASTER[mi])){
-              curBil=MASTER[mi].bil;
-              if(!tcMap[curBil])tcMap[curBil]={};
-            }
-          }
-          // Date detection (DD/04 or DD.04)
-          var dM=line.match(/(\d{1,2})[.\/\-](04|4)[.\/\-]?(?:2026)?/);
-          if(dM){curD=+dM[1];}
-          else{var dm2=line.match(/^\s*(\d{1,2})\s*$/);if(dm2&&+dm2[1]>=1&&+dm2[1]<=30)curD=+dm2[1];}
+        for(var li=0;li<clines.length;li++){
+          var line=clines[li];
+          var clean=line.trim();
+          if(!clean) continue;
 
-          // Times
-          var times=line.match(/(\d{2}:\d{2})/g);
-          if(times&&curBil&&curD>=1&&curD<=30){
-            if(!tcMap[curBil][curD])tcMap[curBil][curD]=[];
-            tcMap[curBil][curD].push.apply(tcMap[curBil][curD],times);
+          // ── MEMBER HEADER DETECTION ────────────────────────
+          // "User ID: 60354" or "Name: MOHAMAD ALIFF HAIQAL BIN JAMIL"
+          var nameM=clean.match(/^Name\s*[:\|]\s*(.+?)(?:\s+Department|\s*$)/i);
+          if(nameM){
+            curMember=bestMatchWithRef(nameM[1].trim(),"")||bestMatch(nameM[1].trim());
+            if(curMember) log('\u23f1 TC: Jumpa anggota: '+curMember.nama,'info');
+            else log('\u23f1 TC: Nama tidak sepadan: '+nameM[1].trim().substring(0,40),'warn');
+            continue;
           }
-          // Full row: date name tIn tOut
-          var row=line.match(/(\d{1,2})[.\/](04)[^\d]*(\d{2}:\d{2})[^\d]*(\d{2}:\d{2})/);
-          if(row){
-            var d2=+row[1];
-            var ctx2=clines.slice(Math.max(0,li-3),li+3).join(' ');
-            for(var mi=0;mi<MASTER.length;mi++){
-              if(smartMatch(ctx2,MASTER[mi])&&D[MASTER[mi].bil]&&D[MASTER[mi].bil][d2]&&!D[MASTER[mi].bil][d2].tc_in){
-                D[MASTER[mi].bil][d2].tc_in=row[3];D[MASTER[mi].bil][d2].tc_out=row[4];
-                n++;updated++;
-                log('\u2713 TC(row): '+MASTER[mi].nama+' hari '+d2+' IN:'+row[3]+' OUT:'+row[4],'ok');
+          // Also detect from "User ID" line context
+          var uidM=clean.match(/User\s*ID\s*[:\|]\s*(\d+)/i);
+          if(uidM){ curMember=null; continue; } // Will be set by next Name: line
+
+          // ── DATA ROW DETECTION ─────────────────────────────
+          // Format: DD-MM-YYYY/DD/MM/YYYY + times
+          // "01-04-2026 Wed Workday 18" or "01-04-26 Wed Workday 18 07:11 11:49 ..."
+          var dateM=clean.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{2,4})/);
+          if(!dateM) continue;
+          var dd=+dateM[1], mm=+dateM[2], yy=+dateM[3];
+          if(yy<100) yy+=2000;
+          if(mm!==4) continue;
+          if(dd<1||dd>30) continue;
+
+          // Extract all times from this row
+          var times=clean.match(/\b(\d{2}:\d{2})\b/g)||[];
+
+          // Check for Absent
+          var isAbsent=/Absent/i.test(clean);
+
+          // ── SHIFT-AWARE PUNCH SELECTION ───────────────────
+          // Get member shift for this day, then pick IN/OUT closest to shift start/end
+          var tcIn='', tcOut='';
+          if(times.length>0&&curMember){
+            var sh2=gSh(curMember.bil,dd);
+            if(sh2==='O'){
+              // Offday — record as OT if punches exist
+              if(times.length>=2){ tcIn=times[0]; tcOut=times[times.length-1]; }
+              else if(times.length===1){ tcIn=times[0]; tcOut=''; }
+            } else {
+              // Shift-aware: find punch closest to shift start (IN) and shift end (OUT)
+              var shSt2=sh2==='S'?420:sh2==='P'?900:1380; // PAGI=0700 PETANG=1500 MALAM=2300
+              var shEn2=sh2==='S'?900:sh2==='P'?1380:420; // PAGI=1500 PETANG=2300 MALAM=0700
+              var TOLERANCE=300; // 5 hours tolerance
+
+              function distFrom(m,target,isMalamWrap){
+                var d1=Math.abs(m-target);
+                if(isMalamWrap){ return Math.min(d1,Math.abs(m+1440-target),Math.abs(m-1440-target)); }
+                return d1;
               }
+              var isMalam=sh2==='M';
+              // Filter: only keep times within tolerance of shift
+              var valid=times.filter(function(t){
+                var m=toMins(t);
+                return distFrom(m,shSt2,isMalam)<=TOLERANCE||distFrom(m,shEn2,isMalam)<=TOLERANCE;
+              });
+              if(!valid.length) valid=times; // fallback
+
+              // Pick best IN (closest to shift start) and best OUT (closest to shift end)
+              var bestIn=valid.reduce(function(a,b){return distFrom(toMins(a),shSt2,isMalam)<=distFrom(toMins(b),shSt2,isMalam)?a:b;});
+              var bestOut=valid.reduce(function(a,b){return distFrom(toMins(a),shEn2,isMalam)<=distFrom(toMins(b),shEn2,isMalam)?a:b;});
+
+              // Ensure IN != OUT
+              if(bestIn===bestOut&&valid.length>1){
+                var rem=valid.filter(function(t){return t!==bestIn;});
+                bestOut=rem.reduce(function(a,b){return distFrom(toMins(a),shEn2,isMalam)<=distFrom(toMins(b),shEn2,isMalam)?a:b;});
+              }
+
+              tcIn=bestIn;
+              tcOut=(bestIn===bestOut&&valid.length===1)?'':bestOut;
+            }
+          } else if(times.length===1){
+            tcIn=times[0]; tcOut='';
+          }
+
+          if(!curMember){
+            // Try to find member from surrounding context
+            var ctx=clines.slice(Math.max(0,li-5),li).join(' ');
+            curMember=bestMatch(ctx);
+          }
+          if(!curMember) continue;
+
+          var bil=curMember.bil;
+          if(!D[bil]||!D[bil][dd]) continue;
+
+          if(isAbsent){
+            if(!D[bil][dd].kzp) D[bil][dd].kzp='ABS';
+            if(!D[bil][dd].kzk) D[bil][dd].kzk='ABS';
+            nTc++;updated++;
+            log('\u26A0 TC ABS: '+curMember.nama+' hari '+dd+'/04','warn');
+            continue;
+          }
+
+          var sh3=gSh(bil,dd);
+          var shLabel=sh3==='S'?'PG':sh3==='P'?'PT':sh3==='M'?'M':'OF';
+
+          if(tcIn||tcOut){
+            if(!D[bil][dd].tc_in&&!D[bil][dd].tc_out){
+              D[bil][dd].tc_in=tcIn;
+              D[bil][dd].tc_out=tcOut;
+              nTc++;updated++;
+              log('\u2713 TC['+shLabel+']: '+curMember.nama+' hari '+dd+'/04 IN:'+tcIn+(tcOut?' OUT:'+tcOut:''),'ok');
+            } else if(D[bil][dd].tc_in&&!D[bil][dd].tc_out&&tcOut){
+              // Fill missing OUT
+              D[bil][dd].tc_out=tcOut;
+              log('\u2713 TC OUT filled: '+curMember.nama+' hari '+dd+'/04 OUT:'+tcOut,'ok');
+            }
+            // Flag early/late for KZP sync if KZP empty
+            if(!D[bil][dd].kzp&&tcIn){
+              var inM2=toMins(tcIn);
+              var shSt3=sh3==='S'?420:sh3==='P'?900:1380;
+              var isMalam3=sh3==='M';
+              var lateMins=isMalam3?Math.min(Math.abs(inM2-shSt3),Math.abs(inM2+1440-shSt3)):inM2-shSt3;
+              if(lateMins>10) D[bil][dd].kzp='L';
+              else D[bil][dd].kzp='\u2713';
+              if(!D[bil][dd].kzk) D[bil][dd].kzk=D[bil][dd].kzp;
             }
           }
-        });
+        }
         await new Promise(function(r){setTimeout(r,0);});
       }
 
-      // Apply tcMap
-      Object.keys(tcMap).forEach(function(bilS){
-        var bil=+bilS; var m=MASTER.find(function(x){return x.bil===bil;});
-        if(!m) return;
-        Object.keys(tcMap[bilS]).forEach(function(dS){
-          var d=+dS; var times=tcMap[bilS][dS];
-          if(!D[bil]||!D[bil][d]||D[bil][d].tc_in||!times.length) return;
-          var sh=gSh(bil,d);
-          var shSt=sh==='S'?420:sh==='P'?900:1380;
-          var shEn=sh==='S'?900:sh==='P'?1380:420;
-          var bI=times[0],bO=times[times.length-1]||'';
-          if(times.length>2){
-            var bIx=null,bOx=null,di=9999,dO=9999;
-            times.forEach(function(t){
-              var tm=toMins(t); if(!tm) return;
-              var da=Math.abs(tm-shSt);if(da<di){di=da;bIx=t;}
-              var db=Math.abs(tm-shEn);if(db<dO){dO=db;bOx=t;}
-            });
-            bI=bIx||times[0];bO=bOx!==bIx?bOx:times[times.length-1];
-          }
-          if(bI){D[bil][d].tc_in=bI;D[bil][d].tc_out=bO||'';}
-          n++;updated++;
-          log('\u2713 TC: '+m.nama+' hari '+d+' IN:'+bI+(bO?' OUT:'+bO:''),'ok');
-        });
-      });
-
       pbar2('tc',100);
-      log('TIMECARD: '+n+' rekod dari '+file.name,n>0?'ok':'warn');
+      log('TIMECARD: '+nTc+' rekod dari '+file.name,nTc>0?'ok':'warn');
+      if(nTc===0) log('TC: Pastikan format: Date | In | Out. Cuba export semula sebagai teks/CSV.','warn');
     }
   }
 
-  // ── HRMIS PARSER ────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // HRMIS PARSER
+  // ══════════════════════════════════════════════════════════
   if(UF['hr']){
-    log('📑 Membaca HRMIS (Auto OCR)...','info');
-    pshow2('hr'); var n=0;
+    log('\ud83d\udcc4 Membaca HRMIS...','info');
+    pshow2('hr'); var nHr=0;
     for(var fi=0;fi<Array.from(UF['hr']).length;fi++){
       var file=Array.from(UF['hr'])[fi];
       pmsg2('hr','Auto-baca: '+file.name+'...');
@@ -2502,31 +2692,103 @@ async function procAll(){
       var ctMap={'CUTI REHAT':'CR','CUTI SAKIT':'MC','EMERGENCY LEAVE':'EL',
         'CUTI TANPA REKOD':'CTR','CUTI BERSALIN':'CB','EL':'EL',
         'CR':'CR','MC':'MC','CTR':'CTR','CB':'CB','CBR':'CBR'};
-      var lines=txt.split('\n');
-      lines.forEach(function(line,li){
-        var ctx=lines.slice(Math.max(0,li-5),li+5).join(' ');
-        var days=findAllDates(ctx);
-        if(!days.length) return;
-        var member=null;
-        for(var mi=0;mi<MASTER.length;mi++){if(smartMatch(ctx,MASTER[mi])){member=MASTER[mi];break;}}
+      var linesHr=txt.split('\n');
+      linesHr.forEach(function(line,li){
+        var ctx=linesHr.slice(Math.max(0,li-6),li+6).join(' ');
+        var allDates=findAllDates(ctx);
+        if(!allDates.length) return;
+        var member=bestMatch(ctx);
         if(!member) return;
         var cu=ctx.toUpperCase(); var ct='CR';
         for(var k in ctMap){if(cu.includes(k)){ct=ctMap[k];break;}}
-        days.forEach(function(d){
+        allDates.forEach(function(d){
           if(d<1||d>30) return;
           if(D[member.bil]&&D[member.bil][d]&&!D[member.bil][d].hrmis){
             D[member.bil][d].hrmis=ct+' SAH';
-            if(!D[member.bil][d].kzp)D[member.bil][d].kzp=ct;
-            if(!D[member.bil][d].kzk)D[member.bil][d].kzk=ct;
-            n++;updated++;
+            if(!D[member.bil][d].kzp) D[member.bil][d].kzp=ct;
+            if(!D[member.bil][d].kzk) D[member.bil][d].kzk=ct;
+            nHr++;updated++;
             log('\u2713 HRMIS: '+member.nama+' hari '+d+' \u2192 '+ct+' SAH','ok');
           }
         });
       });
       pbar2('hr',100);
-      log('HRMIS: '+n+' rekod',n>0?'ok':'warn');
+      log('HRMIS: '+nHr+' rekod',nHr>0?'ok':'warn');
     }
   }
+
+  // ── CTR RAYA HAJI upload ──────────────────────────────────
+  if(UF['ctr-up']){
+    log('\ud83d\udd4c Membaca CTR Raya Haji...','info');
+    var nCtr=0;
+    for(var fi=0;fi<Array.from(UF['ctr-up']).length;fi++){
+      var file=Array.from(UF['ctr-up'])[fi];
+      var txt=await readFile(file,log);
+      if(!txt.trim()) continue;
+      txt.split('\n').forEach(function(line,li){
+        var up=line.toUpperCase().replace(/[*_~]/g,'');
+        if(!up.includes('CTR')&&!up.includes('CUTI')&&!up.includes('RAYA')) return;
+        var member=bestMatch(line);
+        if(!member){ PERLU_SEMAK_LOG.push({nama:'CTR TIDAK DIKENAL',sc:0,ctx:line.substring(0,50),key:line.substring(0,30),masa:new Date().toLocaleTimeString()}); return; }
+        var kel=up.includes('KETUA')||up.includes('DILULUSKAN')?'CTR SAH — DILULUSKAN KETUA CAWANGAN':'CTR SAH — RAYA HAJI';
+        if(!CTR_DATA.some(function(c){return c.bil===member.bil&&c.tarikh==='28/05';})){
+          CTR_DATA.push({bil:member.bil,nama:member.nama,jab:member.jab,komp:member.komp,tarikh:'28/05',tempoh:1,kel:kel,pengganti:'',g2:''});
+          nCtr++;updated++;
+          log('\u2713 CTR: '+member.nama+' 28/05/2026 \u2192 '+kel,'ok');
+        }
+      });
+    }
+    log('CTR: '+nCtr+' rekod',nCtr>0?'ok':'warn');
+    try{localStorage.setItem('eakha_ctr',JSON.stringify(CTR_DATA));}catch(e){}
+  }
+
+  // ── DOKUMEN MANUAL ────────────────────────────────────────
+  if(UF['man']){
+    log('\ud83d\udcdd Membaca Dokumen Manual...','info');
+    pshow2('man'); var nMan=0;
+    for(var fi=0;fi<Array.from(UF['man']).length;fi++){
+      var file=Array.from(UF['man'])[fi];
+      pmsg2('man','Auto-baca: '+file.name+'...');
+      pbar2('man',10);
+      var txt=await readFile(file,log);
+      pbar2('man',70);
+      if(!txt.trim()) continue;
+      var mlines=txt.split('\n');
+      mlines.forEach(function(line,li){
+        var ctx=mlines.slice(Math.max(0,li-4),li+4).join(' ');
+        var member=bestMatch(ctx);
+        if(!member) return;
+        var up=line.toUpperCase().replace(/[*_~]/g,'');
+        var stM=up.match(/\b(MC|CR|EL|ABS|LL|TT|TH|CTR|CB|CBR|K\/P|BER|HADIR|LEWAT)\b/);
+        if(stM){
+          var st=stM[1]==='HADIR'?'\u2713':stM[1];
+          var days=findAllDates(ctx);
+          days.forEach(function(d){
+            if(d<1||d>30) return;
+            if(D[member.bil]&&D[member.bil][d]&&!D[member.bil][d].kzp){
+              D[member.bil][d].kzp=st; D[member.bil][d].kzk=st;
+              nMan++;updated++;
+            }
+          });
+        }
+        var tms=ctx.match(/\b(\d{2}:\d{2})\b/g);
+        if(tms){
+          var days2=findAllDates(ctx);
+          days2.forEach(function(d){
+            if(d<1||d>30) return;
+            if(D[member.bil]&&D[member.bil][d]&&!D[member.bil][d].tc_in){
+              D[member.bil][d].tc_in=tms[0]||'';
+              D[member.bil][d].tc_out=tms[1]||'';
+              nMan++;updated++;
+            }
+          });
+        }
+      });
+      pbar2('man',100);
+      log('Dokumen Manual: '+nMan+' rekod',nMan>0?'ok':'warn');
+    }
+  }
+
 
     try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
   try{localStorage.setItem('eakha_mc',JSON.stringify(MC_DATA));}catch(e){}
@@ -3314,6 +3576,221 @@ function autoFillFromKZ(){
   try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
   renderMaster(null); updFlags();
   toast('Auto-fill: '+n+' sel dikemaskini \u2713','ok');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// KZ PENYELIA XLSX PARSER
+// Format: Sheet=KOMPENI | Row2=Date | Name|IN|TIME per row
+// ══════════════════════════════════════════════════════════════
+async function parseKZPExcel(file, logFn){
+  var log = logFn||(function(){});
+  var results = []; // [{bil, day, status, time, kompeni}]
+
+  try{
+    var ab = await file.arrayBuffer();
+    var wb = XLSX.read(ab, {type:'array', cellText:true, cellNF:true});
+    log('KZP XLSX: '+wb.SheetNames.length+' sheet ('+wb.SheetNames.join(', ')+')','info');
+
+    wb.SheetNames.forEach(function(shName){
+      var ws = wb.Sheets[shName];
+      var data = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+      if(!data||!data.length) return;
+
+      // Extract kompeni from sheet name
+      var kompeni = shName.toUpperCase().replace(/\s*\d+$/,'').trim();
+      if(!['ALPHA','BRAVO','CHARLIE','DELTA'].includes(kompeni)){
+        var km = shName.toUpperCase().match(/(ALPHA|BRAVO|CHARLIE|DELTA)/);
+        kompeni = km ? km[1] : '';
+      }
+      log('Sheet: '+shName+' → Kompeni: '+(kompeni||'UNKNOWN'),'info');
+
+      // Extract date from row 2 (index 1)
+      var day = 0, dateStr = '';
+      if(data[1]){
+        var r2 = data[1].join(' ');
+        var dm = r2.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
+        if(dm){
+          day = parseInt(dm[1]);
+          var mo = parseInt(dm[2]);
+          if(mo!==4&&day>12){var tmp=day;day=mo;mo=tmp;}
+          if(mo===4&&day>=1&&day<=30){ dateStr=day+'/04/2026'; }
+          else { day=0; }
+        }
+        // Also check for "DD BULAN" format
+        if(!day){
+          var dm2=r2.match(/(\d{1,2})\s+(?:APRIL|APR)/i);
+          if(dm2) day=parseInt(dm2[1]);
+        }
+      }
+      if(!day){
+        log('KZP: Tarikh tidak dijumpai di '+shName+' — sila isi Row 2','warn');
+        return;
+      }
+      log('KZP: Tarikh '+day+'/04/2026, Kompeni '+kompeni,'ok');
+
+      // GROUP COLUMNS: 3 groups per sheet
+      // Group A: cols 0-3  (BIL, NAME, IN, TIME)
+      // Group B: cols 6-9  (BIL, NAME, IN, TIME)
+      // Group C: cols 12-15 (BIL, NAME, IN, TIME)
+      var GROUPS = [{b:0,n:1,s:2,t:3},{b:6,n:7,s:8,t:9},{b:12,n:13,s:14,t:15}];
+      var SKIP_NAMES = /^(BIL|JABATAN|BANGUNAN|UNIT|LAPORAN|TARIKH|JUMLAH|CUTI|ANGGOTA|KOMPENI|SCACC|GERAKAN|WAKTU|TIADA|TIDAK|TAHAN|PELEPASAN)/i;
+      var RANK_PAT = /^(?:KPL\/PB|LKPL\/PB|KONST\/PB|PEL\.PB|PPB|L\/KPL|K\/PB|LKPL|KPL|KONST|PEL|PB)\s*/i;
+
+      data.forEach(function(row, ri){
+        if(!row||!row.length) return;
+        GROUPS.forEach(function(g){
+          var nameCell = String(row[g.n]||'').trim();
+          var stCell   = String(row[g.s]||'').trim();
+          var timeCell = String(row[g.t]||'').trim();
+
+          if(!nameCell||nameCell.length<4) return;
+          if(SKIP_NAMES.test(nameCell)) return;
+          if(/^\d+$/.test(nameCell)) return; // just a number
+
+          // Clean rank prefix for matching
+          var cleanName = nameCell.replace(RANK_PAT,'').trim();
+          if(cleanName.length<3) return;
+
+          // Interpret status
+          var status = '';
+          var sc = stCell.toUpperCase().trim();
+          if(!sc||sc==='/'||sc==='\u2713'||sc==='\u2714'||sc==='V'||sc==='\\u221a'){
+            status = '\u2713'; // HADIR
+          } else if(/^MC/.test(sc)||sc==='M') status='MC';
+          else if(/^CR/.test(sc)) status='CR';
+          else if(/^EL/.test(sc)) status='EL';
+          else if(/^TH/.test(sc)) status='TH';
+          else if(/^TT/.test(sc)) status='TT';
+          else if(/^CTR/.test(sc)) status='CTR';
+          else if(/^CB/.test(sc)) status='CB';
+          else if(/^LL/.test(sc)) status='LL';
+          else if(/^L\b/.test(sc)&&sc.length<=2) status='L';
+          else if(/^P\b/.test(sc)) status='L'; // "P" in screenshot = Lewat
+          else if(/^ABS/.test(sc)) status='ABS';
+          else if(/^BER/.test(sc)) status='BER';
+          else if(sc&&sc.length<=5) status=sc; // unknown short code — use as-is
+          else if(!sc) status='\u2713'; // empty IN col = assume hadir if name listed
+
+          if(!status) return;
+
+          // Match to MASTER
+          var member = bestMatchWithRef(cleanName, kompeni)||bestMatchWithRef(nameCell, kompeni);
+          if(!member){
+            PERLU_SEMAK_LOG.push({
+              nama:cleanName.substring(0,40), sc:0,
+              ctx:'KZP XLSX '+shName+' Row '+(ri+1),
+              key:cleanName.substring(0,30)+day,
+              masa:new Date().toLocaleTimeString()
+            });
+            return;
+          }
+
+          // Write to D
+          if(D[member.bil]&&D[member.bil][day]){
+            if(!D[member.bil][day].kzp){
+              D[member.bil][day].kzp = normK(status)||status;
+              // Sync KZK if empty
+              if(!D[member.bil][day].kzk) D[member.bil][day].kzk = D[member.bil][day].kzp;
+              // Time note (LEWAT time)
+              if(timeCell&&timeCell!==''&&/\d/.test(timeCell)){
+                D[member.bil][day].note = (D[member.bil][day].note||'')+' [IN:'+timeCell+']';
+              }
+              results.push({bil:member.bil, nama:member.nama, day:day, status:D[member.bil][day].kzp});
+            }
+          }
+        });
+      });
+    });
+
+  } catch(e){
+    log('KZP XLSX error: '+e.message,'err');
+  }
+  return results;
+}
+
+// Read text-based KZP (PDF/image OCR already handled by readFile)
+// Wrapper that auto-detects xlsx vs pdf/image
+async function readKZPFile(file, logFn){
+  var log=logFn||(function(){});
+  var fn=file.name.toLowerCase();
+  if(fn.endsWith('.xlsx')||fn.endsWith('.xls')){
+    return await parseKZPExcel(file, log);
+  }
+  // PDF/image — use existing readFile + text parser (handled in main KZP block)
+  return null;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// KZP_REF: Kedudukan Hakiki dari KZ_HAKIKI.xlsx
+// Used as fallback when OCR name matching fails
+// {r:rawName, c:cleanName, n:normalised, k:kompeni, s:section}
+// ══════════════════════════════════════════════════════════════
+var KZP_REF=[{"r":"KPL/PB MOHAMMAD ALLIF BIN MOHTAR","c":"MOHAMMAD ALLIF BIN MOHTAR","n":"MOHAMAD ALLIF MOHTAR","k":"ALPHA","s":"JABATAN IKTAR"},{"r":"KPL/PB AHMAD SABRI BIN MARKON","c":"AHMAD SABRI BIN MARKON","n":"AHMAD SABRI MARKON","k":"ALPHA","s":"BANGUNAN WISMA REKOD"},{"r":"KPL/PB  AMANI BIN HASAN","c":"AMANI BIN HASAN","n":"AMANI HASAN","k":"ALPHA","s":"BANGUNAN SCACC"},{"r":"LKPL/PB ABDULLAH BIN BAHUDIN","c":"ABDULLAH BIN BAHUDIN","n":"ABDULLAH BAHUDIN","k":"ALPHA","s":"JABATAN IKTAR"},{"r":"LKPL/PB MOHD SHAKIR BIN BIDI","c":"MOHD SHAKIR BIN BIDI","n":"MOHD SHAKIR BIDI","k":"ALPHA","s":"BANGUNAN WISMA REKOD"},{"r":"LKPL/PB HALIM BIN MUHAMAD YATIM","c":"HALIM BIN MUHAMAD YATIM","n":"HALIM MUHAMAD YATIM","k":"ALPHA","s":"BANGUNAN SCACC"},{"r":"LKPL/PB MUHAMMAD TARMIZI BIN ABDULLAH","c":"MUHAMMAD TARMIZI BIN ABDULLAH","n":"MUHAMMAD TARMIZI ABDULLAH","k":"ALPHA","s":"JABATAN IKTAR"},{"r":"LKPL/PB MOHD HELMI BIN ALI","c":"MOHD HELMI BIN ALI","n":"MOHD HELMI ALI","k":"ALPHA","s":"BANGUNAN WISMA REKOD"},{"r":"LKPL/PB MOHAMAD HARIRI BIN ABDU RAHIM","c":"MOHAMAD HARIRI BIN ABDU RAHIM","n":"MOHAMAD HARIRI ABDU RAHIM","k":"ALPHA","s":"BANGUNAN SCACC"},{"r":"KONST/PB MOHD AMINUDIN BIN DAUD","c":"MOHD AMINUDIN BIN DAUD","n":"MOHD AMINUDIN DAUD","k":"ALPHA","s":"JABATAN IKTAR"},{"r":"KONST/PB HAIRIZ AZRIN BIN ZAINUDIN","c":"HAIRIZ AZRIN BIN ZAINUDIN","n":"HAIRIZ AZRIN ZAINUDIN","k":"ALPHA","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB MOHD AIDISHARIMAN BIN MARZUKI","c":"MOHD AIDISHARIMAN BIN MARZUKI","n":"MOHD AIDISHARIMAN MARZUKI","k":"ALPHA","s":"BANGUNAN SCACC"},{"r":"KONST/PB  IRWAN SYAMIR BIN MOHD ZAINAL","c":"IRWAN SYAMIR BIN MOHD ZAINAL","n":"IRWAN SYAMIR MOHD ZAINAL","k":"ALPHA","s":"JABATAN IKTAR"},{"r":"PEL.PB MOHD ERWAN SHAH BIN AZANAN","c":"MOHD ERWAN SHAH BIN AZANAN","n":"MOHD ERWAN SHAH AZANAN","k":"ALPHA","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB ADAM BIN BORHAN","c":"ADAM BIN BORHAN","n":"ADAM BORHAN","k":"ALPHA","s":"BANGUNAN SCACC"},{"r":"PEL.PB AALIYA AAUNI BINTI MAT ZABIR","c":"AALIYA AAUNI BINTI MAT ZABIR","n":"AALIYA AAUNI MAT ZABIR","k":"ALPHA","s":"JABATAN IKTAR"},{"r":"PEL.PB MUHAMMAD NASHRAN BIN MOHD ISA","c":"MUHAMMAD NASHRAN BIN MOHD ISA","n":"MUHAMMAD NASHRAN MOHD ISA","k":"ALPHA","s":"BANGUNAN WISMA REKOD"},{"r":"LKPL/PB MOHD SHAHRUL AZHAR BIN ZUL NAZRI","c":"MOHD SHAHRUL AZHAR BIN ZUL NAZRI","n":"MOHD SHAHRUL AZHAR ZUL NAZRI","k":"ALPHA","s":"SCACC WAKTU PEJABAT"},{"r":"KPL/PB MOHD REDZUAN BIN AJIMIS","c":"MOHD REDZUAN BIN AJIMIS","n":"MOHD REDZUAN AJIMIS","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"KPL/PB MOHD HARYYZAN BIN TUMISAN","c":"MOHD HARYYZAN BIN TUMISAN","n":"MOHD HARYYZAN TUMISAN","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"KPL/PB MUHD KHAIRULNIZAM BIN ISMAIL","c":"MUHD KHAIRULNIZAM BIN ISMAIL","n":"MOHD KHAIRULNIZAM ISMAIL","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"KONST/PB MOHD AZNUN BIN SAMSURI","c":"MOHD AZNUN BIN SAMSURI","n":"MOHD AZNUN SAMSURI","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"LKPL/PB KAMARIAH BINTI AHMAD","c":"KAMARIAH BINTI AHMAD","n":"KAMARIAH AHMAD","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"KONST/PB SULFAIZIL BIN SULONG","c":"SULFAIZIL BIN SULONG","n":"SULFAIZIL SULONG","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB MOHD FAIZUL BIN FAUZI","c":"MOHD FAIZUL BIN FAUZI","n":"MOHD FAIZUL FAUZI","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"KONST/PB NIK SUZAINI BINTI NIK SIN","c":"NIK SUZAINI BINTI NIK SIN","n":"NIK SUZAINI NIK SIN","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"KPL/PB AZIZAN BIN OMAR","c":"AZIZAN BIN OMAR","n":"AZIZAN OMAR","k":"ALPHA","s":"IUN WAKTU PEJABAT"},{"r":"KONST/PB  AHMAD SYAIBAN BIN RADZIUDIN","c":"AHMAD SYAIBAN BIN RADZIUDIN","n":"AHMAD SYAIBAN RADZIUDIN","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"KONST/PB MOHD SUHAIMI BIN AZIZ","c":"MOHD SUHAIMI BIN AZIZ","n":"MOHD SUHAIMI AZIZ","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"PEL.PB MUHAMAD HAFIAN BIN GHAZALI","c":"MUHAMAD HAFIAN BIN GHAZALI","n":"MUHAMAD HAFIAN GHAZALI","k":"ALPHA","s":"IUN WAKTU PEJABAT"},{"r":"KONST/PB FELLVEN FOOK PHEN","c":"FELLVEN FOOK PHEN","n":"FELLVEN FOOK PHEN","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"KONST/PB ZUNAIDAH BINTI ALI","c":"ZUNAIDAH BINTI ALI","n":"ZUNAIDAH ALI","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB WAN SHAHRUL FAIZAL BIN WAN JUSOH","c":"WAN SHAHRUL FAIZAL BIN WAN JUSOH","n":"WAN SHAHRUL FAIZAL WAN JUSOH","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"PEL.PB AZMI BIN ZAKARIA","c":"AZMI BIN ZAKARIA","n":"AZMI ZAKARIA","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB ADIF JEHAIKAL BIN JEMATIN@ALIE","c":"ADIF JEHAIKAL BIN JEMATIN@ALIE","n":"ADIF JEHAIQAL JEMATIN@ALIE","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"PEL.PB ENGKU MOHAMAD MUSSHAHFIZ RIZAL BIN ENGKU MU","c":"ENGKU MOHAMAD MUSSHAHFIZ RIZAL BIN ENGKU MUSTAPHA","n":"ENGKU MOHAMAD MUSSHAHFIZ RIZAL ENGKU MUS","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB SITI SALWANI BINTI IBRAHIM","c":"SITI SALWANI BINTI IBRAHIM","n":"SITI SALWANI IBRAHIM","k":"ALPHA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"KONST/PB TENGKU AZIZOL BIN TENGKU ADNAN","c":"TENGKU AZIZOL BIN TENGKU ADNAN","n":"TENGKU AZIZOL TENGKU ADNAN","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"PEL.PB MUHAMAD HAMIZAN BIN HASIM","c":"MUHAMAD HAMIZAN BIN HASIM","n":"MUHAMAD HAMIZAN HASIM","k":"ALPHA","s":"JABATAN KECEMASAN"},{"r":"KPL/PB SYED FIRDAUS  BIN SYED BASARUDIN","c":"SYED FIRDAUS  BIN SYED BASARUDIN","n":"SYED FIRDAUS  SYED BASARUDIN","k":"ALPHA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MOHAMAD NOOR NAZREEN BIN MOHAMAD NOOR","c":"MOHAMAD NOOR NAZREEN BIN MOHAMAD NOOR","n":"MOHAMAD NOOR NAZREEN MOHAMAD NOOR","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB WAN NORHAYATI BINTI WAN HANAPI","c":"WAN NORHAYATI BINTI WAN HANAPI","n":"WAN NORHAYATI WAN HANAPI","k":"ALPHA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MAT SAHRIN BIN ZAKARIA","c":"MAT SAHRIN BIN ZAKARIA","n":"MAT SAHRIN ZAKARIA","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MOHD RIDZWAN BIN NOOR AZMI","c":"MOHD RIDZWAN BIN NOOR AZMI","n":"MOHD RIDZWAN NOOR AZMI","k":"ALPHA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB ALLIF FITRI BIN IBRAHIM","c":"ALLIF FITRI BIN IBRAHIM","n":"ALLIF FITRI IBRAHIM","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"KPL/PB DURAISIGAM A/L CHELLAMUTHU","c":"DURAISIGAM A/L CHELLAMUTHU","n":"DURAISIGAM A/L CHELLAMUTHU","k":"ALPHA","s":"UNIT PATROL"},{"r":"KPL/PB MUHD AKBAR GUNTUR BIN KASIM","c":"MUHD AKBAR GUNTUR BIN KASIM","n":"MOHD AKBAR GUNTUR KASIM","k":"ALPHA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB SUHAIMI BIN JAAFAR","c":"SUHAIMI BIN JAAFAR","n":"SUHAIMI JAAFAR","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MUHAMMAD  NASARUDDIN BIN MAT NATAR","c":"MUHAMMAD  NASARUDDIN BIN MAT NATAR","n":"MUHAMMAD  NASARUDDIN MAT NATAR","k":"ALPHA","s":"UNIT PATROL"},{"r":"KONST/PB MOHD SHAHRIL BIN NASIR","c":"MOHD SHAHRIL BIN NASIR","n":"MOHD SHAHRIL NASIR","k":"ALPHA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB AMIRUL SHAHFIK BIN YATIM MUSTAPA","c":"AMIRUL SHAHFIK BIN YATIM MUSTAPA","n":"AMIRUL SHAHFIK YATIM MUSTAPA","k":"ALPHA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB AHMAD RIDZUAN BIN SHAZALI","c":"AHMAD RIDZUAN BIN SHAZALI","n":"AHMAD RIDZUAN SHAZALI","k":"ALPHA","s":"UNIT PATROL"},{"r":"LKPL/PB MOHD HANIF BIN KHAIRUDDIN","c":"MOHD HANIF BIN KHAIRUDDIN","n":"MOHD HANIF KHAIRUDDIN","k":"ALPHA","s":"UNIT PATROL"},{"r":"KONST/PB KHAIRUL AMIRIN BIN MUSTAFA","c":"KHAIRUL AMIRIN BIN MUSTAFA","n":"KHAIRUL AMIRIN MUSTAFA","k":"ALPHA","s":"UNIT PATROL"},{"r":"KONST/PB BAZILAH BINTI A.RAHAMAN","c":"BAZILAH BINTI A.RAHAMAN","n":"BAZILAH A.RAHAMAN","k":"ALPHA","s":"KOMPENI ECHO"},{"r":"KPL/PB VANMATHI A/P RAMAKRISHNAN","c":"VANMATHI A/P RAMAKRISHNAN","n":"VANMATHI A/P RAMAKRISHNAN","k":"ALPHA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MOHAMAD HABIBULLAH BIN  ZULKIFLI","c":"MOHAMAD HABIBULLAH BIN  ZULKIFLI","n":"MOHAMAD HABIBULLAH  ZULKIFLI","k":"ALPHA","s":"UNIT PATROL"},{"r":"KONST/PB NURUL MAZIDAH BINTI ZULKIFLI","c":"NURUL MAZIDAH BINTI ZULKIFLI","n":"NURUL MAZIDAH ZULKIFLI","k":"ALPHA","s":"KOMPENI ECHO"},{"r":"LKPL/PB FAZLI BIN ABDUL RAHMAN","c":"FAZLI BIN ABDUL RAHMAN","n":"FAZLI ABDUL RAHMAN","k":"ALPHA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MOHAMMAD KHAIDIR BIN MOHAMMAD","c":"MOHAMMAD KHAIDIR BIN MOHAMMAD","n":"MOHAMAD KHAIDIR MOHAMAD","k":"ALPHA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MOHD ZAIDI BIN MUAZAM","c":"MOHD ZAIDI BIN MUAZAM","n":"MOHD ZAIDI MUAZAM","k":"ALPHA","s":"JABATAN URO/NEFRO A"},{"r":"KPL/PB MUHAMMAD AMIRULLAH BIN ABDUL SALIM","c":"MUHAMMAD AMIRULLAH BIN ABDUL SALIM","n":"MUHAMMAD AMIRULLAH ABDUL SALIM","k":"ALPHA","s":"BANGUNAN MHKL"},{"r":"KONST/PB MUHAMMAD FAISAL ASYRAF BIN ISMAIL","c":"MUHAMMAD FAISAL ASYRAF BIN ISMAIL","n":"MUHAMMAD FAISAL ASYRAF ISMAIL","k":"ALPHA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MOHD SOFIE BIN MOHD SHUKRI","c":"MOHD SOFIE BIN MOHD SHUKRI","n":"MOHD SOFIE MOHD SHUKRI","k":"ALPHA","s":"BANGUNAN MHKL"},{"r":"KONST/PB ZULKIFLI BIN DAUD","c":"ZULKIFLI BIN DAUD","n":"ZULKIFLI DAUD","k":"ALPHA","s":"JABATAN URO/NEFRO A"},{"r":"PEL.PB MUHAMAD FAHMIE BIN SAHRAN","c":"MUHAMAD FAHMIE BIN SAHRAN","n":"MUHAMAD FAHMIE SAHRAN","k":"ALPHA","s":"BANGUNAN MHKL"},{"r":"KPL/PB MOHD FARID BIN ISMAIL","c":"MOHD FARID BIN ISMAIL","n":"MOHD FARID ISMAIL","k":"ALPHA","s":"JABATAN URO/NEFRO B"},{"r":"KPL/PB YUSRI BIN YUNUS","c":"YUSRI BIN YUNUS","n":"YUSRI YUNUS","k":"ALPHA","s":"JABATAN RADIOTERAPI (RT)"},{"r":"LKPL/PB MOHD FAIZ BIN MOHD ZAINI","c":"MOHD FAIZ BIN MOHD ZAINI","n":"MOHD FAIZ MOHD ZAINI","k":"ALPHA","s":"JABATAN URO/NEFRO B"},{"r":"LKPL/PB MOHD SHAIFUL NIZAM BIN  HAMID","c":"MOHD SHAIFUL NIZAM BIN  HAMID","n":"MOHD SHAIFUL NIZAM  HAMID","k":"ALPHA","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB AMILIAH BINTI TAKIMAN","c":"AMILIAH BINTI TAKIMAN","n":"AMILIAH TAKIMAN","k":"ALPHA","s":"JABATAN URO/NEFRO B"},{"r":"KONST/PB SHAHRUL FITRI BIN ROSLI","c":"SHAHRUL FITRI BIN ROSLI","n":"SHAHRUL FITRI ROSLI","k":"ALPHA","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB NOR AZUAN BIN NORDIN","c":"NOR AZUAN BIN NORDIN","n":"NOR AZUAN NORDIN","k":"ALPHA","s":"JABATAN URO/NEFRO B"},{"r":"KONST/PB NANTHA GOPAL A/L AYASAMY","c":"NANTHA GOPAL A/L AYASAMY","n":"NANTHA GOPAL A/L AYASAMY","k":"ALPHA","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB MOHAMMAD ANAS BIN AZIZ","c":"MOHAMMAD ANAS BIN AZIZ","n":"MOHAMAD ANAS AZIZ","k":"ALPHA","s":"JABATAN URO/NEFRO B"},{"r":"PEL.PB NURUL AMIRAH BINTI MOHAMMAD","c":"NURUL AMIRAH BINTI MOHAMMAD","n":"NURUL AMIRAH MOHAMAD","k":"ALPHA","s":"JABATAN URO/NEFRO B"},{"r":"KPL/PB MOHD IZWAN BIN MOHD IBRAHIM","c":"MOHD IZWAN BIN MOHD IBRAHIM","n":"MOHD IZWAN MOHD IBRAHIM","k":"ALPHA","s":"JABATAN PEDIATRIK"},{"r":"LKPL/PB NOOR AMERUL AMIN BIN NOOR HAZAM","c":"NOOR AMERUL AMIN BIN NOOR HAZAM","n":"NOOR AMERUL AMIN NOOR HAZAM","k":"ALPHA","s":"JABATAN PEDIATRIK"},{"r":"KPL/PB MOHD SHARUDDIN BIN ABDUL RASHID","c":"MOHD SHARUDDIN BIN ABDUL RASHID","n":"MOHD SHARUDDIN ABDUL RASHID","k":"ALPHA","s":"UNIT TUGAS KHAS"},{"r":"LKPL/PB MOHAMAD SYUKRI BIN ABDUL JAMIL","c":"MOHAMAD SYUKRI BIN ABDUL JAMIL","n":"MOHAMAD SYUKRI ABDUL JAMIL","k":"ALPHA","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB MUHAMMAD IKRAM B. ROSLAN","c":"MUHAMMAD IKRAM B. ROSLAN","n":"MUHAMMAD IKRAM B. ROSLAN","k":"ALPHA","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB NOOR FARIDAH BINTI MOHD","c":"NOOR FARIDAH BINTI MOHD","n":"NOOR FARIDAH MOHD","k":"ALPHA","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB  SAFIZAN BIN SAIDIN","c":"SAFIZAN BIN SAIDIN","n":"SAFIZAN SAIDIN","k":"ALPHA","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB NURAZIAH BINTI AHMAD ZAILANI","c":"NURAZIAH BINTI AHMAD ZAILANI","n":"NURAZIAH AHMAD ZAILANI","k":"ALPHA","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB MUHAMMAD HASIF FARHAN BIN PESILI","c":"MUHAMMAD HASIF FARHAN BIN PESILI","n":"MUHAMMAD HASIF FARHAN PESILI","k":"ALPHA","s":"JABATAN PEDIATRIK"},{"r":"PEL.PB NUR AFIFAH BINTI ABDUL MAJEED","c":"NUR AFIFAH BINTI ABDUL MAJEED","n":"NUR AFIFAH ABDUL MAJEED","k":"ALPHA","s":"JABATAN PEDIATRIK"},{"r":"PEL.PB AHMAD ZAKUAN HAFIFI BIN IBRAHIM","c":"AHMAD ZAKUAN HAFIFI BIN IBRAHIM","n":"AHMAD ZAKUAN HAFIFI IBRAHIM","k":"ALPHA","s":"JABATAN PEDIATRIK"},{"r":"LKPL/PB SUHADA BINTI ZULKALNAINI","c":"SUHADA BINTI ZULKALNAINI","n":"SUHADA ZULKALNAINI","k":"ALPHA","s":"GERAKAN, AMRA & CCTV"},{"r":"KONST/PB ABDUL HAFIZ BIN YAHYA","c":"ABDUL HAFIZ BIN YAHYA","n":"ABDUL HAFIZ YAHYA","k":"ALPHA","s":"GERAKAN, AMRA & CCTV"},{"r":"LKPL/PB MOHAMAD SALEHUDDIN BIN AHMAD SAN","c":"MOHAMAD SALEHUDDIN BIN AHMAD SAN","n":"MOHAMAD SALEHUDDIN AHMAD SAN","k":"ALPHA","s":"GERAKAN, AMRA & CCTV"},{"r":"LKPL/PB MUHAMAD SHAFIQ B. SALLEHHUDDIN","c":"MUHAMAD SHAFIQ B. SALLEHHUDDIN","n":"MUHAMAD SHAFIQ B. SALLEHHUDDIN","k":"ALPHA","s":"GERAKAN, AMRA & CCTV"},{"r":"KPL/PB ZULKIFLI BIN YUSOF","c":"ZULKIFLI BIN YUSOF","n":"ZULKIFLI YUSOF","k":"BRAVO","s":"JABATAN IKTAR"},{"r":"KPL/PB AHMAD SYUKRI BIN MOHEE","c":"AHMAD SYUKRI BIN MOHEE","n":"AHMAD SYUKRI MOHEE","k":"BRAVO","s":"BANGUNAN WISMA REKOD"},{"r":"KPL/PB SANI BIN SALIMAN","c":"SANI BIN SALIMAN","n":"SANI SALIMAN","k":"BRAVO","s":"BANGUNAN SCACC"},{"r":"KONST/PB MOHD ILHAM BIN YUSOF","c":"MOHD ILHAM BIN YUSOF","n":"MOHD ILHAM YUSOF","k":"BRAVO","s":"JABATAN IKTAR"},{"r":"LKPL/PB SYAHARUL NIZAM BIN MOHD ARIFFIN","c":"SYAHARUL NIZAM BIN MOHD ARIFFIN","n":"SYAHARUL NIZAM MOHD ARIFFIN","k":"BRAVO","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB  AHMAD HAFIZUL BIN JABAR","c":"AHMAD HAFIZUL BIN JABAR","n":"AHMAD HAFIZUL JABAR","k":"BRAVO","s":"BANGUNAN SCACC"},{"r":"KONST/PB MUHAMMAD ASREE BIN HAZIR","c":"MUHAMMAD ASREE BIN HAZIR","n":"MUHAMMAD ASREE HAZIR","k":"BRAVO","s":"JABATAN IKTAR"},{"r":"LKPL/PB  MOHD SALMIZAN BIN CHE RAZALI","c":"MOHD SALMIZAN BIN CHE RAZALI","n":"MOHD SALMIZAN CHE RAZALI","k":"BRAVO","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB SHAHRIZAL BIN ABDUL AZIZ","c":"SHAHRIZAL BIN ABDUL AZIZ","n":"SHAHRIZAL ABDUL AZIZ","k":"BRAVO","s":"BANGUNAN SCACC"},{"r":"PEL.PB NOR AINA NAZIRA BINTI MOHD TARMIZI","c":"NOR AINA NAZIRA BINTI MOHD TARMIZI","n":"NOR AINA NAZIRA MOHD TARMIZI","k":"BRAVO","s":"JABATAN IKTAR"},{"r":"KONST/PB MOHD JASRI BIN HASSAN","c":"MOHD JASRI BIN HASSAN","n":"MOHD JASRI HASSAN","k":"BRAVO","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB MUHAMMAD ZUL AIMAN BIN ZAINI","c":"MUHAMMAD ZUL AIMAN BIN ZAINI","n":"MUHAMMAD ZUL AIMAN ZAINI","k":"BRAVO","s":"BANGUNAN SCACC"},{"r":"PEL.PB AZLANNOR HADY BIN ABDUL TALIB","c":"AZLANNOR HADY BIN ABDUL TALIB","n":"AZLANNOR HADY ABDUL TALIB","k":"BRAVO","s":"JABATAN IKTAR"},{"r":"PEL.PB MOHD RAFANDI BIN REMLI","c":"MOHD RAFANDI BIN REMLI","n":"MOHD RAFANDI REMLI","k":"BRAVO","s":"BANGUNAN WISMA REKOD"},{"r":"PEL.PB MUHAMMAD SAIFUL AILMI BIN ZAINUDDIN","c":"MUHAMMAD SAIFUL AILMI BIN ZAINUDDIN","n":"MUHAMMAD SAIFUL AILMI ZAINUDDIN","k":"BRAVO","s":"BANGUNAN SCACC"},{"r":"PEL.PB NORAZARIN BIN HUSSIN","c":"NORAZARIN BIN HUSSIN","n":"NORAZARIN HUSSIN","k":"BRAVO","s":"JABATAN IKTAR"},{"r":"PEL.PB IZZUDDIN BIN ISMAIL","c":"IZZUDDIN BIN ISMAIL","n":"IZZUDDIN ISMAIL","k":"BRAVO","s":"BANGUNAN WISMA REKOD"},{"r":"LKPL/PB MOHD SHAHRUL AZHAR BIN ZUL NAZRI","c":"MOHD SHAHRUL AZHAR BIN ZUL NAZRI","n":"MOHD SHAHRUL AZHAR ZUL NAZRI","k":"BRAVO","s":"SCACC WAKTU PEJABAT"},{"r":"KPL/PB SARUL AFENDY BIN SAARI","c":"SARUL AFENDY BIN SAARI","n":"SARUL AFENDY SAARI","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"KPL/PB MOHAMAD IRWAN BIN AHMAD TERMIZY","c":"MOHAMAD IRWAN BIN AHMAD TERMIZY","n":"MOHAMAD IRWAN AHMAD TERMIZY","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"LKPL/PB MOHD ZULKIFLI BIN KAMARUDDIN","c":"MOHD ZULKIFLI BIN KAMARUDDIN","n":"MOHD ZULKIFLI KAMARUDDIN","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB AHMAD HAZREEN BIN CHE ARIFIN","c":"AHMAD HAZREEN BIN CHE ARIFIN","n":"AHMAD HAZREEN CHE ARIFIN","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"LKPL/PB AHMAD FARIZ BIN MOHAMAD AKHIR","c":"AHMAD FARIZ BIN MOHAMAD AKHIR","n":"AHMAD FARIZ MOHAMAD AKHIR","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MOHD HANIF BIN MOHD ZAINUDDIN","c":"MOHD HANIF BIN MOHD ZAINUDDIN","n":"MOHD HANIF MOHD ZAINUDDIN","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"KONST/PB MUHAMMAD ALIF FAHMY BIN AZLAN","c":"MUHAMMAD ALIF FAHMY BIN AZLAN","n":"MUHAMMAD ALIF FAHMY AZLAN","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"KONST/PB MUHAMMAD AIDHIL BIN AHMAD","c":"MUHAMMAD AIDHIL BIN AHMAD","n":"MUHAMMAD AIDHIL AHMAD","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"KPL/PB AZIZAN BIN OMAR","c":"AZIZAN BIN OMAR","n":"AZIZAN OMAR","k":"BRAVO","s":"IUN WAKTU PEJABAT"},{"r":"KONST/PB SAINTI RAIKOL","c":"SAINTI RAIKOL","n":"SAINTI RAIKOL","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"KONST/PB MOHD FARID BIN AHMAD SHUHAIMI","c":"MOHD FARID BIN AHMAD SHUHAIMI","n":"MOHD FARID AHMAD SHUHAIMI","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"PEL.PB MUHAMAD HAFIAN BIN GHAZALI","c":"MUHAMAD HAFIAN BIN GHAZALI","n":"MUHAMAD HAFIAN GHAZALI","k":"BRAVO","s":"IUN WAKTU PEJABAT"},{"r":"KONST/PB ZULAZMI BIN JANI","c":"ZULAZMI BIN JANI","n":"ZULAZMI JANI","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"KONST/PB MOHAMAD SYAIRIL BIN ATAN","c":"MOHAMAD SYAIRIL BIN ATAN","n":"MOHAMAD SYAIRIL ATAN","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"KONST/PB MOHD FARID IMRAN BIN IBRAHIM","c":"MOHD FARID IMRAN BIN IBRAHIM","n":"MOHD FARID IMRAN IBRAHIM","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"KONST/PB ROME BIN ADUMAD","c":"ROME BIN ADUMAD","n":"ROME ADUMAD","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"PEL.PB MOHAMAD AMIRUDDIN BIN BAHRIN","c":"MOHAMAD AMIRUDDIN BIN BAHRIN","n":"MOHAMAD AMIRUDDIN BAHRIN","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"PEL.PB NOOR ASMA HUSNA BINTI ZAMANI","c":"NOOR ASMA HUSNA BINTI ZAMANI","n":"NOOR ASMA HUSNA ZAMANI","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"KONST/PB SITI SALWANI BINTI IBRAHIM","c":"SITI SALWANI BINTI IBRAHIM","n":"SITI SALWANI IBRAHIM","k":"BRAVO","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"KONST/PB MUHAMMAD SYAHIRAN BIN MOKHTAR","c":"MUHAMMAD SYAHIRAN BIN MOKHTAR","n":"MUHAMMAD SYAHIRAN MOKHTAR","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"PEL.PB MOHD SARIMAN BIN YAACOB","c":"MOHD SARIMAN BIN YAACOB","n":"MOHD SARIMAN YAACOB","k":"BRAVO","s":"JABATAN KECEMASAN"},{"r":"KPL/PB SYED FIRDAUS  BIN SYED BASARUDIN","c":"SYED FIRDAUS  BIN SYED BASARUDIN","n":"SYED FIRDAUS  SYED BASARUDIN","k":"BRAVO","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"KONST/PB WAN AISHAH BINTI WAN HUSAIN","c":"WAN AISHAH BINTI WAN HUSAIN","n":"WAN AISHAH WAN HUSAIN","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB WAN NORHAYATI BINTI WAN HANAPI","c":"WAN NORHAYATI BINTI WAN HANAPI","n":"WAN NORHAYATI WAN HANAPI","k":"BRAVO","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB AMEERUL DAIM BIN IBRAHIM","c":"AMEERUL DAIM BIN IBRAHIM","n":"AMEERUL DAIM IBRAHIM","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MOHD RIDZWAN BIN NOOR AZMI","c":"MOHD RIDZWAN BIN NOOR AZMI","n":"MOHD RIDZWAN NOOR AZMI","k":"BRAVO","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MOHAMMAD LATIF BIN MOHD TAIB","c":"MOHAMMAD LATIF BIN MOHD TAIB","n":"MOHAMAD LATIF MOHD TAIB","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"KPL/PB EZWAN BIN ABD. AZIZ","c":"EZWAN BIN ABD. AZIZ","n":"EZWAN ABD. AZIZ","k":"BRAVO","s":"UNIT PATROL"},{"r":"SJN/PB MUHD AKBAR GUNTUR BIN KASIM","c":"SJN/PB MUHD AKBAR GUNTUR BIN KASIM","n":"SJN/PB MOHD AKBAR GUNTUR KASIM","k":"BRAVO","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB VINONDRAN A/L VENA GOBAL","c":"VINONDRAN A/L VENA GOBAL","n":"VINONDRAN A/L VENA GOBAL","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MUHAMMAD ZAMRI BIN ABU BAKAR","c":"MUHAMMAD ZAMRI BIN ABU BAKAR","n":"MUHAMMAD ZAMRI ABU BAKAR","k":"BRAVO","s":"UNIT PATROL"},{"r":"KONST/PB MOHD SHAHRIL BIN NASIR","c":"MOHD SHAHRIL BIN NASIR","n":"MOHD SHAHRIL NASIR","k":"BRAVO","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MOHD IRWANZAZMI BIN ABD AZIS","c":"MOHD IRWANZAZMI BIN ABD AZIS","n":"MOHD IRWANZAZMI ABD AZIS","k":"BRAVO","s":"BANGUNAN UTAMA"},{"r":"KONST/PB MUHAMMAD HAFIZZAL BIN MAT YUSOFF","c":"MUHAMMAD HAFIZZAL BIN MAT YUSOFF","n":"MUHAMMAD HAFIZZAL MAT YUSOFF","k":"BRAVO","s":"UNIT PATROL"},{"r":"KONST/PB MOHAMAD HEZRIE BIN ALIAS","c":"MOHAMAD HEZRIE BIN ALIAS","n":"MOHAMAD HEZRIE ALIAS","k":"BRAVO","s":"UNIT PATROL"},{"r":"KONST/PB JAMAL ABDUL NASIR BIN MANSHOR","c":"JAMAL ABDUL NASIR BIN MANSHOR","n":"JAMAL ABDUL NASIR MANSHOR","k":"BRAVO","s":"UNIT PATROL"},{"r":"KONST/PB BAZILAH BINTI A.RAHAMAN","c":"BAZILAH BINTI A.RAHAMAN","n":"BAZILAH A.RAHAMAN","k":"BRAVO","s":"KOMPENI ECHO"},{"r":"KPL/PB KHIRUL ANUAR BIN ABDUL MUAZ","c":"KHIRUL ANUAR BIN ABDUL MUAZ","n":"KHIRUL ANUAR ABDUL MUAZ","k":"BRAVO","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB AIDIL ISWAN BIN AJIS","c":"AIDIL ISWAN BIN AJIS","n":"AIDIL ISWAN AJIS","k":"BRAVO","s":"UNIT PATROL"},{"r":"KONST/PB NURUL MAZIDAH BINTI ZULKIFLI","c":"NURUL MAZIDAH BINTI ZULKIFLI","n":"NURUL MAZIDAH ZULKIFLI","k":"BRAVO","s":"KOMPENI ECHO"},{"r":"KONST/PB ADIE PUTRA BIN GHAZALI","c":"ADIE PUTRA BIN GHAZALI","n":"ADIE PUTRA GHAZALI","k":"BRAVO","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MOHD SHAH FARIZ BIN ZAINAL ABIDIN","c":"MOHD SHAH FARIZ BIN ZAINAL ABIDIN","n":"MOHD SHAH FARIZ ZAINAL ABIDIN","k":"BRAVO","s":"JABATAN URO/NEFRO A"},{"r":"KONTS/PB LATIP BIN LAHAD","c":"KONTS/PB LATIP BIN LAHAD","n":"KONTS/PB LATIP LAHAD","k":"BRAVO","s":"JABATAN URO/NEFRO A"},{"r":"KPL/PB HAZLAN BIN MOHD RESDI","c":"HAZLAN BIN MOHD RESDI","n":"HAZLAN MOHD RESDI","k":"BRAVO","s":"BANGUNAN MHKL"},{"r":"PEL.PB WAN ISHAK BIN MAZLAN","c":"WAN ISHAK BIN MAZLAN","n":"WAN ISHAK MAZLAN","k":"BRAVO","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB ANASHATOL ARNAEDA BINTI JAFRI","c":"ANASHATOL ARNAEDA BINTI JAFRI","n":"ANASHATOL ARNAEDA JAFRI","k":"BRAVO","s":"BANGUNAN MHKL"},{"r":"PEL.PB WAN FATIMAH AZ-ZAHARAH BINTI WAN MOHAMED","c":"WAN FATIMAH AZ-ZAHARAH BINTI WAN MOHAMED","n":"WAN FATIMAH AZ-ZAHARAH WAN MOHAMAD","k":"BRAVO","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MOHAMMAD ALIF BIN NASARUDDIN","c":"MOHAMMAD ALIF BIN NASARUDDIN","n":"MOHAMAD ALIF NASARUDDIN","k":"BRAVO","s":"BANGUNAN MHKL"},{"r":"KPL/PB VIKNESWARAN A/L MONOHARAN","c":"VIKNESWARAN A/L MONOHARAN","n":"VIKNESWARAN A/L MONOHARAN","k":"BRAVO","s":"JABATAN URO/NEFRO B"},{"r":"KPL/PB MOHD KHADAFEE BIN MD SAAD","c":"MOHD KHADAFEE BIN MD SAAD","n":"MOHD KHADAFEE MD SAAD","k":"BRAVO","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB MOHAMAD YATIM BIN YAHAYA","c":"MOHAMAD YATIM BIN YAHAYA","n":"MOHAMAD YATIM YAHAYA","k":"BRAVO","s":"JABATAN URO/NEFRO B"},{"r":"LKPL/PB NOR AZURA BINTI MAMAT @ MUHAMAD","c":"NOR AZURA BINTI MAMAT @ MUHAMAD","n":"NOR AZURA MAMAT @ MUHAMAD","k":"BRAVO","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB SHAHRUL AZHAR BIN HASHIM","c":"SHAHRUL AZHAR BIN HASHIM","n":"SHAHRUL AZHAR HASHIM","k":"BRAVO","s":"JABATAN URO/NEFRO B"},{"r":"KOSNT/PB MOHD SHAFIK BIN IBRAM","c":"KOSNT/PB MOHD SHAFIK BIN IBRAM","n":"KOSNT/PB MOHD SHAFIK IBRAM","k":"BRAVO","s":"JABATAN RADIOTERAPI (RT)"},{"r":"PEL.PB NABILA BINTI ABDUL RAHMAN","c":"NABILA BINTI ABDUL RAHMAN","n":"NABILA ABDUL RAHMAN","k":"BRAVO","s":"JABATAN URO/NEFRO B"},{"r":"KONST/PB ZULHILMI BIN ZAINUDIN","c":"ZULHILMI BIN ZAINUDIN","n":"ZULHILMI ZAINUDIN","k":"BRAVO","s":"JABATAN RADIOTERAPI (RT)"},{"r":"PEL.PB MUHAMAD NOR BIN SAMSUDIN","c":"MUHAMAD NOR BIN SAMSUDIN","n":"MUHAMAD NOR SAMSUDIN","k":"BRAVO","s":"JABATAN URO/NEFRO B"},{"r":"PEL.PB MUHAMMAD ASLAM BIN AZLAN","c":"MUHAMMAD ASLAM BIN AZLAN","n":"MUHAMMAD ASLAM AZLAN","k":"BRAVO","s":"JABATAN URO/NEFRO B"},{"r":"KPL/PB MD ABD JALIL BIN NAIMAT","c":"MD ABD JALIL BIN NAIMAT","n":"MD ABD JALIL NAIMAT","k":"BRAVO","s":"JABATAN PEDIATRIK"},{"r":"MAKLUM LEWAT","c":"MAKLUM LEWAT","n":"MAKLUM LEWAT","k":"BRAVO","s":"WAKTU PEJABAT"},{"r":"LKPL/PB MOHD FAZLI BIN MAT NOR","c":"MOHD FAZLI BIN MAT NOR","n":"MOHD FAZLI MAT NOR","k":"BRAVO","s":"JABATAN PEDIATRIK"},{"r":"KPL/PB KAMARUZAMAN BIN ABDUL SAMAD","c":"KAMARUZAMAN BIN ABDUL SAMAD","n":"KAMARUZAMAN ABDUL SAMAD","k":"BRAVO","s":"UNIT TUGAS KHAS"},{"r":"LKPL/PB NOORSYIDA BINTI HAMDAN","c":"NOORSYIDA BINTI HAMDAN","n":"NOORSYIDA HAMDAN","k":"BRAVO","s":"JABATAN PEDIATRIK"},{"r":"LKPL/PB MUHAMMAD HAZIQ BIN HAZMI","c":"MUHAMMAD HAZIQ BIN HAZMI","n":"MUHAMMAD HAZIQ HAZMI","k":"BRAVO","s":"UNIT TUGAS KHAS"},{"r":"LKPL/PB MASRI BIN IDRIS","c":"MASRI BIN IDRIS","n":"MASRI IDRIS","k":"BRAVO","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB MOHD FAIRUZ BIN MUSTAZA","c":"MOHD FAIRUZ BIN MUSTAZA","n":"MOHD FAIRUZ MUSTAZA","k":"BRAVO","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB MOHAMMAD FAZREEZUAN BIN ABU MOHAMED","c":"MOHAMMAD FAZREEZUAN BIN ABU MOHAMED","n":"MOHAMAD FAZREEZUAN ABU MOHAMAD","k":"BRAVO","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB MUHAMMAD ASHRAFF BIN ZULKIFLI","c":"MUHAMMAD ASHRAFF BIN ZULKIFLI","n":"MUHAMMAD ASHRAFF ZULKIFLI","k":"BRAVO","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB NUR AYUNI BINTI MOHD FAUZI","c":"NUR AYUNI BINTI MOHD FAUZI","n":"NUR AYUNI MOHD FAUZI","k":"BRAVO","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB MOHAMAD DZULFIKRI BIN JAAFAR","c":"MOHAMAD DZULFIKRI BIN JAAFAR","n":"MOHAMAD DZULFIKRI JAAFAR","k":"BRAVO","s":"JABATAN PEDIATRIK"},{"r":"LKPL/PB NABILAH BINTI  MOHD FADZIL","c":"NABILAH BINTI  MOHD FADZIL","n":"NABILAH  MOHD FADZIL","k":"BRAVO","s":"GERAKAN, AMRA & CCTV"},{"r":"KONST/PB ZILAIDAH BINTI MUSTAFA","c":"ZILAIDAH BINTI MUSTAFA","n":"ZILAIDAH MUSTAFA","k":"BRAVO","s":"GERAKAN, AMRA & CCTV"},{"r":"KONST/PB MOHD SUHAIMEE BIN MOHD NONG","c":"MOHD SUHAIMEE BIN MOHD NONG","n":"MOHD SUHAIMEE MOHD NONG","k":"BRAVO","s":"GERAKAN, AMRA & CCTV"},{"r":"LKPL/PB KHAIRUSY SYAKIRIN BIN MOHD SAMSUDIN","c":"KHAIRUSY SYAKIRIN BIN MOHD SAMSUDIN","n":"KHAIRUSY SYAKIRIN MOHD SAMSUDIN","k":"BRAVO","s":"GERAKAN, AMRA & CCTV"},{"r":"KPL/PB AZROL NAIM BIN AB MALEK","c":"AZROL NAIM BIN AB MALEK","n":"AZROL NAIM AB MALEK","k":"CHARLIE","s":"JABATAN IKTAR"},{"r":"KPL/PB REDHUWAN BIN BASIR","c":"REDHUWAN BIN BASIR","n":"REDHUWAN BASIR","k":"CHARLIE","s":"BANGUNAN WISMA REKOD"},{"r":"KPL/PB AMIR HAMZAH BIN MOHAMMAD","c":"AMIR HAMZAH BIN MOHAMMAD","n":"AMIR HAMZAH MOHAMAD","k":"CHARLIE","s":"BANGUNAN SCACC"},{"r":"KONST/PB  WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA","c":"WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA","n":"WAN NOR FATHIYYAH WAN AHMAD PENAMA","k":"CHARLIE","s":"JABATAN IKTAR"},{"r":"LKPL/PB MOHD AZIZOL BIN MOHAMAD NOOR","c":"MOHD AZIZOL BIN MOHAMAD NOOR","n":"MOHD AZIZOL MOHAMAD NOOR","k":"CHARLIE","s":"BANGUNAN WISMA REKOD"},{"r":"LKPL/PB MOHD SHAMSUL KAMAL BIN IBRAHIM","c":"MOHD SHAMSUL KAMAL BIN IBRAHIM","n":"MOHD SHAMSUL KAMAL IBRAHIM","k":"CHARLIE","s":"BANGUNAN SCACC"},{"r":"KONST/PB MUHAMMAD ASHLEY BIN BASHIR","c":"MUHAMMAD ASHLEY BIN BASHIR","n":"MUHAMMAD ASHLEY BASHIR","k":"CHARLIE","s":"JABATAN IKTAR"},{"r":"KONST/PB  BADRUL HISYAM BIN ALIMIN","c":"BADRUL HISYAM BIN ALIMIN","n":"BADRUL HISYAM ALIMIN","k":"CHARLIE","s":"BANGUNAN WISMA REKOD"},{"r":"LKPL/PB MOHD ASRAF BIN MUAZAM","c":"MOHD ASRAF BIN MUAZAM","n":"MOHD ASRAF MUAZAM","k":"CHARLIE","s":"BANGUNAN SCACC"},{"r":"KONST/PB MOHD RASIDI BIN MOHD NASIR","c":"MOHD RASIDI BIN MOHD NASIR","n":"MOHD RASIDI MOHD NASIR","k":"CHARLIE","s":"JABATAN IKTAR"},{"r":"KONST PB AHMAD NOR KAMIL BIN MOHAMAD","c":"PB AHMAD NOR KAMIL BIN MOHAMAD","n":"PB AHMAD NOR KAMIL MOHAMAD","k":"CHARLIE","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB  MUHAMAD AMAR BIN BAHARUDIN","c":"MUHAMAD AMAR BIN BAHARUDIN","n":"MUHAMAD AMAR BAHARUDIN","k":"CHARLIE","s":"BANGUNAN SCACC"},{"r":"PEL.PB MUHAMMAD ZULHELMI BIN AHMAD AFAMI","c":"MUHAMMAD ZULHELMI BIN AHMAD AFAMI","n":"MUHAMMAD ZULHELMI AHMAD AFAMI","k":"CHARLIE","s":"JABATAN IKTAR"},{"r":"PEL.PB AHMAD FIKRI BIN AB. WAHAB","c":"AHMAD FIKRI BIN AB. WAHAB","n":"AHMAD FIKRI AB. WAHAB","k":"CHARLIE","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB MOHD JUHAIRY BIN AZLIM","c":"MOHD JUHAIRY BIN AZLIM","n":"MOHD JUHAIRY AZLIM","k":"CHARLIE","s":"BANGUNAN SCACC"},{"r":"PEL.PB MUHAMMAD BADRI BIN ARIS","c":"MUHAMMAD BADRI BIN ARIS","n":"MUHAMMAD BADRI ARIS","k":"CHARLIE","s":"JABATAN IKTAR"},{"r":"LKPL/PB MOHD SHAHRUL AZHAR BIN ZUL NAZRI","c":"MOHD SHAHRUL AZHAR BIN ZUL NAZRI","n":"MOHD SHAHRUL AZHAR ZUL NAZRI","k":"CHARLIE","s":"SCACC WAKTU PEJABAT"},{"r":"KPL/PB ABDUL SAHAB BIN AZAMUDIN","c":"ABDUL SAHAB BIN AZAMUDIN","n":"ABDUL SAHAB AZAMUDIN","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"KPL/PB RUMAIZI BIN AHMAD","c":"RUMAIZI BIN AHMAD","n":"RUMAIZI AHMAD","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"LKPL/PB MOHD SAIFUL BUKHARI BIN ABD SAMAD","c":"MOHD SAIFUL BUKHARI BIN ABD SAMAD","n":"MOHD SAIFUL BUKHARI ABD SAMAD","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MOHD IZUAN BIN SAMSUDDIN","c":"MOHD IZUAN BIN SAMSUDDIN","n":"MOHD IZUAN SAMSUDDIN","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"KONST/PB FADHIRUL ANUAR BIN RAMLI","c":"FADHIRUL ANUAR BIN RAMLI","n":"FADHIRUL ANUAR RAMLI","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"KONST/PB  MUHAMMAD NOR IQHRAM BIN ALI","c":"MUHAMMAD NOR IQHRAM BIN ALI","n":"MUHAMMAD NOR IQHRAM ALI","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"KONST/PB AL-MUZZAMMIL BIN MOHD RASHDI","c":"AL-MUZZAMMIL BIN MOHD RASHDI","n":"AL-MUZZAMMIL MOHD RASHDI","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"KONST/PB MOHD SHAHRIL BIN SHAHADAN","c":"MOHD SHAHRIL BIN SHAHADAN","n":"MOHD SHAHRIL SHAHADAN","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"KPL/PB AZIZAN BIN OMAR","c":"AZIZAN BIN OMAR","n":"AZIZAN OMAR","k":"CHARLIE","s":"IUN WAKTU PEJABAT"},{"r":"KONST/PB MUHAMAD RIZANI BIN ANWAR","c":"MUHAMAD RIZANI BIN ANWAR","n":"MUHAMAD RIZANI ANWAR","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"KONST/PB SITI ZULAIKA BINTI SHAARI","c":"SITI ZULAIKA BINTI SHAARI","n":"SITI ZULAIKA SHAARI","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"PEL.PB MUHAMAD HAFIAN BIN GHAZALI","c":"MUHAMAD HAFIAN BIN GHAZALI","n":"MUHAMAD HAFIAN GHAZALI","k":"CHARLIE","s":"IUN WAKTU PEJABAT"},{"r":"KONST/PB  MOHAMAD KHAIRI ASWADI BIN RAFEEI","c":"MOHAMAD KHAIRI ASWADI BIN RAFEEI","n":"MOHAMAD KHAIRI ASWADI RAFEEI","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"PEL.PB MOHAMMAD NOR HAFIS BIN ISMAIL","c":"MOHAMMAD NOR HAFIS BIN ISMAIL","n":"MOHAMAD NOR HAFIS ISMAIL","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"KONST/PB  MOHAMMED IZUL AIZAL BIN MOHAMMAD NASIR","c":"MOHAMMED IZUL AIZAL BIN MOHAMMAD NASIR","n":"MOHAMMED IZUL AIZAL MOHAMAD NASIR","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"PEL.PB MOHD FADHIL BIN PAUDZI","c":"MOHD FADHIL BIN PAUDZI","n":"MOHD FADHIL PAUDZI","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"PEL.PB NOOR HAFFISZULL HUSSRIN BIN SALLEH","c":"NOOR HAFFISZULL HUSSRIN BIN SALLEH","n":"NOOR HAFFISZULL HUSSRIN SALLEH","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"PEL.PB SAMSIAH BINTI MOHD HUSSIN","c":"SAMSIAH BINTI MOHD HUSSIN","n":"SAMSIAH MOHD HUSSIN","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"KONST/PB SITI SALWANI BINTI IBRAHIM","c":"SITI SALWANI BINTI IBRAHIM","n":"SITI SALWANI IBRAHIM","k":"CHARLIE","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB SITI AISHAH BINTI ABDUL RASHID","c":"SITI AISHAH BINTI ABDUL RASHID","n":"SITI AISHAH ABDUL RASHID","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"PEL.PB NOOR RAHIM BIN MAT TAHA@MOHAMED TALHA","c":"NOOR RAHIM BIN MAT TAHA@MOHAMED TALHA","n":"NOOR RAHIM MAT TAHA@MOHAMAD TALHA","k":"CHARLIE","s":"JABATAN KECEMASAN"},{"r":"KPL/PB SYED FIRDAUS  BIN SYED BASARUDIN","c":"SYED FIRDAUS  BIN SYED BASARUDIN","n":"SYED FIRDAUS  SYED BASARUDIN","k":"CHARLIE","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MOHAMAD FADLI BIN AWANG","c":"MOHAMAD FADLI BIN AWANG","n":"MOHAMAD FADLI AWANG","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB WAN NORHAYATI BINTI WAN HANAPI","c":"WAN NORHAYATI BINTI WAN HANAPI","n":"WAN NORHAYATI WAN HANAPI","k":"CHARLIE","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MOHAMMAD SYAFIQ BIN ABDUL RAHMAN","c":"MOHAMMAD SYAFIQ BIN ABDUL RAHMAN","n":"MOHAMAD SYAFIQ ABDUL RAHMAN","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MOHD RIDZWAN BIN NOOR AZMI","c":"MOHD RIDZWAN BIN NOOR AZMI","n":"MOHD RIDZWAN NOOR AZMI","k":"CHARLIE","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MUHAMMAD SYAFIQ BIN SUPI","c":"MUHAMMAD SYAFIQ BIN SUPI","n":"MUHAMMAD SYAFIQ SUPI","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"KPL/PB SHAMSUL AZRI BIN MUHAMAD AZHAR","c":"SHAMSUL AZRI BIN MUHAMAD AZHAR","n":"SHAMSUL AZRI MUHAMAD AZHAR","k":"CHARLIE","s":"UNIT PATROL"},{"r":"KPL/PB MUHD AKBAR GUNTUR BIN KASIM","c":"MUHD AKBAR GUNTUR BIN KASIM","n":"MOHD AKBAR GUNTUR KASIM","k":"CHARLIE","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MOHAMAD SYAFIQ BIN MAT NAWI","c":"MOHAMAD SYAFIQ BIN MAT NAWI","n":"MOHAMAD SYAFIQ MAT NAWI","k":"CHARLIE","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MOHD SYAWAL BIN ALIAS","c":"MOHD SYAWAL BIN ALIAS","n":"MOHD SYAWAL ALIAS","k":"CHARLIE","s":"UNIT PATROL"},{"r":"KONST/PB MOHD SHAHRIL BIN NASIR","c":"MOHD SHAHRIL BIN NASIR","n":"MOHD SHAHRIL NASIR","k":"CHARLIE","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"LKPL/PB MUHAMAD HARIS BIN MOHAMAD","c":"MUHAMAD HARIS BIN MOHAMAD","n":"MUHAMAD HARIS MOHAMAD","k":"CHARLIE","s":"UNIT PATROL"},{"r":"LKPL/PB AZERI BIN AZIZ","c":"AZERI BIN AZIZ","n":"AZERI AZIZ","k":"CHARLIE","s":"UNIT PATROL"},{"r":"KONST/PB MOHAMAD ZAMRI BIN CHEK MAY","c":"MOHAMAD ZAMRI BIN CHEK MAY","n":"MOHAMAD ZAMRI CHEK MAY","k":"CHARLIE","s":"UNIT PATROL"},{"r":"KONST/PB BAZILAH BINTI A.RAHAMAN","c":"BAZILAH BINTI A.RAHAMAN","n":"BAZILAH A.RAHAMAN","k":"CHARLIE","s":"KOMPENI ECHO"},{"r":"KPL/PB MOHD KHAIRIL HASWAD BIN DERAMAN","c":"MOHD KHAIRIL HASWAD BIN DERAMAN","n":"MOHD KHAIRIL HASWAD DERAMAN","k":"CHARLIE","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MOHD FAISAL BIN SENIN","c":"MOHD FAISAL BIN SENIN","n":"MOHD FAISAL SENIN","k":"CHARLIE","s":"UNIT PATROL"},{"r":"KONST/PB NURUL MAZIDAH BINTI ZULKIFLI","c":"NURUL MAZIDAH BINTI ZULKIFLI","n":"NURUL MAZIDAH ZULKIFLI","k":"CHARLIE","s":"KOMPENI ECHO"},{"r":"LKPL/PB AZRI HISYAM BIN MUSTAFA","c":"AZRI HISYAM BIN MUSTAFA","n":"AZRI HISYAM MUSTAFA","k":"CHARLIE","s":"JABATAN URO/NEFRO A"},{"r":"LKPL/PB SAFIRAH BINTI AHMAD SABRY","c":"SAFIRAH BINTI AHMAD SABRY","n":"SAFIRAH AHMAD SABRY","k":"CHARLIE","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB ILIAS BIN MOHAMAD","c":"ILIAS BIN MOHAMAD","n":"ILIAS MOHAMAD","k":"CHARLIE","s":"JABATAN URO/NEFRO A"},{"r":"KPL/PB MOHAMAD IZAT AFIFUDDIN BIN MOHAMAD AZMI","c":"MOHAMAD IZAT AFIFUDDIN BIN MOHAMAD AZMI","n":"MOHAMAD IZAT AFIFUDDIN MOHAMAD AZMI","k":"CHARLIE","s":"BANGUNAN MHKL"},{"r":"KONST/PB ABDUL HALIM BIN MOHD JAMALIDIN","c":"ABDUL HALIM BIN MOHD JAMALIDIN","n":"ABDUL HALIM MOHD JAMALIDIN","k":"CHARLIE","s":"JABATAN URO/NEFRO A"},{"r":"LKPL/PB  AZELI BIN ZABER","c":"AZELI BIN ZABER","n":"AZELI ZABER","k":"CHARLIE","s":"BANGUNAN MHKL"},{"r":"KONST/PB MUHAMMAD IQWAN BIN ROSLI","c":"MUHAMMAD IQWAN BIN ROSLI","n":"MUHAMMAD IQWAN ROSLI","k":"CHARLIE","s":"JABATAN URO/NEFRO A"},{"r":"PEL.PB NORAZLIDA BINTI RAZAB","c":"NORAZLIDA BINTI RAZAB","n":"NORAZLIDA RAZAB","k":"CHARLIE","s":"BANGUNAN MHKL"},{"r":"KPL/PB MOHD FAUZI AZMI BIN AHMAD ABADI","c":"MOHD FAUZI AZMI BIN AHMAD ABADI","n":"MOHD FAUZI AZMI AHMAD ABADI","k":"CHARLIE","s":"JABATAN URO/NEFRO B"},{"r":"KPL/PB NUR AZIM BIN NASIRUDDIN","c":"NUR AZIM BIN NASIRUDDIN","n":"NUR AZIM NASIRUDDIN","k":"CHARLIE","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB MUHAMAD FAIS BIN MAT ROS","c":"MUHAMAD FAIS BIN MAT ROS","n":"MUHAMAD FAIS MAT ROS","k":"CHARLIE","s":"JABATAN URO/NEFRO B"},{"r":"LKPL/PB SAIFUL YUSRIZAL BIN YAACOB","c":"SAIFUL YUSRIZAL BIN YAACOB","n":"SAIFUL YUSRIZAL YAACOB","k":"CHARLIE","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB MUHAMMAD RIDUWAN BIN SAMSUDDIN","c":"MUHAMMAD RIDUWAN BIN SAMSUDDIN","n":"MUHAMMAD RIDUWAN SAMSUDDIN","k":"CHARLIE","s":"JABATAN URO/NEFRO B"},{"r":"LKPL/PB FARRAH NATASHA BINTI ZULKAFLI","c":"FARRAH NATASHA BINTI ZULKAFLI","n":"FARRAH NATASHA ZULKAFLI","k":"CHARLIE","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB NORASHIKIN BINTI SHARUL","c":"NORASHIKIN BINTI SHARUL","n":"NORASHIKIN SHARUL","k":"CHARLIE","s":"JABATAN URO/NEFRO B"},{"r":"KONST/PB MUHAMMAD AFIQ FAIZ BIN BADARUDDIN","c":"MUHAMMAD AFIQ FAIZ BIN BADARUDDIN","n":"MUHAMMAD AFIQ FAIZ BADARUDDIN","k":"CHARLIE","s":"JABATAN RADIOTERAPI (RT)"},{"r":"PEL.PB ADLI ZIL IKRAM BIN MOOSTAFA","c":"ADLI ZIL IKRAM BIN MOOSTAFA","n":"ADLI ZIL IKRAM MOOSTAFA","k":"CHARLIE","s":"JABATAN URO/NEFRO B"},{"r":"PEL.PB MOHAMAD PARIF BIN RAZALI","c":"MOHAMAD PARIF BIN RAZALI","n":"MOHAMAD PARIF RAZALI","k":"CHARLIE","s":"JABATAN URO/NEFRO B"},{"r":"KPL/PB MOHD ZULQARNAIN BIN HAMDAN","c":"MOHD ZULQARNAIN BIN HAMDAN","n":"MOHD ZULQARNAIN HAMDAN","k":"CHARLIE","s":"JABATAN PEDIATRIK"},{"r":"LKPL/PB MOHD HAFIZ BIN OMAR","c":"MOHD HAFIZ BIN OMAR","n":"MOHD HAFIZ OMAR","k":"CHARLIE","s":"JABATAN PEDIATRIK"},{"r":"KPL/PB MOHD FAZLI AZRIN BIN ZAINAL ABIDIN","c":"MOHD FAZLI AZRIN BIN ZAINAL ABIDIN","n":"MOHD FAZLI AZRIN ZAINAL ABIDIN","k":"CHARLIE","s":"UNIT TUGAS KHAS"},{"r":"LKPL/PB MUHAMMAD RAFLI BIN YUNUS","c":"MUHAMMAD RAFLI BIN YUNUS","n":"MUHAMMAD RAFLI YUNUS","k":"CHARLIE","s":"JABATAN PEDIATRIK"},{"r":"LKPL/PB MOHD FAIRUS BIN EMBUN","c":"MOHD FAIRUS BIN EMBUN","n":"MOHD FAIRUS EMBUN","k":"CHARLIE","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB MOHD AZLAN BIN SHUHAIMI","c":"MOHD AZLAN BIN SHUHAIMI","n":"MOHD AZLAN SHUHAIMI","k":"CHARLIE","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB MUHAMMAD NURUDIN BIN AZMI","c":"MUHAMMAD NURUDIN BIN AZMI","n":"MUHAMMAD NURUDIN AZMI","k":"CHARLIE","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB AMIRUL LOKMAN BIN AMIN","c":"AMIRUL LOKMAN BIN AMIN","n":"AMIRUL LOKMAN AMIN","k":"CHARLIE","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB MOHD FAHMI BIN ABDUL MALIK","c":"MOHD FAHMI BIN ABDUL MALIK","n":"MOHD FAHMI ABDUL MALIK","k":"CHARLIE","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB MOHD KHALID BIN MOHD KAMARUDIN","c":"MOHD KHALID BIN MOHD KAMARUDIN","n":"MOHD KHALID MOHD KAMARUDIN","k":"CHARLIE","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB SYAIFUL AZUAD BIN ALIAS","c":"SYAIFUL AZUAD BIN ALIAS","n":"SYAIFUL AZUAD ALIAS","k":"CHARLIE","s":"JABATAN PEDIATRIK"},{"r":"PEL.PB NUR IZZATI BINTI KAMARULDZAMAN","c":"NUR IZZATI BINTI KAMARULDZAMAN","n":"NUR IZZATI KAMARULDZAMAN","k":"CHARLIE","s":"JABATAN PEDIATRIK"},{"r":"KPL/PB MOHD AZIMUDDIN BIN MOHAMAD NOR","c":"MOHD AZIMUDDIN BIN MOHAMAD NOR","n":"MOHD AZIMUDDIN MOHAMAD NOR","k":"CHARLIE","s":"GERAKAN, AMRA & CCTV"},{"r":"LKPL/PB MOHD HANIF BIN MAT JAAFAR","c":"MOHD HANIF BIN MAT JAAFAR","n":"MOHD HANIF MAT JAAFAR","k":"CHARLIE","s":"GERAKAN, AMRA & CCTV"},{"r":"KONST/PB MOHAMMAD WAJDI BIN JUSOH","c":"MOHAMMAD WAJDI BIN JUSOH","n":"MOHAMAD WAJDI JUSOH","k":"CHARLIE","s":"GERAKAN, AMRA & CCTV"},{"r":"KONST/PB MOHAMMAD AMIRUL ASRAH BIN ISHAK","c":"MOHAMMAD AMIRUL ASRAH BIN ISHAK","n":"MOHAMAD AMIRUL ASRAH ISHAK","k":"CHARLIE","s":"GERAKAN, AMRA & CCTV"},{"r":"KPL/PB RIMA BINTI OTHMAN","c":"RIMA BINTI OTHMAN","n":"RIMA OTHMAN","k":"DELTA","s":"JABATAN IKTAR"},{"r":"KPL/PB MOHD SHAHRULNIZAM BIN SUAIDI","c":"MOHD SHAHRULNIZAM BIN SUAIDI","n":"MOHD SHAHRULNIZAM SUAIDI","k":"DELTA","s":"BANGUNAN WISMA REKOD"},{"r":"KPL/PB MOHD NAZIMAN BIN MANSOR","c":"MOHD NAZIMAN BIN MANSOR","n":"MOHD NAZIMAN MANSOR","k":"DELTA","s":"BANGUNAN SCACC"},{"r":"KONST/PB MOHAMMAD FITHRI BIN AB LATIF@ ABD LATIF","c":"MOHAMMAD FITHRI BIN AB LATIF@ ABD LATIF","n":"MOHAMAD FITHRI AB LATIF@ ABD LATIF","k":"DELTA","s":"JABATAN IKTAR"},{"r":"LKPL/PB MOHD LIZAL BIN BANIYAMIN","c":"MOHD LIZAL BIN BANIYAMIN","n":"MOHD LIZAL BANIYAMIN","k":"DELTA","s":"BANGUNAN WISMA REKOD"},{"r":"LKPL/PB MOHD RAZIF BIN ANUAR","c":"MOHD RAZIF BIN ANUAR","n":"MOHD RAZIF ANUAR","k":"DELTA","s":"BANGUNAN SCACC"},{"r":"KONST/PB MOHAMAD ALIFF HAIQAL BIN JAMIL","c":"MOHAMAD ALIFF HAIQAL BIN JAMIL","n":"MOHAMAD ALIFF HAIQAL JAMIL","k":"DELTA","s":"JABATAN IKTAR"},{"r":"LKPL/PB SAIFUL BIN MD NOR","c":"SAIFUL BIN MD NOR","n":"SAIFUL MD NOR","k":"DELTA","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB MUHAMAD RAWANDI BIN AB RAHIM","c":"MUHAMAD RAWANDI BIN AB RAHIM","n":"MUHAMAD RAWANDI AB RAHIM","k":"DELTA","s":"BANGUNAN SCACC"},{"r":"PEL.PB LATIFA ROBANIA BINTI ABDUL RAZAK","c":"LATIFA ROBANIA BINTI ABDUL RAZAK","n":"LATIFA ROBANIA ABDUL RAZAK","k":"DELTA","s":"JABATAN IKTAR"},{"r":"KONST/PB NURUL SUWANA BINTI  ABU BAKAR","c":"NURUL SUWANA BINTI  ABU BAKAR","n":"NURUL SUWANA  ABU BAKAR","k":"DELTA","s":"BANGUNAN WISMA REKOD"},{"r":"KONST/PB MAT YUSOF BIN NAIN","c":"MAT YUSOF BIN NAIN","n":"MAT YUSOF NAIN","k":"DELTA","s":"BANGUNAN SCACC"},{"r":"PEL.PB AHMAD SHAMIL BIN NADZRI","c":"AHMAD SHAMIL BIN NADZRI","n":"AHMAD SHAMIL NADZRI","k":"DELTA","s":"JABATAN IKTAR"},{"r":"KONST/PB  MUHAMMAD FARID BIN ISMAIL","c":"MUHAMMAD FARID BIN ISMAIL","n":"MUHAMMAD FARID ISMAIL","k":"DELTA","s":"BANGUNAN WISMA REKOD"},{"r":"PEL.PB MOHD KHAIRUL AMRY BIN ABD KADIR","c":"MOHD KHAIRUL AMRY BIN ABD KADIR","n":"MOHD KHAIRUL AMRY ABD KADIR","k":"DELTA","s":"BANGUNAN SCACC"},{"r":"PEL.PB ROHISHAM BIN MOHAMAD AROF","c":"ROHISHAM BIN MOHAMAD AROF","n":"ROHISHAM MOHAMAD AROF","k":"DELTA","s":"JABATAN IKTAR"},{"r":"PEL.PB MOHD RIDZUAN BIN BUKHRI","c":"MOHD RIDZUAN BIN BUKHRI","n":"MOHD RIDZUAN BUKHRI","k":"DELTA","s":"BANGUNAN WISMA REKOD"},{"r":"LKPL/PB MOHD SHAHRUL AZHAR BIN ZUL NAZRI","c":"MOHD SHAHRUL AZHAR BIN ZUL NAZRI","n":"MOHD SHAHRUL AZHAR ZUL NAZRI","k":"DELTA","s":"SCACC WAKTU PEJABAT"},{"r":"KPL/PB MOHD ASNUR BIN NORDIN","c":"MOHD ASNUR BIN NORDIN","n":"MOHD ASNUR NORDIN","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"KPL/PB KHAIRUL NIZAM BIN SHAHARUDDIN","c":"KHAIRUL NIZAM BIN SHAHARUDDIN","n":"KHAIRUL NIZAM SHAHARUDDIN","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB MOHD SABRI BIN ABD AZIZ","c":"MOHD SABRI BIN ABD AZIZ","n":"MOHD SABRI ABD AZIZ","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MUHAMMAD AZHARI BIN JAAFAR","c":"MUHAMMAD AZHARI BIN JAAFAR","n":"MUHAMMAD AZHARI JAAFAR","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB  SYED SAHARUDDIN BIN SYED YUSOFF","c":"SYED SAHARUDDIN BIN SYED YUSOFF","n":"SYED SAHARUDDIN SYED YUSOFF","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MOHD NORMAN HASRUL HISAM BIN DERAMAN","c":"MOHD NORMAN HASRUL HISAM BIN DERAMAN","n":"MOHD NORMAN HASRUL HISAM DERAMAN","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB AZIDUN MUHAMMAD ZULKIFLI BIN ARIFFIN","c":"AZIDUN MUHAMMAD ZULKIFLI BIN ARIFFIN","n":"AZIDUN MUHAMMAD ZULKIFLI ARIFFIN","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB ZAINUDIN BIN ZAINON","c":"ZAINUDIN BIN ZAINON","n":"ZAINUDIN ZAINON","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"KPL/PB AZIZAN BIN OMAR","c":"AZIZAN BIN OMAR","n":"AZIZAN OMAR","k":"DELTA","s":"IUN WAKTU PEJABAT"},{"r":"KONST/PB ABDUL HAIMIN BIN ABDUL HAMID","c":"ABDUL HAIMIN BIN ABDUL HAMID","n":"ABDUL HAIMIN ABDUL HAMID","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"KONST/PB HAIRI AZWAD BIN MOHD SATAR","c":"HAIRI AZWAD BIN MOHD SATAR","n":"HAIRI AZWAD MOHD SATAR","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"PEL.PB MUHAMAD HAFIAN BIN GHAZALI","c":"MUHAMAD HAFIAN BIN GHAZALI","n":"MUHAMAD HAFIAN GHAZALI","k":"DELTA","s":"IUN WAKTU PEJABAT"},{"r":"KONST/PB  NAZREEN BIN NAJIL","c":"NAZREEN BIN NAJIL","n":"NAZREEN NAJIL","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"KONST/PB NUR ASYIKIN BINTI MOHD NOOR","c":"NUR ASYIKIN BINTI MOHD NOOR","n":"NUR ASYIKIN MOHD NOOR","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB ARIFF SHAZWAN BIN YAHAYA","c":"ARIFF SHAZWAN BIN YAHAYA","n":"ARIFF SHAZWAN YAHAYA","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"PEL.PB MUHAMAD HAFIZAL BIN ZAINAL ABIDIN","c":"MUHAMAD HAFIZAL BIN ZAINAL ABIDIN","n":"MUHAMAD HAFIZAL ZAINAL ABIDIN","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB MOHD ZALI HAN BIN ROSLAN","c":"MOHD ZALI HAN BIN ROSLAN","n":"MOHD ZALI HAN ROSLAN","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"PEL.PB NUR SYARAFANA LAILI BINTI OTHMAN","c":"NUR SYARAFANA LAILI BINTI OTHMAN","n":"NUR SYARAFANA LAILI OTHMAN","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"KONST/PB SITI SALWANI BINTI IBRAHIM","c":"SITI SALWANI BINTI IBRAHIM","n":"SITI SALWANI IBRAHIM","k":"DELTA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"KONST/PB CHRISTOPHER BIN JAMES","c":"CHRISTOPHER BIN JAMES","n":"CHRISTOPHER JAMES","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"PEL.PB MUHAMAD AKBAR BIN MD. NAWI","c":"MUHAMAD AKBAR BIN MD. NAWI","n":"MUHAMAD AKBAR MD. NAWI","k":"DELTA","s":"JABATAN KECEMASAN"},{"r":"KPL/PB SYED FIRDAUS  BIN SYED BASARUDIN","c":"SYED FIRDAUS  BIN SYED BASARUDIN","n":"SYED FIRDAUS  SYED BASARUDIN","k":"DELTA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"KONST/PB MUHAMMAD SYARIFUDDIN BIN MUHAMMAD LATPI","c":"MUHAMMAD SYARIFUDDIN BIN MUHAMMAD LATPI","n":"MUHAMMAD SYARIFUDDIN MUHAMMAD LATPI","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB WAN NORHAYATI BINTI WAN HANAPI","c":"WAN NORHAYATI BINTI WAN HANAPI","n":"WAN NORHAYATI WAN HANAPI","k":"DELTA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"KONST/PB MUHAMMAD AL-AIMRAN BIN ABD ALI","c":"MUHAMMAD AL-AIMRAN BIN ABD ALI","n":"MUHAMMAD AL-AIMRAN ABD ALI","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB MOHD RIDZWAN BIN NOOR AZMI","c":"MOHD RIDZWAN BIN NOOR AZMI","n":"MOHD RIDZWAN NOOR AZMI","k":"DELTA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MOHD AZUARIESHAM BIN MUSTAPHA","c":"MOHD AZUARIESHAM BIN MUSTAPHA","n":"MOHD AZUARIESHAM MUSTAPHA","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"KPL/PB AHMAD FIRDAUS BIN MHD NAIM","c":"AHMAD FIRDAUS BIN MHD NAIM","n":"AHMAD FIRDAUS MHD NAIM","k":"DELTA","s":"UNIT PATROL"},{"r":"SJN/PB MUHD AKBAR GUNTUR BIN KASIM","c":"SJN/PB MUHD AKBAR GUNTUR BIN KASIM","n":"SJN/PB MOHD AKBAR GUNTUR KASIM","k":"DELTA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB MOHD ZAHIDI BIN MUKHTAR","c":"MOHD ZAHIDI BIN MUKHTAR","n":"MOHD ZAHIDI MUKHTAR","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"LKPL/PB AZAHA BIN MAT DIAH","c":"AZAHA BIN MAT DIAH","n":"AZAHA MAT DIAH","k":"DELTA","s":"UNIT PATROL"},{"r":"KONST/PB MOHD SHAHRIL BIN NASIR","c":"MOHD SHAHRIL BIN NASIR","n":"MOHD SHAHRIL NASIR","k":"DELTA","s":"WAKTU PEJABAT /PENTADBIRAN"},{"r":"PEL.PB NOR HASLINDA BINTI MOHD FAZIL","c":"NOR HASLINDA BINTI MOHD FAZIL","n":"NOR HASLINDA MOHD FAZIL","k":"DELTA","s":"BANGUNAN UTAMA"},{"r":"KONST/PB NURSYARIFUDDIN BIN ISMAIL","c":"NURSYARIFUDDIN BIN ISMAIL","n":"NURSYARIFUDDIN ISMAIL","k":"DELTA","s":"UNIT PATROL"},{"r":"KONST/PB SHAHRUL EFFENDY BIN ABDUL MUID","c":"SHAHRUL EFFENDY BIN ABDUL MUID","n":"SHAHRUL EFFENDY ABDUL MUID","k":"DELTA","s":"UNIT PATROL"},{"r":"KONST/PB ABDUL SALLEHS BIN AB RAHMAN","c":"ABDUL SALLEHS BIN AB RAHMAN","n":"ABDUL SALLEHS AB RAHMAN","k":"DELTA","s":"UNIT PATROL"},{"r":"KONST/PB BAZILAH BINTI A.RAHAMAN","c":"BAZILAH BINTI A.RAHAMAN","n":"BAZILAH A.RAHAMAN","k":"DELTA","s":"KOMPENI ECHO"},{"r":"KPL/PB SHAHRUL AL HAFIS BIN SHAARI","c":"SHAHRUL AL HAFIS BIN SHAARI","n":"SHAHRUL AL HAFIS SHAARI","k":"DELTA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MUHAMMAD HAZIQ HAKIMI BIN MOHD NORANI","c":"MUHAMMAD HAZIQ HAKIMI BIN MOHD NORANI","n":"MUHAMMAD HAZIQ HAKIMI MOHD NORANI","k":"DELTA","s":"UNIT PATROL"},{"r":"KONST/PB NURUL MAZIDAH BINTI ZULKIFLI","c":"NURUL MAZIDAH BINTI ZULKIFLI","n":"NURUL MAZIDAH ZULKIFLI","k":"DELTA","s":"KOMPENI ECHO"},{"r":"KONST/PB YAAKOB BIN ZAINAL ABIDIN","c":"YAAKOB BIN ZAINAL ABIDIN","n":"YAAKOB ZAINAL ABIDIN","k":"DELTA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB SAIFUL NIZAM BIN ROSLI","c":"SAIFUL NIZAM BIN ROSLI","n":"SAIFUL NIZAM ROSLI","k":"DELTA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB MUHAMMAD FADZLY BIN ABD RAHMAN","c":"MUHAMMAD FADZLY BIN ABD RAHMAN","n":"MUHAMMAD FADZLY ABD RAHMAN","k":"DELTA","s":"JABATAN URO/NEFRO A"},{"r":"KPL/PB MOHD LUKMAN BIN HAMDAN","c":"MOHD LUKMAN BIN HAMDAN","n":"MOHD LUKMAN HAMDAN","k":"DELTA","s":"BANGUNAN MHKL"},{"r":"PEL.PB MOHD ROSLI BIN MAT TAJUDDIN","c":"MOHD ROSLI BIN MAT TAJUDDIN","n":"MOHD ROSLI MAT TAJUDDIN","k":"DELTA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB  SUHAIRI BIN ISMAIL","c":"SUHAIRI BIN ISMAIL","n":"SUHAIRI ISMAIL","k":"DELTA","s":"BANGUNAN MHKL"},{"r":"PEL.PB HALIMATUN SSAADIAH BINTI ABD HALIM","c":"HALIMATUN SSAADIAH BINTI ABD HALIM","n":"HALIMATUN SSAADIAH ABD HALIM","k":"DELTA","s":"JABATAN URO/NEFRO A"},{"r":"KONST/PB NURSYUHADA BINTI MISNAN","c":"NURSYUHADA BINTI MISNAN","n":"NURSYUHADA MISNAN","k":"DELTA","s":"BANGUNAN MHKL"},{"r":"KPL/PB SYED SHARIZAN BIN SYED ALI","c":"SYED SHARIZAN BIN SYED ALI","n":"SYED SHARIZAN SYED ALI","k":"DELTA","s":"JABATAN URO/NEFRO B"},{"r":"KPL/PB ROSARIZAM BIN SAMSUDIN","c":"ROSARIZAM BIN SAMSUDIN","n":"ROSARIZAM SAMSUDIN","k":"DELTA","s":"JABATAN RADIOTERAPI (RT)"},{"r":"LKPL/PB SHARIZAN BIN AMATHU","c":"SHARIZAN BIN AMATHU","n":"SHARIZAN AMATHU","k":"DELTA","s":"JABATAN URO/NEFRO B"},{"r":"LKPL/PB MUHAMMAD TARMIZI BIN SAZALI","c":"MUHAMMAD TARMIZI BIN SAZALI","n":"MUHAMMAD TARMIZI SAZALI","k":"DELTA","s":"JABATAN RADIOTERAPI (RT)"},{"r":"LKPL/PB MUHAMMAD NAZRI BIN MUHAMAD YASIN","c":"MUHAMMAD NAZRI BIN MUHAMAD YASIN","n":"MUHAMMAD NAZRI MUHAMAD YASIN","k":"DELTA","s":"JABATAN URO/NEFRO B"},{"r":"KONST/PB KHAIROL ISZUWAN BIN ZAKARIA","c":"KHAIROL ISZUWAN BIN ZAKARIA","n":"KHAIROL ISZUWAN ZAKARIA","k":"DELTA","s":"JABATAN RADIOTERAPI (RT)"},{"r":"KONST/PB MOHAMAD SHAFIQ BIN RAHMAD","c":"MOHAMAD SHAFIQ BIN RAHMAD","n":"MOHAMAD SHAFIQ RAHMAD","k":"DELTA","s":"JABATAN URO/NEFRO B"},{"r":"KONST/PB MOHD NAZRI BIN ISMAIL","c":"MOHD NAZRI BIN ISMAIL","n":"MOHD NAZRI ISMAIL","k":"DELTA","s":"JABATAN RADIOTERAPI (RT)"},{"r":"PEL.PB NURUAFIKAR BINTI SHARIFF","c":"NURUAFIKAR BINTI SHARIFF","n":"NURUAFIKAR SHARIFF","k":"DELTA","s":"JABATAN URO/NEFRO B"},{"r":"PEL.PB MUHAMAD KHAIROL AKMALUDDIN BIN HARON","c":"MUHAMAD KHAIROL AKMALUDDIN BIN HARON","n":"MUHAMAD KHAIROL AKMALUDDIN HARON","k":"DELTA","s":"JABATAN URO/NEFRO B"},{"r":"KPL/PB NAIZAH BINTI DALI","c":"NAIZAH BINTI DALI","n":"NAIZAH DALI","k":"DELTA","s":"JABATAN PEDIATRIK"},{"r":"MAKLUM LEWAT","c":"MAKLUM LEWAT","n":"MAKLUM LEWAT","k":"DELTA","s":"WAKTU PEJABAT"},{"r":"LKPL/PB ZUKIFLI BIN DAUD","c":"ZUKIFLI BIN DAUD","n":"ZUKIFLI DAUD","k":"DELTA","s":"JABATAN PEDIATRIK"},{"r":"KPL/PB NORHAFISZUDOIN BIN MOHD SUSAH","c":"NORHAFISZUDOIN BIN MOHD SUSAH","n":"NORHAFISZUDOIN MOHD SUSAH","k":"DELTA","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB MARSITA BINTI MOHATAR","c":"MARSITA BINTI MOHATAR","n":"MARSITA MOHATAR","k":"DELTA","s":"JABATAN PEDIATRIK"},{"r":"LKPL/PB SAYED MUHAMMAD MOKHLESIN BIN SAYED UMAR","c":"SAYED MUHAMMAD MOKHLESIN BIN SAYED UMAR","n":"SAYED MUHAMMAD MOKHLESIN SAYED UMAR","k":"DELTA","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB  WAN MUHAMMAD ZAHIER BIN ZAIDIN","c":"WAN MUHAMMAD ZAHIER BIN ZAIDIN","n":"WAN MUHAMMAD ZAHIER ZAIDIN","k":"DELTA","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB ELIAS BIN OMAR","c":"ELIAS BIN OMAR","n":"ELIAS OMAR","k":"DELTA","s":"UNIT TUGAS KHAS"},{"r":"KONST/PB KHAIRIL BIN ANUAR","c":"KHAIRIL BIN ANUAR","n":"KHAIRIL ANUAR","k":"DELTA","s":"JABATAN PEDIATRIK"},{"r":"PEL.PB AHMAD FAHMIN BIN MA'ROF","c":"AHMAD FAHMIN BIN MA'ROF","n":"AHMAD FAHMIN MA'ROF","k":"DELTA","s":"JABATAN PEDIATRIK"},{"r":"PEL.PB MOHAMAD ADI BIN PALI","c":"MOHAMAD ADI BIN PALI","n":"MOHAMAD ADI PALI","k":"DELTA","s":"JABATAN PEDIATRIK"},{"r":"KONST/PB MOHAMAD SHAHMIR BIN SHAMSUDDIN","c":"MOHAMAD SHAHMIR BIN SHAMSUDDIN","n":"MOHAMAD SHAHMIR SHAMSUDDIN","k":"DELTA","s":"GERAKAN, AMRA & CCTV"},{"r":"KONST/PB NIK NOR HASLINI BINTI NIK LAH","c":"NIK NOR HASLINI BINTI NIK LAH","n":"NIK NOR HASLINI NIK LAH","k":"DELTA","s":"GERAKAN, AMRA & CCTV"},{"r":"KONST/PB  MOHD ABD HADI BIN MOHD NOOR","c":"MOHD ABD HADI BIN MOHD NOOR","n":"MOHD ABD HADI MOHD NOOR","k":"DELTA","s":"GERAKAN, AMRA & CCTV"},{"r":"KONST/PB KHAIRUL ANWAR BIN HARUN","c":"KHAIRUL ANWAR BIN HARUN","n":"KHAIRUL ANWAR HARUN","k":"DELTA","s":"GERAKAN, AMRA & CCTV"}];
+
+// Build KZP reference lookup map (normalised name → MASTER member)
+var KZP_REF_MAP = null;
+function buildKZPRefMap(){
+  if(KZP_REF_MAP) return;
+  KZP_REF_MAP = {};
+  KZP_REF.forEach(function(entry){
+    // Map each ref entry to MASTER members
+    var m = bestMatchFromRef(entry.c);
+    if(m){
+      KZP_REF_MAP[entry.n] = {member:m, kompeni:entry.k, section:entry.s};
+      KZP_REF_MAP[entry.c] = {member:m, kompeni:entry.k, section:entry.s};
+    }
+  });
+}
+
+// Match ref entry to MASTER
+function bestMatchFromRef(refName){
+  var best=null, bestSc=0;
+  MASTER.forEach(function(m){
+    var sc=nameScore(refName, m);
+    if(sc>bestSc){bestSc=sc;best=m;}
+  });
+  return bestSc>=75?best:null;
+}
+
+// Enhanced bestMatch: tries MASTER first, then KZP_REF as fallback
+function bestMatchWithRef(ctx, kompeniHint){
+  // 1. Normal bestMatch
+  var m = bestMatch(ctx);
+  if(m) return m;
+
+  // 2. KZP_REF fallback — useful when OCR garbles a name
+  buildKZPRefMap();
+  var norm = normalizeName(ctx);
+  // Try direct lookup
+  var hit = KZP_REF_MAP[norm];
+  if(hit) return hit.member;
+
+  // Try partial match against ref entries (filter by kompeni if known)
+  var candidates = kompeniHint ?
+    KZP_REF.filter(function(e){return e.k===kompeniHint;}) : KZP_REF;
+
+  var best2=null, bestSc2=0;
+  candidates.forEach(function(entry){
+    var sc=Math.max(nameScore(ctx, {nama:entry.c, bil:0}),
+                    nameScore(ctx, {nama:entry.r, bil:0}));
+    // Also try normalised version
+    var up = normalizeName(ctx);
+    var en = normalizeName(entry.c);
+    var words1 = up.split(' ').filter(function(w){return w.length>4;});
+    var words2 = en.split(' ').filter(function(w){return w.length>4;});
+    var shared = words1.filter(function(w){return words2.some(function(w2){return wordSim(w,w2);});});
+    if(shared.length>=1) sc=Math.max(sc,70);
+    if(shared.length>=2) sc=Math.max(sc,85);
+    if(sc>bestSc2){bestSc2=sc;best2=entry;}
+  });
+
+  if(bestSc2>=75&&best2){
+    var mem=bestMatchFromRef(best2.c);
+    if(mem) return mem;
+  }
+  return null;
 }
 
 
