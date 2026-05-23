@@ -141,11 +141,11 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
 .gh{background:var(--navy);color:#fff;text-align:center;padding:4px 2px;font-size:7px;font-weight:600;min-width:68px}
 .gh.sun{background:#1e1a2e;color:#c4b5fd}
 .gh.sat{background:#1e1a2e;color:#93c5fd}
-.gh-nm{text-align:left;min-width:105px;position:sticky;left:0;z-index:5;padding:4px 7px;background:var(--navy)}
-.gh-lyr{position:sticky;left:105px;z-index:5;background:rgba(0,0,0,.45);color:rgba(255,255,255,.25);padding:2px 5px;font-size:6px;text-align:left;min-width:80px}
+.gh-nm{text-align:left;min-width:155px;position:sticky;left:0;z-index:5;padding:4px 7px;background:var(--navy)}
+.gh-lyr{position:sticky;left:155px;z-index:5;background:rgba(0,0,0,.45);color:rgba(255,255,255,.25);padding:2px 5px;font-size:6px;text-align:left;min-width:80px}
 .gh-sum{background:rgba(0,0,0,.5);color:rgba(255,255,255,.35);font-size:6.5px;text-align:center;padding:4px 2px;min-width:24px}
 /* Name cell */
-.ntd{position:sticky;left:0;z-index:3;background:var(--navy2);border-right:1px solid rgba(200,150,10,.18)!important;padding:5px 7px;min-width:105px;max-width:105px;vertical-align:top}
+.ntd{position:sticky;left:0;z-index:3;background:var(--navy2);border-right:1px solid rgba(200,150,10,.18)!important;padding:5px 7px;min-width:155px;max-width:155px;vertical-align:top}
 .nb{font-size:6.5px;color:rgba(255,255,255,.3);font-weight:700}
 .nn{font-size:8px;font-weight:600;color:#fff;line-height:1.25;margin-top:1px}
 .nm{font-size:6.5px;color:rgba(255,255,255,.3);margin-top:2px}
@@ -154,7 +154,7 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
 .tag-th{background:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.25)}
 .tag-w{background:rgba(217,119,6,.2);color:#fbbf24;border:1px solid rgba(217,119,6,.25)}
 /* Layer label cell */
-.ltd{position:sticky;left:105px;z-index:3;padding:2px 5px;font-size:7px;font-weight:600;white-space:nowrap;min-width:80px;max-width:80px;border-right:1px solid rgba(200,150,10,.12)!important}
+.ltd{position:sticky;left:155px;z-index:3;padding:2px 5px;font-size:7px;font-weight:600;white-space:nowrap;min-width:80px;max-width:80px;border-right:1px solid rgba(200,150,10,.12)!important}
 .l-sh{background:#78350f;color:#fef08a}
 .l-kzp{background:#064e3b;color:#a7f3d0}
 .l-kzk{background:#065f46;color:#d1fae5}
@@ -163,8 +163,8 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
 .l-hr{background:#1e3a5f;color:#bfdbfe}
 .l-af{background:#0f0f0f;color:#f1f5f9}
 /* Day cells */
-.dc{text-align:center;padding:2px;font-size:7px;vertical-align:middle;min-width:68px}
-.dc-pre{white-space:pre-line;line-height:1.3;vertical-align:top;padding:2px 3px}
+.dc{text-align:center;padding:2px 3px;font-size:7px;vertical-align:middle;min-width:72px}
+.dc-pre{white-space:pre-line;line-height:1.35;vertical-align:top;padding:3px 4px}
 /* Shift */
 .sh-pg{background:rgba(6,78,59,.5);color:#6ee7b7;font-weight:700}
 .sh-pt{background:rgba(59,7,100,.5);color:#d8b4fe;font-weight:700}
@@ -242,6 +242,40 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
 #mob-btn{display:none;background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;padding:4px;margin-right:6px}
 .mob-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
 .mob-ov.show{display:block}
+/* CLICK-TO-EDIT MODAL */
+.cedit-ov{position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}
+.cedit-ov.show{display:flex}
+.cedit-box{background:var(--navy2);border:1px solid rgba(200,150,10,.3);border-radius:10px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.cedit-hd{background:rgba(0,0,0,.4);padding:10px 14px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:space-between}
+.cedit-title{font-size:11px;font-weight:700;color:#fff}
+.cedit-sub{font-size:8px;color:rgba(255,255,255,.35);margin-top:2px}
+.cedit-body{padding:14px}
+.cedit-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:flex-end}
+.cedit-field{flex:1;min-width:110px}
+.cedit-act{display:flex;gap:6px;margin-top:12px}
+.cstat-row{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0}
+.cstat-btn{padding:3px 9px;border-radius:4px;font-size:8px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-family:inherit;transition:.1s}
+.cstat-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.cstat-btn.sel{background:rgba(200,150,10,.3);border-color:var(--gold);color:var(--gold2)}
+/* COMPLETION BAR */
+.cprog{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-top:3px}
+.cprog-fill{height:3px;border-radius:2px;transition:width .4s}
+.cprog-0{background:#dc2626}.cprog-1{background:#d97706}.cprog-2{background:#2563eb}.cprog-ok{background:#059669}
+/* PROBLEM BADGE */
+.prob-badge{display:inline-flex;align-items:center;gap:3px;font-size:7px;padding:1px 6px;border-radius:10px;font-weight:700;white-space:nowrap}
+.pb-crit{background:rgba(220,38,38,.25);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.pb-warn{background:rgba(217,119,6,.2);color:#fbbf24;border:1px solid rgba(217,119,6,.25)}
+.pb-ok{background:rgba(5,150,105,.15);color:#34d399;border:1px solid rgba(5,150,105,.2)}
+/* QUICK FILL BANNER */
+.qfill-bar{background:rgba(30,27,75,.5);border:1px solid rgba(165,180,252,.2);border-radius:5px;padding:4px 9px;font-size:8px;color:#a5b4fc;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+/* UNDO TOAST */
+#undo-bar{position:fixed;bottom:60px;right:18px;background:var(--navy2);border:1px solid rgba(200,150,10,.3);border-radius:7px;padding:7px 12px;font-size:9px;color:#fff;z-index:9998;display:none;align-items:center;gap:9px}
+#undo-bar button{background:var(--gold);border:none;border-radius:4px;color:#1a0a00;font-size:8px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:inherit}
+/* CONFLICT highlight */
+.dc.conflict{outline:2px solid #dc2626;outline-offset:-2px}
+/* CLICK hint */
+.dc:not(.dc-noedit){cursor:pointer}
+.dc:not(.dc-noedit):hover{filter:brightness(1.2)}
 @media(max-width:768px){
   #mob-btn{display:flex}
   .sidebar{width:0;overflow:hidden;transition:.2s}
@@ -358,6 +392,9 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
       <div class="sb-item" data-pg="backup" onclick="nav(this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
       </div>
+      <div class="sb-item" style="cursor:pointer;color:rgba(255,255,255,.42)" onclick="generateTeguranReport()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Jana Laporan Teguran
+      </div>
     </div>
     <div class="sb-foot">
       <div class="sb-user" id="sb-user">–</div>
@@ -381,6 +418,14 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
       <div class="tb-right">
         <span class="sb-badge-db db-warn" id="db-badge">⏳ DB</span>
         <span class="rb" id="role-badge">–</span>
+        <button class="btn btn-sm" style="font-size:7.5px" onclick="autoFillFromKZ()" title="Auto-isi KZP→KZK, MC→HRMIS">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:9px;height:9px"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Auto-Fill
+        </button>
+        <button class="btn btn-sm" style="font-size:7.5px;color:#fca5a5" onclick="generateTeguranReport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:9px;height:9px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          Teguran
+        </button>
         <button class="btn btn-gold btn-sm" onclick="expPDF()" id="btn-pdf">PDF</button>
         <button class="btn btn-sm" onclick="expCSV()">CSV</button>
       </div>
@@ -931,6 +976,53 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
     </div><!-- content -->
   </div><!-- main -->
 </div><!-- app -->
+
+<!-- CLICK-TO-EDIT MODAL -->
+<div class="cedit-ov" id="cedit-ov" onclick="closeCEdit(event)">
+  <div class="cedit-box" onclick="event.stopPropagation()">
+    <div class="cedit-hd">
+      <div>
+        <div class="cedit-title" id="cedit-title">Edit Rekod</div>
+        <div class="cedit-sub" id="cedit-sub">Bil — Hari</div>
+      </div>
+      <button class="btn btn-sm" onclick="closeCEdit()" style="font-size:10px;padding:3px 8px">✕</button>
+    </div>
+    <div class="cedit-body">
+      <!-- Quick status buttons -->
+      <div class="flbl2">KZ Penyelia (Lapisan 2)</div>
+      <div class="cstat-row" id="ce-kzp-btns"></div>
+      <div class="flbl2" style="margin-top:8px">KZ Koperal (Lapisan 3)</div>
+      <div class="cstat-row" id="ce-kzk-btns"></div>
+      <div class="flbl2" style="margin-top:8px">TIMECARD (Lapisan 4)</div>
+      <div style="display:flex;gap:7px;align-items:center;margin-top:4px">
+        <div><label class="flbl2">IN</label><input class="finp2" id="ce-in" type="text" placeholder="07:02" style="width:60px"></div>
+        <div><label class="flbl2">OUT</label><input class="finp2" id="ce-out" type="text" placeholder="15:05" style="width:60px"></div>
+        <div><label class="flbl2">OT</label><select class="fsel" id="ce-ot" style="width:52px"><option value="false">Tidak</option><option value="true">Ya</option></select></div>
+      </div>
+      <div class="flbl2" style="margin-top:8px">Cuti HRMIS (Lapisan 6)</div>
+      <div class="cstat-row" id="ce-hr-btns"></div>
+      <div style="margin-top:8px"><label class="flbl2">Catatan</label>
+        <input class="finp2" id="ce-note" type="text" placeholder="Pengganti, lewat, MC tertinggal..."></div>
+      <!-- Auto-fill suggestion -->
+      <div id="ce-autofill" class="qfill-bar" style="display:none"></div>
+      <div class="cedit-act">
+        <button class="btn btn-gn" onclick="saveCEdit()" style="flex:1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>
+          Simpan
+        </button>
+        <button class="btn btn-rd btn-sm" onclick="clearCEdit()">Kosongkan</button>
+        <button class="btn btn-sm" onclick="closeCEdit()">Batal</button>
+      </div>
+      <div id="ce-stat" style="font-size:8px;color:#34d399;margin-top:6px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- UNDO BAR -->
+<div id="undo-bar">
+  <span id="undo-msg">Rekod disimpan</span>
+  <button onclick="undoLast()">↩ UNDO</button>
+</div>
 <script>
 
 'use strict';
@@ -1118,9 +1210,27 @@ function isAbs(v){  return ['ABS','X','LL'].includes(v); }
 function hasHR(c){  return !!(c&&c.hrmis&&c.hrmis.trim()); }
 
 // KZ CSS class
+function kzLabel(v){
+  var m={LL:'LL<br><span style="font-size:5.5px;opacity:.8">LAPOR LEWAT</span>',
+    L:'L<br><span style="font-size:5.5px;opacity:.8">LEWAT</span>',
+    TH:'TH<br><span style="font-size:5.5px;opacity:.8">TIDAK HADIR</span>',
+    TT:'TT<br><span style="font-size:5.5px;opacity:.8">TAHAN TUGAS</span>',
+    MC:'MC<br><span style="font-size:5.5px;opacity:.8">SAKIT</span>',
+    EL:'EL<br><span style="font-size:5.5px;opacity:.8">KECEMASAN</span>',
+    CR:'CR<br><span style="font-size:5.5px;opacity:.8">CUTI REHAT</span>',
+    ABS:'ABS<br><span style="font-size:5.5px;opacity:.8">TDK HADIR</span>',
+    CTR:'CTR<br><span style="font-size:5.5px;opacity:.8">CUTI TDK REKOD</span>',
+    CB:'CB<br><span style="font-size:5.5px;opacity:.8">CUTI BERSALIN</span>',
+    BER:'BER<br><span style="font-size:5.5px;opacity:.8">BERSALIN</span>',
+    'K/P':'K/P<br><span style="font-size:5.5px;opacity:.8">KURSUS/PROGRAM</span>',
+    X:'X<br><span style="font-size:5.5px;opacity:.8">TIDAK HADIR</span>',
+  };
+  if(v==='✓'||v==='HADIR') return '<span style="font-size:10px">✓</span><br><span style="font-size:5.5px;opacity:.8">HADIR</span>'; return m[v]||v||'';
+}
 function kzCls(v){
-  if(!v) return 'kz-bp';
-  const m={'✓':'kz-ok',MC:'kz-mc',CR:'kz-cr',EL:'kz-el',
+  if(!v||v==='OF') return 'kz-bp';
+  if(v==='✓'||v==='HADIR') return 'kz-ok';
+  const m={MC:'kz-mc',CR:'kz-cr',EL:'kz-el',
     ABS:'kz-abs',X:'kz-abs',TT:'kz-tt',TH:'kz-th',
     L:'kz-l',LL:'kz-ll','K/P':'kz-kp',CTR:'kz-ctr',
     CB:'kz-cb',CBR:'kz-cb',BER:'kz-ber'};
@@ -1144,9 +1254,11 @@ function tcAudit(bil,d){
   if(c.kzp==='TH'||c.kzk==='TH') return {txt:'TIDAK HADIR',cls:'tc-off',ok:true};
   if(!hasThumb(c)){
     const cutiK=isCuti(c.kzp)||isCuti(c.kzk);
+    const hasKZdata=!!(c.kzp||c.kzk);
+    if(!hasKZdata) return {txt:'—',cls:'tc-bp',ok:false}; // No KZ data yet, don't flag
     return cutiK
-      ?{txt:'ABS / TIADA PUNCH',cls:'tc-abs',ok:false,cutiK:true}
-      :{txt:'ABS / TIADA PUNCH',cls:'tc-abs',ok:false};
+      ?{txt:'TIADA PUNCH\n(CUTI '+( c.kzp||c.kzk)+')',cls:'tc-off',ok:true}
+      :{txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
   }
   // Has punch
   const inM=toMins(c.tc_in), outM=toMins(c.tc_out);
@@ -1332,8 +1444,8 @@ function renderGrid(ms,cid){
           // Layer values
           const shBg=sh==='S'?'rgba(6,78,59,.45)':sh==='P'?'rgba(59,7,100,.45)':sh==='M'?'rgba(30,58,95,.45)':'rgba(30,41,59,.35)';
           const shFg=sh==='S'?'#6ee7b7':sh==='P'?'#d8b4fe':sh==='M'?'#93c5fd':'#475569';
-          const kzpV=c.kzp||(sh==='O'?'OFFDAY':'BELUM DIPROSES');
-          const kzkV=c.kzk||(sh==='O'?'OFFDAY':'BELUM DIPROSES');
+          const kzpV=c.kzp||(sh==='O'?'OF':'');
+          const kzkV=c.kzk||(sh==='O'?'OF':'');
           // MC layer
           let mcT='-', mcBg='rgba(30,41,59,.2)', mcFg='#475569';
           if(sh==='O'){ mcT='OFFDAY'; }
@@ -1350,8 +1462,8 @@ function renderGrid(ms,cid){
           let hrT='-', hrBg='rgba(30,41,59,.2)', hrFg='rgba(148,163,184,.35)';
           if(sh==='O'){ hrT='OFFDAY'; }
           else if(c.hrmis){ hrT=c.hrmis; hrBg='rgba(30,58,95,.4)'; hrFg='#93c5fd'; }
-          else if(isCuti(c.kzp)||isCuti(c.kzk)){ hrT='TIADA PERMOHONAN'; hrBg='rgba(120,53,15,.2)'; hrFg='#fde68a'; }
-          days.push({d,sh,shBg,shFg,kzpV,kzkV,tc,mcT,mcBg,mcFg,hrT,hrBg,hrFg,af});
+          else if(isCuti(c.kzp)||isCuti(c.kzk)||isCuti(c.kzp)||isCuti(c.kzk)){ hrT='TIADA PERMOHONAN\nSila mohon'; hrBg='rgba(120,53,15,.25)'; hrFg='#fde68a'; }
+          days.push({d,sh,shBg,shFg,kzpV,kzkV,tc,mcT,mcBg,mcFg,hrT,hrBg,hrFg,af,m_bil:m.bil});
         }
         // Build 7 rows
         const noteBadge=m.note?'<span class="ntag tag-'+(m.nt||'w')+'">'+m.note+'</span>':'';
@@ -1363,17 +1475,38 @@ function renderGrid(ms,cid){
           '<td class="sc2" rowspan="7" style="color:'+(sp>0?'#fde68a':'#475569')+'">'+(sp||'-')+'</td>'+
           '<td class="sc2" rowspan="7" style="color:'+(fl>3?'#fca5a5':fl>0?'#fde68a':'#475569')+'">'+(fl||'-')+'</td>';
         const RCELLS=[
-          days.map(x=>'<td class="dc" style="background:'+x.shBg+';color:'+x.shFg+';font-weight:700">'+SHS[x.sh]+'<br><span style="font-size:5.5px;opacity:.55">'+SHT[x.sh]+'</span></td>'),
-          days.map(x=>'<td class="dc '+kzCls(x.kzpV)+'">'+x.kzpV+'</td>'),
-          days.map(x=>'<td class="dc '+kzCls(x.kzkV)+'">'+x.kzkV+'</td>'),
-          days.map(x=>'<td class="dc dc-pre '+x.tc.cls+'">'+x.tc.txt+'</td>'),
+          days.map(x=>'<td class="dc dc-noedit" style="background:'+x.shBg+';color:'+x.shFg+';font-weight:700">'+SHS[x.sh]+'<br><span style="font-size:5.5px;opacity:.55">'+SHT[x.sh]+'</span></td>'),
+          days.map(x=>'<td class="dc '+kzCls(x.kzpV)+'" style="font-size:7.5px;font-weight:700" onclick="openCEdit('+x.m_bil+','+x.d+',\'kzp\')">'+kzLabel(x.kzpV)+'</td>'),
+          days.map(x=>'<td class="dc '+kzCls(x.kzkV)+'" style="font-size:7.5px;font-weight:700" onclick="openCEdit('+x.m_bil+','+x.d+',\'kzk\')">'+kzLabel(x.kzkV)+'</td>'),
+          days.map(x=>{
+            // TC: show IN/OUT times as primary, flag as secondary
+            var c=D[x.m_bil]?.[x.d]||{};
+            var tcTxt='';
+            if(x.tc.txt.includes('OFFDAY')||x.tc.txt.includes('TAHAN TUGAS')||x.tc.txt.includes('TIDAK HADIR')){
+              tcTxt=x.tc.txt;
+            } else if(c.tc_in||c.tc_out){
+              // Has time data — show times first
+              var inT=c.tc_in?'\u2714 IN '+c.tc_in:'<span style="color:#fca5a5">\u2716 TIADA IN</span>';
+              var outT=c.tc_out?'\u2714 OUT '+c.tc_out:(c.tc_in?'<span style="color:#fca5a5">\u26A0 TIADA OUT</span>':'');
+              var flag='';
+              if(x.tc.txt.includes('LEWAT')) flag='<br><span style="color:#fbbf24;font-size:6px">LEWAT '+c.tc_in+'</span>';
+              else if(x.tc.txt.includes('IN AWAL')) flag='<br><span style="color:#fbbf24;font-size:6px">IN AWAL</span>';
+              else if(x.tc.txt.includes('OUT AWAL')) flag='<br><span style="color:#fbbf24;font-size:6px">OUT AWAL '+c.tc_out+'</span>';
+              else if(x.tc.txt.includes('TIADA OUT')) flag='<br><span style="color:#fca5a5;font-size:6px">TIADA OUT</span>';
+              else if(x.tc.txt.includes('TIADA IN')) flag='<br><span style="color:#fca5a5;font-size:6px">TIADA IN</span>';
+              tcTxt=inT+'<br>'+outT+flag;
+            } else {
+              tcTxt=x.tc.txt;
+            }
+            return '<td class="dc dc-pre '+x.tc.cls+'" style="font-size:7px" onclick="openCEdit('+x.m_bil+','+x.d+',\'tc\')">'+tcTxt+'</td>';
+          }),
           days.map(x=>'<td class="dc dc-pre" style="background:'+x.mcBg+';color:'+x.mcFg+';font-size:7px">'+x.mcT+'</td>'),
-          days.map(x=>'<td class="dc" style="background:'+x.hrBg+';color:'+x.hrFg+';font-size:7px">'+x.hrT+'</td>'),
+          days.map(x=>'<td class="dc" style="background:'+x.hrBg+';color:'+x.hrFg+';font-size:7px" onclick="openCEdit('+x.m_bil+','+x.d+',\'hr\')">'+x.hrT+'</td>'),
           days.map(x=>'<td class="dc dc-pre '+x.af.cls+'" style="font-weight:700;font-size:7px">'+x.af.txt+'</td>'),
         ];
         RCELLS.forEach((rc,ri)=>{
           const isFirst=ri===0;
-          const nameCell=isFirst?'<td class="ntd" rowspan="7"><div class="nb">'+m.bil+'</div><div class="nn">'+shortN(m.nama)+'</div><div class="nm">'+m.jab+' · '+m.komp+'</div>'+noteBadge+'</td>':'';
+          const nameCell=isFirst?'<td class="ntd" rowspan="7"><div class="nb">'+m.bil+'</div><div class="nn">'+shortN(m.nama,28)+'</div><div class="nm">'+m.jab+' · '+m.komp+'</div>'+noteBadge+'</td>':'';
           const lyrCell='<td class="ltd '+LAYERS[ri].cls+'">'+LAYERS[ri].lbl+'</td>';
           const sum=isFirst?smCols:'';
           const bdr=ri===6?'2px':'0.5px';
@@ -2405,8 +2538,13 @@ async function procAll(){
     log('Supabase: tersimpan ✓','ok');
   }
   updFlags();
-  const mg=document.getElementById('master-grid'); if(mg&&mg.children.length>0) renderMaster(null);
+  // Always refresh master grid after processing
+  renderMaster(null);
   renderDash();
+  updFlags();
+  // Also refresh mini grids if open
+  var pg=document.querySelector('.sb-item.on');
+  if(pg) nav(pg);
   if(btn){btn.disabled=false;btn.textContent='PROSES & KEMASKINI MASTER FILE';}
   const sum='✅ Selesai - '+updated+' rekod dikemaskini';
   const ps=document.getElementById('proc-stat'); if(ps) ps.textContent=sum;
@@ -2919,6 +3057,265 @@ async function renderStoredFiles(){
 }
 async function delSF(id){await deleteStoredFile(id);renderStoredFiles();toast('Fail dibuang','ok');}
 async function clearAllStored(){if(!confirm('Buang semua fail tersimpan?'))return;var ff=await loadStoredFiles();for(var i=0;i<ff.length;i++)await deleteStoredFile(ff[i].id);renderStoredFiles();toast('Semua fail dibuang','ok');}
+
+// ══════════════════════════════════════════════════════════════
+// CLICK-TO-EDIT ENGINE
+// ══════════════════════════════════════════════════════════════
+var CE = {bil:0, d:0, layer:'', prev:null};
+var UNDO_STACK = [];
+
+var KZ_OPTS=[
+  {v:'\u2713', l:'HADIR', cls:'kz-ok'},
+  {v:'MC',     l:'MC SAKIT', cls:'kz-mc'},
+  {v:'CR',     l:'CR', cls:'kz-cr'},
+  {v:'EL',     l:'EL KECEMASAN', cls:'kz-el'},
+  {v:'LL',     l:'LAPOR LEWAT', cls:'kz-ll'},
+  {v:'L',      l:'LEWAT', cls:'kz-l'},
+  {v:'ABS',    l:'ABS', cls:'kz-abs'},
+  {v:'TH',     l:'TIDAK HADIR', cls:'kz-th'},
+  {v:'TT',     l:'TAHAN TUGAS', cls:'kz-tt'},
+  {v:'CTR',    l:'CTR', cls:'kz-ctr'},
+  {v:'K/P',    l:'KURSUS/PROG', cls:'kz-kp'},
+  {v:'CB',     l:'CUTI BERSALIN', cls:'kz-cb'},
+  {v:'BER',    l:'BERSALIN', cls:'kz-ber'},
+  {v:'',       l:'KOSONG', cls:''},
+];
+var HR_OPTS=[
+  {v:'CR SAH',  l:'CR SAH'},
+  {v:'EL SAH',  l:'EL SAH'},
+  {v:'CTR SAH', l:'CTR SAH'},
+  {v:'MC SAH',  l:'MC SAH'},
+  {v:'CB SAH',  l:'CB SAH'},
+  {v:'K/P',     l:'K/P'},
+  {v:'',        l:'KOSONG'},
+];
+
+function openCEdit(bil, d, layer){
+  if(!reqAdmin()) return;
+  var m=MASTER.find(function(x){return x.bil===bil;});
+  if(!m) return;
+  CE={bil:bil, d:d, layer:layer};
+  var c=D[bil]?.[d]||{};
+  var sh=gSh(bil,d);
+
+  document.getElementById('cedit-title').textContent=m.nama;
+  document.getElementById('cedit-sub').textContent='Bil '+bil+' \xb7 '+d+'/04/2026 \xb7 Shift: '+SHL[sh];
+
+  // Build KZP buttons
+  function buildBtns(containerId, field, opts, current){
+    var con=document.getElementById(containerId);
+    if(!con) return;
+    con.innerHTML=opts.map(function(o){
+      var sel=current===o.v?'sel':'';
+      return '<button class="cstat-btn '+sel+'" onclick="ceBtnSel(\''+containerId+'\',\''+field+'\',\''+o.v+'\')">'+o.l+'</button>';
+    }).join('');
+  }
+  buildBtns('ce-kzp-btns','kzp',KZ_OPTS,c.kzp||'');
+  buildBtns('ce-kzk-btns','kzk',KZ_OPTS,c.kzk||'');
+  buildBtns('ce-hr-btns','hrmis',HR_OPTS,c.hrmis||'');
+
+  document.getElementById('ce-in').value=c.tc_in||'';
+  document.getElementById('ce-out').value=c.tc_out||'';
+  document.getElementById('ce-ot').value=c.ot?'true':'false';
+  document.getElementById('ce-note').value=c.note||'';
+  document.getElementById('ce-stat').textContent='';
+
+  // Auto-fill suggestion
+  var af=document.getElementById('ce-autofill');
+  var kzp=c.kzp||'';
+  if(kzp==='MC'&&!c.hrmis){
+    af.style.display='flex';
+    af.textContent='\u2192 KZP adalah MC — cadangan: tambah MC ke Lapisan 5 (Register MC)';
+  } else if((kzp==='CR'||kzp==='EL'||kzp==='CTR')&&!c.hrmis){
+    af.style.display='flex';
+    af.textContent='\u2192 KZP adalah '+kzp+' — wajib isi HRMIS untuk audit sah';
+  } else { af.style.display='none'; }
+
+  document.getElementById('cedit-ov').classList.add('show');
+}
+
+function ceBtnSel(containerId, field, val){
+  var con=document.getElementById(containerId);
+  if(!con) return;
+  con.querySelectorAll('.cstat-btn').forEach(function(b){b.classList.remove('sel');});
+  var btns=con.querySelectorAll('.cstat-btn');
+  btns.forEach(function(b){if(b.textContent.trim()===val||(val===''&&b.textContent.includes('KOSONG'))) b.classList.add('sel');});
+  // If first empty, mark the last btn
+  if(val==='') con.querySelectorAll('.cstat-btn')[con.querySelectorAll('.cstat-btn').length-1].classList.add('sel');
+  CE[field+'_val']=val;
+}
+
+function saveCEdit(){
+  var bil=CE.bil, d=CE.d;
+  if(!bil||!d) return;
+  if(!D[bil]) D[bil]={};
+  if(!D[bil][d]) D[bil][d]={kzp:'',kzk:'',tc_in:'',tc_out:'',ot:false,hrmis:'',pengganti:false,note:''};
+
+  // Save undo snapshot
+  UNDO_STACK.push({bil:bil,d:d,snap:JSON.parse(JSON.stringify(D[bil][d]))});
+  if(UNDO_STACK.length>20) UNDO_STACK.shift();
+
+  // Get values from buttons
+  function getBtnVal(containerId, field, fallback){
+    var con=document.getElementById(containerId);
+    if(!con) return fallback;
+    var sel=con.querySelector('.cstat-btn.sel');
+    if(!sel) return fallback;
+    // Map label back to value
+    var opts=containerId.includes('hr')?HR_OPTS:KZ_OPTS;
+    var lbl=sel.textContent.trim();
+    var opt=opts.find(function(o){return o.l===lbl||o.v===lbl;});
+    return opt?opt.v:fallback;
+  }
+
+  var kzp=getBtnVal('ce-kzp-btns','kzp',D[bil][d].kzp);
+  var kzk=getBtnVal('ce-kzk-btns','kzk',D[bil][d].kzk);
+  var hrmis=getBtnVal('ce-hr-btns','hrmis',D[bil][d].hrmis);
+  var tc_in=document.getElementById('ce-in').value.trim();
+  var tc_out=document.getElementById('ce-out').value.trim();
+  var ot=document.getElementById('ce-ot').value==='true';
+  var note=document.getElementById('ce-note').value.trim();
+
+  Object.assign(D[bil][d],{kzp:kzp,kzk:kzk,tc_in:tc_in,tc_out:tc_out,ot:ot,hrmis:hrmis,note:note});
+
+  // Auto-fill chain
+  if(kzp==='MC'&&!getMC(bil,d)){
+    // Auto-set KZK too
+    if(!D[bil][d].kzk||D[bil][d].kzk==='') D[bil][d].kzk='MC';
+  }
+  if(kzp==='TT'){for(var dd=1;dd<=30;dd++){if(D[bil][dd]&&gSh(bil,dd)!=='O'){D[bil][dd].kzp='TT';D[bil][dd].kzk='TT';}}}
+
+  // Save & refresh
+  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+  saveToDB(bil,4,d);
+
+  document.getElementById('ce-stat').textContent='\u2713 Disimpan — Audit: '+auditFinal(bil,d).txt.replace('\n',' | ');
+
+  // Show undo
+  var ub=document.getElementById('undo-bar'); var um=document.getElementById('undo-msg');
+  if(ub&&um){um.textContent='Bil '+bil+' hari '+d+'/04 dikemaskini';ub.style.display='flex';}
+  clearTimeout(window._undoT); window._undoT=setTimeout(function(){if(ub)ub.style.display='none';},4000);
+
+  // Refresh grid
+  renderMaster(null);
+  updFlags();
+}
+
+function clearCEdit(){
+  var bil=CE.bil, d=CE.d;
+  if(!bil||!d) return;
+  UNDO_STACK.push({bil:bil,d:d,snap:JSON.parse(JSON.stringify(D[bil][d]))});
+  D[bil][d]={kzp:'',kzk:'',tc_in:'',tc_out:'',ot:false,hrmis:'',pengganti:false,note:''};
+  // Re-apply TT/TH presets
+  if(bil===4||bil===10||bil===52){ var pre=bil===4?'TH':'TT'; D[bil][d].kzp=pre;D[bil][d].kzk=pre; }
+  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+  closeCEdit(); renderMaster(null); updFlags(); toast('Rekod dikosongkan','ok');
+}
+
+function closeCEdit(e){
+  if(e&&e.target!==document.getElementById('cedit-ov')) return;
+  document.getElementById('cedit-ov').classList.remove('show');
+}
+
+function undoLast(){
+  if(!UNDO_STACK.length){toast('Tiada rekod untuk undo','warn');return;}
+  var snap=UNDO_STACK.pop();
+  D[snap.bil][snap.d]=snap.snap;
+  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+  document.getElementById('undo-bar').style.display='none';
+  renderMaster(null); updFlags(); toast('Undo berjaya \u2713','ok');
+}
+
+// ══════════════════════════════════════════════════════════════
+// COMPLETION TRACKER — completion % per member
+// ══════════════════════════════════════════════════════════════
+function memberCompletion(bil){
+  var total=0, filled=0;
+  for(var d=1;d<=30;d++){
+    var sh=gSh(bil,d); if(sh==='O') continue;
+    var c=D[bil]?.[d]||{};
+    if(c.kzp==='TT'||c.kzk==='TT'||c.kzp==='TH'||c.kzk==='TH') continue;
+    total+=6;
+    if(c.kzp) filled++;
+    if(c.kzk) filled++;
+    if(c.tc_in||c.tc_out) filled++;
+    if(getMC(bil,d)||c.kzp!=='MC') filled++; // MC only needed if KZP=MC
+    if(c.hrmis||(!isCuti(c.kzp)&&!isCuti(c.kzk))) filled++; // HR needed only if cuti
+    var af=auditFinal(bil,d);
+    if(!af.inc) filled++;
+  }
+  return total>0?Math.round(filled/total*100):100;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROBLEM DETECTOR — flag members with most issues
+// ══════════════════════════════════════════════════════════════
+function getMemberProblems(bil){
+  var probs=[];
+  for(var d=1;d<=30;d++){
+    var sh=gSh(bil,d); if(sh==='O') continue;
+    var c=D[bil]?.[d]||{};
+    var af=auditFinal(bil,d);
+    if(c.kzp==='TT'||c.kzp==='TH') continue;
+    if(af.txt.includes('LEWAT')) probs.push({d:d,type:'LEWAT',sev:1});
+    else if(af.txt.includes('IN AWAL')) probs.push({d:d,type:'IN AWAL',sev:1});
+    else if(af.cls==='af-abs') probs.push({d:d,type:'ABS',sev:3});
+    else if(af.txt.includes('SILA MOHON')) probs.push({d:d,type:'SILA MOHON CUTI',sev:2});
+    else if(af.inc) probs.push({d:d,type:'DATA TIDAK LENGKAP',sev:2});
+    else if(af.txt.includes('SEMAK')) probs.push({d:d,type:'PERLU SEMAK',sev:1});
+  }
+  return probs.sort(function(a,b){return b.sev-a.sev;});
+}
+
+// ══════════════════════════════════════════════════════════════
+// GENERATE TEGURAN REPORT
+// ══════════════════════════════════════════════════════════════
+function generateTeguranReport(){
+  var rows=[['Bil','Nama','Jabatan','Kompeni','Isu','Tarikh','Tindakan Dicadangkan']];
+  MASTER.forEach(function(m){
+    var probs=getMemberProblems(m.bil);
+    probs.forEach(function(p){
+      var tindakan=p.type==='ABS'?'Temuramah / Surat Teguran':
+                   p.type==='LEWAT'||p.type==='IN AWAL'?'Amaran Lisan':
+                   p.type==='SILA MOHON CUTI'?'Wajib Mohon Cuti Dalam Sistem':
+                   'Semak Dokumen';
+      rows.push([m.bil,m.nama,m.jab,m.komp,p.type,p.d+'/04/2026',tindakan]);
+    });
+  });
+  dlCSV(rows,'eAKHA_Laporan_Teguran_April_2026.csv');
+  toast('Laporan Teguran dijana \u2713','ok');
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUTO-FILL FROM UPLOADED DATA
+// ══════════════════════════════════════════════════════════════
+function autoFillFromKZ(){
+  if(!reqAdmin()) return;
+  var n=0;
+  MASTER.forEach(function(m){
+    for(var d=1;d<=30;d++){
+      var c=D[m.bil]?.[d]||{}; var sh=gSh(m.bil,d);
+      if(sh==='O') continue;
+      // KZP→KZK sync: if one has data, copy to other if empty
+      if(c.kzp&&!c.kzk){D[m.bil][d].kzk=c.kzp;n++;}
+      if(c.kzk&&!c.kzp){D[m.bil][d].kzp=c.kzk;n++;}
+      // MC→HRMIS suggestion flag
+      // L6 auto-fill from MC_DATA
+      var mc=getMC(m.bil,d);
+      if(mc&&!c.hrmis){D[m.bil][d].hrmis='MC SAH';n++;}
+      // TC: if KZP=L/LL/ABS/TH and no TC, don't flag as error
+      // CTR/CR/EL with HRMIS → auto-set KZP if empty
+      if(c.hrmis&&!c.kzp){
+        var ht=c.hrmis.replace(' SAH','');
+        D[m.bil][d].kzp=ht; D[m.bil][d].kzk=ht; n++;
+      }
+    }
+  });
+  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+  renderMaster(null); updFlags();
+  toast('Auto-fill: '+n+' sel dikemaskini \u2713','ok');
+}
+
 
 // ── NAVIGATION ───────────────────────────────────────────────────
 const PG_TITLES={
