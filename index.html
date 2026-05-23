@@ -2526,159 +2526,64 @@ async function procAll(){
     pshow2('tc'); var nTc=0;
     for(var fi=0;fi<Array.from(UF['tc']).length;fi++){
       var file=Array.from(UF['tc'])[fi];
-      pmsg2('tc','Auto-baca: '+file.name+'...');
-      pbar2('tc',5);
-      var txt=await readFile(file,log);
-      pbar2('tc',55);
-      if(!txt||!txt.trim()){log('TC: Fail kosong','warn');continue;}
-      log('TC: '+txt.length+' chars dari '+file.name,'info');
-
-      var lines=txt.split('\n');
-      var curMember=null;
-
-      // Process in chunks for large files
-      var chunkSz=40000, chunks=Math.ceil(txt.length/chunkSz);
-      for(var ci=0;ci<chunks;ci++){
-        var chunk=txt.substring(ci*chunkSz,(ci+1)*chunkSz);
-        pbar2('tc',55+Math.round(ci/chunks*38));
-        var clines=chunk.split('\n');
-
-        for(var li=0;li<clines.length;li++){
-          var line=clines[li];
-          var clean=line.trim();
-          if(!clean) continue;
-
-          // ── MEMBER HEADER DETECTION ────────────────────────
-          // "User ID: 60354" or "Name: MOHAMAD ALIFF HAIQAL BIN JAMIL"
-          var nameM=clean.match(/^Name\s*[:\|]\s*(.+?)(?:\s+Department|\s*$)/i);
-          if(nameM){
-            curMember=bestMatchWithRef(nameM[1].trim(),"")||bestMatch(nameM[1].trim());
-            if(curMember) log('\u23f1 TC: Jumpa anggota: '+curMember.nama,'info');
-            else log('\u23f1 TC: Nama tidak sepadan: '+nameM[1].trim().substring(0,40),'warn');
-            continue;
-          }
-          // Also detect from "User ID" line context
-          var uidM=clean.match(/User\s*ID\s*[:\|]\s*(\d+)/i);
-          if(uidM){ curMember=null; continue; } // Will be set by next Name: line
-
-          // ── DATA ROW DETECTION ─────────────────────────────
-          // Format: DD-MM-YYYY/DD/MM/YYYY + times
-          // "01-04-2026 Wed Workday 18" or "01-04-26 Wed Workday 18 07:11 11:49 ..."
-          var dateM=clean.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{2,4})/);
-          if(!dateM) continue;
-          var dd=+dateM[1], mm=+dateM[2], yy=+dateM[3];
-          if(yy<100) yy+=2000;
-          if(mm!==4) continue;
-          if(dd<1||dd>30) continue;
-
-          // Extract all times from this row
-          var times=clean.match(/\b(\d{2}:\d{2})\b/g)||[];
-
-          // Check for Absent
-          var isAbsent=/Absent/i.test(clean);
-
-          // ── SHIFT-AWARE PUNCH SELECTION ───────────────────
-          // Get member shift for this day, then pick IN/OUT closest to shift start/end
-          var tcIn='', tcOut='';
-          if(times.length>0&&curMember){
-            var sh2=gSh(curMember.bil,dd);
-            if(sh2==='O'){
-              // Offday — record as OT if punches exist
-              if(times.length>=2){ tcIn=times[0]; tcOut=times[times.length-1]; }
-              else if(times.length===1){ tcIn=times[0]; tcOut=''; }
-            } else {
-              // Shift-aware: find punch closest to shift start (IN) and shift end (OUT)
-              var shSt2=sh2==='S'?420:sh2==='P'?900:1380; // PAGI=0700 PETANG=1500 MALAM=2300
-              var shEn2=sh2==='S'?900:sh2==='P'?1380:420; // PAGI=1500 PETANG=2300 MALAM=0700
-              var TOLERANCE=300; // 5 hours tolerance
-
-              function distFrom(m,target,isMalamWrap){
-                var d1=Math.abs(m-target);
-                if(isMalamWrap){ return Math.min(d1,Math.abs(m+1440-target),Math.abs(m-1440-target)); }
-                return d1;
-              }
-              var isMalam=sh2==='M';
-              // Filter: only keep times within tolerance of shift
-              var valid=times.filter(function(t){
-                var m=toMins(t);
-                return distFrom(m,shSt2,isMalam)<=TOLERANCE||distFrom(m,shEn2,isMalam)<=TOLERANCE;
-              });
-              if(!valid.length) valid=times; // fallback
-
-              // Pick best IN (closest to shift start) and best OUT (closest to shift end)
-              var bestIn=valid.reduce(function(a,b){return distFrom(toMins(a),shSt2,isMalam)<=distFrom(toMins(b),shSt2,isMalam)?a:b;});
-              var bestOut=valid.reduce(function(a,b){return distFrom(toMins(a),shEn2,isMalam)<=distFrom(toMins(b),shEn2,isMalam)?a:b;});
-
-              // Ensure IN != OUT
-              if(bestIn===bestOut&&valid.length>1){
-                var rem=valid.filter(function(t){return t!==bestIn;});
-                bestOut=rem.reduce(function(a,b){return distFrom(toMins(a),shEn2,isMalam)<=distFrom(toMins(b),shEn2,isMalam)?a:b;});
-              }
-
-              tcIn=bestIn;
-              tcOut=(bestIn===bestOut&&valid.length===1)?'':bestOut;
-            }
-          } else if(times.length===1){
-            tcIn=times[0]; tcOut='';
-          }
-
-          if(!curMember){
-            // Try to find member from surrounding context
-            var ctx=clines.slice(Math.max(0,li-5),li).join(' ');
-            curMember=bestMatch(ctx);
-          }
-          if(!curMember) continue;
-
-          var bil=curMember.bil;
-          if(!D[bil]||!D[bil][dd]) continue;
-
-          if(isAbsent){
-            if(!D[bil][dd].kzp) D[bil][dd].kzp='ABS';
-            if(!D[bil][dd].kzk) D[bil][dd].kzk='ABS';
-            nTc++;updated++;
-            log('\u26A0 TC ABS: '+curMember.nama+' hari '+dd+'/04','warn');
-            continue;
-          }
-
-          var sh3=gSh(bil,dd);
-          var shLabel=sh3==='S'?'PG':sh3==='P'?'PT':sh3==='M'?'M':'OF';
-
-          if(tcIn||tcOut){
-            if(!D[bil][dd].tc_in&&!D[bil][dd].tc_out){
-              D[bil][dd].tc_in=tcIn;
-              D[bil][dd].tc_out=tcOut;
-              nTc++;updated++;
-              log('\u2713 TC['+shLabel+']: '+curMember.nama+' hari '+dd+'/04 IN:'+tcIn+(tcOut?' OUT:'+tcOut:''),'ok');
-            } else if(D[bil][dd].tc_in&&!D[bil][dd].tc_out&&tcOut){
-              // Fill missing OUT
-              D[bil][dd].tc_out=tcOut;
-              log('\u2713 TC OUT filled: '+curMember.nama+' hari '+dd+'/04 OUT:'+tcOut,'ok');
-            }
-            // Flag early/late for KZP sync if KZP empty
-            if(!D[bil][dd].kzp&&tcIn){
-              var inM2=toMins(tcIn);
-              var shSt3=sh3==='S'?420:sh3==='P'?900:1380;
-              var isMalam3=sh3==='M';
-              var lateMins=isMalam3?Math.min(Math.abs(inM2-shSt3),Math.abs(inM2+1440-shSt3)):inM2-shSt3;
-              if(lateMins>10) D[bil][dd].kzp='L';
-              else D[bil][dd].kzp='\u2713';
-              if(!D[bil][dd].kzk) D[bil][dd].kzk=D[bil][dd].kzp;
-            }
-          }
+      pmsg2('tc','Auto-baca: '+file.name+'...'); pbar2('tc',5);
+      var tcTxt=await readFile(file,log); pbar2('tc',55);
+      if(!tcTxt||!tcTxt.trim()){log('TC: Fail kosong','warn');continue;}
+      log('TC: '+tcTxt.length+' chars dari '+file.name,'info');
+      var tcLines=tcTxt.split('\n'),curMember=null,memberRows=[],allBlocks=[];
+      var RE_NAME=/Name\s*[:\|]\s*([A-Z][A-Za-z\s\.\/]+?)(?:\s{2,}|\s+Department\s*:|\s+Date\s*:|\s*$)/i;
+      var RE_DATE=/^(\d{1,2})[\-\.\/](\d{1,2})[\-\.\/](\d{2,4})/;
+      for(var li=0;li<tcLines.length;li++){
+        var line=tcLines[li].trim();if(!line)continue;
+        var nmM=RE_NAME.exec(line);
+        if(nmM){
+          if(curMember&&memberRows.length)allBlocks.push({member:curMember,rows:memberRows.slice()});
+          var rawName=nmM[1].trim().replace(/\b(KECEMASAN|PEDIATRIK|RADIOTERAPI|RADIOLOGI|MHKL|IKTAR|RT|URO|NEFRO|SCACC|GERAKAN|PATROL|JABATAN|UNIT|BANGUNAN)\b.*$/i,'').trim();
+          curMember=bestMatchWithRef(rawName,'')||bestMatch(rawName);
+          if(curMember)log('\u23f1 TC: '+curMember.nama,'info');
+          else log('\u26A0 TC nama tidak kenal: '+rawName.substring(0,40),'warn');
+          memberRows=[];continue;
         }
-        await new Promise(function(r){setTimeout(r,0);});
+        var dtM=RE_DATE.exec(line);if(!dtM)continue;
+        var dd=parseInt(dtM[1]),mm=parseInt(dtM[2]),yy=parseInt(dtM[3]);
+        if(yy<100)yy+=2000;
+        if(mm>12&&dd<=12){var tmp=dd;dd=mm;mm=tmp;}
+        if(mm!==4||dd<1||dd>30)continue;
+        var times=line.match(/\b(\d{2}:\d{2})\b/g)||[];
+        if(curMember)memberRows.push({dd:dd,times:times,absent:/\bAbsent\b/i.test(line)});
       }
-
+      if(curMember&&memberRows.length)allBlocks.push({member:curMember,rows:memberRows.slice()});
+      log('TC: '+allBlocks.length+' anggota','info');
+      allBlocks.forEach(function(block){
+        var mem=block.member;if(!mem)return;var bil=mem.bil;
+        block.rows.forEach(function(row){
+          var dd=row.dd;if(!D[bil]||!D[bil][dd])return;
+          if(row.absent){if(!D[bil][dd].kzp){D[bil][dd].kzp='ABS';D[bil][dd].kzk='ABS';}nTc++;updated++;log('\u26A0 TC ABS: '+mem.nama+' h'+dd,'warn');return;}
+          if(!row.times.length)return;
+          var sh=gSh(bil,dd);
+          if(sh==='O'){if(!D[bil][dd].tc_in){D[bil][dd].tc_in=row.times[0];D[bil][dd].tc_out=row.times[row.times.length-1]||'';}nTc++;updated++;return;}
+          var shSt=sh==='S'?420:sh==='P'?900:1380,shEn=sh==='S'?900:sh==='P'?1380:420,isMalam=sh==='M';
+          function distF(m4,tgt){var d1=Math.abs(m4-tgt);return isMalam?Math.min(d1,Math.abs(m4+1440-tgt),Math.abs(m4-1440-tgt)):d1;}
+          var TOLE=300,valid=row.times.filter(function(t){var m4=toMins(t);return distF(m4,shSt)<=TOLE||distF(m4,shEn)<=TOLE;});
+          if(!valid.length)valid=row.times;
+          var bIn=valid.reduce(function(a,b){return distF(toMins(a),shSt)<=distF(toMins(b),shSt)?a:b;});
+          var bOut=valid.reduce(function(a,b){return distF(toMins(a),shEn)<=distF(toMins(b),shEn)?a:b;});
+          if(bIn===bOut&&valid.length>1){var rem=valid.filter(function(t){return t!==bIn;});if(rem.length)bOut=rem.reduce(function(a,b){return distF(toMins(a),shEn)<=distF(toMins(b),shEn)?a:b;});}
+          var tcIn=bIn,tcOut=(bIn===bOut&&valid.length===1)?'':bOut;
+          if(!D[bil][dd].tc_in){
+            D[bil][dd].tc_in=tcIn;D[bil][dd].tc_out=tcOut||'';
+            var shL=sh==='S'?'PG':sh==='P'?'PT':'M';nTc++;updated++;
+            log('\u2713 TC['+shL+']: '+mem.nama+' h'+dd+' IN:'+tcIn+(tcOut?' OUT:'+tcOut:''),'ok');
+            if(!D[bil][dd].kzp){var late=isMalam?Math.min(Math.abs(toMins(tcIn)-shSt),Math.abs(toMins(tcIn)+1440-shSt)):toMins(tcIn)-shSt;D[bil][dd].kzp=late>10?'L':'\u2713';if(!D[bil][dd].kzk)D[bil][dd].kzk=D[bil][dd].kzp;}
+          }
+        });
+      });
       pbar2('tc',100);
-      log('TIMECARD: '+nTc+' rekod dari '+file.name,nTc>0?'ok':'warn');
-      if(nTc===0) log('TC: Pastikan format: Date | In | Out. Cuba export semula sebagai teks/CSV.','warn');
+      log('TIMECARD: '+nTc+' rekod',nTc>0?'ok':'warn');
     }
   }
 
-  // ══════════════════════════════════════════════════════════
-  // HRMIS PARSER
-  // ══════════════════════════════════════════════════════════
-  if(UF['hr']){
+    if(UF['hr']){
     log('\ud83d\udcc4 Membaca HRMIS...','info');
     pshow2('hr'); var nHr=0;
     for(var fi=0;fi<Array.from(UF['hr']).length;fi++){
@@ -3369,7 +3274,7 @@ function openCEdit(bil, d, layer){
     if(!con) return;
     con.innerHTML=opts.map(function(o){
       var sel=current===o.v?'sel':'';
-      return '<button class="cstat-btn '+sel+'" onclick="ceBtnSel(\''+containerId+'\',\''+field+'\',\''+o.v+'\')">'+o.l+'</button>';
+      return '<button class="cstat-btn '+sel+'" data-val="'+o.v+'" onclick="ceBtnSel(\''+containerId+'\',\''+o.v+'\')">'+ o.l +'</button>';
     }).join('');
   }
   buildBtns('ce-kzp-btns','kzp',KZ_OPTS,c.kzp||'');
@@ -3396,15 +3301,22 @@ function openCEdit(bil, d, layer){
   document.getElementById('cedit-ov').classList.add('show');
 }
 
-function ceBtnSel(containerId, field, val){
+function ceBtnSel(containerId, val){
   var con=document.getElementById(containerId);
   if(!con) return;
+  // Remove all selected
   con.querySelectorAll('.cstat-btn').forEach(function(b){b.classList.remove('sel');});
-  var btns=con.querySelectorAll('.cstat-btn');
-  btns.forEach(function(b){if(b.textContent.trim()===val||(val===''&&b.textContent.includes('KOSONG'))) b.classList.add('sel');});
-  // If first empty, mark the last btn
-  if(val==='') con.querySelectorAll('.cstat-btn')[con.querySelectorAll('.cstat-btn').length-1].classList.add('sel');
-  CE[field+'_val']=val;
+  // Find and mark the clicked button by data-val
+  var found=false;
+  con.querySelectorAll('.cstat-btn').forEach(function(b){
+    if(b.getAttribute('data-val')===val){b.classList.add('sel');found=true;}
+  });
+  // Fallback: match by text
+  if(!found){
+    con.querySelectorAll('.cstat-btn').forEach(function(b){
+      if(b.textContent.trim()===val) b.classList.add('sel');
+    });
+  }
 }
 
 function saveCEdit(){
@@ -3423,7 +3335,10 @@ function saveCEdit(){
     if(!con) return fallback;
     var sel=con.querySelector('.cstat-btn.sel');
     if(!sel) return fallback;
-    // Map label back to value
+    // Read value from data-val attribute (most reliable)
+    var dv=sel.getAttribute('data-val');
+    if(dv!==null) return dv;
+    // Fallback: map label to value
     var opts=containerId.includes('hr')?HR_OPTS:KZ_OPTS;
     var lbl=sel.textContent.trim();
     var opt=opts.find(function(o){return o.l===lbl||o.v===lbl;});
@@ -3863,6 +3778,7 @@ document.addEventListener('DOMContentLoaded',function(){
   if(loadSess()){ bootApp(); return; }
   document.getElementById('auth-wall').style.display='flex';
 })
+
 
 </script>
 </body>
