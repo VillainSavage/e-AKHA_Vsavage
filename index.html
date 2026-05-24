@@ -2099,14 +2099,7 @@ async function readFile(file, logFn){
         for(let p=1;p<=numPages;p++){
           const page=await pdf.getPage(p);
           const tc=await page.getTextContent();
-          let prevX=null,prevY=null;
-          const pageText=tc.items.map(function(item){
-            var x=item.transform?item.transform[4]:0;
-            var y=item.transform?item.transform[5]:0;
-            var sep=(prevY!==null&&Math.abs(y-prevY)>5)?'\n':(prevX!==null&&x<prevX-10?'\n':' ');
-            prevX=x+(item.width||0); prevY=y;
-            return sep+item.str;
-          }).join('').trim();
+          const pageText=tc.items.map(i=>i.str).join(' ');
           allText+=pageText+'\n';
         }
         const trimmed=allText.trim();
@@ -2136,48 +2129,30 @@ async function readFile(file, logFn){
 async function ocrPDF(pdf, fname, numPagesArg, log){
   if(typeof numPagesArg==='function'){log=numPagesArg;numPagesArg=null;}
   var numPages=numPagesArg||pdf.numPages;
-  if(!window.Tesseract){ log('Tesseract tidak tersedia','err'); return ''; }
-  var allText='';
+  if(!window.Tesseract){ log('Tesseract tidak tersedia — guna Entry Manual','err'); return ''; }
+  let allText='';
   log('OCR PDF: '+fname+' ('+numPages+' m/s)...','info');
-  for(var p=1;p<=numPages;p++){
+  for(let p=1;p<=numPages;p++){
     try{
-      var page=await pdf.getPage(p);
-      var vp=page.getViewport({scale:2.5});
-      var cvs=document.createElement('canvas');
-      cvs.width=vp.width; cvs.height=vp.height;
-      var ctx2=cvs.getContext('2d');
-      await page.render({canvasContext:ctx2,viewport:vp}).promise;
-      log('OCR m/s '+p+'/'+numPages+'...','info');
-      // Auto-detect orientation: 0°, 90°, 180°, 270°
-      var bestText='',bestScore=0;
-      var angles=[0,90,180,270];
-      for(var ai=0;ai<angles.length;ai++){
-        var ang=angles[ai];
-        var c2=document.createElement('canvas');
-        c2.width=ang===0||ang===180?cvs.width:cvs.height;
-        c2.height=ang===0||ang===180?cvs.height:cvs.width;
-        var cx=c2.getContext('2d');
-        cx.translate(c2.width/2,c2.height/2);
-        cx.rotate(ang*Math.PI/180);
-        cx.drawImage(cvs,-cvs.width/2,-cvs.height/2);
-        var res=await Tesseract.recognize(c2,'msa',{logger:function(){}});
-        var conf=res.data.confidence||0;
-        var txt2=res.data.text||'';
-        var kw=['NAMA','KLINIK','MC','TARIKH','BIL','KOMPENI','HADIR','BERTUGAS'];
-        var hits=kw.filter(function(k){return txt2.toUpperCase().includes(k);}).length;
-        var nameHits=MASTER.filter(function(m){return txt2.toUpperCase().includes(m.nama.split(' ')[0]);}).length;
-        var score=conf+hits*4+nameHits*6;
-        if(score>bestScore){bestScore=score;bestText=txt2;}
-        if(ang===0&&conf>75) break; // Good enough at 0°
-      }
-      allText+=bestText+'\n';
-      log('OCR m/s '+p+' ('+Math.round(bestScore)+'pts): '+bestText.trim().substring(0,50)+'...','ok');
+      const page=await pdf.getPage(p);
+      const vp=page.getViewport({scale:2.5});
+      const canvas=document.createElement('canvas');
+      canvas.width=vp.width; canvas.height=vp.height;
+      const ctx=canvas.getContext('2d');
+      await page.render({canvasContext:ctx,viewport:vp}).promise;
+      const imgData=canvas.toDataURL('image/png');
+      log('OCR muka surat '+p+'/'+numPages+'...','info');
+      const result=await Tesseract.recognize(imgData,'eng+msa',{
+        logger:()=>{}
+      });
+      allText+=result.data.text+'\n';
+      log('Muka surat '+p+': '+result.data.text.trim().substring(0,60)+'...','ok');
     } catch(e){ log('OCR m/s '+p+' gagal: '+e.message,'warn'); }
   }
-  log('OCR selesai: '+allText.trim().length+' chars','ok');
   return allText;
 }
 
+// OCR a single image file
 async function ocrImageFile(file, log){
   if(!window.Tesseract){ log('Tesseract tidak tersedia','err'); return ''; }
   try{
@@ -2197,14 +2172,14 @@ function addLog(lb,msg,t){
 
 async function procAll(){
   if(!reqAdmin()) return;
-  var btn=document.getElementById('btn-proc');
-  var lw=document.getElementById('log-wrap');
-  var lb=document.getElementById('log-body');
+  const btn=document.getElementById('btn-proc');
+  const lw=document.getElementById('log-wrap');
+  const lb=document.getElementById('log-body');
   if(btn){btn.disabled=true;btn.textContent='\u23F3 Memproses...';}
   if(lw) lw.style.display='block';
   if(lb) lb.innerHTML='';
-  var updated=0;
-  var log=function(m,t){addLog(lb,m,t||'info');};
+  let updated=0;
+  const log=(m,t)=>addLog(lb,m,t||'info');
   log('Memulakan pemprosesan...');
   // Load stored files from IndexedDB into UF
   var storedFiles=await loadStoredFiles();
@@ -2329,8 +2304,8 @@ async function procAll(){
   if(UF['mc']){
     log('📋 Membaca MC Hard Copy (tabular OCR)...','info');
     pshow2('mc'); var n=0;
-    for(var fi=0;fi<(UF['mc']||[]).length;fi++){
-      var file=(UF['mc']||[])[fi];
+    for(var fi=0;fi<Array.from(UF['mc']).length;fi++){
+      var file=Array.from(UF['mc'])[fi];
       pmsg2('mc','Auto-baca MC: '+file.name+' (cari nama + DD.MM.YYYY + klinik)...');
       pbar2('mc',10);
       var txt=await readFile(file,log);
@@ -2415,8 +2390,8 @@ async function procAll(){
   if(UF['kzp']){
     log('\ud83d\udcc4 Membaca KZ Penyelia...','info');
     pshow2('kzp'); var nKzp=0;
-    for(var fi=0;fi<(UF['kzp']||[]).length;fi++){
-      var file=(UF['kzp']||[])[fi];
+    for(var fi=0;fi<Array.from(UF['kzp']).length;fi++){
+      var file=Array.from(UF['kzp'])[fi];
       var fn2kzp=file.name.toLowerCase();
       pmsg2('kzp','Auto-baca: '+file.name+'...');
       pbar2('kzp',5);
@@ -2538,8 +2513,8 @@ async function procAll(){
   if(UF['kzk']){
     log('💬 Membaca KZ Koperal (WhatsApp)...','info');
     pshow2('kzk'); var nKzk=0;
-    for(var fi=0;fi<(UF['kzk']||[]).length;fi++){
-      var file=(UF['kzk']||[])[fi];
+    for(var fi=0;fi<Array.from(UF['kzk']).length;fi++){
+      var file=Array.from(UF['kzk'])[fi];
       pmsg2('kzk','Auto-baca: '+file.name+'...');
       pbar2('kzk',10);
       var txt=await readFile(file,log);
@@ -2655,8 +2630,8 @@ async function procAll(){
   if(UF['tc']){
     log('\u23f1 Membaca TIMECARD...','info');
     pshow2('tc'); var nTc=0;
-    for(var fi=0;fi<(UF['tc']||[]).length;fi++){
-      var file=(UF['tc']||[])[fi];
+    for(var fi=0;fi<Array.from(UF['tc']).length;fi++){
+      var file=Array.from(UF['tc'])[fi];
       pmsg2('tc','Auto-baca: '+file.name+'...'); pbar2('tc',5);
       var tcTxt=await readFile(file,log); pbar2('tc',55);
       if(!tcTxt||!tcTxt.trim()){log('TC: Fail kosong','warn');continue;}
@@ -2717,8 +2692,8 @@ async function procAll(){
     if(UF['hr']){
     log('\ud83d\udcc4 Membaca HRMIS...','info');
     pshow2('hr'); var nHr=0;
-    for(var fi=0;fi<(UF['hr']||[]).length;fi++){
-      var file=(UF['hr']||[])[fi];
+    for(var fi=0;fi<Array.from(UF['hr']).length;fi++){
+      var file=Array.from(UF['hr'])[fi];
       pmsg2('hr','Auto-baca: '+file.name+'...');
       pbar2('hr',10);
       var txt=await readFile(file,log);
@@ -2730,7 +2705,7 @@ async function procAll(){
         'CR':'CR','MC':'MC','CTR':'CTR','CB':'CB','CBR':'CBR'};
       var linesHr=txt.split('\n');
       linesHr.forEach(function(line,li){
-        var ctx=linesHr.slice(Math.max(0,li-8),li+8).join(' ');
+        var ctx=linesHr.slice(Math.max(0,li-6),li+6).join(' ');
         var allDates=findAllDates(ctx);
         if(!allDates.length) return;
         var member=bestMatch(ctx);
@@ -2757,8 +2732,8 @@ async function procAll(){
   if(UF['ctr-up']){
     log('\ud83d\udd4c Membaca CTR Raya Haji...','info');
     var nCtr=0;
-    for(var fi=0;fi<(UF['ctr-up']||[]).length;fi++){
-      var file=(UF['ctr-up']||[])[fi];
+    for(var fi=0;fi<Array.from(UF['ctr-up']).length;fi++){
+      var file=Array.from(UF['ctr-up'])[fi];
       var txt=await readFile(file,log);
       if(!txt.trim()) continue;
       txt.split('\n').forEach(function(line,li){
@@ -2782,8 +2757,8 @@ async function procAll(){
   if(UF['man']){
     log('\ud83d\udcdd Membaca Dokumen Manual...','info');
     pshow2('man'); var nMan=0;
-    for(var fi=0;fi<(UF['man']||[]).length;fi++){
-      var file=(UF['man']||[])[fi];
+    for(var fi=0;fi<Array.from(UF['man']).length;fi++){
+      var file=Array.from(UF['man'])[fi];
       pmsg2('man','Auto-baca: '+file.name+'...');
       pbar2('man',10);
       var txt=await readFile(file,log);
@@ -2831,7 +2806,7 @@ async function procAll(){
   if(SUPA_OK&&updated>0){
     log('Menyimpan ke Supabase...','info');
     const savePromises=[];
-    MASTER.forEach(m=>{for(let d=1;d<=30;d++){if(D[m.bil][d]&&D[m.bil][d].kzk||D[m.bil][d]&&D[m.bil][d].tc_in||D[m.bil][d]&&D[m.bil][d].hrmis) savePromises.push(saveToDB(m.bil,4,d));}});
+    MASTER.forEach(m=>{for(let d=1;d<=30;d++){if(D[m.bil][d]?.kzk||D[m.bil][d]?.tc_in||D[m.bil][d]?.hrmis) savePromises.push(saveToDB(m.bil,4,d));}});
     await Promise.all(savePromises);
     log('Supabase: tersimpan ✓','ok');
   }
@@ -2840,12 +2815,9 @@ async function procAll(){
   renderMaster(null);
   renderDash();
   updFlags();
-  // Refresh mini grids + auto-navigate to master if not already there
-  var curPg=document.querySelector('.sb-item.on');
-  if(curPg) { var pgId=curPg.dataset?curPg.dataset.pg:null; if(pgId) nav(curPg); }
-  // Force master grid refresh
-  var mg=document.getElementById('master-grid');
-  if(mg&&mg.innerHTML.trim()==='') renderMaster(null);
+  // Also refresh mini grids if open
+  var pg=document.querySelector('.sb-item.on');
+  if(pg) nav(pg);
   if(btn){btn.disabled=false;btn.textContent='PROSES & KEMASKINI MASTER FILE';}
   const sum='✅ Selesai - '+updated+' rekod dikemaskini';
   const ps=document.getElementById('proc-stat'); if(ps) ps.textContent=sum;
@@ -3210,7 +3182,7 @@ async function bootApp(){
   // Load localStorage
   try{
     const dd=localStorage.getItem('eakha_data');
-    if(dd){ const p=JSON.parse(dd); Object.keys(p).forEach(function(b){ if(D[b]) Object.keys(p[b]).forEach(function(dy){ if(D[b][dy]) Object.assign(D[b][dy],p[b][dy]); }); }); }
+    if(dd){ const p=JSON.parse(dd); Object.keys(p).forEach(b=>{ if(D[b]) Object.keys(p[b]).forEach(h=>{ if(D[b][h]) Object.assign(D[b][h],p[b][h]); }); }); }
     const mc=localStorage.getItem('eakha_mc');
     if(mc){ const p=JSON.parse(mc); p.forEach(r=>{ if(!MC_DATA.some(m=>m.bil===r.bil&&m.dari===r.dari)) MC_DATA.push(r); }); }
     const rv=localStorage.getItem('eakha_raya'); if(rv) RAYA_DATA=JSON.parse(rv)||[];
