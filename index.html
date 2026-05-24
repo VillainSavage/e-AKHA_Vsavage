@@ -242,6 +242,53 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
 /* Mob */
 #mob-btn{display:none;background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;padding:4px;margin-right:6px}
 .mob-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+
+/* SENARAI ANGGOTA */
+.jab-hdr{background:linear-gradient(135deg,rgba(14,30,58,.95),rgba(10,22,40,.95));border:1px solid rgba(200,150,10,.2);border-radius:7px;padding:8px 13px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.jab-hdr-name{font-size:11px;font-weight:800;color:var(--gold2);letter-spacing:.4px}
+.jab-hdr-sub{font-size:7.5px;color:rgba(255,255,255,.35);margin-top:1px}
+.jab-komp-hdr{background:rgba(0,0,0,.3);border-radius:5px;padding:4px 10px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
+.jab-komp-name{font-size:8.5px;font-weight:700;color:#93c5fd}
+.ang-card{background:var(--navy2);border:1px solid rgba(255,255,255,.06);border-radius:6px;display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:4px;transition:.12s}
+.ang-card:hover{background:rgba(255,255,255,.04);border-color:rgba(200,150,10,.2)}
+.ang-card.ang-lain{border-left:3px solid #7c3aed}
+.ang-card.ang-inactive{opacity:.45}
+.ang-card.ang-verified{border-left:3px solid #059669}
+.ang-card.ang-pending{border-left:3px solid #d97706}
+.ang-num{font-size:9px;font-weight:700;color:var(--gold2);min-width:22px}
+.ang-name{flex:1;min-width:0}
+.ang-nama{font-size:8.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ang-sub{font-size:7px;color:rgba(255,255,255,.35);margin-top:1px}
+.ang-komp-badge{font-size:6.5px;padding:1px 5px;border-radius:3px;font-weight:700;margin-right:3px}
+.kbg-alpha{background:rgba(5,150,105,.2);color:#34d399}
+.kbg-bravo{background:rgba(37,99,235,.2);color:#93c5fd}
+.kbg-charlie{background:rgba(124,58,237,.2);color:#c4b5fd}
+.kbg-delta{background:rgba(220,38,38,.2);color:#fca5a5}
+.ang-shift-row{display:flex;gap:2px;flex-wrap:wrap;margin-top:3px}
+.ang-sh-cell{font-size:5.5px;padding:1px 3px;border-radius:2px;font-weight:700}
+.sh-s{background:rgba(6,78,59,.4);color:#6ee7b7}
+.sh-p{background:rgba(59,7,100,.4);color:#d8b4fe}
+.sh-m{background:rgba(30,58,95,.4);color:#93c5fd}
+.sh-o{background:rgba(30,41,59,.3);color:#475569}
+.ang-status{font-size:7px;padding:2px 7px;border-radius:10px;font-weight:700;white-space:nowrap;margin-left:4px}
+.ast-aktif{background:rgba(5,150,105,.2);color:#34d399}
+.ast-nonaktif{background:rgba(127,29,29,.2);color:#fca5a5}
+.ast-lain{background:rgba(124,58,237,.2);color:#c4b5fd}
+.ast-pending{background:rgba(217,119,6,.2);color:#fbbf24}
+.ast-sahkan{background:rgba(5,150,105,.3);color:#34d399;border:1px solid rgba(5,150,105,.3)}
+.tab-jab{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.tab-jab-btn{padding:4px 12px;border-radius:20px;font-size:8.5px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-family:inherit;transition:.12s}
+.tab-jab-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.tab-jab-btn.on{background:rgba(200,150,10,.2);border-color:rgba(200,150,10,.4);color:var(--gold2)}
+.tab-jab-btn.lain{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.3);color:#c4b5fd}
+.tab-jab-btn.lain.on{background:rgba(124,58,237,.3)}
+.ang-search-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.ang-stat-strip{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.ang-stat-chip{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);border-radius:5px;padding:5px 10px;font-size:8px}
+.ang-stat-chip b{font-size:13px;display:block;font-weight:700;line-height:1}
+.import-zone{border:2px dashed rgba(255,255,255,.12);border-radius:7px;padding:12px;text-align:center;cursor:pointer;background:rgba(0,0,0,.2);transition:.15s}
+.import-zone:hover{border-color:var(--gold);background:rgba(200,150,10,.05)}
+.import-zone input{position:absolute;opacity:0;width:0;height:0}
 .mob-ov.show{display:block}
 /* CLICK-TO-EDIT MODAL */
 .cedit-ov{position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}
@@ -382,7 +429,7 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
     <div class="sb-sec" id="sb-admin">
       <div class="sb-lbl">Pentadbir</div>
       <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
       </div>
       <div class="sb-item" data-pg="upload" onclick="nav(this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
@@ -671,32 +718,91 @@ body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;f
 
 <!-- SENARAI ANGGOTA -->
 <div class="page" id="page-anggota">
-  <div class="notif n-info">
+  <div class="notif n-info" style="margin-bottom:8px">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
-    <div><b>Senarai Anggota</b> — 52 anggota IKTAR/MHKL/RT. Tambah, edit, aktif/tidak aktif. Data ini digunakan oleh bestMatch() untuk padanan nama automatik.</div>
+    <div><b>Senarai Anggota Rasmi</b> — IKTAR (24) · MHKL (12) · RT (16) = 52 anggota utama. Anggota jabatan lain dimasukkan ke <b>Jabatan Lain</b> dan <u>tidak</u> campur Master File 7 lapisan.</div>
   </div>
-  <div style="display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap;align-items:center">
-    <input class="finp2" id="ag-q" placeholder="Cari nama / jabatan..." oninput="renderAnggota()" style="max-width:220px">
-    <select class="fsel" id="ag-jab" onchange="renderAnggota()"><option value="">Semua Jabatan</option><option>IKTAR</option><option>MHKL</option><option>RT</option></select>
-    <select class="fsel" id="ag-status-f" onchange="renderAnggota()"><option value="">Semua Status</option><option value="aktif">Aktif</option><option value="tidak_aktif">Tidak Aktif</option></select>
-    <button class="btn btn-gold btn-sm" id="btn-ag-add" onclick="toggleAgForm()" style="display:none">+ Tambah Anggota</button>
-    <button class="btn btn-sm" onclick="exportAnggota()">Export CSV</button>
-    <span id="ag-cnt" style="font-size:8px;color:rgba(255,255,255,.3);margin-left:auto"></span>
+  <!-- Stats strip -->
+  <div class="ang-stat-strip" id="ang-stats"></div>
+  <!-- Search + filter + actions bar -->
+  <div class="ang-search-bar">
+    <input class="finp2" id="ang-q" placeholder="Cari nama / bil / kompeni..." oninput="renderAngFull()" style="max-width:220px">
+    <select class="fsel" id="ang-komp-f" onchange="renderAngFull()">
+      <option value="">Semua Kompeni</option>
+      <option>ALPHA</option><option>BRAVO</option><option>CHARLIE</option><option>DELTA</option>
+    </select>
+    <select class="fsel" id="ang-stat-f" onchange="renderAngFull()">
+      <option value="">Semua Status</option>
+      <option value="aktif">Aktif</option>
+      <option value="tidak_aktif">Tidak Aktif</option>
+    </select>
+    <span style="margin-left:auto;display:flex;gap:5px">
+      <button class="btn btn-sm" id="btn-ang-exp" onclick="exportAnggota()">Export CSV</button>
+      <button class="btn btn-gold btn-sm" id="btn-ang-add" onclick="showAngForm(null)" style="display:none">+ Tambah</button>
+    </span>
   </div>
-  <div class="panel" id="ag-form" style="display:none">
-    <div class="ph"><span class="ph-title">Tambah / Edit Anggota</span><button class="btn btn-sm" onclick="toggleAgForm()">✕</button></div>
-    <div class="pb" style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end">
-      <div><label class="flbl2">Bil</label><input class="finp2" type="number" id="ag-bil" min="1" max="999" style="width:52px"></div>
-      <div style="flex:1;min-width:200px"><label class="flbl2">Nama Penuh</label><input class="finp2" id="ag-nama" placeholder="MOHAMAD ALIFF BIN MOHTAR"></div>
-      <div><label class="flbl2">Jabatan</label><select class="fsel" id="ag-jab2"><option>IKTAR</option><option>MHKL</option><option>RT</option></select></div>
-      <div><label class="flbl2">Kompeni</label><select class="fsel" id="ag-komp"><option>ALPHA</option><option>BRAVO</option><option>CHARLIE</option><option>DELTA</option></select></div>
-      <div><label class="flbl2">Status</label><select class="fsel" id="ag-statusf"><option value="aktif">Aktif</option><option value="tidak_aktif">Tidak Aktif</option></select></div>
-      <div style="flex:1;min-width:120px"><label class="flbl2">Catatan</label><input class="finp2" id="ag-nota" placeholder="TT / TH / LEWAT dll"></div>
-      <button class="btn btn-gn btn-sm" onclick="saveAnggota()">Simpan</button>
+  <!-- Jabatan tabs -->
+  <div class="tab-jab" id="ang-jab-tabs">
+    <button class="tab-jab-btn on" data-jab="IKTAR"   onclick="angJabTab(this)">IKTAR (24)</button>
+    <button class="tab-jab-btn"    data-jab="MHKL"    onclick="angJabTab(this)">MHKL (12)</button>
+    <button class="tab-jab-btn"    data-jab="RT"      onclick="angJabTab(this)">RT (16)</button>
+    <button class="tab-jab-btn lain" data-jab="LAIN"  onclick="angJabTab(this)">&#x1F4CC; Jabatan Lain</button>
+    <button class="tab-jab-btn"    data-jab="SEMUA"   onclick="angJabTab(this)">Semua 52</button>
+  </div>
+  <!-- Form panel -->
+  <div class="panel" id="ang-form-panel" style="display:none">
+    <div class="ph">
+      <span class="ph-title" id="ang-form-title">Tambah Anggota</span>
+      <button class="btn btn-sm" onclick="hideAngForm()">&#x2715;</button>
     </div>
-    <div style="padding:0 13px 7px;font-size:8px;color:#34d399" id="ag-stat"></div>
+    <div class="pb">
+      <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:flex-end">
+        <div><label class="flbl2">Bil</label><input class="finp2" type="number" id="af-bil" min="1" max="999" style="width:52px"></div>
+        <div style="flex:1;min-width:200px"><label class="flbl2">Nama Penuh (UPPERCASE)</label><input class="finp2" id="af-nama" placeholder="MOHAMAD ALIFF BIN MOHTAR"></div>
+        <div><label class="flbl2">IC / Staff No</label><input class="finp2" id="af-ic" placeholder="950101XXXXXX" style="width:120px"></div>
+        <div><label class="flbl2">Jabatan</label>
+          <select class="fsel" id="af-jab" onchange="afJabChange()">
+            <option>IKTAR</option><option>MHKL</option><option>RT</option><option value="LAIN">Jabatan Lain</option>
+          </select></div>
+        <div id="af-lain-div" style="display:none"><label class="flbl2">Nama Jabatan</label><input class="finp2" id="af-lain-nama" placeholder="KECEMASAN / PEDIATRIK..." style="width:140px"></div>
+        <div><label class="flbl2">Kompeni</label>
+          <select class="fsel" id="af-komp"><option>ALPHA</option><option>BRAVO</option><option>CHARLIE</option><option>DELTA</option></select></div>
+        <div><label class="flbl2">Status</label>
+          <select class="fsel" id="af-status"><option value="aktif">Aktif</option><option value="tidak_aktif">Tidak Aktif</option></select></div>
+        <div style="flex:1;min-width:130px"><label class="flbl2">Catatan</label><input class="finp2" id="af-nota" placeholder="TT / TH / LEWAT dll"></div>
+        <button class="btn btn-gn btn-sm" onclick="saveAngForm()">Simpan</button>
+        <button class="btn btn-rd btn-sm" id="btn-del-ang" onclick="deleteAng()" style="display:none">Padam</button>
+      </div>
+      <div id="af-stat" style="font-size:8px;color:#34d399;margin-top:6px"></div>
+    </div>
   </div>
-  <div id="anggota-grid"></div>
+  <!-- Import section (admin only) -->
+  <div id="ang-import-sec" style="display:none;margin-bottom:9px">
+    <div class="panel">
+      <div class="ph" style="background:rgba(37,99,235,.3)"><span class="ph-title">&#x1F4E5; Import Senarai Anggota (CSV / Excel)</span></div>
+      <div class="pb">
+        <div style="position:relative" class="import-zone" id="ang-import-zone" onclick="document.getElementById('ang-import-file').click()">
+          <input type="file" id="ang-import-file" accept=".csv,.xlsx,.xls" onchange="importAnggota(this)">
+          <div style="font-size:9px;color:rgba(255,255,255,.5)">Klik atau seret fail CSV/Excel ke sini</div>
+          <div style="font-size:7.5px;color:rgba(255,255,255,.25);margin-top:3px">Format: Bil | Nama | Jabatan | Kompeni | Status | Catatan</div>
+        </div>
+        <div id="ang-import-log" style="font-size:7.5px;color:#34d399;margin-top:5px"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Main grid -->
+  <div id="ang-grid"></div>
+  <!-- Jabatan Lain section -->
+  <div id="ang-lain-section" style="display:none">
+    <div class="jab-hdr">
+      <div>
+        <div class="jab-hdr-name">&#x1F4CC; Jabatan Lain (Mini Master)</div>
+        <div class="jab-hdr-sub">Tidak campur Master File 7 lapisan. Untuk rujukan sahaja.</div>
+      </div>
+      <button class="btn btn-sm" id="btn-ang-lain-add" onclick="showAngForm({jab:'LAIN'})" style="display:none">+ Tambah</button>
+    </div>
+    <div id="ang-lain-grid"></div>
+  </div>
 </div>
 
 
@@ -3709,6 +3815,325 @@ function bestMatchWithRef(ctx, kompeniHint){
 }
 
 
+// ── SENARAI ANGGOTA (FULL) ──────────────────────────────────
+var ANGGOTA_LAIN = [];  // Members from other departments
+var ANGGOTA_EDIT_BIL = null;  // Current editing bil
+var ANG_CURR_JAB = 'IKTAR';  // Current jabatan tab
+
+// Load/save from localStorage
+function loadAnggotaStore(){
+  try{
+    var a=localStorage.getItem('eakha_anggota_custom');
+    if(a){ var p=JSON.parse(a); CUSTOM_ANGGOTA=p.custom||[]; ANGGOTA_LAIN=p.lain||[]; }
+    loadCustomAnggota();
+  }catch(e){}
+}
+function saveAnggotaStore(){
+  try{localStorage.setItem('eakha_anggota_custom',JSON.stringify({custom:CUSTOM_ANGGOTA,lain:ANGGOTA_LAIN}));}catch(e){}
+}
+
+// Get shift label for day (show 5-day preview)
+function getShiftPreview(bil,komp){
+  var K=BK[bil]||komp;
+  var days=[1,2,3,4,5,8,9,10];
+  return days.map(function(d){
+    var s=gSh(bil,d);
+    return '<span class="ang-sh-cell sh-'+s.toLowerCase()+'">'+d+'/'+s+'</span>';
+  }).join('');
+}
+
+// All members: MASTER + CUSTOM_ANGGOTA overrides
+function getAllMasterMembers(){
+  return MASTER.map(function(m){
+    var c=CUSTOM_ANGGOTA.find(function(x){return x.bil===m.bil;});
+    return c?Object.assign({},m,c):{bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,
+      status:'aktif',catatan:m.note||'',note:m.note||'',kemaskini:'',verified:true};
+  });
+}
+
+// Stats
+function updateAngStats(){
+  var el=document.getElementById('ang-stats'); if(!el) return;
+  var all=getAllMasterMembers();
+  var aktif=all.filter(function(m){return (m.status||'aktif')==='aktif';}).length;
+  var lain=ANGGOTA_LAIN.length;
+  var tt=all.filter(function(m){return m.note&&m.note.includes('TT')||m.nt==='tt';}).length;
+  var th=all.filter(function(m){return m.note&&m.note.includes('TH')||m.nt==='th';}).length;
+  el.innerHTML=[
+    {l:'Jumlah Utama',v:52,c:'cg'},{l:'Aktif',v:aktif,c:'cG'},
+    {l:'IKTAR',v:24,c:'cb'},{l:'MHKL',v:12,c:'cp'},{l:'RT',v:16,c:'ca'},
+    {l:'Jabatan Lain',v:lain,c:''},
+    {l:'TT (Tahan Tugas)',v:tt,c:'cr'},{l:'TH (Tidak Hadir)',v:th,c:'cr'},
+  ].map(function(s){
+    return '<div class="ang-stat-chip"><b class="'+s.c+'">'+s.v+'</b>'+s.l+'</div>';
+  }).join('');
+}
+
+// Main render
+function renderAngFull(){
+  updateAngStats();
+  var q=(document.getElementById('ang-q')?.value||'').toUpperCase();
+  var kompF=document.getElementById('ang-komp-f')?.value||'';
+  var statF=document.getElementById('ang-stat-f')?.value||'';
+  var isAdmin=AUTH.role==='admin';
+
+  // Show admin controls
+  ['btn-ang-add','btn-ang-lain-add','ang-import-sec'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display=isAdmin?(id==='ang-import-sec'?'block':'inline-flex'):'none';
+  });
+
+  var jab=ANG_CURR_JAB;
+  var showLain=jab==='LAIN';
+  document.getElementById('ang-lain-section').style.display=showLain?'block':'none';
+  document.getElementById('ang-grid').style.display=showLain?'none':'block';
+  if(showLain){ renderLainGrid(q,kompF,statF,isAdmin); return; }
+
+  var members=getAllMasterMembers();
+  if(jab!=='SEMUA') members=members.filter(function(m){return m.jab===jab;});
+  if(kompF) members=members.filter(function(m){return m.komp===kompF;});
+  if(statF) members=members.filter(function(m){return (m.status||'aktif')===statF;});
+  if(q) members=members.filter(function(m){
+    return m.nama.toUpperCase().includes(q)||String(m.bil).includes(q)||(m.komp||'').includes(q);
+  });
+
+  var con=document.getElementById('ang-grid'); if(!con) return;
+  if(!members.length){ con.innerHTML='<div class="empty"><div class="empty-ic">\uD83D\uDC64</div>Tiada anggota</div>'; return; }
+
+  // Group by kompeni
+  var G={ALPHA:[],BRAVO:[],CHARLIE:[],DELTA:[]};
+  members.forEach(function(m){ if(G[m.komp]) G[m.komp].push(m); });
+
+  var html='';
+  ['ALPHA','BRAVO','CHARLIE','DELTA'].forEach(function(komp){
+    var ms=G[komp]; if(!ms.length) return;
+    var kompCls='kbg-'+komp.toLowerCase();
+    html+='<div class="jab-komp-hdr"><span class="jab-komp-name">Kompeni '+komp+'</span>'+
+      '<span style="font-size:7px;color:rgba(255,255,255,.3)">'+ms.length+' anggota</span></div>';
+    html+=ms.map(function(m){
+      var isAktif=(m.status||'aktif')==='aktif';
+      var isVerified=m.verified!==false;
+      var shiftPrev=getShiftPreview(m.bil,m.komp);
+      var noteBadge=m.note||m.catatan?'<span style="font-size:6.5px;color:#fbbf24;margin-left:3px">['+( m.note||m.catatan)+']</span>':'';
+      var statusCls=isAktif?'ast-aktif':'ast-nonaktif';
+      var cardCls=!isAktif?'ang-inactive':isVerified?'ang-verified':'ang-pending';
+      var editBtn=isAdmin?'<button class="btn btn-sm" style="font-size:7px;padding:2px 6px;flex-shrink:0" onclick="showAngForm('+m.bil+')">Edit</button>':'';
+      return '<div class="ang-card '+cardCls+'">'+
+        '<span class="ang-num">'+m.bil+'</span>'+
+        '<div class="ang-name">'+
+          '<div class="ang-nama" title="'+m.nama+'">'+
+            '<span class="ang-komp-badge '+kompCls+'">'+m.komp+'</span>'+
+            m.nama+noteBadge+
+          '</div>'+
+          '<div class="ang-sub">'+m.jab+' \xb7 <span class="ang-shift-row">'+shiftPrev+'</span></div>'+
+        '</div>'+
+        '<span class="ang-status '+statusCls+'">'+(isAktif?'AKTIF':'NONAKTIF')+'</span>'+
+        editBtn+
+      '</div>';
+    }).join('');
+  });
+  con.innerHTML=html;
+}
+
+function renderLainGrid(q,kompF,statF,isAdmin){
+  var con=document.getElementById('ang-lain-grid'); if(!con) return;
+  var members=ANGGOTA_LAIN;
+  if(q) members=members.filter(function(m){return (m.nama||'').toUpperCase().includes(q);});
+  if(!members.length){
+    con.innerHTML='<div class="empty"><div class="empty-ic">\uD83C\uDFE2</div>Tiada anggota jabatan lain. Sistem akan auto-tambah apabila nama tidak dikenal dalam fail yang diupload.</div>';
+    return;
+  }
+  con.innerHTML=members.map(function(m,i){
+    var editBtn=isAdmin?'<button class="btn btn-sm" style="font-size:7px;padding:2px 6px" onclick="showAngLainForm('+i+')">Edit</button>'+
+      '<button class="btn btn-rd btn-sm" style="font-size:7px;padding:2px 6px" onclick="deleteLain('+i+')">Padam</button>':'';
+    var v=m.verified?'<span class="ang-status ast-sahkan">\u2713 Sahkan</span>':'<span class="ang-status ast-pending">Belum Sahkan</span>';
+    return '<div class="ang-card ang-lain">'+
+      '<span class="ang-num">#'+m.bil+'</span>'+
+      '<div class="ang-name">'+
+        '<div class="ang-nama">'+m.nama+'</div>'+
+        '<div class="ang-sub">'+m.jabLain+' \xb7 '+m.komp+'</div>'+
+      '</div>'+v+editBtn+'</div>';
+  }).join('');
+}
+
+function angJabTab(el){
+  document.querySelectorAll('.tab-jab-btn').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  ANG_CURR_JAB=el.dataset.jab;
+  renderAngFull();
+}
+
+function afJabChange(){
+  var jab=document.getElementById('af-jab')?.value||'';
+  var d=document.getElementById('af-lain-div'); if(d) d.style.display=jab==='LAIN'?'inline-flex':'none';
+}
+
+// Show form for add/edit
+function showAngForm(bilOrObj){
+  if(!reqAdmin()) return;
+  ANGGOTA_EDIT_BIL=typeof bilOrObj==='number'?bilOrObj:null;
+  var panel=document.getElementById('ang-form-panel');
+  if(!panel) return;
+  panel.style.display='block';
+  document.getElementById('ang-form-title').textContent=ANGGOTA_EDIT_BIL?'Edit Anggota Bil '+ANGGOTA_EDIT_BIL:'Tambah Anggota';
+  document.getElementById('btn-del-ang').style.display=ANGGOTA_EDIT_BIL?'inline-flex':'none';
+  if(ANGGOTA_EDIT_BIL){
+    var m=getAllMasterMembers().find(function(x){return x.bil===ANGGOTA_EDIT_BIL;});
+    if(!m) return;
+    document.getElementById('af-bil').value=m.bil;
+    document.getElementById('af-nama').value=m.nama;
+    document.getElementById('af-ic').value=m.ic||'';
+    document.getElementById('af-jab').value=m.jab;
+    document.getElementById('af-komp').value=m.komp;
+    document.getElementById('af-status').value=m.status||'aktif';
+    document.getElementById('af-nota').value=m.catatan||m.note||'';
+  } else {
+    document.getElementById('af-bil').value='';
+    document.getElementById('af-nama').value='';
+    document.getElementById('af-ic').value='';
+    document.getElementById('af-nota').value='';
+    if(bilOrObj&&bilOrObj.jab==='LAIN') document.getElementById('af-jab').value='LAIN';
+  }
+  afJabChange();
+  document.getElementById('af-stat').textContent='';
+}
+function hideAngForm(){ var p=document.getElementById('ang-form-panel'); if(p) p.style.display='none'; }
+
+function saveAngForm(){
+  if(!reqAdmin()) return;
+  var bil=+document.getElementById('af-bil').value;
+  var nama=(document.getElementById('af-nama').value||'').trim().toUpperCase();
+  var ic=(document.getElementById('af-ic').value||'').trim();
+  var jab=document.getElementById('af-jab').value;
+  var jabLain=jab==='LAIN'?(document.getElementById('af-lain-nama')?.value||'').trim().toUpperCase():jab;
+  var komp=document.getElementById('af-komp').value;
+  var status=document.getElementById('af-status').value;
+  var nota=(document.getElementById('af-nota').value||'').trim();
+  if(!bil||!nama){toast('Sila isi bil dan nama','warn');return;}
+  if(jab==='LAIN'){
+    // Add/update Jabatan Lain
+    var idx=ANGGOTA_LAIN.findIndex(function(x){return x.bil===bil;});
+    var rec={bil:bil,nama:nama,ic:ic,jabLain:jabLain||'Jabatan Lain',komp:komp,status:status,catatan:nota,kemaskini:new Date().toLocaleDateString('ms-MY'),verified:false};
+    if(idx>=0) ANGGOTA_LAIN[idx]=rec; else ANGGOTA_LAIN.push(rec);
+    // IMPORTANT: Do NOT add to MASTER or D[][] — Jabatan Lain is separate
+    saveAnggotaStore(); hideAngForm(); renderAngFull();
+    toast('Jabatan Lain: '+nama+' disimpan \u2713','ok');
+    return;
+  }
+  // Update CUSTOM_ANGGOTA (overrides MASTER display only)
+  var idx=CUSTOM_ANGGOTA.findIndex(function(x){return x.bil===bil;});
+  var rec={bil:bil,nama:nama,ic:ic,jab:jab,komp:komp,status:status,catatan:nota,kemaskini:new Date().toLocaleDateString('ms-MY'),verified:true};
+  if(idx>=0) CUSTOM_ANGGOTA[idx]=rec; else CUSTOM_ANGGOTA.push(rec);
+  BK[bil]=komp;
+  if(!D[bil]){D[bil]={};for(var d=1;d<=30;d++)D[bil][d]={kzp:'',kzk:'',tc_in:'',tc_out:'',ot:false,hrmis:'',pengganti:false,note:''};}
+  saveAnggotaStore();
+  document.getElementById('af-stat').textContent='\u2713 '+nama+' disimpan';
+  hideAngForm(); renderAngFull();
+  toast(nama+' dikemaskini \u2713','ok');
+}
+
+function deleteAng(){
+  if(!reqAdmin()) return;
+  if(!ANGGOTA_EDIT_BIL) return;
+  if(!confirm('Padam anggota bil '+ANGGOTA_EDIT_BIL+'? Data ini tidak akan dipadam dari Master Listing asal.')) return;
+  CUSTOM_ANGGOTA=CUSTOM_ANGGOTA.filter(function(x){return x.bil!==ANGGOTA_EDIT_BIL;});
+  saveAnggotaStore(); hideAngForm(); renderAngFull(); toast('Padam \u2713','ok');
+}
+function deleteLain(idx){
+  if(!reqAdmin()) return;
+  if(!confirm('Padam anggota jabatan lain?')) return;
+  ANGGOTA_LAIN.splice(idx,1); saveAnggotaStore(); renderAngFull(); toast('Padam \u2713','ok');
+}
+
+// Auto-detect "Jabatan Lain" members from upload parsing
+// Called when a name matches from KZP_REF but NOT in MASTER (52 members)
+function autoAddJabatanLain(rawName, jabLain, komp){
+  var exists=ANGGOTA_LAIN.some(function(x){return normalizeName(x.nama)===normalizeName(rawName);});
+  if(!exists){
+    var newBil=9000+ANGGOTA_LAIN.length+1;
+    ANGGOTA_LAIN.push({bil:newBil,nama:rawName.toUpperCase(),ic:'',jabLain:jabLain||'Jabatan Lain',komp:komp||'',status:'aktif',catatan:'Auto-tambah dari upload',kemaskini:new Date().toLocaleDateString('ms-MY'),verified:false});
+    saveAnggotaStore();
+  }
+}
+
+// Export CSV
+function exportAnggota(){
+  var rows=[['Bil','Nama Anggota','Jabatan','Kompeni','IC/Staff','Status','Catatan','Kemaskini']];
+  getAllMasterMembers().forEach(function(m){
+    rows.push([m.bil,m.nama,m.jab,m.komp,m.ic||'',m.status||'aktif',m.catatan||'',m.kemaskini||'']);
+  });
+  if(ANGGOTA_LAIN.length){
+    rows.push(['','--- JABATAN LAIN ---','','','','','','']);
+    ANGGOTA_LAIN.forEach(function(m){
+      rows.push([m.bil,m.nama,m.jabLain,m.komp,m.ic||'',m.status||'aktif',m.catatan||'',m.kemaskini||'']);
+    });
+  }
+  dlCSV(rows,'eAKHA_SenaraAlggota_'+new Date().toISOString().slice(0,10)+'.csv');
+  toast('Export CSV selesai \u2713','ok');
+}
+
+// Import from CSV/Excel
+async function importAnggota(inp){
+  if(!reqAdmin()||!inp.files.length) return;
+  var file=inp.files[0];
+  var fn=file.name.toLowerCase();
+  var log=document.getElementById('ang-import-log');
+  if(log) log.textContent='Membaca '+file.name+'...';
+  var n=0;
+  try{
+    var txt='';
+    if(fn.endsWith('.xlsx')||fn.endsWith('.xls')){
+      if(!window.XLSX){if(log)log.textContent='SheetJS belum dimuat';return;}
+      var ab=await file.arrayBuffer();
+      var wb=XLSX.read(ab,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      data.forEach(function(row,ri){
+        if(ri===0) return; // skip header
+        var bil=+row[0], nama=String(row[1]||'').trim().toUpperCase();
+        var jab=String(row[2]||'').trim().toUpperCase();
+        var komp=String(row[3]||'').trim().toUpperCase();
+        var status=String(row[4]||'aktif').trim().toLowerCase();
+        var nota=String(row[5]||'').trim();
+        if(!bil||!nama||nama.length<3) return;
+        if(['IKTAR','MHKL','RT'].includes(jab)){
+          var idx=CUSTOM_ANGGOTA.findIndex(function(x){return x.bil===bil;});
+          var rec={bil:bil,nama:nama,jab:jab,komp:komp,status:status,catatan:nota,kemaskini:new Date().toLocaleDateString('ms-MY'),verified:true};
+          if(idx>=0) CUSTOM_ANGGOTA[idx]=rec; else CUSTOM_ANGGOTA.push(rec);
+          BK[bil]=komp; n++;
+        } else if(nama){
+          autoAddJabatanLain(nama,jab,komp); n++;
+        }
+      });
+    } else {
+      txt=await file.text();
+      txt.split('\n').forEach(function(line,ri){
+        if(ri===0||!line.trim()) return;
+        var parts=line.split(',');
+        var bil=+parts[0], nama=(parts[1]||'').trim().replace(/"/g,'').toUpperCase();
+        var jab=(parts[2]||'').trim().toUpperCase();
+        var komp=(parts[3]||'').trim().toUpperCase();
+        var status=(parts[4]||'aktif').trim().toLowerCase();
+        var nota=(parts[5]||'').trim();
+        if(!bil||!nama||nama.length<3) return;
+        if(['IKTAR','MHKL','RT'].includes(jab)){
+          var idx=CUSTOM_ANGGOTA.findIndex(function(x){return x.bil===bil;});
+          var rec={bil:bil,nama:nama,jab:jab,komp:komp,status:status,catatan:nota,kemaskini:new Date().toLocaleDateString('ms-MY'),verified:true};
+          if(idx>=0) CUSTOM_ANGGOTA[idx]=rec; else CUSTOM_ANGGOTA.push(rec);
+          BK[bil]=komp; n++;
+        } else if(nama){ autoAddJabatanLain(nama,jab,komp); n++; }
+      });
+    }
+    saveAnggotaStore();
+    if(log) log.textContent='\u2713 '+n+' anggota diimport. Jabatan Lain disimpan berasingan.';
+    renderAngFull(); toast(n+' anggota diimport \u2713','ok');
+  } catch(e){
+    if(log) log.textContent='Ralat: '+e.message;
+  }
+  inp.value='';
+}
+
+
 // ── NAVIGATION ───────────────────────────────────────────────────
 const PG_TITLES={
   dash:'Dashboard',master:'Master File (52 Anggota)',output:'Output Perhatian',
@@ -3716,7 +4141,7 @@ const PG_TITLES={
   'mc-reg':'Register MC - April 2026',baki:'Baki Cuti 2026',
   raya:'Kerja Raya Aidilfitri 2026',haji:'CTR Raya Haji 2026',
   upload:'Upload Dokumen',manual:'Entry Manual',backup:'Backup Google Drive',
-  anggota:'Senarai Anggota',
+  anggota:'Senarai Anggota & Jabatan Lain',
 };
 
 function nav(el){
