@@ -1,998 +1,1136 @@
-<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>e-AKHA Vsavage — Sistem Audit Kehadiran KPL</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0a1628;--navy2:#0f2040;--navy3:#162d52;--navy4:#1e3d6e;
+  --gold:#c8960a;--gold2:#f0b429;
+  --green:#059669;--gn-bg:#d1fae5;--gn-t:#065f46;
+  --red:#dc2626;--rd-bg:#fee2e2;--rd-t:#991b1b;
+  --amber:#d97706;--am-bg:#fef3c7;--am-t:#92400e;
+  --blue:#2563eb;--bl-bg:#dbeafe;--bl-t:#1e40af;
+  --pur:#7c3aed;--pu-bg:#ede9fe;--pu-t:#5b21b6;
+  --gray:#6b7280;--gbd:#334155;--gbdl:#e2e8f0;
+  --dark:#111827;
+}
+body{font-family:"Segoe UI",Tahoma,sans-serif;background:#0d1b2e;color:#e2e8f0;font-size:13px;min-height:100vh}
+/* AUTH */
+#auth-wall{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#040d1a,#0a1628,#0d2042);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.acard{background:rgba(15,32,64,.97);border:1px solid rgba(200,150,10,.3);border-radius:12px;padding:36px 40px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.alogo{text-align:center;margin-bottom:22px}
+.alogo-ic{width:52px;height:52px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:10px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.atitle{font-size:15px;font-weight:700;color:#fff}
+.asub{font-size:9px;color:rgba(255,255,255,.35);margin-top:2px}
+.atabs{display:flex;background:rgba(0,0,0,.3);border-radius:7px;padding:3px;margin-bottom:18px;gap:2px}
+.atab{flex:1;padding:7px;text-align:center;border-radius:5px;cursor:pointer;font-size:10px;font-weight:500;color:rgba(255,255,255,.4);border:none;background:transparent;font-family:inherit;transition:.15s}
+.atab.on{background:rgba(200,150,10,.2);color:var(--gold2);font-weight:700;border:1px solid rgba(200,150,10,.3)}
+.flbl{font-size:8.5px;font-weight:600;color:rgba(255,255,255,.45);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.finp{width:100%;padding:9px 12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;font-size:11px;font-family:inherit;color:#fff;outline:none;transition:.15s}
+.finp:focus{border-color:var(--gold)}
+.finp::placeholder{color:rgba(255,255,255,.2)}
+.ferr{font-size:9px;color:#fca5a5;margin-top:7px;display:none;padding:6px 9px;background:rgba(220,38,38,.1);border-radius:4px;border:1px solid rgba(220,38,38,.2)}
+.fbtn{width:100%;padding:10px;border:none;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a0a00;margin-top:14px;transition:.15s}
+.fbtn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(200,150,10,.4)}
+.fbtn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+@keyframes shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-7px)}50%{transform:translateX(7px)}}
+.shake{animation:shake .35s}
+/* LAYOUT */
+.app{display:none;min-height:100vh}
+.sidebar{width:210px;background:var(--navy);position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;display:flex;flex-direction:column;border-right:1px solid rgba(200,150,10,.12)}
+.sb-brand{padding:13px 12px 11px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-name{font-size:11.5px;font-weight:800;color:var(--gold2);letter-spacing:.4px}
+.sb-sub{font-size:7px;color:rgba(255,255,255,.28);margin-top:2px}
+.sb-ver{display:inline-block;background:rgba(200,150,10,.2);color:var(--gold);font-size:6.5px;font-weight:700;padding:1px 6px;border-radius:10px;margin-top:4px;border:1px solid rgba(200,150,10,.3)}
+.sb-sec{padding:7px 0 2px}
+.sb-lbl{font-size:6.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.18);padding:0 11px 3px}
+.sb-item{display:flex;align-items:center;gap:7px;padding:6px 11px;cursor:pointer;color:rgba(255,255,255,.42);font-size:9.5px;border-left:2px solid transparent;transition:.12s}
+.sb-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.8)}
+.sb-item.on{background:rgba(200,150,10,.1);color:var(--gold2);border-left-color:var(--gold2)}
+.sb-item svg{width:11px;height:11px;flex-shrink:0}
+.sb-badge{margin-left:auto;font-size:7px;padding:1px 5px;border-radius:8px;font-weight:700;background:var(--red);color:#fff;min-width:16px;text-align:center}
+.sb-sub-item{padding:4px 11px 4px 29px;color:rgba(255,255,255,.28);font-size:8.5px;cursor:pointer;transition:.12s}
+.sb-sub-item:hover{color:rgba(255,255,255,.6)}
+.sb-foot{margin-top:auto;padding:10px 12px;border-top:1px solid rgba(255,255,255,.06)}
+.sb-user{font-size:9.5px;color:rgba(255,255,255,.7);font-weight:600}
+.sb-role{font-size:7px;color:rgba(255,255,255,.3);margin-top:1px}
+.sb-out{margin-top:7px;width:100%;background:none;border:1px solid rgba(255,255,255,.1);border-radius:5px;color:rgba(255,255,255,.35);font-size:8px;padding:4px;cursor:pointer;font-family:inherit;transition:.12s}
+.sb-out:hover{border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.6)}
+.main{margin-left:210px;display:flex;flex-direction:column;min-width:0}
+.topbar{background:var(--navy2);border-bottom:1px solid rgba(200,150,10,.12);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.tb-title{font-size:13px;font-weight:700;color:#fff}
+.tb-sub{font-size:8px;color:rgba(255,255,255,.3);margin-top:1px}
+.tb-right{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.content{padding:12px;flex:1}
+.page{display:none}.page.on{display:block}
+/* BADGES */
+.rb{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:8px;font-weight:700}
+.rb-owner{background:rgba(200,150,10,.2);color:var(--gold2);border:1px solid rgba(200,150,10,.35)}
+.rb-admin{background:rgba(5,150,105,.15);color:#34d399;border:1px solid rgba(5,150,105,.3)}
+.rb-view{background:rgba(37,99,235,.15);color:#93c5fd;border:1px solid rgba(37,99,235,.3)}
+.sb-badge-db{font-size:7.5px;padding:2px 8px;border-radius:10px;font-weight:600}
+.db-ok{background:rgba(5,150,105,.15);color:#34d399}
+.db-warn{background:rgba(217,119,6,.15);color:#fbbf24}
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:5px;font-size:9.5px;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);font-family:inherit;transition:.12s;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.btn svg{width:10px;height:10px}
+.btn-gold{background:rgba(200,150,10,.2);border-color:rgba(200,150,10,.35);color:var(--gold2)}
+.btn-gold:hover{background:rgba(200,150,10,.35)}
+.btn-gn{background:rgba(5,150,105,.2);border-color:rgba(5,150,105,.35);color:#34d399}
+.btn-rd{background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.3);color:#fca5a5}
+.btn-bl{background:rgba(37,99,235,.2);border-color:rgba(37,99,235,.35);color:#93c5fd}
+.btn-sm{font-size:8px;padding:3px 8px}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+/* PANEL */
+.panel{background:var(--navy2);border:1px solid rgba(255,255,255,.07);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.ph{background:rgba(0,0,0,.3);padding:8px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)}
+.ph-title{font-size:11px;font-weight:700;color:#fff}
+.pb{padding:13px}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:12px}
+.sc{background:var(--navy2);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:10px 12px}
+.sc-l{font-size:7.5px;color:rgba(255,255,255,.38);margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px}
+.sc-v{font-size:20px;font-weight:700;line-height:1}
+.sc-s{font-size:7px;color:rgba(255,255,255,.28);margin-top:1px}
+.cg{color:var(--gold2)}.cG{color:#34d399}.cr{color:#fca5a5}.ca{color:#fbbf24}.cb{color:#93c5fd}.cp{color:#c4b5fd}
+/* NOTIF */
+.notif{border-radius:6px;padding:8px 11px;font-size:9px;display:flex;gap:7px;margin-bottom:9px;border:1px solid;line-height:1.5}
+.notif svg{width:12px;height:12px;flex-shrink:0;margin-top:1px}
+.n-info{background:rgba(37,99,235,.1);border-color:rgba(37,99,235,.22);color:#93c5fd}
+.n-warn{background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.22);color:#fbbf24}
+.n-ok{background:rgba(5,150,105,.1);border-color:rgba(5,150,105,.22);color:#34d399}
+.n-red{background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.22);color:#fca5a5}
+/* UPLOAD ZONES */
+.uzone{border:2px dashed rgba(255,255,255,.14);border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:rgba(0,0,0,.2);position:relative;transition:.15s}
+.uzone:hover,.uzone.drag{border-color:var(--gold);background:rgba(200,150,10,.06)}
+.uzone.done{border-color:#059669;border-style:solid;background:rgba(5,150,105,.06)}
+.uzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz-ic{font-size:22px;margin-bottom:5px}
+.uz-t{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.75)}
+.uz-s{font-size:7.5px;color:rgba(255,255,255,.3);margin-top:2px}
+.uz-fn{font-size:8px;color:#34d399;font-weight:600;margin-top:4px;word-break:break-all}
+.pbar{background:rgba(255,255,255,.08);border-radius:3px;height:4px;overflow:hidden;margin-top:6px;display:none}
+.pfill{height:4px;border-radius:3px;width:0;transition:width .4s}
+.pmsg{font-size:7.5px;color:rgba(255,255,255,.3);margin-top:3px;display:none}
+/* LOG */
+.logbox{background:rgba(0,0,0,.4);border-radius:6px;font-size:7.5px;font-family:monospace;max-height:180px;overflow-y:auto;line-height:1.8;color:rgba(255,255,255,.45);padding:8px 11px}
+.lok{color:#34d399}.lwarn{color:#fbbf24}.lerr{color:#fca5a5}.linf{color:#93c5fd}
+/* FORM */
+.flbl2{font-size:8px;color:rgba(255,255,255,.4);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.finp2{padding:6px 9px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:5px;font-size:9px;font-family:inherit;color:#fff;outline:none;transition:.12s;width:100%}
+.finp2:focus{border-color:var(--gold)}
+.fsel{padding:6px 9px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);border-radius:5px;font-size:9px;font-family:inherit;color:#fff;outline:none}
+.fsel option{background:#1e293b}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:8.5px}
+.tbl th{background:rgba(0,0,0,.4);color:rgba(255,255,255,.45);padding:7px 9px;text-align:left;font-weight:600;font-size:7.5px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.tbl td{padding:7px 9px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.75)}
+.tbl tr:hover td{background:rgba(255,255,255,.03)}
+/* MASTER GRID */
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.grid{border-collapse:collapse;white-space:nowrap;background:var(--navy2)}
+.grid th,.grid td{border:1px solid rgba(255,255,255,.05)}
+.gh{background:var(--navy);color:#fff;text-align:center;padding:4px 2px;font-size:7px;font-weight:600;min-width:68px}
+.gh.sun{background:#1e1a2e;color:#c4b5fd}
+.gh.sat{background:#1e1a2e;color:#93c5fd}
+.gh-nm{text-align:left;min-width:155px;position:sticky;left:0;z-index:5;padding:4px 7px;background:var(--navy)}
+.gh-lyr{position:sticky;left:155px;z-index:5;background:rgba(0,0,0,.45);color:rgba(255,255,255,.25);padding:2px 5px;font-size:6px;text-align:left;min-width:80px}
+.gh-sum{background:rgba(0,0,0,.5);color:rgba(255,255,255,.35);font-size:6.5px;text-align:center;padding:4px 2px;min-width:24px}
+/* Name cell */
+.ntd{position:sticky;left:0;z-index:3;background:var(--navy2);border-right:1px solid rgba(200,150,10,.18)!important;padding:5px 7px;min-width:155px;max-width:155px;vertical-align:top}
+.nb{font-size:6.5px;color:rgba(255,255,255,.3);font-weight:700}
+.nn{font-size:8px;font-weight:600;color:#fff;line-height:1.25;margin-top:1px}
+.nm{font-size:6.5px;color:rgba(255,255,255,.3);margin-top:2px}
+.ntag{display:inline-block;font-size:6px;padding:1px 4px;border-radius:3px;margin-top:3px;font-weight:700}
+.tag-tt{background:rgba(124,58,237,.3);color:#c4b5fd;border:1px solid rgba(124,58,237,.3)}
+.tag-th{background:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.25)}
+.tag-w{background:rgba(217,119,6,.2);color:#fbbf24;border:1px solid rgba(217,119,6,.25)}
+/* Layer label cell */
+.ltd{position:sticky;left:155px;z-index:3;padding:2px 5px;font-size:7px;font-weight:600;white-space:nowrap;min-width:80px;max-width:80px;border-right:1px solid rgba(200,150,10,.12)!important}
+.l-sh{background:#78350f;color:#fef08a}
+.l-kzp{background:#064e3b;color:#a7f3d0}
+.l-kzk{background:#065f46;color:#d1fae5}
+.l-tc{background:#1e293b;color:#cbd5e1}
+.l-mc{background:#7c2d12;color:#fed7aa}
+.l-hr{background:#1e3a5f;color:#bfdbfe}
+.l-af{background:#0f0f0f;color:#f1f5f9}
+/* Day cells */
+.dc{text-align:center;padding:2px 3px;font-size:7px;vertical-align:middle;min-width:72px}
+.dc-pre{white-space:pre-line;line-height:1.35;vertical-align:top;padding:3px 4px}
+/* Shift */
+.sh-pg{background:rgba(6,78,59,.5);color:#6ee7b7;font-weight:700}
+.sh-pt{background:rgba(59,7,100,.5);color:#d8b4fe;font-weight:700}
+.sh-m{background:rgba(30,58,95,.5);color:#93c5fd;font-weight:700}
+.sh-o{background:rgba(30,41,59,.4);color:#475569;font-weight:600}
+/* KZ */
+.kz-ok{background:rgba(6,78,59,.45);color:#6ee7b7;font-weight:700}
+.kz-mc{background:rgba(120,53,15,.5);color:#fde68a;font-weight:700}
+.kz-cr{background:rgba(30,58,95,.5);color:#93c5fd;font-weight:700}
+.kz-el{background:rgba(88,28,135,.4);color:#d8b4fe;font-weight:700}
+.kz-abs{background:rgba(127,29,29,.6);color:#fecaca;font-weight:900}
+.kz-tt{background:rgba(28,25,23,.8);color:#d4d4d8;font-weight:700}
+.kz-th{background:rgba(28,25,23,.9);color:#fecaca;font-weight:700}
+.kz-l{background:rgba(67,20,7,.5);color:#fed7aa;font-weight:700}
+.kz-ll{background:rgba(127,29,29,.5);color:#fecaca;font-weight:700}
+.kz-kp{background:rgba(6,78,59,.4);color:#6ee7b7;font-weight:700}
+.kz-ctr{background:rgba(124,58,0,.5);color:#fed7aa;font-weight:700}
+.kz-cb{background:rgba(74,4,78,.4);color:#f0abfc;font-weight:700}
+.kz-ber{background:rgba(30,58,95,.4);color:#93c5fd;font-weight:700}
+.kz-bp{color:rgba(255,255,255,.2);font-size:6.5px;font-style:italic}
+/* TC */
+.tc-ok{background:rgba(6,78,59,.3);color:#6ee7b7}
+.tc-abs{background:rgba(127,29,29,.3);color:#fca5a5}
+.tc-lw{background:rgba(67,20,7,.3);color:#fed7aa}
+.tc-warn{background:rgba(120,53,15,.3);color:#fde68a}
+.tc-off{background:rgba(30,41,59,.3);color:#475569}
+.tc-bp{background:rgba(30,27,75,.25);color:#c4b5fd;font-size:6px}
+/* MC */
+.mc-ok{background:rgba(124,45,18,.4);color:#fed7aa}
+.mc-nil{background:rgba(127,29,29,.2);color:#fca5a5}
+.mc-off{background:rgba(30,41,59,.2);color:#475569}
+/* HR */
+.hr-ok{background:rgba(30,58,95,.4);color:#93c5fd;font-weight:700}
+.hr-nil{background:rgba(30,41,59,.2);color:rgba(148,163,184,.4)}
+.hr-warn{background:rgba(120,53,15,.25);color:#fde68a}
+/* AF */
+.af-sah{background:#052e16;color:#4ade80;font-weight:700}
+.af-mc{background:#451a03;color:#fcd34d;font-weight:700}
+.af-cr{background:#1e3a5f;color:#93c5fd;font-weight:700}
+.af-abs{background:#7f1d1d;color:#fecaca;font-weight:700}
+.af-lw{background:#431407;color:#fed7aa;font-weight:700}
+.af-warn{background:#78350f;color:#fde68a;font-weight:700}
+.af-tt{background:#1c1917;color:#c4b5fd;font-weight:700}
+.af-th{background:#1c1917;color:#fca5a5;font-weight:700}
+.af-off{background:#111827;color:#475569;font-weight:600}
+.af-bp{background:#1e1b4b;color:#c4b5fd;font-size:6.5px}
+.af-inc{background:#1e1035;color:#a5b4fc;font-size:6.5px;font-weight:700}
+/* Summary */
+.sc2{background:rgba(0,0,0,.4);text-align:center;font-size:7.5px;font-weight:700;padding:3px;min-width:22px;border-left:1px solid rgba(200,150,10,.08)!important;vertical-align:middle}
+/* Tabs */
+.ftabs{display:flex;gap:3px;background:rgba(0,0,0,.3);border-radius:7px;padding:3px;margin-bottom:9px;flex-wrap:wrap}
+.ftab{padding:4px 8px;border-radius:5px;font-size:8.5px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.38);border:none;background:transparent;font-family:inherit;transition:.12s;white-space:nowrap}
+.ftab.on{background:rgba(200,150,10,.18);color:var(--gold2);border:1px solid rgba(200,150,10,.28)}
+/* Flag cards */
+.fcard{background:var(--navy2);border:1px solid rgba(255,255,255,.07);border-radius:7px;margin-bottom:5px;display:flex;overflow:hidden}
+.fsev{width:4px;flex-shrink:0}
+.fsev-h{background:var(--red)}.fsev-m{background:var(--amber)}.fsev-l{background:var(--blue)}
+.fbody{padding:9px 12px;flex:1}
+.fn{font-size:10.5px;font-weight:600;color:#fff}
+.fm{font-size:8px;color:rgba(255,255,255,.32);margin-top:1px}
+/* Toast + Loading */
+#toast{position:fixed;bottom:18px;right:18px;z-index:9999;padding:9px 15px;border-radius:7px;font-size:10px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:opacity .3s;pointer-events:none;opacity:0;max-width:300px}
+#loading{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;display:none;align-items:center;justify-content:center}
+.spin{width:26px;height:26px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.lbox{background:var(--navy2);border-radius:9px;padding:18px 26px;text-align:center;border:1px solid rgba(200,150,10,.2)}
+/* Empty */
+.empty{text-align:center;padding:36px 16px;color:rgba(255,255,255,.22);font-size:10.5px}
+.empty-ic{font-size:32px;margin-bottom:8px;opacity:.38}
+/* Divider */
+.div{display:flex;align-items:center;gap:9px;margin:13px 0}
+.div::before,.div::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.07)}
+.div span{font-size:8px;color:rgba(255,255,255,.22);font-weight:600;white-space:nowrap}
+/* Mob */
+#mob-btn{display:none;background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;padding:4px;margin-right:6px}
+.mob-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+
+/* SENARAI ANGGOTA */
+.jab-hdr{background:linear-gradient(135deg,rgba(14,30,58,.95),rgba(10,22,40,.95));border:1px solid rgba(200,150,10,.2);border-radius:7px;padding:8px 13px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.jab-hdr-name{font-size:11px;font-weight:800;color:var(--gold2);letter-spacing:.4px}
+.jab-hdr-sub{font-size:7.5px;color:rgba(255,255,255,.35);margin-top:1px}
+.jab-komp-hdr{background:rgba(0,0,0,.3);border-radius:5px;padding:4px 10px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
+.jab-komp-name{font-size:8.5px;font-weight:700;color:#93c5fd}
+.ang-card{background:var(--navy2);border:1px solid rgba(255,255,255,.06);border-radius:6px;display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:4px;transition:.12s}
+.ang-card:hover{background:rgba(255,255,255,.04);border-color:rgba(200,150,10,.2)}
+.ang-card.ang-lain{border-left:3px solid #7c3aed}
+.ang-card.ang-inactive{opacity:.45}
+.ang-card.ang-verified{border-left:3px solid #059669}
+.ang-card.ang-pending{border-left:3px solid #d97706}
+.ang-num{font-size:9px;font-weight:700;color:var(--gold2);min-width:22px}
+.ang-name{flex:1;min-width:0}
+.ang-nama{font-size:8.5px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ang-sub{font-size:7px;color:rgba(255,255,255,.35);margin-top:1px}
+.ang-komp-badge{font-size:6.5px;padding:1px 5px;border-radius:3px;font-weight:700;margin-right:3px}
+.kbg-alpha{background:rgba(5,150,105,.2);color:#34d399}
+.kbg-bravo{background:rgba(37,99,235,.2);color:#93c5fd}
+.kbg-charlie{background:rgba(124,58,237,.2);color:#c4b5fd}
+.kbg-delta{background:rgba(220,38,38,.2);color:#fca5a5}
+.ang-shift-row{display:flex;gap:2px;flex-wrap:wrap;margin-top:3px}
+.ang-sh-cell{font-size:5.5px;padding:1px 3px;border-radius:2px;font-weight:700}
+.sh-s{background:rgba(6,78,59,.4);color:#6ee7b7}
+.sh-p{background:rgba(59,7,100,.4);color:#d8b4fe}
+.sh-m{background:rgba(30,58,95,.4);color:#93c5fd}
+.sh-o{background:rgba(30,41,59,.3);color:#475569}
+.ang-status{font-size:7px;padding:2px 7px;border-radius:10px;font-weight:700;white-space:nowrap;margin-left:4px}
+.ast-aktif{background:rgba(5,150,105,.2);color:#34d399}
+.ast-nonaktif{background:rgba(127,29,29,.2);color:#fca5a5}
+.ast-lain{background:rgba(124,58,237,.2);color:#c4b5fd}
+.ast-pending{background:rgba(217,119,6,.2);color:#fbbf24}
+.ast-sahkan{background:rgba(5,150,105,.3);color:#34d399;border:1px solid rgba(5,150,105,.3)}
+.tab-jab{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.tab-jab-btn{padding:4px 12px;border-radius:20px;font-size:8.5px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-family:inherit;transition:.12s}
+.tab-jab-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.tab-jab-btn.on{background:rgba(200,150,10,.2);border-color:rgba(200,150,10,.4);color:var(--gold2)}
+.tab-jab-btn.lain{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.3);color:#c4b5fd}
+.tab-jab-btn.lain.on{background:rgba(124,58,237,.3)}
+.ang-search-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.ang-stat-strip{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.ang-stat-chip{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);border-radius:5px;padding:5px 10px;font-size:8px}
+.ang-stat-chip b{font-size:13px;display:block;font-weight:700;line-height:1}
+.import-zone{border:2px dashed rgba(255,255,255,.12);border-radius:7px;padding:12px;text-align:center;cursor:pointer;background:rgba(0,0,0,.2);transition:.15s}
+.import-zone:hover{border-color:var(--gold);background:rgba(200,150,10,.05)}
+.import-zone input{position:absolute;opacity:0;width:0;height:0}
+.mob-ov.show{display:block}
+/* CLICK-TO-EDIT MODAL */
+.cedit-ov{position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}
+.cedit-ov.show{display:flex}
+.cedit-box{background:var(--navy2);border:1px solid rgba(200,150,10,.3);border-radius:10px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.cedit-hd{background:rgba(0,0,0,.4);padding:10px 14px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:space-between}
+.cedit-title{font-size:11px;font-weight:700;color:#fff}
+.cedit-sub{font-size:8px;color:rgba(255,255,255,.35);margin-top:2px}
+.cedit-body{padding:14px}
+.cedit-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:flex-end}
+.cedit-field{flex:1;min-width:110px}
+.cedit-act{display:flex;gap:6px;margin-top:12px}
+.cstat-row{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0}
+.cstat-btn{padding:3px 9px;border-radius:4px;font-size:8px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-family:inherit;transition:.1s}
+.cstat-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.cstat-btn.sel{background:rgba(200,150,10,.3);border-color:var(--gold);color:var(--gold2)}
+/* COMPLETION BAR */
+.cprog{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-top:3px}
+.cprog-fill{height:3px;border-radius:2px;transition:width .4s}
+.cprog-0{background:#dc2626}.cprog-1{background:#d97706}.cprog-2{background:#2563eb}.cprog-ok{background:#059669}
+/* PROBLEM BADGE */
+.prob-badge{display:inline-flex;align-items:center;gap:3px;font-size:7px;padding:1px 6px;border-radius:10px;font-weight:700;white-space:nowrap}
+.pb-crit{background:rgba(220,38,38,.25);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.pb-warn{background:rgba(217,119,6,.2);color:#fbbf24;border:1px solid rgba(217,119,6,.25)}
+.pb-ok{background:rgba(5,150,105,.15);color:#34d399;border:1px solid rgba(5,150,105,.2)}
+/* QUICK FILL BANNER */
+.qfill-bar{background:rgba(30,27,75,.5);border:1px solid rgba(165,180,252,.2);border-radius:5px;padding:4px 9px;font-size:8px;color:#a5b4fc;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+/* UNDO TOAST */
+#undo-bar{position:fixed;bottom:60px;right:18px;background:var(--navy2);border:1px solid rgba(200,150,10,.3);border-radius:7px;padding:7px 12px;font-size:9px;color:#fff;z-index:9998;display:none;align-items:center;gap:9px}
+#undo-bar button{background:var(--gold);border:none;border-radius:4px;color:#1a0a00;font-size:8px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:inherit}
+/* CONFLICT highlight */
+.dc.conflict{outline:2px solid #dc2626;outline-offset:-2px}
+/* CLICK hint */
+.dc:not(.dc-noedit){cursor:pointer}
+.dc:not(.dc-noedit):hover{filter:brightness(1.2)}
+@media(max-width:768px){
+  #mob-btn{display:flex}
+  .sidebar{width:0;overflow:hidden;transition:.2s}
+  .sidebar.open{width:210px}
+  .main{margin-left:0}
+  .content{padding:8px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="loading"><div class="lbox"><div class="spin"></div><div style="font-size:9.5px;color:rgba(255,255,255,.4)" id="ld-msg">Memuatkan...</div></div></div>
+<div id="toast"></div>
+<div class="mob-ov" id="mob-ov" onclick="closeMob()"></div>
+
+<!-- AUTH WALL -->
+<div id="auth-wall">
+  <div class="acard">
+    <div class="alogo">
+      <div class="alogo-ic">🛡️</div>
+      <div class="atitle">e-AKHA Vsavage</div>
+      <div class="asub">Sistem Audit Kehadiran KPL · Hospital Kuala Lumpur</div>
+    </div>
+    <div class="atabs">
+      <button class="atab on" onclick="authTab('admin',this)">🔐 Pentadbir</button>
+      <button class="atab" onclick="authTab('viewer',this)">👁 Tontonan</button>
+    </div>
+    <div id="at-adm">
+      <label class="flbl">ID Pengguna</label>
+      <input class="finp" id="l-id" type="text" placeholder="smamierul / sjnadilah / tuannajib"
+        autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('l-pw').focus()">
+      <div style="height:10px"></div>
+      <label class="flbl">Kata Laluan</label>
+      <input class="finp" id="l-pw" type="password" placeholder="••••••"
+        autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="ferr" id="l-err"></div>
+      <button class="fbtn" id="l-btn" onclick="doLogin()">Log Masuk</button>
+    </div>
+    <div id="at-view" style="display:none">
+      <div class="notif n-info" style="margin-bottom:10px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        <span>Masukkan kod akses. Hanya boleh lihat data sahaja.</span>
+      </div>
+      <label class="flbl">Kod Akses Awam</label>
+      <input class="finp" id="v-pw" type="password" placeholder="Masukkan kod akses"
+        onkeydown="if(event.key==='Enter')doViewer()">
+      <div class="ferr" id="v-err"></div>
+      <button class="fbtn" onclick="doViewer()">Masuk sebagai Penonton</button>
     </div>
   </div>
+  <div style="margin-top:14px;font-size:7.5px;color:rgba(255,255,255,.15)">IKTAR · MHKL · RT · 52 Anggota · 4 Kompeni · April 2026</div>
+</div>
 
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
+<!-- APP -->
+<div class="app" id="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-name">e-AKHA Vsavage</div>
+      <div class="sb-sub">Hospital Kuala Lumpur · KPL</div>
+      <span class="sb-ver">v2.0 · April 2026</span>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl">Utama</div>
+      <div class="sb-item on" data-pg="dash" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+      </div>
+      <div class="sb-item" data-pg="master" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Master File (52)
+      </div>
+      <div class="sb-item" data-pg="output" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
+        <span class="sb-badge" id="sb-flags">0</span>
+      </div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl">Mini Listing</div>
+      <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a8 8 0 00-16 0v2"/></svg>MHKL
+      </div>
+      <div class="sb-item" data-pg="iktar" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a8 8 0 00-16 0v2"/></svg>IKTAR
+      </div>
+      <div class="sb-item" data-pg="rt" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a8 8 0 00-16 0v2"/></svg>RT
+      </div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl">Rekod</div>
+      <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07"/></svg>Register MC
+      </div>
+      <div class="sb-item" data-pg="baki" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8"/></svg>Baki Cuti
+      </div>
+      <div class="sb-item" data-pg="raya" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Kerja Raya Aidilfitri
+      </div>
+      <div class="sb-item" data-pg="haji" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>CTR Raya Haji 2026
+      </div>
+    </div>
+    <div class="sb-sec" id="sb-admin">
+      <div class="sb-lbl">Pentadbir</div>
+      <div class="sb-item" data-pg="anggota" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
+      </div>
+      <div class="sb-item" data-pg="upload" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
+      </div>
+      <div class="sb-item" data-pg="manual" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Entry Manual
+      </div>
+      <div class="sb-item" data-pg="backup" onclick="nav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
+      </div>
+      <div class="sb-item" style="cursor:pointer;color:rgba(255,255,255,.42)" onclick="generateTeguranReport()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Jana Laporan Teguran
+      </div>
+    </div>
+    <div class="sb-foot">
+      <div class="sb-user" id="sb-user">–</div>
+      <div class="sb-role" id="sb-role">–</div>
+      <button class="sb-out" onclick="doLogout()">↩ Log Keluar</button>
+    </div>
+  </nav>
 
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="mob-btn" onclick="openMob()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:19px;height:19px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <div class="tb-title" id="pg-title">Dashboard</div>
+          <div class="tb-sub" id="pg-sub">e-AKHA Vsavage · Audit Kehadiran April 2026</div>
+        </div>
+      </div>
+      <div class="tb-right">
+        <span class="sb-badge-db db-warn" id="db-badge">⏳ DB</span>
+        <span class="rb" id="role-badge">–</span>
+        <button class="btn btn-sm" style="font-size:7.5px" onclick="autoFillFromKZ()" title="Auto-isi KZP→KZK, MC→HRMIS">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:9px;height:9px"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Auto-Fill
+        </button>
+        <button class="btn btn-sm" style="font-size:7.5px;color:#fca5a5" onclick="generateTeguranReport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:9px;height:9px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          Teguran
+        </button>
+        <button class="btn btn-gold btn-sm" onclick="expPDF()" id="btn-pdf">PDF</button>
+        <button class="btn btn-sm" onclick="expCSV()">CSV</button>
+      </div>
+    </div>
+    <div class="content">
+
+<!-- DASHBOARD -->
+<div class="page on" id="page-dash">
+  <div class="notif n-info">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+    <div><b>e-AKHA Vsavage v2.0</b> — Audit Final sah HANYA jika 6 lapisan lengkap: Shift + KZP + KZK + TIMECARD + MC + HRMIS. Jika mana-mana belum diupload → <span style="background:#1e1035;color:#a5b4fc;padding:1px 5px;border-radius:3px;font-size:7.5px;font-weight:700">AUDIT BELUM LENGKAP</span></div>
+  </div>
+  <div class="stats">
+    <div class="sc"><div class="sc-l">Anggota</div><div class="sc-v cg">52</div><div class="sc-s">IKTAR·MHKL·RT</div></div>
+    <div class="sc"><div class="sc-l">Output Perhatian</div><div class="sc-v ca" id="d-flags">–</div></div>
+    <div class="sc"><div class="sc-l">MC Diterima</div><div class="sc-v ca" id="d-mc">27</div></div>
+    <div class="sc"><div class="sc-l">TT/TH</div><div class="sc-v cr" id="d-crit">3</div></div>
+    <div class="sc"><div class="sc-l">Database</div><div class="sc-v cG" id="d-db" style="font-size:13px">–</div></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><span class="ph-title">⚠ Kes Perhatian Segera</span><button class="btn btn-sm" onclick="navTo('output')">Semua →</button></div>
+    <div class="pb" id="dash-alerts"><div class="empty"><div class="empty-ic">📋</div>Tiada kes perhatian</div></div>
+  </div>
+</div>
+
+<!-- MASTER FILE -->
+<div class="page" id="page-master">
+  <div class="notif n-info" style="margin-bottom:8px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
+    <div><b>7 Lapisan:</b> 🟡Shift · 🟢KZP · 🟢KZK · ⬜TIMECARD · 🟠MC · 🔵HRMIS · ⬛Audit Final. Audit sah hanya jika semua 6 data ada.</div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap">
+    <button class="btn btn-sm" onclick="renderMaster(null)">Semua 52</button>
+    <button class="btn btn-sm" onclick="renderMaster('IKTAR')">IKTAR</button>
+    <button class="btn btn-sm" onclick="renderMaster('MHKL')">MHKL</button>
+    <button class="btn btn-sm" onclick="renderMaster('RT')">RT</button>
+    <span id="master-info" style="font-size:8px;color:rgba(255,255,255,.3);margin-left:auto;align-self:center"></span>
+  </div>
+  <div id="master-grid"><div class="empty"><div class="empty-ic">📊</div>Klik butang di atas untuk papar grid</div></div>
+</div>
+
+<!-- OUTPUT PERHATIAN -->
+<div class="page" id="page-output">
+  <div class="ftabs" id="out-tabs">
+    <button class="ftab on" data-f="" onclick="tabOutput(this)">Semua (<span id="fc-all">0</span>)</button>
+    <button class="ftab" data-f="ABS" onclick="tabOutput(this)">ABS (<span id="fc-abs">0</span>)</button>
+    <button class="ftab" data-f="MC" onclick="tabOutput(this)">MC (<span id="fc-mc">0</span>)</button>
+    <button class="ftab" data-f="LEWAT" onclick="tabOutput(this)">Lewat (<span id="fc-lw">0</span>)</button>
+    <button class="ftab" data-f="TIADA" onclick="tabOutput(this)">Tiada IN/OUT (<span id="fc-sp">0</span>)</button>
+    <button class="ftab" data-f="SEMAK" onclick="tabOutput(this)">Semak (<span id="fc-sk">0</span>)</button>
+    <button class="ftab" data-f="SILA" onclick="tabOutput(this)">Sila Mohon (<span id="fc-sm">0</span>)</button>
+    <button class="ftab" data-f="BELUM" onclick="tabOutput(this)" style="color:#a5b4fc">Belum Lengkap (<span id="fc-bl">0</span>)</button>
+  </div>
+  <div id="output-list"><div class="empty"><div class="empty-ic">🔍</div>Tiada output perhatian</div></div>
+</div>
+
+<!-- MINI MHKL -->
+<div class="page" id="page-mhkl">
+  <div class="notif n-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg><span><b>Mini File: MHKL</b> — 12 anggota · 4 kompeni</span></div>
+  <div class="ftabs" id="tabs-mhkl">
+    <button class="ftab on" data-k="" onclick="miniTab('MHKL',this)">Semua</button>
+    <button class="ftab" data-k="ALPHA" onclick="miniTab('MHKL',this)">ALPHA</button>
+    <button class="ftab" data-k="BRAVO" onclick="miniTab('MHKL',this)">BRAVO</button>
+    <button class="ftab" data-k="CHARLIE" onclick="miniTab('MHKL',this)">CHARLIE</button>
+    <button class="ftab" data-k="DELTA" onclick="miniTab('MHKL',this)">DELTA</button>
+  </div>
+  <div id="grid-mhkl"></div>
+</div>
+<!-- MINI IKTAR -->
+<div class="page" id="page-iktar">
+  <div class="notif n-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg><span><b>Mini File: IKTAR</b> — 24 anggota · 4 kompeni</span></div>
+  <div class="ftabs" id="tabs-iktar">
+    <button class="ftab on" data-k="" onclick="miniTab('IKTAR',this)">Semua</button>
+    <button class="ftab" data-k="ALPHA" onclick="miniTab('IKTAR',this)">ALPHA</button>
+    <button class="ftab" data-k="BRAVO" onclick="miniTab('IKTAR',this)">BRAVO</button>
+    <button class="ftab" data-k="CHARLIE" onclick="miniTab('IKTAR',this)">CHARLIE</button>
+    <button class="ftab" data-k="DELTA" onclick="miniTab('IKTAR',this)">DELTA</button>
+  </div>
+  <div id="grid-iktar"></div>
+</div>
+<!-- MINI RT -->
+<div class="page" id="page-rt">
+  <div class="notif n-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg><span><b>Mini File: RT</b> — 16 anggota · 4 kompeni</span></div>
+  <div class="ftabs" id="tabs-rt">
+    <button class="ftab on" data-k="" onclick="miniTab('RT',this)">Semua</button>
+    <button class="ftab" data-k="ALPHA" onclick="miniTab('RT',this)">ALPHA</button>
+    <button class="ftab" data-k="BRAVO" onclick="miniTab('RT',this)">BRAVO</button>
+    <button class="ftab" data-k="CHARLIE" onclick="miniTab('RT',this)">CHARLIE</button>
+    <button class="ftab" data-k="DELTA" onclick="miniTab('RT',this)">DELTA</button>
+  </div>
+  <div id="grid-rt"></div>
+</div>
+
+<!-- REGISTER MC -->
+<div class="page" id="page-mc-reg">
+  <div class="notif n-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
+    <span>MC diterima April 2026. Multi-day = isi semua tarikh. Klinik wajib ada. Jenis: Bulan Ini / Bulan Hadapan / Backdated.</span>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap;align-items:center">
+    <input class="finp2" id="mc-q" placeholder="Cari nama / klinik / no siri..." oninput="renderMCReg()" style="max-width:200px">
+    <select class="fsel" id="mc-jab-f" onchange="renderMCReg()"><option value="">Semua Jabatan</option><option>IKTAR</option><option>MHKL</option><option>RT</option></select>
+    <select class="fsel" id="mc-jenis-f" onchange="renderMCReg()"><option value="">Semua Jenis</option><option>Bulan Ini</option><option>Bulan Hadapan</option><option>Backdated</option></select>
+    <button class="btn btn-gold btn-sm" id="mc-add-btn" onclick="toggleMCForm()" style="display:none">+ Tambah MC</button>
+    <span id="mc-cnt" style="font-size:8px;color:rgba(255,255,255,.3);margin-left:auto"></span>
+  </div>
+  <div class="panel" id="mc-form" style="display:none">
+    <div class="ph"><span class="ph-title">Tambah Rekod MC</span><button class="btn btn-sm" onclick="toggleMCForm()">✕</button></div>
+    <div class="pb" style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end">
+      <div><label class="flbl2">Anggota</label><select class="fsel" id="mc-f-bil" style="width:195px"><option value="">–</option></select></div>
+      <div><label class="flbl2">Dari (DD/MM)</label><input class="finp2" id="mc-f-dari" placeholder="17/04" style="width:68px"></div>
+      <div><label class="flbl2">Hingga (DD/MM)</label><input class="finp2" id="mc-f-hingga" placeholder="17/04" style="width:68px"></div>
+      <div><label class="flbl2">Klinik *</label><input class="finp2" id="mc-f-klinik" placeholder="Klinik OSH..." style="width:170px"></div>
+      <div><label class="flbl2">No Siri</label><input class="finp2" id="mc-f-siri" placeholder="AC1136825" style="width:105px"></div>
+      <div><label class="flbl2">Jenis</label><select class="fsel" id="mc-f-jenis"><option>Bulan Ini</option><option>Bulan Hadapan</option><option>Backdated</option></select></div>
+      <button class="btn btn-gn btn-sm" onclick="addMC()">Simpan</button>
+    </div>
+    <div style="padding:0 13px 8px;font-size:8px;color:#34d399" id="mc-f-stat"></div>
+  </div>
+  <div id="mc-reg-table"></div>
+</div>
+
+<!-- BAKI CUTI -->
+<div class="page" id="page-baki">
+  <div class="notif n-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span>Baki cuti setiap anggota berbeza. <b>Jangan set default.</b> CR/EL ditolak. MC tidak ditolak. CTR tidak ditolak. HKA bercuti = tidak tolak baki.</span>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:9px;align-items:center;flex-wrap:wrap">
+    <input class="finp2" id="baki-q" placeholder="Cari nama..." oninput="renderBaki()" style="max-width:190px">
+    <button class="btn btn-gold btn-sm" id="baki-save-btn" onclick="saveBaki()" style="display:none">Simpan Semua</button>
+  </div>
+  <div id="baki-grid"></div>
+</div>
+
+<!-- KERJA RAYA AIDILFITRI -->
+<div class="page" id="page-raya">
+  <div class="notif n-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <div><b>Kerja Raya Aidilfitri 2026</b> — Jadual 12 jam: SIANG 0700–1900 · MALAM 1900–0700. OUT 0700 esok = OUT shift malam. Tidak campur jadual hakiki.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-bottom:10px">
+    <div class="panel" style="margin-bottom:0">
+      <div class="ph" style="background:rgba(6,78,59,.5)"><span class="ph-title">📋 Senarai Kerja Raya</span></div>
+      <div class="pb">
+        <div class="uzone" id="uz-raya" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'raya',this)">
+          <input type="file" accept=".pdf,.xlsx,.csv,.txt" onchange="fsel(this,'raya')">
+          <div class="uz-ic">📄</div><div class="uz-t">Upload Senarai Kerja Raya</div>
+          <div class="uz-s">PDF / Excel / CSV / TXT</div>
+          <div class="uz-fn" id="fn-raya"></div>
+        </div>
+        <div class="pbar" id="pb-raya"><div class="pfill" id="pf-raya" style="background:#059669"></div></div>
+        <div class="pmsg" id="pm-raya"></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:0">
+      <div class="ph" style="background:rgba(124,58,237,.4)"><span class="ph-title">⏱ TIMECARD Kerja Raya</span></div>
+      <div class="pb">
+        <div class="uzone" id="uz-raya-tc" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'raya-tc',this)">
+          <input type="file" accept=".pdf,.xlsx,.csv" onchange="fsel(this,'raya-tc')">
+          <div class="uz-ic">⏱</div><div class="uz-t">TIMECARD Kerja Raya</div>
+          <div class="uz-s">PDF / Excel / CSV</div>
+          <div class="uz-fn" id="fn-raya-tc"></div>
+        </div>
+      </div>
     </div>
   </div>
+  <div style="display:flex;gap:7px;margin-bottom:10px;align-items:center">
+    <button class="btn btn-gold" id="btn-raya" onclick="procRaya()" disabled>Proses &amp; Kemaskini</button>
+    <button class="btn btn-sm" onclick="togForm('raya-form')">+ Tambah Manual</button>
+    <button class="btn btn-sm" onclick="expRaya()">Export CSV</button>
+    <span id="raya-stat" style="font-size:8px;color:rgba(255,255,255,.3)"></span>
+  </div>
+  <div class="panel" id="raya-form" style="display:none">
+    <div class="ph"><span class="ph-title">Tambah Rekod Raya Manual</span><button class="btn btn-sm" onclick="togForm('raya-form')">✕</button></div>
+    <div class="pb" style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end">
+      <div><label class="flbl2">Anggota</label><select class="fsel" id="rf-bil" style="width:195px"><option value="">–</option></select></div>
+      <div><label class="flbl2">Tarikh (DD/MM)</label><input class="finp2" id="rf-tgh" placeholder="20/03" style="width:68px"></div>
+      <div><label class="flbl2">Shift Raya</label><select class="fsel" id="rf-sh"><option value="SIANG">SIANG 0700–1900</option><option value="MALAM">MALAM 1900–0700</option></select></div>
+      <div><label class="flbl2">TC IN</label><input class="finp2" id="rf-in" placeholder="07:00" style="width:62px"></div>
+      <div><label class="flbl2">TC OUT</label><input class="finp2" id="rf-out" placeholder="19:05" style="width:62px"></div>
+      <div><label class="flbl2">Catatan</label><input class="finp2" id="rf-nota" style="width:140px"></div>
+      <button class="btn btn-gn btn-sm" onclick="saveRaya()">Simpan</button>
+    </div>
+    <div style="padding:0 13px 7px;font-size:8px;color:#34d399" id="rf-stat"></div>
+  </div>
+  <div id="raya-grid"></div>
+</div>
 
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+<!-- CTR RAYA HAJI -->
+<div class="page" id="page-haji">
+  <div class="notif n-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    <div><b>CTR Raya Haji 2026</b> — CTR tidak tolak baki cuti. TC tiada punch + CTR sah = CTR SAH. TC ada thumb + CTR sah = SEMAK. 28/05 diluluskan Ketua Cawangan = CTR SAH. Setiap cuti mesti ada nama pengganti.</div>
   </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar --><<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-bottom:10px">
+    <div class="panel" style="margin-bottom:0">
+      <div class="ph" style="background:rgba(75,0,130,.5)"><span class="ph-title">📋 Upload Senarai CTR</span></div>
+      <div class="pb">
+        <div class="uzone" id="uz-ctr" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'ctr',this)">
+          <input type="file" accept=".pdf,.xlsx,.csv,.txt" onchange="fsel(this,'ctr')">
+          <div class="uz-ic">📋</div><div class="uz-t">Senarai CTR Raya Haji</div>
+          <div class="uz-s">PDF / Excel / CSV</div>
+          <div class="uz-fn" id="fn-ctr"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:0">
+      <div class="ph"><span class="ph-title">📝 Permohonan Manual</span></div>
+      <div class="pb">
+        <div class="uzone" id="uz-mhaji" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'mhaji',this)">
+          <input type="file" accept=".pdf,.xlsx,.csv" onchange="fsel(this,'mhaji')">
+          <div class="uz-ic">📝</div><div class="uz-t">Permohonan Manual Raya Haji</div>
+          <div class="uz-s">PDF / Excel / CSV</div>
+          <div class="uz-fn" id="fn-mhaji"></div>
+        </div>
+      </div>
     </div>
   </div>
+  <div style="display:flex;gap:7px;margin-bottom:10px;align-items:center">
+    <button class="btn btn-gold" id="btn-ctr" onclick="procCTR()" disabled>Proses CTR &amp; Kemaskini</button>
+    <button class="btn btn-sm" onclick="togForm('ctr-form')">+ Tambah Manual</button>
+    <button class="btn btn-sm" onclick="expCTR()">Export CSV</button>
+    <span id="ctr-stat" style="font-size:8px;color:rgba(255,255,255,.3)"></span>
+  </div>
+  <div class="panel" id="ctr-form" style="display:none">
+    <div class="ph"><span class="ph-title">Tambah CTR Manual</span><button class="btn btn-sm" onclick="togForm('ctr-form')">✕</button></div>
+    <div class="pb" style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end">
+      <div><label class="flbl2">Anggota</label><select class="fsel" id="cf-bil" style="width:195px"><option value="">–</option></select></div>
+      <div><label class="flbl2">Tarikh (DD/MM)</label><input class="finp2" id="cf-tgh" placeholder="27/05" style="width:68px"></div>
+      <div><label class="flbl2">Tempoh (hari)</label><input class="finp2" type="number" id="cf-hari" value="1" min="1" style="width:52px"></div>
+      <div><label class="flbl2">Status Kelulusan</label>
+        <select class="fsel" id="cf-status">
+          <option>CTR SAH — RAYA HAJI</option>
+          <option>CTR SAH — DILULUSKAN KETUA CAWANGAN</option>
+          <option>SEMAK CTR</option>
+        </select></div>
+      <div><label class="flbl2">Nama Pengganti H1</label><input class="finp2" id="cf-g1" placeholder="Nama pengganti" style="width:165px"></div>
+      <div><label class="flbl2">H2 (jika ada)</label><input class="finp2" id="cf-g2" placeholder="Nama pengganti" style="width:165px"></div>
+      <button class="btn btn-gn btn-sm" onclick="saveCTR()">Simpan</button>
+    </div>
+    <div style="padding:0 13px 7px;font-size:8px;color:#34d399" id="cf-stat"></div>
+  </div>
+  <div id="haji-grid"></div>
+</div>
 
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
-
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
+<!-- SENARAI ANGGOTA -->
+<div class="page" id="page-anggota">
+  <div class="notif n-info" style="margin-bottom:8px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
+    <div><b>Senarai Anggota Rasmi</b> — IKTAR (24) · MHKL (12) · RT (16) = 52 anggota utama. Anggota jabatan lain dimasukkan ke <b>Jabatan Lain</b> dan <u>tidak</u> campur Master File 7 lapisan.</div>
+  </div>
+  <!-- Stats strip -->
+  <div class="ang-stat-strip" id="ang-stats"></div>
+  <!-- Search + filter + actions bar -->
+  <div class="ang-search-bar">
+    <input class="finp2" id="ang-q" placeholder="Cari nama / bil / kompeni..." oninput="renderAngFull()" style="max-width:220px">
+    <select class="fsel" id="ang-komp-f" onchange="renderAngFull()">
+      <option value="">Semua Kompeni</option>
+      <option>ALPHA</option><option>BRAVO</option><option>CHARLIE</option><option>DELTA</option>
+    </select>
+    <select class="fsel" id="ang-stat-f" onchange="renderAngFull()">
+      <option value="">Semua Status</option>
+      <option value="aktif">Aktif</option>
+      <option value="tidak_aktif">Tidak Aktif</option>
+    </select>
+    <span style="margin-left:auto;display:flex;gap:5px">
+      <button class="btn btn-sm" id="btn-ang-exp" onclick="exportAnggota()">Export CSV</button>
+      <button class="btn btn-gold btn-sm" id="btn-ang-add" onclick="showAngForm(null)" style="display:none">+ Tambah</button>
+    </span>
+  </div>
+  <!-- Jabatan tabs -->
+  <div class="tab-jab" id="ang-jab-tabs">
+    <button class="tab-jab-btn on" data-jab="IKTAR"   onclick="angJabTab(this)">IKTAR (24)</button>
+    <button class="tab-jab-btn"    data-jab="MHKL"    onclick="angJabTab(this)">MHKL (12)</button>
+    <button class="tab-jab-btn"    data-jab="RT"      onclick="angJabTab(this)">RT (16)</button>
+    <button class="tab-jab-btn lain" data-jab="LAIN"  onclick="angJabTab(this)">&#x1F4CC; Jabatan Lain</button>
+    <button class="tab-jab-btn"    data-jab="SEMUA"   onclick="angJabTab(this)">Semua 52</button>
+  </div>
+  <!-- Form panel -->
+  <div class="panel" id="ang-form-panel" style="display:none">
+    <div class="ph">
+      <span class="ph-title" id="ang-form-title">Tambah Anggota</span>
+      <button class="btn btn-sm" onclick="hideAngForm()">&#x2715;</button>
+    </div>
+    <div class="pb">
+      <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:flex-end">
+        <div><label class="flbl2">Bil</label><input class="finp2" type="number" id="af-bil" min="1" max="999" style="width:52px"></div>
+        <div style="flex:1;min-width:200px"><label class="flbl2">Nama Penuh (UPPERCASE)</label><input class="finp2" id="af-nama" placeholder="MOHAMAD ALIFF BIN MOHTAR"></div>
+        <div><label class="flbl2">IC / Staff No</label><input class="finp2" id="af-ic" placeholder="950101XXXXXX" style="width:120px"></div>
+        <div><label class="flbl2">Jabatan</label>
+          <select class="fsel" id="af-jab" onchange="afJabChange()">
+            <option>IKTAR</option><option>MHKL</option><option>RT</option><option value="LAIN">Jabatan Lain</option>
+          </select></div>
+        <div id="af-lain-div" style="display:none"><label class="flbl2">Nama Jabatan</label><input class="finp2" id="af-lain-nama" placeholder="KECEMASAN / PEDIATRIK..." style="width:140px"></div>
+        <div><label class="flbl2">Kompeni</label>
+          <select class="fsel" id="af-komp"><option>ALPHA</option><option>BRAVO</option><option>CHARLIE</option><option>DELTA</option></select></div>
+        <div><label class="flbl2">Status</label>
+          <select class="fsel" id="af-status"><option value="aktif">Aktif</option><option value="tidak_aktif">Tidak Aktif</option></select></div>
+        <div style="flex:1;min-width:130px"><label class="flbl2">Catatan</label><input class="finp2" id="af-nota" placeholder="TT / TH / LEWAT dll"></div>
+        <button class="btn btn-gn btn-sm" onclick="saveAngForm()">Simpan</button>
+        <button class="btn btn-rd btn-sm" id="btn-del-ang" onclick="deleteAng()" style="display:none">Padam</button>
+      </div>
+      <div id="af-stat" style="font-size:8px;color:#34d399;margin-top:6px"></div>
     </div>
   </div>
-
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
-  </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar -->!<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
+  <!-- Import section (admin only) -->
+  <div id="ang-import-sec" style="display:none;margin-bottom:9px">
+    <div class="panel">
+      <div class="ph" style="background:rgba(37,99,235,.3)"><span class="ph-title">&#x1F4E5; Import Senarai Anggota (CSV / Excel)</span></div>
+      <div class="pb">
+        <div style="position:relative" class="import-zone" id="ang-import-zone" onclick="document.getElementById('ang-import-file').click()">
+          <input type="file" id="ang-import-file" accept=".csv,.xlsx,.xls" onchange="importAnggota(this)">
+          <div style="font-size:9px;color:rgba(255,255,255,.5)">Klik atau seret fail CSV/Excel ke sini</div>
+          <div style="font-size:7.5px;color:rgba(255,255,255,.25);margin-top:3px">Format: Bil | Nama | Jabatan | Kompeni | Status | Catatan</div>
+        </div>
+        <div id="ang-import-log" style="font-size:7.5px;color:#34d399;margin-top:5px"></div>
+      </div>
     </div>
   </div>
+  <!-- Main grid -->
+  <div id="ang-grid"></div>
+  <!-- Jabatan Lain section -->
+  <div id="ang-lain-section" style="display:none">
+    <div class="jab-hdr">
+      <div>
+        <div class="jab-hdr-name">&#x1F4CC; Jabatan Lain (Mini Master)</div>
+        <div class="jab-hdr-sub">Tidak campur Master File 7 lapisan. Untuk rujukan sahaja.</div>
+      </div>
+      <button class="btn btn-sm" id="btn-ang-lain-add" onclick="showAngForm({jab:'LAIN'})" style="display:none">+ Tambah</button>
+    </div>
+    <div id="ang-lain-grid"></div>
+  </div>
+</div>
 
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
 
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
+<!-- UPLOAD DOKUMEN -->
+<div class="page" id="page-upload">
+  <div class="notif n-warn" id="up-lock" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <span>Mod Tontonan — upload hanya untuk pentadbir.</span>
+  </div>
+  <div class="notif n-info">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
+    <div><b>Upload fail → Klik PROSES &amp; KEMASKINI MASTER FILE.</b> Sistem baca automatik (text extraction atau OCR), bandingkan dengan semua lapisan, dan update Master File 7 lapisan. Manual entry hanya untuk pembetulan.</div>
+  </div>
+  <!-- STORED FILES PANEL -->
+  <div class="panel" style="margin-bottom:10px">
+    <div class="ph" style="background:rgba(0,0,0,.4)">
+      <span class="ph-title">&#x1F4E6; Fail Tersimpan</span>
+      <div style="display:flex;gap:5px;align-items:center">
+        <span id="sf-total-badge" style="font-size:7.5px;color:rgba(255,255,255,.3)">0 fail</span>
+        <button class="btn btn-sm" style="font-size:7.5px" id="btn-sf-clear" onclick="clearAllStored()">Buang Semua</button>
+      </div>
+    </div>
+    <div class="pb" id="sf-list"><div class="sf-empty">Tiada fail tersimpan. Upload fail di bawah.</div></div>
+  </div>
+
+  <div id="upload-wrap">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-bottom:12px">
+
+      <!-- KZ PENYELIA -->
+      <div class="panel" style="margin-bottom:0">
+        <div class="ph" style="background:rgba(6,78,59,.55)"><span class="ph-title">📋 KZ Penyelia</span><span style="font-size:7.5px;color:rgba(255,255,255,.4)">Lapisan 2</span></div>
+        <div class="pb">
+          <div class="uzone" id="uz-kzp" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'kzp',this)">
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" multiple onchange="fsel(this,'kzp')">
+            <div class="uz-ic">📄</div>
+            <div class="uz-t">KZ Penyelia</div>
+            <div class="uz-s">Auto OCR · PDF scan/gambar/text · Tesseract baca automatik</div>
+            <div class="uz-fn" id="fn-kzp"></div>
+          </div>
+          <div class="pbar" id="pb-kzp"><div class="pfill" id="pf-kzp" style="background:#059669"></div></div>
+          <div class="pmsg" id="pm-kzp"></div>
+        </div>
+      </div>
+
+      <!-- KZ KOPERAL -->
+      <div class="panel" style="margin-bottom:0">
+        <div class="ph" style="background:rgba(6,95,46,.45)"><span class="ph-title">💬 KZ Koperal</span><span style="font-size:7.5px;color:rgba(255,255,255,.4)">Lapisan 3</span></div>
+        <div class="pb">
+          <div class="uzone" id="uz-kzk" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'kzk',this)">
+            <input type="file" accept=".pdf,.txt,.zip,.notes,.note" onchange="fsel(this,'kzk')">
+            <div class="uz-ic">💬</div>
+            <div class="uz-t">KZ Koperal (WhatsApp)</div>
+            <div class="uz-s">.txt · .zip · .notes (iPhone) · PDF</div>
+            <div class="uz-fn" id="fn-kzk"></div>
+          </div>
+          <div class="pbar" id="pb-kzk"><div class="pfill" id="pf-kzk" style="background:#2563eb"></div></div>
+          <div class="pmsg" id="pm-kzk"></div>
+        </div>
+      </div>
+
+      <!-- TIMECARD -->
+      <div class="panel" style="margin-bottom:0">
+        <div class="ph" style="background:rgba(124,58,237,.4)"><span class="ph-title">⏱ TIMECARD</span><span style="font-size:7.5px;color:rgba(255,255,255,.4)">Lapisan 4</span></div>
+        <div class="pb">
+          <div class="uzone" id="uz-tc" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'tc',this)">
+            <input type="file" accept=".pdf,.xlsx,.xls,.csv" onchange="fsel(this,'tc')">
+            <div class="uz-ic">🕐</div>
+            <div class="uz-t">TIMECARD (Punch IN/OUT)</div>
+            <div class="uz-s">PDF text-based / Excel / CSV</div>
+            <div class="uz-fn" id="fn-tc"></div>
+          </div>
+          <div class="pbar" id="pb-tc"><div class="pfill" id="pf-tc" style="background:#7c3aed"></div></div>
+          <div class="pmsg" id="pm-tc"></div>
+        </div>
+      </div>
+
+      <!-- MC HARD COPY -->
+      <div class="panel" style="margin-bottom:0">
+        <div class="ph" style="background:rgba(124,45,18,.5)"><span class="ph-title">🏥 MC Hard Copy</span><span style="font-size:7.5px;color:rgba(255,255,255,.4)">Lapisan 5</span></div>
+        <div class="pb">
+          <div class="uzone" id="uz-mc" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'mc',this)">
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'mc')">
+            <div class="uz-ic">📋</div>
+            <div class="uz-t">Borang Semakan MC</div>
+            <div class="uz-s">PDF (auto OCR jika scan) · Auto-fill semua tarikh MC</div>
+            <div class="uz-fn" id="fn-mc"></div>
+          </div>
+          <div class="pbar" id="pb-mc"><div class="pfill" id="pf-mc" style="background:#ea580c"></div></div>
+          <div class="pmsg" id="pm-mc"></div>
+        </div>
+      </div>
+
+      <!-- HRMIS -->
+      <div class="panel" style="margin-bottom:0">
+        <div class="ph" style="background:rgba(30,58,95,.6)"><span class="ph-title">📑 Cuti HRMIS</span><span style="font-size:7.5px;color:rgba(255,255,255,.4)">Lapisan 6</span></div>
+        <div class="pb">
+          <div class="uzone" id="uz-hr" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'hr',this)">
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'hr')">
+            <div class="uz-ic">📑</div>
+            <div class="uz-t">Cuti HRMIS</div>
+            <div class="uz-s">PDF / Screenshot (auto OCR) · auto-fill Cuti HRMIS</div>
+            <div class="uz-fn" id="fn-hr"></div>
+          </div>
+          <div class="pbar" id="pb-hr"><div class="pfill" id="pf-hr" style="background:#1d4ed8"></div></div>
+          <div class="pmsg" id="pm-hr"></div>
+        </div>
+      </div>
+
+      <!-- BAKI CUTI -->
+      <div class="panel" style="margin-bottom:0">
+        <div class="ph" style="background:rgba(17,24,39,.9)"><span class="ph-title">📊 Baki Cuti</span></div>
+        <div class="pb">
+          <div class="uzone" id="uz-baki-up" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'baki-up',this)">
+            <input type="file" accept=".pdf,.xlsx,.csv" onchange="fsel(this,'baki-up')">
+            <div class="uz-ic">📊</div>
+            <div class="uz-t">Baki Cuti</div>
+            <div class="uz-s">PDF / Excel · setiap anggota berbeza</div>
+            <div class="uz-fn" id="fn-baki-up"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTR RAYA HAJI -->
+      <div class="panel" style="margin-bottom:0">
+        <div class="ph" style="background:rgba(75,0,130,.5)"><span class="ph-title">🕌 CTR Raya Haji 28/05</span><span style="font-size:7.5px;color:rgba(255,255,255,.4)">Hanya 28/05/2026</span></div>
+        <div class="pb">
+          <div class="uzone" id="uz-ctr-up" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'ctr-up',this)">
+            <input type="file" accept=".pdf,.xlsx,.csv,.txt" onchange="fsel(this,'ctr-up')">
+            <div class="uz-ic">🕌</div>
+            <div class="uz-t">Senarai CTR Raya Haji</div>
+            <div class="uz-s">PDF / Excel / CSV — hanya 28/05/2026</div>
+            <div class="uz-fn" id="fn-ctr-up"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOKUMEN MANUAL -->
+      <div class="panel" style="margin-bottom:0">
+        <div class="ph" style="background:rgba(30,27,75,.7)"><span class="ph-title">📝 Dokumen Manual</span></div>
+        <div class="pb">
+          <div class="uzone" id="uz-man" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'man',this)">
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png,.txt,.xlsx,.csv" multiple onchange="fsel(this,'man')">
+            <div class="uz-ic">📝</div>
+            <div class="uz-t">Dokumen Manual</div>
+            <div class="uz-s">Apa sahaja · Auto-OCR · Update selepas bandingkan semula</div>
+            <div class="uz-fn" id="fn-man"></div>
+          </div>
+          <div class="pbar" id="pb-man"><div class="pfill" id="pf-man" style="background:#7c3aed"></div></div>
+          <div class="pmsg" id="pm-man"></div>
+        </div>
+      </div>
+
+    </div><!-- end upload grid -->
+
+    <!-- PROCESS BUTTON -->
+    <div class="panel">
+      <div class="pb" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px">Proses &amp; Kemaskini Master File</div>
+          <div style="font-size:8.5px;color:rgba(255,255,255,.3)">Sistem baca semua fail yang diupload, bandingkan 7 lapisan, dan update Master File secara automatik</div>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-gold" id="btn-proc" onclick="procAll()" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+            PROSES &amp; KEMASKINI MASTER FILE
+          </button>
+          <button class="btn btn-bl" id="btn-recompare" onclick="recompareAll()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+            BANDINGKAN SEMULA
+          </button>
+          <button class="btn btn-sm" onclick="resetUp()">Reset</button>
+        </div>
+      </div>
+      <div style="padding:0 13px 9px;font-size:8.5px;color:rgba(255,255,255,.35)" id="proc-stat"></div>
+    </div>
+
+    <!-- LOG -->
+    <div id="log-wrap" style="display:none" class="panel">
+      <div class="ph">
+        <span class="ph-title">📋 Log Pemprosesan</span>
+        <button class="btn btn-sm" onclick="document.getElementById('log-wrap').style.display='none'">✕</button>
+      </div>
+      <div class="pb"><div class="logbox" id="log-body"></div>
+      <div id="ocr-review" style="display:none;margin-top:10px">
+        <div style="font-size:10px;font-weight:700;color:var(--gold2);margin-bottom:7px">🔍 Semak OCR sebelum update Master File</div>
+        <div id="ocr-list"></div>
+      </div></div>
     </div>
   </div>
+</div>
 
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
+<!-- ENTRY MANUAL -->
+<div class="page" id="page-manual">
+  <div class="notif n-warn" id="man-lock" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <span>Mod Tontonan — entry manual hanya untuk pentadbir.</span>
   </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
+  <div class="notif n-info">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
+    <span>Entry manual hanya untuk <b>pembetulan khas</b>. KZ, TIMECARD dan MC mesti melalui upload dan auto-process. Boleh attach bukti sokongan. Data kekal selepas refresh.</span>
   </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar -->D<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
+  <div id="man-wrap">
+    <div class="panel">
+      <div class="ph"><span class="ph-title">Kemaskini Manual — Satu Rekod (Pembetulan)</span></div>
+      <div class="pb">
+        <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end">
+          <div><label class="flbl2">Anggota</label><select class="fsel" id="e-bil" style="width:195px"><option value="">– Pilih –</option></select></div>
+          <div><label class="flbl2">Tarikh (1–30)</label><input class="finp2" type="number" id="e-hari" min="1" max="30" placeholder="1" style="width:52px"></div>
+          <div><label class="flbl2">KZ Penyelia</label>
+            <select class="fsel" id="e-kzp">
+              <option value="">–</option><option>✓</option><option>MC</option><option>CR</option><option>EL</option>
+              <option>ABS</option><option>TT</option><option>TH</option><option>X</option>
+              <option>L</option><option>LL</option><option>K/P</option><option>CTR</option><option>CB</option><option>CBR</option><option>BER</option>
+            </select></div>
+          <div><label class="flbl2">KZ Koperal</label>
+            <select class="fsel" id="e-kzk">
+              <option value="">–</option><option>✓</option><option>MC</option><option>CR</option><option>EL</option>
+              <option>ABS</option><option>TT</option><option>TH</option><option>X</option>
+              <option>L</option><option>LL</option><option>K/P</option><option>CTR</option><option>CB</option><option>CBR</option><option>BER</option>
+            </select></div>
+          <div><label class="flbl2">TC IN</label><input class="finp2" type="text" id="e-in" placeholder="07:02" style="width:62px"></div>
+          <div><label class="flbl2">TC OUT</label><input class="finp2" type="text" id="e-out" placeholder="14:58" style="width:62px"></div>
+          <div><label class="flbl2">HRMIS</label>
+            <select class="fsel" id="e-hrmis">
+              <option value="">–</option><option>CR SAH</option><option>EL SAH</option><option>CTR SAH</option><option>CB SAH</option><option>CBR SAH</option><option>K/P</option>
+            </select></div>
+          <div><label class="flbl2">Pengganti</label>
+            <select class="fsel" id="e-pengganti"><option value="false">Tidak</option><option value="true">Ya</option></select></div>
+          <div><label class="flbl2">OT Sambung</label>
+            <select class="fsel" id="e-ot"><option value="false">Tidak</option><option value="true">Ya</option></select></div>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end;margin-top:9px">
+          <div style="flex:1;min-width:190px"><label class="flbl2">Catatan / Nota</label>
+            <input class="finp2" type="text" id="e-note" placeholder="Pengganti, MC tertinggal, OT bersambung..."></div>
+          <div><label class="flbl2">Lampiran Bukti</label>
+            <input type="file" id="e-bukti" accept=".pdf,.jpg,.jpeg,.png,.txt,.zip" style="font-size:8px;color:rgba(255,255,255,.5)" onchange="prevBukti(this)">
+            <div id="e-bukti-stat" style="font-size:7.5px;margin-top:2px"></div>
+          </div>
+          <button class="btn btn-gn" onclick="saveEntry()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>Simpan
+          </button>
+        </div>
+        <div id="e-stat" style="font-size:8.5px;margin-top:8px;color:#34d399"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="ph-title">Rekod Entry Manual Terkini</span></div>
+      <div class="pb" id="man-log"><div class="empty" style="padding:16px">Tiada entry manual</div></div>
     </div>
   </div>
+</div>
 
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
+<!-- BACKUP -->
+<div class="page" id="page-backup">
+  <div class="notif n-info">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
+    <div><b>Backup ke Google Drive melalui Supabase Edge Function.</b> Secret key tidak terdedah ke browser. Hanya sjnadilah, smamierul dan tuannajib boleh backup.</div>
+  </div>
+  <div class="panel">
+    <div class="pb" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px">☁ Backup Audit April 2026</div>
+        <div style="font-size:8.5px;color:rgba(255,255,255,.3)">Format: Excel + CSV + JSON · Folder: eAKHA Vsavage / 2026 / 04_Apr_2026</div>
+      </div>
+      <button class="btn btn-gold" id="btn-backup" onclick="doBackup()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+        Backup ke Google Drive
+      </button>
+    </div>
+    <div id="backup-stat" style="display:none;padding:0 13px 9px"></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><span class="ph-title">Log Backup</span></div>
+    <div class="pb"><div class="logbox" id="backup-log">Tiada log backup.</div></div>
+  </div>
+</div>
 
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
+    </div><!-- content -->
+  </div><!-- main -->
+</div><!-- app -->
+
+<!-- CLICK-TO-EDIT MODAL -->
+<div class="cedit-ov" id="cedit-ov" onclick="closeCEdit(event)">
+  <div class="cedit-box" onclick="event.stopPropagation()">
+    <div class="cedit-hd">
+      <div>
+        <div class="cedit-title" id="cedit-title">Edit Rekod</div>
+        <div class="cedit-sub" id="cedit-sub">Bil — Hari</div>
+      </div>
+      <button class="btn btn-sm" onclick="closeCEdit()" style="font-size:10px;padding:3px 8px">✕</button>
+    </div>
+    <div class="cedit-body">
+      <!-- Quick status buttons -->
+      <div class="flbl2">KZ Penyelia (Lapisan 2)</div>
+      <div class="cstat-row" id="ce-kzp-btns"></div>
+      <div class="flbl2" style="margin-top:8px">KZ Koperal (Lapisan 3)</div>
+      <div class="cstat-row" id="ce-kzk-btns"></div>
+      <div class="flbl2" style="margin-top:8px">TIMECARD (Lapisan 4)</div>
+      <div style="display:flex;gap:7px;align-items:center;margin-top:4px">
+        <div><label class="flbl2">IN</label><input class="finp2" id="ce-in" type="text" placeholder="07:02" style="width:60px"></div>
+        <div><label class="flbl2">OUT</label><input class="finp2" id="ce-out" type="text" placeholder="15:05" style="width:60px"></div>
+        <div><label class="flbl2">OT</label><select class="fsel" id="ce-ot" style="width:52px"><option value="false">Tidak</option><option value="true">Ya</option></select></div>
+      </div>
+      <div class="flbl2" style="margin-top:8px">Cuti HRMIS (Lapisan 6)</div>
+      <div class="cstat-row" id="ce-hr-btns"></div>
+      <div style="margin-top:8px"><label class="flbl2">Catatan</label>
+        <input class="finp2" id="ce-note" type="text" placeholder="Pengganti, lewat, MC tertinggal..."></div>
+      <!-- Auto-fill suggestion -->
+      <div id="ce-autofill" class="qfill-bar" style="display:none"></div>
+      <div class="cedit-act">
+        <button class="btn btn-gn" onclick="saveCEdit()" style="flex:1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>
+          Simpan
+        </button>
+        <button class="btn btn-rd btn-sm" onclick="clearCEdit()">Kosongkan</button>
+        <button class="btn btn-sm" onclick="closeCEdit()">Batal</button>
+      </div>
+      <div id="ce-stat" style="font-size:8px;color:#34d399;margin-top:6px"></div>
     </div>
   </div>
+</div>
 
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
-  </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar -->O<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
-    </div>
-  </div>
-
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
-
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
-    </div>
-  </div>
-
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
-  </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar -->C<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
-    </div>
-  </div>
-
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
-
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
-    </div>
-  </div>
-
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
-  </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar -->T<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
-    </div>
-  </div>
-
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
-
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
-    </div>
-  </div>
-
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
-  </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar -->Y<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
-    </div>
-  </div>
-
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
-
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
-    </div>
-  </div>
-
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
-  </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar -->P<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
-    </div>
-  </div>
-
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
-
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
-    </div>
-  </div>
-
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
-  </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Modul Raya Haji 2026
-  </div>
-
-  <div class="sb-sec-hdr">MINI LISTING</div>
-  <div class="sb-item" data-pg="mhkl" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>MHKL
-  </div>
-  <div class="sb-item" data-pg="iktar" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>IKTAR
-  </div>
-  <div class="sb-item" data-pg="rt" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>RT
-  </div>
-
-  <div class="sb-sec-hdr">PENTADBIR</div>
-  <div class="sb-item" data-pg="anggota" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Senarai Anggota (52)
-  </div>
-  <div class="sb-item" data-pg="upload" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Dokumen
-  </div>
-  <div class="sb-item" data-pg="manual" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Entry Manual
-  </div>
-  <div class="sb-item" data-pg="auditlog" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Audit Log
-  </div>
-  <div class="sb-item" data-pg="export" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export / Backup
-  </div>
-  <div class="sb-item" data-pg="backup" onclick="nav(this)" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive
-  </div>
-
-  <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-    <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
-    <button class="btn btn-sm" style="width:100%;font-size:8px" onclick="doLogout()">&#x2192; Log Keluar</button>
-  </div>
-</div><!-- sidebar -->E<div class="sidebar" id="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-t">e-AKHA Vsavage</div>
-    <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
-    <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
-      <div class="month-badge" id="active-month-badge">April 2026</div>
-      <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
-    </div>
-  </div>
-
-  <div id="user-info" style="padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.06)"></div>
-
-  <!-- BULAN SELECTOR -->
-  <div style="padding:6px 10px 2px">
-    <div class="month-group-hdr">Bulan Audit 2026</div>
-    <div id="month-list">
-      <div class="month-item on" data-bulan="1" onclick="setMonth(this)">Januari 2026</div>
-      <div class="month-item" data-bulan="2" onclick="setMonth(this)">Februari 2026</div>
-      <div class="month-item" data-bulan="3" onclick="setMonth(this)">Mac 2026</div>
-      <div class="month-item on" data-bulan="4" onclick="setMonth(this)">April 2026</div>
-      <div class="month-item" data-bulan="5" onclick="setMonth(this)">Mei 2026</div>
-      <div class="month-item" data-bulan="6" onclick="setMonth(this)">Jun 2026</div>
-      <div class="month-item" data-bulan="7" onclick="setMonth(this)">Julai 2026</div>
-      <div class="month-item" data-bulan="8" onclick="setMonth(this)">Ogos 2026</div>
-      <div class="month-item" data-bulan="9" onclick="setMonth(this)">September 2026</div>
-      <div class="month-item" data-bulan="10" onclick="setMonth(this)">Oktober 2026</div>
-      <div class="month-item" data-bulan="11" onclick="setMonth(this)">November 2026</div>
-      <div class="month-item" data-bulan="12" onclick="setMonth(this)">Disember 2026</div>
-    </div>
-  </div>
-
-  <div class="sb-sec-hdr" style="margin-top:8px">UTAMA</div>
-  <div class="sb-item on" data-pg="dash" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard
-  </div>
-  <div class="sb-item" data-pg="master" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Master File (52)
-  </div>
-  <div class="sb-item" data-pg="output" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Output Perhatian
-    <span id="flag-badge" class="sb-badge"></span>
-  </div>
-
-  <div class="sb-sec-hdr">STAGING / DATA</div>
-  <div class="sb-item" data-pg="kzp-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>KZ Penyelia
-  </div>
-  <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal
-  </div>
-  <div class="sb-item" data-pg="tc-staging" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD
-  </div>
-  <div class="sb-item" data-pg="mc-reg" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 011.98 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.6a16 16 0 006.29 6.29l1.14-1.14a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>MC Diterima
-  </div>
-  <div class="sb-item" data-pg="baki" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti
-  </div>
-
-  <div class="sb-sec-hdr">RAYA</div>
-  <div class="sb-item" data-pg="raya" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri
-  </div>
-  <div class="sb-item" data-pg="ctr-haji" onclick="nav(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 <script>
-
-
+<!-- UNDO BAR -->
+<div id="undo-bar">
+  <span id="undo-msg">Rekod disimpan</span>
+  <button onclick="undoLast()">↩ UNDO</button>
+</div>
+<script>
 
 'use strict';
 // ═══════════════════════════════════════════════════════════════
@@ -2712,7 +2850,6 @@ async function procAll(){
   const sum='✅ Selesai - '+updated+' rekod dikemaskini';
   const ps=document.getElementById('proc-stat'); if(ps) ps.textContent=sum;
   log(sum,'ok'); toast(sum,'ok');
-  logAction('PROSES',Object.keys(UF).join(', '),updated,'OK');
   // Mark stored files as processed
   var sAll=await loadStoredFiles();
   for(var sAi=0;sAi<sAll.length;sAi++) await updateFileStatus(sAll[sAi].id,'diproses');
@@ -4028,21 +4165,12 @@ async function importAnggota(inp){
 // ── NAVIGATION ───────────────────────────────────────────────────
 const PG_TITLES={
   dash:'Dashboard',master:'Master File (52 Anggota)',output:'Output Perhatian',
-  'kzp-staging':'KZ Penyelia',
-  'kzk-staging':'KZ Koperal',
-  'tc-staging':'TIMECARD',
   mhkl:'Mini File: MHKL',iktar:'Mini File: IKTAR',rt:'Mini File: RT',
-  'mc-reg':'MC Diterima',baki:'Baki Cuti',
-  raya:'Kerja Raya Aidilfitri 2026',
-  'ctr-haji':'Modul Raya Haji 2026',
-  haji:'CTR Raya Haji 2026 (Lama)',
-  upload:'Upload Dokumen',manual:'Entry Manual',
-  backup:'Backup Google Drive',
+  'mc-reg':'Register MC - April 2026',baki:'Baki Cuti 2026',
+  raya:'Kerja Raya Aidilfitri 2026',haji:'CTR Raya Haji 2026',
+  upload:'Upload Dokumen',manual:'Entry Manual',backup:'Backup Google Drive',
   anggota:'Senarai Anggota & Jabatan Lain',
-  auditlog:'Audit Log',
-  export:'Export / Backup',
 };
-
 
 function nav(el){
   const pg=el.dataset.pg; if(!pg) return;
@@ -4103,312 +4231,6 @@ document.addEventListener('DOMContentLoaded',function(){
   if(loadSess()){ bootApp(); return; }
   document.getElementById('auth-wall').style.display='flex';
 })
-
-
-
-
-// ══════════════════════════════════════════════════════════════
-// v3.1 ADDITIONS
-// ══════════════════════════════════════════════════════════════
-
-// ── ACTIVE MONTH ──────────────────────────────────────────────
-var ACTIVE_MONTH = 4; // April 2026 default
-var ACTIVE_YEAR  = 2026;
-var MONTHS_MS = ['','Januari','Februari','Mac','April','Mei','Jun',
-  'Julai','Ogos','September','Oktober','November','Disember'];
-
-function setMonth(el){
-  ACTIVE_MONTH = parseInt(el.dataset.bulan);
-  document.querySelectorAll('.month-item').forEach(function(m){m.classList.remove('on');});
-  el.classList.add('on');
-  var badge = document.getElementById('active-month-badge');
-  if(badge) badge.textContent = MONTHS_MS[ACTIVE_MONTH]+' '+ACTIVE_YEAR;
-  // Update gSh to use active month
-  // For now April = gSh as before, other months use same shift calc
-  toast(MONTHS_MS[ACTIVE_MONTH]+' '+ACTIVE_YEAR+' dipilih','ok');
-  renderDash(); renderMaster(null); renderMCReg(); renderBaki();
-}
-
-// ── STAGING SYSTEM ──────────────────────────────────────────────
-var STAGING = {
-  kzp: [],  // [{bil,d,status,conf,source,raw}]
-  kzk: [],
-  tc:  [],
-  mc:  [],
-  hr:  [],
-};
-
-var AUDIT_LOG = []; // [{ts,user,action,detail,records,status}]
-
-function logAction(action, detail, records, status){
-  AUDIT_LOG.unshift({
-    ts: new Date().toLocaleString('ms-MY'),
-    user: AUTH.nama||'?',
-    action: action,
-    detail: detail,
-    records: records||0,
-    status: status||'OK'
-  });
-  if(AUDIT_LOG.length > 500) AUDIT_LOG.pop();
-  try{localStorage.setItem('eakha_auditlog',JSON.stringify(AUDIT_LOG.slice(0,200)));}catch(e){}
-}
-
-function loadAuditLog(){
-  try{
-    var s=localStorage.getItem('eakha_auditlog');
-    if(s) AUDIT_LOG=JSON.parse(s)||[];
-  }catch(e){}
-}
-
-function renderAuditLog(){
-  var con=document.getElementById('audit-log-grid');
-  var cnt=document.getElementById('al-count');
-  if(!con) return;
-  var q=(document.getElementById('al-q')?.value||'').toLowerCase();
-  var typeF=document.getElementById('al-type-f')?.value||'';
-  var logs=AUDIT_LOG.filter(function(l){
-    if(typeF&&l.action!==typeF) return false;
-    if(q&&!JSON.stringify(l).toLowerCase().includes(q)) return false;
-    return true;
-  });
-  if(cnt) cnt.textContent=logs.length+' rekod';
-  if(!logs.length){con.innerHTML='<div class="empty">Tiada rekod audit log</div>';return;}
-  con.innerHTML=logs.map(function(l){
-    var sc=l.status==='OK'?'al-status-ok':l.status==='WARN'?'al-status-warn':'al-status-err';
-    return '<div class="al-row">'+
-      '<span class="al-time">'+l.ts.split(',')[1]?.trim()+'<br><span style="opacity:.5">'+l.ts.split(',')[0]+'</span></span>'+
-      '<span class="al-user">'+l.user+'</span>'+
-      '<span class="al-action"><b>'+l.action+'</b><br><span style="font-size:6.5px;color:rgba(255,255,255,.4)">'+l.detail+'</span></span>'+
-      '<span style="color:rgba(255,255,255,.5)">'+l.records+' rekod</span>'+
-      '<span class="'+sc+'">'+l.status+'</span>'+
-    '</div>';
-  }).join('');
-}
-
-function exportAuditLogCSV(){
-  var rows=[['Masa','Pentadbir','Tindakan','Detail','Rekod','Status']];
-  AUDIT_LOG.forEach(function(l){rows.push([l.ts,l.user,l.action,l.detail,l.records,l.status]);});
-  dlCSV(rows,'eAKHA_AuditLog_'+ACTIVE_YEAR+'_'+MONTHS_MS[ACTIVE_MONTH]+'.csv');
-}
-
-function expOutputCSV(){
-  var rows=[['Bil','Nama','Jabatan','Kompeni','Hari','Isu','Kelas']];
-  MASTER.forEach(function(m){
-    for(var d=1;d<=30;d++){
-      var af=auditFinal(m.bil,d);
-      if(af.cls&&af.cls!=='af-sah'&&af.cls!=='af-off'&&af.cls!=='af-tt'){
-        rows.push([m.bil,m.nama,m.jab,m.komp,d,af.txt.replace('\n',' | '),af.cls]);
-      }
-    }
-  });
-  dlCSV(rows,'eAKHA_OutputPerhatian_'+MONTHS_MS[ACTIVE_MONTH]+'_'+ACTIVE_YEAR+'.csv');
-}
-
-function expAuditLogCSV(){ exportAuditLogCSV(); }
-
-// ── RAYA HAJI MODULE ────────────────────────────────────────────
-var RH_CURR_TAB = 'ctr-diluluskan';
-
-function rhTab(el, tab){
-  document.querySelectorAll('.rh-tab').forEach(function(b){b.classList.remove('on');});
-  el.classList.add('on');
-  RH_CURR_TAB = tab;
-  renderRHContent();
-}
-
-function renderRHContent(){
-  var con = document.getElementById('rh-content');
-  if(!con) return;
-  if(RH_CURR_TAB==='ctr-diluluskan') renderCTRDiluluskan(con);
-  else if(RH_CURR_TAB==='ctr-manual') renderManualHaji(con);
-  else if(RH_CURR_TAB==='ctr-hrmis') renderHRMISHaji(con);
-  else if(RH_CURR_TAB==='ctr-listing') renderListingBercuti(con);
-}
-
-function renderCTRDiluluskan(con){
-  var ctr = CTR_DATA.filter(function(c){return c.tarikh==='28/05'||c.tarikh==='28/05/2026';});
-  if(!ctr.length){
-    con.innerHTML='<div class="empty"><div class="empty-ic">&#x1F4CB;</div>Tiada CTR Raya Haji. Upload senarai CTR diluluskan.</div>';
-    return;
-  }
-  con.innerHTML='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
-    '<th>Bil</th><th>Nama Anggota</th><th>Jabatan</th><th>Kompeni</th>'+
-    '<th>Tarikh CTR</th><th>Tempoh</th><th>Status Kelulusan</th><th>Pengganti</th>'+
-    '</tr></thead><tbody>'+
-    ctr.map(function(c){
-      return '<tr><td>'+c.bil+'</td><td style="font-weight:500">'+c.nama+'</td>'+
-        '<td>'+c.jab+'</td><td>'+c.komp+'</td><td style="color:#fbbf24">28/05/2026</td>'+
-        '<td>'+c.tempoh+'H</td>'+
-        '<td><span style="color:#34d399;font-weight:700">'+c.kel+'</span></td>'+
-        '<td style="color:rgba(255,255,255,.5)">'+(c.pengganti||'-')+'</td></tr>';
-    }).join('')+
-    '</tbody></table></div>';
-}
-
-function renderHRMISHaji(con){
-  con.innerHTML='<div class="empty"><div class="empty-ic">&#x1F4C4;</div>Upload fail Cuti HRMIS Raya Haji untuk lihat data.</div>';
-}
-
-function renderListingBercuti(con){
-  var items=[];
-  CTR_DATA.filter(function(c){return c.tarikh==='28/05'||c.tarikh==='28/05/2026';}).forEach(function(c){
-    items.push({bil:c.bil,nama:c.nama,jab:c.jab,komp:c.komp,tarikh:'28/05/2026',jenis:'CTR RAYA HAJI',kel:c.kel,pengganti:c.pengganti});
-  });
-  if(!items.length){
-    con.innerHTML='<div class="empty"><div class="empty-ic">&#x1F4CB;</div>Tiada anggota bercuti Raya Haji. Upload CTR / Permohonan Manual / HRMIS Raya Haji.</div>';
-    return;
-  }
-  con.innerHTML='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
-    '<th>Bil</th><th>Nama Anggota</th><th>Jabatan</th><th>Kompeni</th>'+
-    '<th>Tarikh</th><th>Jenis Rekod</th><th>Status</th><th>Pengganti</th><th>Audit Final</th>'+
-    '</tr></thead><tbody>'+
-    items.map(function(it){
-      var af=auditFinal(it.bil,28); // 28/05
-      return '<tr><td>'+it.bil+'</td><td style="font-weight:500">'+it.nama+'</td>'+
-        '<td>'+it.jab+'</td><td>'+it.komp+'</td><td style="color:#fbbf24">'+it.tarikh+'</td>'+
-        '<td><span style="font-size:7px;color:#c4b5fd">'+it.jenis+'</span></td>'+
-        '<td><span style="color:#34d399;font-size:7.5px">'+it.kel+'</span></td>'+
-        '<td>'+(it.pengganti||'<span style="color:#fca5a5">SEMAK PENGGANTI</span>')+'</td>'+
-        '<td class="'+af.cls+'" style="font-size:7px;font-weight:700">'+af.txt.replace('\n','<br>')+'</td>'+
-        '</tr>';
-    }).join('')+'</tbody></table></div>';
-}
-
-// ── STAGING RENDER ──────────────────────────────────────────────
-function renderKZPStaging(){
-  var con=document.getElementById('kzp-staging-grid'); if(!con) return;
-  if(!STAGING.kzp.length){
-    con.innerHTML='<div class="empty"><div class="empty-ic">&#x1F4C4;</div>Tiada data dalam staging. Upload KZ Penyelia dahulu.</div>';
-    return;
-  }
-  renderStagingGrid(con, STAGING.kzp, 'kzp');
-}
-function renderKZKStaging(){
-  var con=document.getElementById('kzk-staging-grid'); if(!con) return;
-  if(!STAGING.kzk.length){
-    con.innerHTML='<div class="empty"><div class="empty-ic">&#x1F4AC;</div>Tiada data dalam staging. Upload KZ Koperal dahulu.</div>';
-    return;
-  }
-  renderStagingGrid(con, STAGING.kzk, 'kzk');
-}
-function renderTCStaging(){
-  var con=document.getElementById('tc-staging-grid'); if(!con) return;
-  if(!STAGING.tc.length){
-    con.innerHTML='<div class="empty"><div class="empty-ic">&#x23F1;</div>Tiada data dalam staging. Upload TIMECARD dahulu.</div>';
-    return;
-  }
-  renderStagingGrid(con, STAGING.tc, 'tc');
-}
-
-function renderStagingGrid(con, data, type){
-  var isAdmin=AUTH.role==='admin';
-  var total=data.length;
-  var hiConf=data.filter(function(r){return r.conf>=95;}).length;
-  var medConf=data.filter(function(r){return r.conf>=80&&r.conf<95;}).length;
-  var lowConf=data.filter(function(r){return r.conf<80;}).length;
-  
-  var html='<div class="staging-panel"><div class="staging-hdr">'+
-    '<div><span class="staging-title">'+total+' rekod dalam staging</span>'+
-    '<div style="display:flex;gap:5px;margin-top:3px">'+
-    '<span class="conf-badge conf-hi">'+hiConf+' PADAN TINGGI (≥95%)</span>'+
-    '<span class="conf-badge conf-med">'+medConf+' PERLU SEMAK (80-94%)</span>'+
-    '<span class="conf-badge conf-low">'+lowConf+' SEMAK (bawah 80%)</span>'+
-    '</div></div>';
-  
-  if(isAdmin){
-    var canSah=data.filter(function(r){return r.conf>=80;}).length;
-    html+='<div style="display:flex;gap:5px">'+
-      '<button class="btn-sah" onclick="sahTerima(\''+type+'\')">'+
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:10px;height:10px"><polyline points="20 6 9 17 4 12"/></svg>'+
-        'SAH TERIMA & KEMASKINI MASTER FILE ('+canSah+' rekod)'+
-      '</button>'+
-      '<button class="btn-tolak" onclick="tolakStaging(\''+type+'\')">Buang Semua</button>'+
-    '</div>';
-  }
-  html+='</div><div class="staging-body">';
-  
-  // Show first 50 records
-  var shown=data.slice(0,50);
-  shown.forEach(function(r){
-    var confCls=r.conf>=95?'conf-hi':r.conf>=80?'conf-med':'conf-low';
-    var confBar=r.conf>=95?'#059669':r.conf>=80?'#d97706':'#dc2626';
-    html+='<div class="staging-row">'+
-      '<span class="ang-num">'+(r.bil||'?')+'</span>'+
-      '<div class="ang-name">'+
-        '<div class="ang-nama">'+(r.nama||r.rawName||'Tidak dikenal')+'</div>'+
-        '<div class="ang-sub">Hari '+(r.d||'?')+'/'+ACTIVE_MONTH+' · '+(r.status||'?')+(r.tc_in?' · IN:'+r.tc_in:'')+(r.tc_out?' OUT:'+r.tc_out:'')+'</div>'+
-      '</div>'+
-      '<div style="text-align:right;flex-shrink:0">'+
-        '<span class="conf-badge '+confCls+'">'+r.conf+'%</span>'+
-        '<div class="conf-bar" style="width:70px"><div class="conf-fill" style="width:'+r.conf+'%;background:'+confBar+'"></div></div>'+
-      '</div>'+
-    '</div>';
-  });
-  if(data.length>50) html+='<div style="text-align:center;font-size:7.5px;color:rgba(255,255,255,.3);padding:8px">...dan '+(data.length-50)+' rekod lagi</div>';
-  html+='</div></div>';
-  con.innerHTML=html;
-}
-
-// ── SAH TERIMA ──────────────────────────────────────────────────
-function sahTerima(type){
-  if(!reqAdmin()) return;
-  var data=STAGING[type]||[];
-  var toProcess=data.filter(function(r){return r.conf>=80;});
-  var n=0;
-  toProcess.forEach(function(r){
-    if(!r.bil||!r.d) return;
-    if(!D[r.bil]||!D[r.bil][r.d]) return;
-    if(type==='kzp'&&!D[r.bil][r.d].kzp){ D[r.bil][r.d].kzp=r.status||r.val||''; n++; }
-    else if(type==='kzk'&&!D[r.bil][r.d].kzk){ D[r.bil][r.d].kzk=r.status||r.val||''; n++; }
-    else if(type==='tc'){
-      if(!D[r.bil][r.d].tc_in&&r.tc_in){ D[r.bil][r.d].tc_in=r.tc_in; D[r.bil][r.d].tc_out=r.tc_out||''; n++; }
-    }
-  });
-  // Clear high-conf from staging
-  STAGING[type]=data.filter(function(r){return r.conf<80;});
-  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
-  logAction('SAH TERIMA', type.toUpperCase()+' staging → Master File', n, 'OK');
-  renderMaster(null); renderDash(); updFlags();
-  toast(n+' rekod disahkan → Master File ✓','ok');
-  if(type==='kzp') renderKZPStaging();
-  else if(type==='kzk') renderKZKStaging();
-  else if(type==='tc') renderTCStaging();
-}
-
-function tolakStaging(type){
-  if(!reqAdmin()) return;
-  if(!confirm('Buang semua data staging '+type.toUpperCase()+'?')) return;
-  var n=STAGING[type].length;
-  STAGING[type]=[];
-  logAction('TOLAK STAGING', type.toUpperCase()+' dikosongkan', n, 'WARN');
-  toast(n+' rekod dibuang','warn');
-  if(type==='kzp') renderKZPStaging();
-  else if(type==='kzk') renderKZKStaging();
-  else if(type==='tc') renderTCStaging();
-}
-
-// ── CONFIDENCE SCORE ENGINE ────────────────────────────────────
-function calcConfidence(opts){
-  var score=0;
-  if(opts.namePadan>=95) score+=30;
-  else if(opts.namePadan>=80) score+=20;
-  if(opts.jabatan) score+=15;
-  if(opts.tarikh) score+=15;
-  if(opts.kompeni) score+=10;
-  if(opts.bulan) score+=10;
-  if(opts.shift) score+=10;
-  if(opts.format) score+=10;
-  return Math.min(100,score);
-}
-
-function confLabel(c){
-  if(c>=95) return '<span class="conf-badge conf-hi">PADAN TINGGI '+c+'%</span>';
-  if(c>=80) return '<span class="conf-badge conf-med">PERLU SEMAK '+c+'%</span>';
-  if(c>=60) return '<span class="conf-badge conf-low">SEMAK NAMA '+c+'%</span>';
-  return '<span class="conf-badge conf-low" style="background:rgba(127,29,29,.3)">JANGAN MASUK '+c+'%</span>';
-}
-
-// ── UPDATE nav() to handle new pages ───────────────────────────
 
 
 </script>
