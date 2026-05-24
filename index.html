@@ -2136,30 +2136,48 @@ async function readFile(file, logFn){
 async function ocrPDF(pdf, fname, numPagesArg, log){
   if(typeof numPagesArg==='function'){log=numPagesArg;numPagesArg=null;}
   var numPages=numPagesArg||pdf.numPages;
-  if(!window.Tesseract){ log('Tesseract tidak tersedia — guna Entry Manual','err'); return ''; }
-  let allText='';
+  if(!window.Tesseract){ log('Tesseract tidak tersedia','err'); return ''; }
+  var allText='';
   log('OCR PDF: '+fname+' ('+numPages+' m/s)...','info');
-  for(let p=1;p<=numPages;p++){
+  for(var p=1;p<=numPages;p++){
     try{
-      const page=await pdf.getPage(p);
-      const vp=page.getViewport({scale:2.5});
-      const canvas=document.createElement('canvas');
-      canvas.width=vp.width; canvas.height=vp.height;
-      const ctx=canvas.getContext('2d');
-      await page.render({canvasContext:ctx,viewport:vp}).promise;
-      const imgData=canvas.toDataURL('image/png');
-      log('OCR muka surat '+p+'/'+numPages+'...','info');
-      const result=await Tesseract.recognize(imgData,'eng+msa',{
-        logger:()=>{}
-      });
-      allText+=result.data.text+'\n';
-      log('Muka surat '+p+': '+result.data.text.trim().substring(0,60)+'...','ok');
+      var page=await pdf.getPage(p);
+      var vp=page.getViewport({scale:2.5});
+      var cvs=document.createElement('canvas');
+      cvs.width=vp.width; cvs.height=vp.height;
+      var ctx2=cvs.getContext('2d');
+      await page.render({canvasContext:ctx2,viewport:vp}).promise;
+      log('OCR m/s '+p+'/'+numPages+'...','info');
+      // Auto-detect orientation: 0°, 90°, 180°, 270°
+      var bestText='',bestScore=0;
+      var angles=[0,90,180,270];
+      for(var ai=0;ai<angles.length;ai++){
+        var ang=angles[ai];
+        var c2=document.createElement('canvas');
+        c2.width=ang===0||ang===180?cvs.width:cvs.height;
+        c2.height=ang===0||ang===180?cvs.height:cvs.width;
+        var cx=c2.getContext('2d');
+        cx.translate(c2.width/2,c2.height/2);
+        cx.rotate(ang*Math.PI/180);
+        cx.drawImage(cvs,-cvs.width/2,-cvs.height/2);
+        var res=await Tesseract.recognize(c2,'msa',{logger:function(){}});
+        var conf=res.data.confidence||0;
+        var txt2=res.data.text||'';
+        var kw=['NAMA','KLINIK','MC','TARIKH','BIL','KOMPENI','HADIR','BERTUGAS'];
+        var hits=kw.filter(function(k){return txt2.toUpperCase().includes(k);}).length;
+        var nameHits=MASTER.filter(function(m){return txt2.toUpperCase().includes(m.nama.split(' ')[0]);}).length;
+        var score=conf+hits*4+nameHits*6;
+        if(score>bestScore){bestScore=score;bestText=txt2;}
+        if(ang===0&&conf>75) break; // Good enough at 0°
+      }
+      allText+=bestText+'\n';
+      log('OCR m/s '+p+' ('+Math.round(bestScore)+'pts): '+bestText.trim().substring(0,50)+'...','ok');
     } catch(e){ log('OCR m/s '+p+' gagal: '+e.message,'warn'); }
   }
+  log('OCR selesai: '+allText.trim().length+' chars','ok');
   return allText;
 }
 
-// OCR a single image file
 async function ocrImageFile(file, log){
   if(!window.Tesseract){ log('Tesseract tidak tersedia','err'); return ''; }
   try{
