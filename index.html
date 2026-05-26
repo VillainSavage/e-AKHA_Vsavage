@@ -747,19 +747,20 @@ function initD(){
     BAKI[m.bil]={asal:0,cr:0,el:0};
     for(let d=1;d<=30;d++) D[m.bil][d]={kzp:'',kzk:'',tc_in:'',tc_out:'',ot:false,hrmis:'',pengganti:false,note:''};
   });
-  // Pre-fill known status
+  // Pre-fill known status (NEW MASTER bil mapping)
   for(let d=1;d<=30;d++){
-    if(gSh(4,d)!=='O'){  D[4][d].kzp='TH'; D[4][d].kzk='TH'; }
-    if(gSh(10,d)!=='O'){ D[10][d].kzp='TT'; D[10][d].kzk='TT'; }
-    if(gSh(52,d)!=='O'){ D[52][d].kzp='TT'; D[52][d].kzk='TT'; }
+    if(gSh(7,d)!=='O'){  D[7][d].kzp='TH'; D[7][d].kzk='TH'; }     // MOHD AMINUDIN BIN DAUD (IKTAR)
+    if(gSh(51,d)!=='O'){ D[51][d].kzp='TT'; D[51][d].kzk='TT'; }   // MOHD NAZRI BIN ISMAIL (RT)
   }
-  // HAZLAN pre-fill
-  D[28][1].kzp=D[28][1].kzk='MC'; D[28][2].kzp=D[28][2].kzk='MC';
-  D[28][17].kzp=D[28][17].kzk='ABS'; D[28][18].kzp=D[28][18].kzk='CR'; D[28][30].kzp=D[28][30].kzk='ABS';
-  // IRWAN lewat pre-fill
-  [6,7,14,15,19].forEach(d=>{ D[5][d].tc_in='07:09'; D[5][d].tc_out='15:05'; });
-  // KHAIROL lewat pre-fill
-  [4,6,9,11,14,16,20,23,27].forEach(d=>{ D[51][d].tc_in='07:13'; D[51][d].tc_out='15:04'; });
+  // HAZLAN BIN MOHD RESDI (MHKL bil 24) pre-fill
+  if(D[24]){
+    D[24][1].kzp=D[24][1].kzk='MC'; D[24][2].kzp=D[24][2].kzk='MC';
+    D[24][17].kzp=D[24][17].kzk='ABS'; D[24][18].kzp=D[24][18].kzk='CR'; D[24][30].kzp=D[24][30].kzk='ABS';
+  }
+  // IRWAN SYAMIR (IKTAR bil 19) lewat pre-fill
+  if(D[19]) [6,7,14,15,19].forEach(d=>{ D[19][d].tc_in='07:09'; D[19][d].tc_out='15:05'; });
+  // KHAIROL ISZUWAN (RT bil 43) lewat pre-fill
+  if(D[43]) [4,6,9,11,14,16,20,23,27].forEach(d=>{ D[43][d].tc_in='07:13'; D[43][d].tc_out='15:04'; });
 }
 initD();
 
@@ -2781,6 +2782,14 @@ async function bootApp(){
   if(SUPA_OK) await loadDB();
   populateSels();
   renderDash(); renderMCReg(); renderBaki(); renderRaya(); renderHaji();
+  // Auto-load pre-loaded data after MASTER + D ready
+  setTimeout(function(){
+    try{ if(typeof autoLoadMCPreload==='function') autoLoadMCPreload(); }catch(e){console.warn('MC preload:',e);}
+    try{ if(typeof autoLoadTCPreload==='function') autoLoadTCPreload(); }catch(e){console.warn('TC preload:',e);}
+    try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
+    try{ if(typeof renderDash==='function') renderDash(); }catch(e){}
+    try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+  }, 300);
 }
 
 function applyRoleUI(){
@@ -4248,13 +4257,13 @@ var TC_PRELOAD = {"6":{"1":{"t":["14:17","23:30"]},"2":{"t":["14:27","23:01"]},"
 
 function autoLoadTCPreload(){
   if(!TC_PRELOAD) return;
-  // Skip if D already has TC data (don't override existing)
-  var existing=0;
-  MASTER.forEach(function(m){
-    for(var d=1;d<=30;d++) if(D[m.bil]&&D[m.bil][d]&&D[m.bil][d].tc_in) existing++;
-  });
-  if(existing > 50){
-    console.log('[TC pre-load] D already has '+existing+' TC entries — skip');
+  // Check if TC_PRELOAD already applied (mark with tc_preloaded flag)
+  var anyHasFlag=false;
+  for(var b=1;b<=52;b++){
+    if(D[b]&&D[b][1]&&D[b][1].tc_preloaded){anyHasFlag=true;break;}
+  }
+  if(anyHasFlag){
+    console.log('[TC pre-load] Already applied — skip');
     return;
   }
   
@@ -4341,6 +4350,7 @@ function autoLoadTCPreload(){
         D[bil][d].tc_out=tcOut||'';
         D[bil][d].tc_all=info.t.slice();  // ALL punches
         D[bil][d].tc_shift=sh;
+        D[bil][d].tc_preloaded=true;
         
         // Set KZP if empty
         if(!D[bil][d].kzp){
@@ -4387,8 +4397,8 @@ function resetSystemData(){
 }
 
 function autoLoadMCPreload(){
-  // Only preload if MC_DATA has fewer than 10 records (avoid re-running)
-  if(MC_DATA.length>=10) return;
+  // Skip only if already has the preloaded count (54)
+  if(MC_DATA.filter(function(m){return m.source==='preload';}).length>=20) return;
   var res=applyMCPreload(4,2026); // April 2026
   if(typeof toast==='function') toast('Pre-load MC: '+res.matched+' anggota, '+res.days+' hari','ok');
   if(typeof logAction==='function') logAction('PRE-LOAD MC','Auto-load 54 rekod dari Borang Semakan',res.matched,'OK');
