@@ -210,10 +210,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div style="background:var(--navy2);border:1px solid rgba(200,150,10,.3);border-radius:12px;padding:32px;width:340px;text-align:center">
     <div style="font-size:20px;font-weight:800;color:var(--gold2);margin-bottom:4px">e-AKHA Vsavage</div>
     <div style="font-size:8.5px;color:rgba(255,255,255,.35);margin-bottom:20px">Sistem Semak Kehadiran KPL · Hospital Kuala Lumpur<br><span style="font-size:7px;opacity:.6">SJN Adilah · IKTAR · MHKL · RT</span></div>
-    <div id="login-err" style="font-size:8px;color:#fca5a5;margin-bottom:8px;min-height:16px"></div>
-    <input class="finp2" id="login-id" type="text" placeholder="ID Pengguna" style="width:100%;margin-bottom:8px">
-    <input class="finp2" id="login-pw" type="password" placeholder="Kata Laluan" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn btn-gold" style="width:100%;justify-content:center;font-size:10px;padding:9px" onclick="doLogin()">Log Masuk</button>
+    <div id="l-err" style="font-size:8px;color:#fca5a5;margin-bottom:8px;min-height:16px"></div>
+    <input class="finp2" id="l-id" type="text" placeholder="ID Pengguna" style="width:100%;margin-bottom:8px">
+    <input class="finp2" id="l-pw" type="password" placeholder="Kata Laluan" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-gold" id="l-btn" style="width:100%;justify-content:center;font-size:10px;padding:9px" onclick="doLogin()">Log Masuk</button>
     <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v3.1 · April 2026</div>
   </div>
 </div>
@@ -2713,6 +2713,11 @@ async function doLogin(){
   btn.disabled=true; btn.textContent='Mengesahkan...';
 
   // CHECK LOCAL ACCOUNTS FIRST
+  // Viewer: password 633283 only (no ID needed)
+  if(pw==='633283'&&(!id||id===''||id==='viewer')){
+    AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'};
+    clearErr(err); saveSess(); bootApp(); return;
+  }
   const acc=ADMINS.find(a=>a.id===id&&a.pw===pw);
   if(acc){
     AUTH={loggedIn:true,role:'admin',id,nama:acc.nama,jawatan:acc.role};
