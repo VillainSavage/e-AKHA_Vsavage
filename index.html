@@ -204,6 +204,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </style>
 </head>
 <body>
+<div id="loading" style="display:none"></div>
 
 <!-- AUTH WALL -->
 <div id="auth-wall" style="position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999">
@@ -219,6 +220,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- APP -->
+<div class="mob-ov" id="mob-ov" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('show')"></div>
 <div class="app" id="app" style="display:none">
   <!-- SIDEBAR -->
   <div class="sidebar" id="sidebar">
@@ -271,7 +273,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="sb-item" data-pg="auditlog" onclick="nav(this)" id="sb-auditlog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>Audit Log</div>
     <div class="sb-item" data-pg="backup" onclick="nav(this)" id="sb-backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Backup Google Drive</div>
     <div style="margin-top:auto;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06)">
-      <div id="user-card" style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
+      <div id="sb-user" style="font-size:9px;color:#fff;font-weight:600"></div>
+      <div id="sb-role" style="font-size:7.5px;color:rgba(255,255,255,.4);margin-bottom:5px"></div>
+      <div id="sb-admin" style="display:none"></div>
+      <div id="user-card" style="display:none"></div>
       <button class="btn btn-sm" style="width:100%;font-size:8px;justify-content:center" onclick="doLogout()">&#8594; Log Keluar</button>
     </div>
   </div><!-- sidebar -->
@@ -281,11 +286,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <!-- TOPBAR -->
     <div class="topbar" id="topbar">
       <button class="btn btn-sm" id="mob-menu" onclick="document.getElementById('sidebar').classList.toggle('open')" style="display:none">&#9776;</button>
-      <span class="tb-title" id="tb-title">Dashboard</span>
+      <span class="tb-title" id="tb-title">Dashboard</span><span id="pg-title" style="display:none"></span>
       <span class="tb-sub" id="tb-sub">Penyelia: SJN Adilah · 52 anggota (IKTAR 24 · MHKL 12 · RT 16)</span>
       <div style="margin-left:auto;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-        <span id="db-badge" style="font-size:7.5px;padding:2px 7px;border-radius:4px;background:rgba(5,150,105,.2);color:#34d399;font-weight:700">&#x25CF; Supabase</span>
+        <span id="db-badge" data-db="d-db" style="font-size:7.5px;padding:2px 7px;border-radius:4px;background:rgba(5,150,105,.2);color:#34d399;font-weight:700">&#x25CF; Supabase</span>
         <span id="user-topbar" style="font-size:8px;color:rgba(255,255,255,.4)"></span>
+        <span id="role-badge" style="font-size:7px;color:rgba(255,255,255,.4)"></span>
         <button class="btn btn-sm" style="font-size:7.5px" onclick="autoFillFromKZ()" title="Auto-fill KZP&#8594;KZK, MC&#8594;HRMIS">&#9889; Auto-Fill</button>
         <button class="btn btn-sm" style="font-size:7.5px;color:#fca5a5" onclick="generateTeguranReport()">&#9888; Teguran</button>
         <button class="btn btn-gold btn-sm" onclick="expPDF()" id="btn-pdf">PDF</button>
@@ -299,6 +305,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="page on" id="page-dash">
         <div id="dash-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px"></div>
         <div id="dash-grid"></div>
+        <div class="panel" style="margin-top:8px">
+          <div class="ph"><span class="ph-title">&#x26A0; Top Kes Perhatian</span></div>
+          <div class="pb"><div id="dash-alerts"></div></div>
+        </div>
       </div>
 
       <!-- MASTER FILE -->
@@ -314,6 +324,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <button class="btn btn-sm" onclick="renderMaster('RT')">RT</button>
           <input class="finp2" id="m-search" placeholder="Cari nama..." oninput="renderMaster(null)" style="max-width:160px">
           <span style="margin-left:auto;font-size:8px;color:rgba(255,255,255,.3)" id="master-count"></span>
+          <span style="font-size:8px;color:rgba(255,255,255,.3)" id="master-info"></span>
         </div>
         <div class="mg-wrap"><div id="master-grid" style="width:100%"></div></div>
       </div>
@@ -627,7 +638,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 <div id="undo-bar"><span id="undo-msg">Rekod disimpan</span><button onclick="undoLast()">&#x21A9; UNDO</button></div>
-<div class="toast" id="toast-el"></div>
+<div class="toast" id="toast"></div>
 
 <script>
 
@@ -1272,19 +1283,84 @@ function renderOutput(f){
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function renderDash(){
   updFlags();
-  const all=getAllFlags();
-  const el=document.getElementById('dash-alerts');
-  const top=all.slice(0,5);
-  if(!top.length){ el.innerHTML='<div class="empty"><div class="empty-ic">✅</div>Tiada kes perhatian segera</div>'; return; }
-  el.innerHTML=top.map(m=>{
-    const sev=m.tot>=5?'h':m.tot>=3?'m':'l';
-    const afs=m.items.slice(0,3).map(x=>'<span class="'+x.af.cls+'" style="padding:1px 5px;border-radius:3px;font-size:7px;font-weight:700;white-space:pre">'+x.af.txt+'</span>').join(' ');
-    return '<div class="fcard"><div class="fsev fsev-'+sev+'"></div><div class="fbody" style="display:flex;justify-content:space-between;align-items:center;gap:8px">'+
-      '<div><div class="fn">'+m.nama+'</div><div class="fm">'+m.jab+' · '+m.komp+' · Bil '+m.bil+' · '+m.tot+' kes</div>'+
-      '<div style="margin-top:5px">'+afs+'</div></div>'+
-      '<button class="btn btn-sm" onclick="navTo(\x27output\x27);renderOutput(\x27\x27)">Lihat →</button>'+
-      '</div></div>';
-  }).join('');
+  // ── Dashboard cards (counts) ──
+  var cards=document.getElementById('dash-cards');
+  if(cards){
+    var counts={hadir:0,mc:0,cr:0,el:0,abs:0,lewat:0,offday:0,tt:0,th:0,belum:0};
+    MASTER.forEach(function(m){
+      for(var d=1;d<=30;d++){
+        var sh=gSh(m.bil,d);
+        if(sh==='O'){counts.offday++;continue;}
+        var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:{};
+        if(c.kzp==='TT'||c.kzk==='TT'){counts.tt++;continue;}
+        if(c.kzp==='TH'||c.kzk==='TH'){counts.th++;continue;}
+        var af=auditFinal(m.bil,d);
+        if(af.cls==='af-sah'){counts.hadir++;}
+        else if(af.cls==='af-mc'){counts.mc++;}
+        else if(af.cls==='af-cr'){counts.cr++;}
+        else if(af.txt.indexOf('EL')>=0){counts.el++;}
+        else if(af.txt.indexOf('ABS')>=0){counts.abs++;}
+        else if(af.txt.indexOf('LEWAT')>=0){counts.lewat++;}
+        else if(af.cls==='af-inc'){counts.belum++;}
+      }
+    });
+    var cardHtml=[
+      {l:'Hadir',v:counts.hadir,c:'#34d399'},
+      {l:'MC',v:counts.mc,c:'#fb923c'},
+      {l:'CR/EL',v:counts.cr+counts.el,c:'#93c5fd'},
+      {l:'ABS',v:counts.abs,c:'#fca5a5'},
+      {l:'Lewat',v:counts.lewat,c:'#fde047'},
+      {l:'OFFDAY',v:counts.offday,c:'#64748b'},
+      {l:'TT/TH',v:counts.tt+counts.th,c:'#fbbf24'},
+      {l:'Belum Lengkap',v:counts.belum,c:'#a5b4fc'}
+    ].map(function(c){
+      return '<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:10px 12px"><div style="font-size:20px;font-weight:800;color:'+c.c+';line-height:1">'+c.v+'</div><div style="font-size:8px;color:rgba(255,255,255,.5);margin-top:2px">'+c.l+'</div></div>';
+    }).join('');
+    cards.innerHTML=cardHtml;
+  }
+  // ── dash-alerts: top concerning members ──
+  var el=document.getElementById('dash-alerts');
+  if(el){
+    if(typeof getAllFlags==='function'){
+      var all=getAllFlags();
+      var top=all.slice(0,5);
+      if(!top.length){ el.innerHTML='<div class="empty"><div class="empty-ic">✅</div>Tiada kes perhatian segera</div>'; }
+      else {
+        el.innerHTML=top.map(function(m){
+          var sev=m.tot>=5?'h':m.tot>=3?'m':'l';
+          var afs=m.items.slice(0,3).map(function(x){return '<span class="'+x.af.cls+'" style="padding:1px 5px;border-radius:3px;font-size:7px;font-weight:700;white-space:pre">'+x.af.txt+'</span>';}).join(' ');
+          return '<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:8px 11px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-size:9px;font-weight:700;color:#fff">'+m.nama+'</div><div style="font-size:7.5px;color:rgba(255,255,255,.4);margin-top:2px">'+m.jab+' · '+m.komp+' · Bil '+m.bil+' · '+m.tot+' kes</div><div style="margin-top:5px">'+afs+'</div></div><button class="btn btn-sm" onclick="navTo(\'output\');renderOutput(\'\');">Lihat &rarr;</button></div>';
+        }).join('');
+      }
+    } else {
+      el.innerHTML='<div class="empty">Sila kemaskini dan validasi audit dahulu</div>';
+    }
+  }
+  // ── dash-grid: render mini summary table ──
+  var grid=document.getElementById('dash-grid');
+  if(grid){
+    var jabCount={};
+    MASTER.forEach(function(m){
+      if(!jabCount[m.jab]) jabCount[m.jab]={n:0,kzp:0,tc:0,mc:0,hr:0};
+      jabCount[m.jab].n++;
+      for(var d=1;d<=30;d++){
+        var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:{};
+        if(c.kzp) jabCount[m.jab].kzp++;
+        if(c.tc_in||c.tc_out) jabCount[m.jab].tc++;
+        if(c.hrmis) jabCount[m.jab].hr++;
+      }
+      var mcCount=MC_DATA.filter(function(x){return x.bil===m.bil;}).length;
+      jabCount[m.jab].mc+=mcCount;
+    });
+    var rowHtml='';
+    ['IKTAR','MHKL','RT'].forEach(function(jab){
+      var jc=jabCount[jab];
+      if(!jc) return;
+      var info=JAB_INFO?JAB_INFO[jab]:null;
+      rowHtml+='<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:9px 13px;margin-bottom:6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="font-size:11px;font-weight:700;color:var(--gold2);min-width:50px">'+jab+'</div><div style="font-size:7.5px;color:rgba(255,255,255,.4);flex:1">'+(info?info.nama:'')+'</div><div style="font-size:8px;color:rgba(255,255,255,.6);display:flex;gap:10px"><span><b style="color:#fff">'+jc.n+'</b> anggota</span><span><b style="color:#34d399">'+jc.kzp+'</b> KZP</span><span><b style="color:#93c5fd">'+jc.tc+'</b> TC</span><span><b style="color:#fb923c">'+jc.mc+'</b> MC</span><span><b style="color:#a5b4fc">'+jc.hr+'</b> HR</span></div></div>';
+    });
+    grid.innerHTML=rowHtml||'<div class="empty">Tiada data jabatan</div>';
+  }
 }
 
 // ── REGISTER MC ───────────────────────────────────────────────────
