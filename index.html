@@ -755,20 +755,12 @@ function initD(){
     BAKI[m.bil]={asal:0,cr:0,el:0};
     for(let d=1;d<=30;d++) D[m.bil][d]={kzp:'',kzk:'',tc_in:'',tc_out:'',ot:false,hrmis:'',pengganti:false,note:''};
   });
-  // Pre-fill known status (NEW MASTER bil mapping)
+  // ── PRE-FILL: Status TT/TH sahaja (yang tetap sepanjang bulan) ──
+  // TC data sebenar datang dari TC_PRELOAD (autoLoadTCPreload)
   for(let d=1;d<=30;d++){
-    if(gSh(7,d)!=='O'){  D[7][d].kzp='TH'; D[7][d].kzk='TH'; }     // MOHD AMINUDIN BIN DAUD (IKTAR)
-    if(gSh(51,d)!=='O'){ D[51][d].kzp='TT'; D[51][d].kzk='TT'; }   // MOHD NAZRI BIN ISMAIL (RT)
+    if(gSh(7,d)!=='O'){  D[7][d].kzp='TH'; D[7][d].kzk='TH'; }     // MOHD AMINUDIN BIN DAUD (TH)
+    if(gSh(51,d)!=='O'){ D[51][d].kzp='TT'; D[51][d].kzk='TT'; }   // MOHD NAZRI BIN ISMAIL (TT)
   }
-  // HAZLAN BIN MOHD RESDI (MHKL bil 24) pre-fill
-  if(D[24]){
-    D[24][1].kzp=D[24][1].kzk='MC'; D[24][2].kzp=D[24][2].kzk='MC';
-    D[24][17].kzp=D[24][17].kzk='ABS'; D[24][18].kzp=D[24][18].kzk='CR'; D[24][30].kzp=D[24][30].kzk='ABS';
-  }
-  // IRWAN SYAMIR (IKTAR bil 19) lewat pre-fill
-  if(D[19]) [6,7,14,15,19].forEach(d=>{ D[19][d].tc_in='07:09'; D[19][d].tc_out='15:05'; });
-  // KHAIROL ISZUWAN (RT bil 43) lewat pre-fill
-  if(D[43]) [4,6,9,11,14,16,20,23,27].forEach(d=>{ D[43][d].tc_in='07:13'; D[43][d].tc_out='15:04'; });
 }
 initD();
 
@@ -1125,37 +1117,34 @@ function renderGrid(ms,cid){
             if(x.tc.txt.includes('OFFDAY')||x.tc.txt.includes('TAHAN TUGAS')||x.tc.txt.includes('TIDAK HADIR')){
               tcTxt=x.tc.txt;
             } else if(c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length)){
-              // Has time data — show ALL punches with IN/OUT clearly marked
+              // PAPAR SEMUA PUNCH SECARA APA ADANYA - tiada paksaan IN/OUT
               var shLbl=c.tc_shift==='S'?'PG':c.tc_shift==='P'?'PT':c.tc_shift==='M'?'M':c.tc_shift==='O'?'OFF':'';
               var shTime=c.tc_shift==='S'?'0700-1500':c.tc_shift==='P'?'1500-2300':c.tc_shift==='M'?'2300-0700':'';
               var allPunch=c.tc_all||[c.tc_in,c.tc_out].filter(function(t){return t;});
-              var inT=c.tc_in||'', outT=c.tc_out||'';
-              var late=x.tc.txt.includes('LEWAT'), inAwal=x.tc.txt.includes('IN AWAL'), outAwal=x.tc.txt.includes('OUT AWAL');
-              var tiadaIn=x.tc.txt.includes('TIADA IN'), tiadaOut=x.tc.txt.includes('TIADA OUT'), singleP=x.tc.txt.includes('SINGLE');
-              // Build display lines
-              var shiftLine=shLbl?'<span style="color:#94a3b8;font-size:5.5px;font-weight:600">SHIFT '+shLbl+' ('+shTime+')</span>':'';
               var lines=[];
-              if(shiftLine) lines.push(shiftLine);
-              // Show all punches, marking IN/OUT specifically
+              // Tunjuk shift hakiki (untuk rujukan sahaja)
+              if(shLbl) lines.push('<span style="color:#94a3b8;font-size:5.5px;font-weight:600">SHIFT '+shLbl+' ('+shTime+')</span>');
+              // Tunjuk SEMUA punch dalam timecard - tiada label IN/OUT secara auto
               if(allPunch.length){
-                var punchHtml=allPunch.map(function(t){
-                  if(t===inT&&inT) return '<span style="color:#34d399;font-weight:700">IN '+t+'</span>';
-                  if(t===outT&&outT) return '<span style="color:#7dd3fc;font-weight:700">OUT '+t+'</span>';
-                  return '<span style="color:#94a3b8;font-size:6px">'+t+'</span>';
-                }).join(' &middot; ');
-                lines.push(punchHtml);
+                lines.push(allPunch.map(function(t){
+                  return '<span style="color:#cbd5e1;font-weight:600">'+t+'</span>';
+                }).join(' &middot; '));
               } else {
-                if(!inT&&!outT) lines.push('<span style="color:#fca5a5">TIADA PUNCH</span>');
+                lines.push('<span style="color:#94a3b8;font-size:6.5px">Tiada thumb</span>');
               }
-              // Flags
-              var flagBits=[];
-              if(late) flagBits.push('<span style="color:#fbbf24;font-weight:700">LEWAT</span>');
-              if(inAwal) flagBits.push('<span style="color:#fde68a">IN AWAL</span>');
-              if(outAwal) flagBits.push('<span style="color:#fde68a">OUT AWAL</span>');
-              if(tiadaIn) flagBits.push('<span style="color:#fca5a5;font-weight:700">TIADA IN</span>');
-              if(tiadaOut) flagBits.push('<span style="color:#fca5a5;font-weight:700">TIADA OUT</span>');
-              if(singleP) flagBits.push('<span style="color:#fbbf24">SINGLE PUNCH</span>');
-              if(flagBits.length) lines.push(flagBits.join(' '));
+              // Flags (HANYA selepas validasi)
+              if(c.tc_audit_done){
+                var late=x.tc.txt.includes('LEWAT'), inAwal=x.tc.txt.includes('IN AWAL'), outAwal=x.tc.txt.includes('OUT AWAL');
+                var tiadaIn=x.tc.txt.includes('TIADA IN'), tiadaOut=x.tc.txt.includes('TIADA OUT'), singleP=x.tc.txt.includes('SINGLE');
+                var flagBits=[];
+                if(late) flagBits.push('<span style="color:#fbbf24;font-weight:700">LEWAT</span>');
+                if(inAwal) flagBits.push('<span style="color:#fde68a">IN AWAL</span>');
+                if(outAwal) flagBits.push('<span style="color:#fde68a">OUT AWAL</span>');
+                if(tiadaIn) flagBits.push('<span style="color:#fca5a5;font-weight:700">TIADA IN</span>');
+                if(tiadaOut) flagBits.push('<span style="color:#fca5a5;font-weight:700">TIADA OUT</span>');
+                if(singleP) flagBits.push('<span style="color:#fbbf24">SINGLE PUNCH</span>');
+                if(flagBits.length) lines.push(flagBits.join(' '));
+              }
               tcTxt=lines.join('<br>');
             } else {
               tcTxt=x.tc.txt;
@@ -2844,11 +2833,11 @@ async function bootApp(){
   // Auto-clear stale localStorage if MASTER changed (v4.0)
   try{
     var dataVer=localStorage.getItem('eakha_data_version');
-    if(dataVer!=='v4.0'){
+    if(dataVer!=='v4.2'){
       localStorage.removeItem('eakha_data');
       localStorage.removeItem('eakha_mc');
       localStorage.removeItem('eakha_audit_state');
-      localStorage.setItem('eakha_data_version','v4.0');
+      localStorage.setItem('eakha_data_version','v4.2');
       console.log('[bootApp] Stale data cleared - migrated to v4.0');
     }
   }catch(e){}
@@ -4130,6 +4119,47 @@ function validasiAudit(){
         stats.tt_th++; continue;
       }
       
+      // STEP A: Assign IN/OUT based on shift hakiki (only during validation)
+      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
+      if(c && c.tc_all && c.tc_all.length && !c.tc_in && !c.tc_out){
+        var sh=gSh(m.bil,d);
+        if(sh==='O'){
+          c.tc_in=c.tc_all[0]||'';
+          c.tc_out=c.tc_all[c.tc_all.length-1]||'';
+        } else {
+          var shSt=sh==='S'?420:sh==='P'?900:sh==='M'?1380:0;
+          var shEn=sh==='S'?900:sh==='P'?1380:sh==='M'?420:0;
+          var isMalam=sh==='M';
+          function distFV(m4,tgt){
+            var d1=Math.abs(m4-tgt);
+            return isMalam?Math.min(d1,Math.abs(m4+1440-tgt),Math.abs(m4-1440-tgt)):d1;
+          }
+          var TOLE=300;
+          var valid=c.tc_all.filter(function(t){
+            var m4=toMins(t);
+            return distFV(m4,shSt)<=TOLE||distFV(m4,shEn)<=TOLE;
+          });
+          if(!valid.length) valid=c.tc_all;
+          var bIn=valid.reduce(function(a,b){return distFV(toMins(a),shSt)<=distFV(toMins(b),shSt)?a:b;});
+          var bOut=valid.reduce(function(a,b){return distFV(toMins(a),shEn)<=distFV(toMins(b),shEn)?a:b;});
+          if(bIn===bOut&&valid.length>1){
+            var rem=valid.filter(function(t){return t!==bIn;});
+            if(rem.length) bOut=rem.reduce(function(a,b){return distFV(toMins(a),shEn)<=distFV(toMins(b),shEn)?a:b;});
+          }
+          c.tc_in=bIn;
+          c.tc_out=(bIn===bOut&&valid.length===1)?'':bOut;
+          // Set KZP if empty
+          if(!c.kzp){
+            var late=isMalam?Math.min(Math.abs(toMins(bIn)-shSt),Math.abs(toMins(bIn)+1440-shSt)):toMins(bIn)-shSt;
+            c.kzp=late>10?'L':'\u2713';
+            if(!c.kzk) c.kzk=c.kzp;
+          }
+        }
+        c.tc_audit_done=true;
+      } else if(c && (c.tc_in||c.tc_out)) {
+        c.tc_audit_done=true;
+      }
+      
       // Check if 6 layers complete BEFORE running audit
       var check=checkLayersComplete(m.bil,d);
       if(!check.complete){
@@ -4385,63 +4415,17 @@ function autoLoadTCPreload(){
       
       if(!info.t||!info.t.length) return;
       
-      // Get shift hakiki
+      // Get shift hakiki (untuk rujukan, BUKAN untuk paksa IN/OUT)
       var sh=gSh(bil,d);
-      var shSt=sh==='S'?420:sh==='P'?900:sh==='M'?1380:0;
-      var shEn=sh==='S'?900:sh==='P'?1380:sh==='M'?420:0;
-      var isMalam=sh==='M';
       
-      function distF(m4,tgt){
-        var d1=Math.abs(m4-tgt);
-        return isMalam?Math.min(d1,Math.abs(m4+1440-tgt),Math.abs(m4-1440-tgt)):d1;
-      }
-      
-      if(sh==='O'){
-        // OFFDAY - just store all punches
-        D[bil][d].tc_in=info.t[0]||'';
-        D[bil][d].tc_out=info.t[info.t.length-1]||'';
-        D[bil][d].tc_all=info.t.slice();
-        D[bil][d].tc_shift='O';
-        nDays++;
-        return;
-      }
-      
-      // Pick best IN/OUT based on shift
-      var TOLE=300;
-      var valid=info.t.filter(function(t){
-        var m4=toMins(t);
-        return distF(m4,shSt)<=TOLE||distF(m4,shEn)<=TOLE;
-      });
-      if(!valid.length) valid=info.t;
-      
-      var bIn=valid.reduce(function(a,b){
-        return distF(toMins(a),shSt)<=distF(toMins(b),shSt)?a:b;
-      });
-      var bOut=valid.reduce(function(a,b){
-        return distF(toMins(a),shEn)<=distF(toMins(b),shEn)?a:b;
-      });
-      if(bIn===bOut&&valid.length>1){
-        var rem=valid.filter(function(t){return t!==bIn;});
-        if(rem.length) bOut=rem.reduce(function(a,b){
-          return distF(toMins(a),shEn)<=distF(toMins(b),shEn)?a:b;
-        });
-      }
-      var tcIn=bIn;
-      var tcOut=(bIn===bOut&&valid.length===1)?'':bOut;
-      
-      if(!D[bil][d].tc_in){
-        D[bil][d].tc_in=tcIn;
-        D[bil][d].tc_out=tcOut||'';
-        D[bil][d].tc_all=info.t.slice();  // ALL punches
+      // Store ALL punches AS-IS - tiada paksaan IN/OUT
+      // Logik IN/OUT akan ditentukan masa validasi
+      if(!D[bil][d].tc_all || D[bil][d].tc_all.length===0){
+        D[bil][d].tc_all=info.t.slice();  // SEMUA punch
         D[bil][d].tc_shift=sh;
         D[bil][d].tc_preloaded=true;
-        
-        // Set KZP if empty
-        if(!D[bil][d].kzp){
-          var late=isMalam?Math.min(Math.abs(toMins(tcIn)-shSt),Math.abs(toMins(tcIn)+1440-shSt)):toMins(tcIn)-shSt;
-          D[bil][d].kzp=late>10?'L':'\u2713';
-          if(!D[bil][d].kzk) D[bil][d].kzk=D[bil][d].kzp;
-        }
+        // Don't auto-set tc_in / tc_out — biar kosong
+        // Don't auto-set kzp/kzk — biar admin/validasi yang tentu
         nDays++;
       }
     });
