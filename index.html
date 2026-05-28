@@ -524,6 +524,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
                 <button class="btn btn-gold" id="btn-proc" onclick="procAll()" title="Step 1: Baca semua dokumen, simpan ke 6 tab lapisan">&#x1F4E5; 1. BACA &amp; SIMPAN KE TAB LAPISAN</button>
                 <button class="btn btn-bl" id="btn-update-master" onclick="kemaskiniMaster()" title="Step 2: Kemaskini data dari 6 tab ke Master File">&#x1F4CB; 2. KEMASKINI DATA MASTERFILE</button>
+                <button class="btn" onclick="resetSystemData()" title="Padam semua & muat semula data pre-load" style="background:rgba(120,53,15,.3);border-color:rgba(251,146,60,.4)">&#x1F504; Reset & Reload Preload</button>
                 <button class="btn btn-gn" id="btn-validate" onclick="validasiAudit()" title="Step 3: Bandingkan 6 lapisan, kira Audit Final">&#x2713; 3. VALIDASI / PERBANDINGAN AUDIT</button>
                 <button class="btn btn-sm" id="btn-recompare" onclick="recompareAll()" style="font-size:7.5px">Bandingkan Semula</button>
                 <button class="btn btn-sm" onclick="resetUp()">Reset</button>
@@ -2833,11 +2834,11 @@ async function bootApp(){
   // Auto-clear stale localStorage if MASTER changed (v4.0)
   try{
     var dataVer=localStorage.getItem('eakha_data_version');
-    if(dataVer!=='v4.2'){
+    if(dataVer!=='v4.3'){
       localStorage.removeItem('eakha_data');
       localStorage.removeItem('eakha_mc');
       localStorage.removeItem('eakha_audit_state');
-      localStorage.setItem('eakha_data_version','v4.2');
+      localStorage.setItem('eakha_data_version','v4.3');
       console.log('[bootApp] Stale data cleared - migrated to v4.0');
     }
   }catch(e){}
@@ -4371,15 +4372,7 @@ var TC_PRELOAD = {"6":{"1":{"t":["14:17","23:30"]},"2":{"t":["14:27","23:01"]},"
 
 function autoLoadTCPreload(){
   if(!TC_PRELOAD) return;
-  // Check if TC_PRELOAD already applied (mark with tc_preloaded flag)
-  var anyHasFlag=false;
-  for(var b=1;b<=52;b++){
-    if(D[b]&&D[b][1]&&D[b][1].tc_preloaded){anyHasFlag=true;break;}
-  }
-  if(anyHasFlag){
-    console.log('[TC pre-load] Already applied — skip');
-    return;
-  }
+  // Always apply TC_PRELOAD for days that don't have tc_all yet (merge, no skip)
   
   var nDays=0, nAbs=0, nOff=0, nMembers=0;
   Object.keys(TC_PRELOAD).forEach(function(bilStr){
@@ -4420,14 +4413,11 @@ function autoLoadTCPreload(){
       
       // Store ALL punches AS-IS - tiada paksaan IN/OUT
       // Logik IN/OUT akan ditentukan masa validasi
-      if(!D[bil][d].tc_all || D[bil][d].tc_all.length===0){
-        D[bil][d].tc_all=info.t.slice();  // SEMUA punch
-        D[bil][d].tc_shift=sh;
-        D[bil][d].tc_preloaded=true;
-        // Don't auto-set tc_in / tc_out — biar kosong
-        // Don't auto-set kzp/kzk — biar admin/validasi yang tentu
-        nDays++;
-      }
+      // Always set from preload (source of truth for April)
+      D[bil][d].tc_all=info.t.slice();  // SEMUA punch
+      D[bil][d].tc_shift=sh;
+      D[bil][d].tc_preloaded=true;
+      nDays++;
     });
   });
   
@@ -4465,8 +4455,9 @@ function resetSystemData(){
 }
 
 function autoLoadMCPreload(){
-  // Skip only if already has the preloaded count (54)
-  if(MC_DATA.filter(function(m){return m.source==='preload';}).length>=20) return;
+  // Always merge MC preload (dedupe by bil+dari)
+  var preCount=MC_DATA.filter(function(m){return m.source==='preload';}).length;
+  if(preCount>=40) return; // only skip if fully loaded
   var res=applyMCPreload(4,2026); // April 2026
   if(typeof toast==='function') toast('Pre-load MC: '+res.matched+' anggota, '+res.days+' hari','ok');
   if(typeof logAction==='function') logAction('PRE-LOAD MC','Auto-load 54 rekod dari Borang Semakan',res.matched,'OK');
