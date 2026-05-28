@@ -342,6 +342,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <button class="btn btn-sm" onclick="expOutputCSV()">Export CSV</button>
           <span id="out-count" style="font-size:8px;color:rgba(255,255,255,.3)"></span>
         </div>
+        <div id="out-summary" style="margin-bottom:8px"></div>
+        <div id="output-list"></div>
         <div id="output-grid"></div>
       </div>
 
@@ -382,6 +384,52 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
 
       <!-- BAKI CUTI -->
+      <!-- KZ PENYELIA STAGING -->
+      <div class="page" id="page-kzp-staging">
+        <div class="notif n-info" style="margin-bottom:8px">Data KZ Penyelia (Laporan Harian) · tick=hadir, X+jam=lewat, CR/MC/EL/TH=status, ada pengganti=anggota tiada</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+          <input class="fsel" id="kzp-q" placeholder="Cari nama..." oninput="renderKZPStaging()" style="flex:1;min-width:140px">
+          <span id="kzp-cnt" style="font-size:8px;color:rgba(255,255,255,.4)"></span>
+        </div>
+        <div id="kzp-staging-table"></div>
+      </div>
+
+      <!-- KZ KOPERAL STAGING -->
+      <div class="page" id="page-kzk-staging">
+        <div class="notif n-info" style="margin-bottom:8px">Data KZ Koperal (WhatsApp) · status MC/EL/CR atau tick hadir + pos bertugas</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+          <input class="fsel" id="kzk-q" placeholder="Cari nama..." oninput="renderKZKStaging()" style="flex:1;min-width:140px">
+          <span id="kzk-cnt" style="font-size:8px;color:rgba(255,255,255,.4)"></span>
+        </div>
+        <div id="kzk-staging-table"></div>
+      </div>
+
+      <!-- TIMECARD STAGING -->
+      <div class="page" id="page-tc-staging">
+        <div class="notif n-info" style="margin-bottom:8px">Data TIMECARD (thumbprint) · semua punch dipaparkan apa adanya · 27-30/04 sistem bermasalah</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+          <input class="fsel" id="tc-q" placeholder="Cari nama..." oninput="renderTCStaging()" style="flex:1;min-width:140px">
+          <span id="tc-cnt" style="font-size:8px;color:rgba(255,255,255,.4)"></span>
+        </div>
+        <div id="tc-staging-table"></div>
+      </div>
+
+      <!-- MC DITERIMA -->
+      <div class="page" id="page-mc-reg">
+        <div class="notif n-info" style="margin-bottom:8px">Rekod MC Diterima · untuk kenal pasti anggota dengan MC tinggi (perlu teguran)</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+          <input class="fsel" id="mc-q" placeholder="Cari nama/klinik/siri..." oninput="renderMCReg()" style="flex:1;min-width:140px">
+          <select class="fsel" id="mc-jab-f" onchange="renderMCReg()">
+            <option value="">Semua Jabatan</option>
+            <option>IKTAR</option><option>MHKL</option><option>RT</option>
+          </select>
+          <button class="btn btn-sm" onclick="exportMCCsv()">Export CSV</button>
+          <span id="mc-cnt" style="font-size:8px;color:rgba(255,255,255,.4)"></span>
+        </div>
+        <div id="mc-tinggi-alert" style="margin-bottom:8px"></div>
+        <div id="mc-reg-table"></div>
+      </div>
+
       <div class="page" id="page-baki"><div id="baki-grid"></div></div>
 
       <!-- RAYA -->
@@ -1271,9 +1319,72 @@ function tabOutput(el){
   renderOutput(el.dataset.f||'');
 }
 
+
+// Pastikan TC IN/OUT + audit flag dikira (auto, senyap)
+function ensureAuditReady(force){
+  var anyDone=false;
+  for(var b=1;b<=52;b++){
+    if(D[b]&&D[b][1]&&D[b][1].tc_audit_done){anyDone=true;break;}
+  }
+  if(anyDone&&!force) return;
+  // Assign IN/OUT for all cells based on shift (sama logik validasi)
+  MASTER.forEach(function(m){
+    for(var d=1;d<=30;d++){
+      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
+      if(!c) continue;
+      if(c.tc_problem){ c.tc_audit_done=true; continue; }
+      if(c.tc_all&&c.tc_all.length&&!c.tc_in&&!c.tc_out){
+        var sh=gSh(m.bil,d);
+        if(sh==='O'){ c.tc_in=c.tc_all[0]||''; c.tc_out=c.tc_all[c.tc_all.length-1]||''; }
+        else {
+          var shSt=sh==='S'?420:sh==='P'?900:sh==='M'?1380:0;
+          var shEn=sh==='S'?900:sh==='P'?1380:sh==='M'?420:0;
+          var isM=sh==='M', isP=sh==='P';
+          function dF(m4,t){var d1=Math.abs(m4-t);return (isM||isP)?Math.min(d1,Math.abs(m4+1440-t),Math.abs(m4-1440-t)):d1;}
+          var combined=c.tc_all.map(function(t){return {t:t,mins:toMins(t),nx:false};});
+          var nd=D[m.bil]&&D[m.bil][d+1]?D[m.bil][d+1]:null;
+          if((isP||isM)&&nd&&nd.tc_all){ nd.tc_all.forEach(function(t){var mn=toMins(t);if(mn<=360)combined.push({t:t,mins:mn+1440,nx:true});}); }
+          var bIn=combined.reduce(function(a,b){return dF(a.mins%1440,shSt)<=dF(b.mins%1440,shSt)?a:b;});
+          var outC=combined.filter(function(p){return p.t!==bIn.t||p.nx;});
+          var bOut=outC.length?outC.reduce(function(a,b){var ta=(isM||isP)?Math.abs(a.mins-(shEn+(shEn<shSt?1440:0))):Math.abs(a.mins-shEn);var tb=(isM||isP)?Math.abs(b.mins-(shEn+(shEn<shSt?1440:0))):Math.abs(b.mins-shEn);return ta<=tb?a:b;}):null;
+          c.tc_in=bIn.t; c.tc_out=bOut?bOut.t:''; if(bOut&&bOut.nx)c.tc_out_nextday=true;
+          if(!c.kzp){var inM=bIn.mins%1440;var late=isM?Math.min(Math.abs(inM-shSt),Math.abs(inM+1440-shSt)):inM-shSt;c.kzp=late>10?'L':'\u2713';if(!c.kzk)c.kzk=c.kzp;}
+        }
+      }
+      c.tc_audit_done=true;
+    }
+  });
+  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+}
+
+// MC TINGGI: anggota dengan MC banyak (perlu teguran)
+function getMCTinggi(){
+  var byMember={};
+  MC_DATA.forEach(function(r){
+    var key=r.bil||r.nama;
+    if(!byMember[key]) byMember[key]={bil:r.bil,nama:r.nama,jab:r.jab||'',count:0,days:0,records:[]};
+    byMember[key].count++;
+    byMember[key].days+=(r.hari||1);
+    byMember[key].records.push(r);
+  });
+  var arr=Object.values(byMember).sort(function(a,b){return b.days-a.days;});
+  return arr;
+}
+
 function renderOutput(f){
+  // Pastikan IN/OUT + audit dikira dulu (auto-validasi senyap)
+  ensureAuditReady();
   const all=getAllFlags();
   const con=document.getElementById('output-list');
+  if(!con) return;
+  // Summary
+  var sumEl=document.getElementById('out-summary');
+  if(sumEl){
+    var totMembers=all.length;
+    var totIssues=all.reduce(function(s,m){return s+m.tot;},0);
+    sumEl.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap"><div style="background:rgba(120,53,15,.3);border:1px solid rgba(251,146,60,.3);border-radius:6px;padding:8px 12px"><div style="font-size:18px;font-weight:800;color:#fb923c">'+totMembers+'</div><div style="font-size:7.5px;color:rgba(255,255,255,.5)">Anggota perlu perhatian</div></div><div style="background:rgba(127,29,29,.3);border:1px solid rgba(248,113,113,.3);border-radius:6px;padding:8px 12px"><div style="font-size:18px;font-weight:800;color:#fca5a5">'+totIssues+'</div><div style="font-size:7.5px;color:rgba(255,255,255,.5)">Jumlah isu</div></div></div>';
+  }
+  if(!all.length){ con.innerHTML='<div class="empty"><div class="empty-ic">\u2705</div>Tiada isu perhatian.<br>Semua anggota hadir ikut jadual, atau audit belum dijalankan.<br><br><button class="btn btn-sm" onclick="ensureAuditReady(true);renderOutput(\'\')">Jalankan Audit</button></div>'; return; }
   let html='';
   all.forEach(m=>{
     const items=f?m.items.filter(x=>x.af.txt.includes(f)):m.items;
@@ -1385,7 +1496,107 @@ function renderDash(){
 }
 
 // ── REGISTER MC ───────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════
+// STAGING PAGE RENDERERS
+// ══════════════════════════════════════════════════════════════
+function renderKZPStaging(){
+  var q=(document.getElementById('kzp-q')?.value||'').toLowerCase();
+  var rows=[];
+  MASTER.forEach(function(m){
+    for(var d=1;d<=30;d++){
+      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
+      if(!c||!c.kzp) continue;
+      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
+      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,d:d,kzp:c.kzp,jam:c.kzp_jam||'',pengganti:c.pengganti_nama||''});
+    }
+  });
+  var cnt=document.getElementById('kzp-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
+  var el=document.getElementById('kzp-staging-table'); if(!el) return;
+  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\u23F0</div>Tiada data KZ Penyelia lagi.<br>Upload dokumen KZ Penyelia atau guna data pre-load.</div>'; return; }
+  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Komp</th><th style="padding:5px">Hari</th><th style="padding:5px">Status</th><th style="padding:5px">Jam/Ganti</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var extra=r.jam?'<span style="color:#fbbf24">Lewat '+r.jam+'</span>':r.pengganti?'<span style="color:#93c5fd">ganti: '+r.pengganti+'</span>':'';
+    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center;font-size:7px">'+r.komp+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center"><span class="'+kzCls(r.kzp)+'" style="padding:1px 6px;border-radius:3px;font-weight:700">'+r.kzp+'</span></td><td style="padding:4px;text-align:center">'+extra+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function renderKZKStaging(){
+  var q=(document.getElementById('kzk-q')?.value||'').toLowerCase();
+  var rows=[];
+  MASTER.forEach(function(m){
+    for(var d=1;d<=30;d++){
+      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
+      if(!c||!c.kzk) continue;
+      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
+      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,d:d,kzk:c.kzk,pos:c.kzk_pos||'',ot:c.ot});
+    }
+  });
+  var cnt=document.getElementById('kzk-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
+  var el=document.getElementById('kzk-staging-table'); if(!el) return;
+  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\uD83D\uDCAC</div>Tiada data KZ Koperal lagi.<br>Upload WhatsApp ZIP atau guna data pre-load.</div>'; return; }
+  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Hari</th><th style="padding:5px">Status</th><th style="padding:5px">Pos/OT</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var extra=(r.pos?r.pos:'')+(r.ot?' <span style="color:#fde047">OT</span>':'');
+    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center"><span class="'+kzCls(r.kzk)+'" style="padding:1px 6px;border-radius:3px;font-weight:700">'+r.kzk+'</span></td><td style="padding:4px;text-align:center;font-size:7px">'+extra+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function renderTCStaging(){
+  var q=(document.getElementById('tc-q')?.value||'').toLowerCase();
+  var rows=[];
+  MASTER.forEach(function(m){
+    for(var d=1;d<=30;d++){
+      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
+      if(!c) continue;
+      var hasPunch=c.tc_all&&c.tc_all.length;
+      var isAbs=c.tc_note&&c.tc_note.indexOf('ABS')===0;
+      var isProb=c.tc_problem;
+      if(!hasPunch&&!isAbs&&!isProb) continue;
+      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
+      var sh=gSh(m.bil,d);
+      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,d:d,sh:sh,
+                 punches:hasPunch?c.tc_all.join(' \u00b7 '):'',
+                 prob:isProb,abs:isAbs});
+    }
+  });
+  var cnt=document.getElementById('tc-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
+  var el=document.getElementById('tc-staging-table'); if(!el) return;
+  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\u23F1</div>Tiada data TIMECARD lagi.</div>'; return; }
+  var shLbl={S:'PG',P:'PT',M:'M',O:'OFF'};
+  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Hari</th><th style="padding:5px">Shift</th><th style="padding:5px;text-align:left">Punch</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var punchDisp=r.prob?'<span style="color:#fbbf24">\u26A0 TC BERMASALAH</span>':r.abs?'<span style="color:#fca5a5">ABS - tiada thumb</span>':r.punches;
+    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center;color:#94a3b8">'+(shLbl[r.sh]||r.sh)+'</td><td style="padding:4px 8px;color:#cbd5e1">'+punchDisp+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+// MC tinggi detector (untuk teguran)
+function exportMCCsv(){
+  var rows=MC_DATA.slice();
+  var csv='Bil,Nama,Jabatan,Jenis,Klinik,Dari,Hingga,No MC,Hari\n';
+  rows.forEach(function(r){
+    csv+=[r.bil,'"'+r.nama+'"',r.jab||'','"'+(r.mc_type||r.jenis||'MC')+'"','"'+(r.klinik||'')+'"',r.dari||r.tarikh||'',r.hingga||'',r.no_mc||r.siri||'',r.hari||1].join(',')+'\n';
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='MC_Diterima.csv';a.click();
+}
+
 function renderMCReg(){
+  // MC TINGGI alert (untuk teguran)
+  var alertEl=document.getElementById('mc-tinggi-alert');
+  if(alertEl){
+    var tinggi=getMCTinggi().filter(function(m){return m.days>=4;});
+    if(tinggi.length){
+      alertEl.innerHTML='<div class="notif n-warn" style="flex-direction:column;align-items:flex-start"><div style="font-weight:700;margin-bottom:4px">\u26A0 Anggota MC Tinggi (perlu teguran):</div>'+tinggi.slice(0,10).map(function(m){return '<div style="font-size:8px;padding:1px 0">\u2022 '+m.nama+' ('+m.jab+') \u2014 <b style="color:#fb923c">'+m.days+' hari MC</b> dalam '+m.count+' kali</div>';}).join('')+'</div>';
+    } else { alertEl.innerHTML=''; }
+  }
   const q=(document.getElementById('mc-q')?.value||'').toLowerCase();
   const jabF=document.getElementById('mc-jab-f')?.value||'';
   const jenisF=document.getElementById('mc-jenis-f')?.value||'';
@@ -2865,11 +3076,11 @@ async function bootApp(){
   // Auto-clear stale localStorage if MASTER changed (v4.0)
   try{
     var dataVer=localStorage.getItem('eakha_data_version');
-    if(dataVer!=='v4.8'){
+    if(dataVer!=='v4.9'){
       localStorage.removeItem('eakha_data');
       localStorage.removeItem('eakha_mc');
       localStorage.removeItem('eakha_audit_state');
-      localStorage.setItem('eakha_data_version','v4.8');
+      localStorage.setItem('eakha_data_version','v4.9');
       console.log('[bootApp] Stale data cleared - migrated to v4.0');
     }
   }catch(e){}
@@ -4689,6 +4900,9 @@ function nav(el){
   if(pg==='iktar') miniTab('IKTAR',document.querySelector('#tabs-iktar .ftab'));
   if(pg==='rt') miniTab('RT',document.querySelector('#tabs-rt .ftab'));
   if(pg==='mc-reg') renderMCReg();
+  if(pg==='kzp-staging') renderKZPStaging();
+  if(pg==='kzk-staging') renderKZKStaging();
+  if(pg==='tc-staging') renderTCStaging();
   if(pg==='baki') renderBaki();
   if(pg==='raya') renderRaya();
   if(pg==='haji'||pg==='manual-haji'){ renderHaji(); renderManualHaji(); }
