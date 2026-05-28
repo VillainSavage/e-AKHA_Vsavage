@@ -4007,7 +4007,7 @@ function kemaskiniMaster(){
       if(!c) continue;
       if(c.kzp) filled.kzp++;
       if(c.kzk) filled.kzk++;
-      if(c.tc_in||c.tc_out) filled.tc++;
+      if(c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length)) filled.tc++;
       if(getMC(m.bil,d)) filled.mc++;
       if(c.hrmis) filled.hr++;
       // Mark as "belum_validasi" (audit not run yet)
@@ -4105,7 +4105,7 @@ function validasiAudit(){
   
   log('Mula validasi audit - bandingkan 6 lapisan...','info');
   
-  var stats={sah:0,flagged:0,offday:0,tt_th:0,total:0};
+  var stats={sah:0,flagged:0,offday:0,tt_th:0,incomplete:0,total:0};
   MASTER.forEach(function(m){
     if(!AUDIT_STATE[m.bil]) AUDIT_STATE[m.bil]={};
     for(var d=1;d<=30;d++){
@@ -4121,7 +4121,6 @@ function validasiAudit(){
       }
       
       // STEP A: Assign IN/OUT based on shift hakiki (only during validation)
-      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
       if(c && c.tc_all && c.tc_all.length && !c.tc_in && !c.tc_out){
         var sh=gSh(m.bil,d);
         if(sh==='O'){
@@ -4165,9 +4164,9 @@ function validasiAudit(){
       var check=checkLayersComplete(m.bil,d);
       if(!check.complete){
         AUDIT_STATE[m.bil][d]={status:'incomplete',missing:check.missing,audit:'BELUM LENGKAP: '+check.missing.join(', '),ts:new Date().toISOString()};
-        stats.incomplete=(stats.incomplete||0)+1;
+        stats.incomplete++;
         stats.total++;
-        return;
+        continue;
       }
       
       // All layers complete - run audit
