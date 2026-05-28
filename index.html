@@ -835,6 +835,8 @@ function kzLabel(v){
     BER:'BER<br><span style="font-size:5.5px;opacity:.8">BERSALIN</span>',
     'K/P':'K/P<br><span style="font-size:5.5px;opacity:.8">KURSUS/PROGRAM</span>',
     X:'X<br><span style="font-size:5.5px;opacity:.8">TIDAK HADIR</span>',
+    OB:'OB<br><span style="font-size:5.5px;opacity:.8">BERTUGAS LUAR</span>',
+    OF:'OF<br><span style="font-size:5.5px;opacity:.8">OFFDAY</span>',
   };
   if(v==='✓'||v==='HADIR') return '<span style="font-size:10px">✓</span><br><span style="font-size:5.5px;opacity:.8">HADIR</span>'; return m[v]||v||'';
 }
@@ -844,7 +846,7 @@ function kzCls(v){
   const m={MC:'kz-mc',CR:'kz-cr',EL:'kz-el',
     ABS:'kz-abs',X:'kz-abs',TT:'kz-tt',TH:'kz-th',
     L:'kz-l',LL:'kz-ll','K/P':'kz-kp',CTR:'kz-ctr',
-    CB:'kz-cb',CBR:'kz-cb',BER:'kz-ber'};
+    CB:'kz-cb',CBR:'kz-cb',BER:'kz-ber',OB:'kz-kp'};
   return m[v]||'kz-bp';
 }
 function normK(v){
@@ -1109,8 +1111,19 @@ function renderGrid(ms,cid){
           '<td class="sc2" rowspan="7" style="color:'+(fl>3?'#fca5a5':fl>0?'#fde68a':'#475569')+'">'+(fl||'-')+'</td>';
         const RCELLS=[
           days.map(x=>'<td class="dc dc-noedit" style="background:'+x.shBg+';color:'+x.shFg+';font-weight:700">'+SHS[x.sh]+'<br><span style="font-size:5.5px;opacity:.55">'+SHT[x.sh]+'</span></td>'),
-          days.map(x=>'<td class="dc '+kzCls(x.kzpV)+'" style="font-size:7.5px;font-weight:700" onclick="openCEdit('+x.m_bil+','+x.d+',\'kzp\')">'+kzLabel(x.kzpV)+'</td>'),
-          days.map(x=>'<td class="dc '+kzCls(x.kzkV)+'" style="font-size:7.5px;font-weight:700" onclick="openCEdit('+x.m_bil+','+x.d+',\'kzk\')">'+kzLabel(x.kzkV)+'</td>'),
+          days.map(x=>{
+            var c=D[x.m_bil]&&D[x.m_bil][x.d]?D[x.m_bil][x.d]:{};
+            var extra='';
+            if(c.kzp_jam) extra+='<br><span style="font-size:5px;color:#fbbf24">'+c.kzp_jam+'</span>';
+            if(c.pengganti_nama) extra+='<br><span style="font-size:5px;color:#93c5fd">ganti: '+c.pengganti_nama+'</span>';
+            return '<td class="dc '+kzCls(x.kzpV)+'" style="font-size:7.5px;font-weight:700" onclick="openCEdit('+x.m_bil+','+x.d+',\'kzp\')">'+kzLabel(x.kzpV)+extra+'</td>';
+          }),
+          days.map(x=>{
+            var c=D[x.m_bil]&&D[x.m_bil][x.d]?D[x.m_bil][x.d]:{};
+            var extra='';
+            if(c.ot) extra+='<br><span style="font-size:5px;color:#fde047">OT</span>';
+            return '<td class="dc '+kzCls(x.kzkV)+'" style="font-size:7.5px;font-weight:700" onclick="openCEdit('+x.m_bil+','+x.d+',\'kzk\')">'+kzLabel(x.kzkV)+extra+'</td>';
+          }),
           days.map(x=>{
             // TC: show IN/OUT times as primary, flag as secondary
             var c=D[x.m_bil]?.[x.d]||{};
@@ -2834,11 +2847,11 @@ async function bootApp(){
   // Auto-clear stale localStorage if MASTER changed (v4.0)
   try{
     var dataVer=localStorage.getItem('eakha_data_version');
-    if(dataVer!=='v4.3'){
+    if(dataVer!=='v4.4'){
       localStorage.removeItem('eakha_data');
       localStorage.removeItem('eakha_mc');
       localStorage.removeItem('eakha_audit_state');
-      localStorage.setItem('eakha_data_version','v4.3');
+      localStorage.setItem('eakha_data_version','v4.4');
       console.log('[bootApp] Stale data cleared - migrated to v4.0');
     }
   }catch(e){}
@@ -2860,6 +2873,7 @@ async function bootApp(){
   setTimeout(function(){
     try{ if(typeof autoLoadMCPreload==='function') autoLoadMCPreload(); }catch(e){console.warn('MC preload:',e);}
     try{ if(typeof autoLoadTCPreload==='function') autoLoadTCPreload(); }catch(e){console.warn('TC preload:',e);}
+    try{ if(typeof autoLoadKZPreload==='function') autoLoadKZPreload(); }catch(e){console.warn('KZ preload:',e);}
     try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
     try{ if(typeof renderDash==='function') renderDash(); }catch(e){}
     try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
@@ -4447,10 +4461,118 @@ function resetSystemData(){
   setTimeout(function(){
     try{ autoLoadMCPreload(); }catch(e){console.warn(e);}
     try{ autoLoadTCPreload(); }catch(e){console.warn(e);}
+    try{ autoLoadKZPreload(); }catch(e){console.warn(e);}
     if(typeof renderMaster==='function') renderMaster(null);
     if(typeof renderDash==='function') renderDash();
     if(typeof toast==='function') toast('Data direset & pre-load semula','ok');
   },200);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// PRE-LOADED KZ PENYELIA & KZ KOPERAL — dari sampel borang
+// KZ Penyelia: tick=hadir, X+jam=lewat, CR/MC/EL/TH=status, L+masa=lapor lewat, XR=hadir(ignore)
+// KZ Koperal: status MC/EL/CR atau tick hadir
+// ══════════════════════════════════════════════════════════════
+var KZP_PRELOAD = [
+  {tarikh:"01/04/2026",jab:"IKTAR",nama:"MOHAMMAD ALIFF BIN MOHTAR",status:"MC"},
+  {tarikh:"01/04/2026",jab:"IKTAR",nama:"ABDULLAH BIN BAHUDIN",status:"✓"},
+  {tarikh:"01/04/2026",jab:"IKTAR",nama:"MUHAMMAD TARMIZI BIN ABDULLAH",status:"CR"},
+  {tarikh:"01/04/2026",jab:"IKTAR",nama:"MOHD AMINUDIN BIN DAUD",status:"TH"},
+  {tarikh:"01/04/2026",jab:"IKTAR",nama:"IRWAN SYAMIR BIN MOHD ZAINAL",status:"OB"},
+  {tarikh:"01/04/2026",jab:"IKTAR",nama:"AALIYA AAUNI BINTI MAT ZABIR",status:"✓"},
+  {tarikh:"02/04/2026",jab:"IKTAR",nama:"MOHAMMAD ALIFF BIN MOHTAR",status:"MC",pengganti:"Azlida"},
+  {tarikh:"02/04/2026",jab:"IKTAR",nama:"ABDULLAH BIN BAHUDIN",status:"✓"},
+  {tarikh:"02/04/2026",jab:"IKTAR",nama:"MUHAMMAD TARMIZI BIN ABDULLAH",status:"CR",pengganti:"Anly"},
+  {tarikh:"02/04/2026",jab:"IKTAR",nama:"MOHD AMINUDIN BIN DAUD",status:"TH",pengganti:"Nya"},
+  {tarikh:"02/04/2026",jab:"IKTAR",nama:"IRWAN SYAMIR BIN MOHD ZAINAL",status:"CR",pengganti:"Ilham"},
+  {tarikh:"02/04/2026",jab:"IKTAR",nama:"AALIYA AAUNI BINTI MAT ZABIR",status:"✓"},
+  {tarikh:"05/04/2026",jab:"IKTAR",nama:"MOHAMMAD ALIFF BIN MOHTAR",status:"L",jam:"2310"},
+  {tarikh:"05/04/2026",jab:"IKTAR",nama:"ABDULLAH BIN BAHUDIN",status:"✓"},
+  {tarikh:"05/04/2026",jab:"IKTAR",nama:"MUHAMMAD TARMIZI BIN ABDULLAH",status:"✓"},
+  {tarikh:"05/04/2026",jab:"IKTAR",nama:"MOHD AMINUDIN BIN DAUD",status:"TH"},
+  {tarikh:"05/04/2026",jab:"IKTAR",nama:"IRWAN SYAMIR BIN MOHD ZAINAL",status:"✓"},
+  {tarikh:"05/04/2026",jab:"IKTAR",nama:"AALIYA AAUNI BINTI MAT ZABIR",status:"✓"}
+];
+var KZK_PRELOAD = [
+  {tarikh:"10/04/2026",jab:"RT",nama:"YUSRI BIN YUNUS",status:"✓",pos:"KPL Bertugas"},
+  {tarikh:"10/04/2026",jab:"RT",nama:"MOHD SHAIFUL NIZAM BIN HAMID",status:"✓",pos:"DELTA 07"},
+  {tarikh:"10/04/2026",jab:"RT",nama:"MUHAMMAD AFIQ FAIZ BIN BADARUDDIN",status:"✓",pos:"DELTA 07"},
+  {tarikh:"10/04/2026",jab:"RT",nama:"SHAHRUL FITRI BIN ROSLI",status:"✓",pos:"PAPA 02"},
+  {tarikh:"10/04/2026",jab:"RT",nama:"NANTHAGOPAL A/L AYASAMY",status:"✓",pos:"PAPA 02"},
+  {tarikh:"13/04/2026",jab:"MHKL",nama:"MOHD LUKMAN BIN HAMDAN",status:"✓",pos:"KPL/Pintu Utama"},
+  {tarikh:"13/04/2026",jab:"MHKL",nama:"SUHAIRI BIN ISMAIL",status:"MC"},
+  {tarikh:"13/04/2026",jab:"MHKL",nama:"NUR SYUHADA BINTI MISNAN",status:"✓",pos:"Pintu Utama Charlie 04"},
+  {tarikh:"13/04/2026",jab:"MHKL",nama:"AZELI BIN ZABER",status:"✓",pos:"Pos Belakang Charlie 05",ot:true}
+];
+
+// Map raw KZ symbol → standard code
+function mapKZStatus(raw){
+  if(!raw) return '';
+  var s=String(raw).trim().toUpperCase();
+  if(s==='\u2713'||s==='TICK'||s==='HADIR'||s==='/') return '\u2713';
+  if(s==='XR') return '\u2713'; // tak masuk rokol = hadir (ignore)
+  if(s==='MC') return 'MC';
+  if(s==='EL') return 'EL';
+  if(s==='CR') return 'CR';
+  if(s==='TH') return 'TH';
+  if(s==='TT') return 'TT';
+  if(s==='L') return 'L';      // lewat (with jam)
+  if(s==='LL') return 'LL';    // lapor lewat
+  if(s==='OB') return 'OB';    // outstation/bertugas luar
+  if(s==='CTR') return 'CTR';
+  if(s==='CB') return 'CB';
+  return s;
+}
+
+// Parse tarikh DD/MM/YYYY → day number (April only)
+function kzTarikhToDay(tStr){
+  if(!tStr) return 0;
+  var p=tStr.split('/');
+  if(p.length<2) return 0;
+  var d=parseInt(p[0]), m=parseInt(p[1]);
+  if(m!==4) return 0; // April sahaja
+  return d;
+}
+
+function autoLoadKZPreload(){
+  var nKZP=0, nKZK=0;
+  
+  // ── KZ PENYELIA ──
+  KZP_PRELOAD.forEach(function(rec){
+    var d=kzTarikhToDay(rec.tarikh);
+    if(!d) return;
+    var ctx={raw:rec.nama,clean:rec.nama,norm:typeof normalizeName==='function'?normalizeName(rec.nama):rec.nama};
+    var matched=typeof bestMatchWithRef==='function'?bestMatchWithRef(ctx,''):null;
+    if(!matched||!matched.bil) return;
+    var bil=matched.bil;
+    if(!D[bil]||!D[bil][d]) return;
+    var code=mapKZStatus(rec.status);
+    D[bil][d].kzp=code;
+    if(rec.jam) D[bil][d].kzp_jam=rec.jam;
+    if(rec.pengganti){ D[bil][d].pengganti=true; D[bil][d].pengganti_nama=rec.pengganti; }
+    nKZP++;
+  });
+  
+  // ── KZ KOPERAL ──
+  KZK_PRELOAD.forEach(function(rec){
+    var d=kzTarikhToDay(rec.tarikh);
+    if(!d) return;
+    var ctx={raw:rec.nama,clean:rec.nama,norm:typeof normalizeName==='function'?normalizeName(rec.nama):rec.nama};
+    var matched=typeof bestMatchWithRef==='function'?bestMatchWithRef(ctx,''):null;
+    if(!matched||!matched.bil) return;
+    var bil=matched.bil;
+    if(!D[bil]||!D[bil][d]) return;
+    var code=mapKZStatus(rec.status);
+    D[bil][d].kzk=code;
+    if(rec.pos) D[bil][d].kzk_pos=rec.pos;
+    if(rec.ot) D[bil][d].ot=true;
+    nKZK++;
+  });
+  
+  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+  console.log('[KZ pre-load] KZP: '+nKZP+', KZK: '+nKZK);
+  if(typeof toast==='function') toast('Pre-load KZ: '+nKZP+' penyelia, '+nKZK+' koperal','ok');
 }
 
 function autoLoadMCPreload(){
