@@ -94,7 +94,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .nn{font-size:7.5px;font-weight:600;color:#fff;margin:1px 0}
 .nm{font-size:6.5px;color:rgba(255,255,255,.35)}
 /* KZ colors */
-.kz-ok{background:rgba(5,150,105,.25);color:#34d399}.kz-mc{background:rgba(249,115,22,.2);color:#fed7aa}.kz-cr{background:rgba(37,99,235,.2);color:#93c5fd}.kz-el{background:rgba(124,58,237,.2);color:#c4b5fd}.kz-abs{background:rgba(220,38,38,.25);color:#fca5a5}.kz-tt{background:rgba(6,78,59,.4);color:#6ee7b7}.kz-th{background:rgba(127,29,29,.4);color:#fca5a5}.kz-l{background:rgba(202,138,4,.2);color:#fde047}.kz-ll{background:rgba(161,98,7,.3);color:#fef08a}.kz-kp{background:rgba(59,130,246,.15);color:#7dd3fc}.kz-ctr{background:rgba(168,85,247,.2);color:#d8b4fe}.kz-cb{background:rgba(236,72,153,.2);color:#f9a8d4}.kz-ber{background:rgba(20,184,166,.2);color:#99f6e4}.kz-bp{background:rgba(30,41,59,.3);color:rgba(255,255,255,.2)}
+.kz-ok{background:rgba(5,150,105,.25);color:#34d399}.kz-mc{background:rgba(249,115,22,.2);color:#fed7aa}.kz-cr{background:rgba(37,99,235,.2);color:#93c5fd}.kz-el{background:rgba(124,58,237,.2);color:#c4b5fd}.kz-abs{background:rgba(220,38,38,.25);color:#fca5a5}.kz-tt{background:rgba(6,78,59,.4);color:#6ee7b7}.kz-th{background:rgba(127,29,29,.4);color:#fca5a5}.kz-l{background:rgba(202,138,4,.2);color:#fde047}.kz-ll{background:rgba(161,98,7,.3);color:#fef08a}.kz-kp{background:rgba(59,130,246,.15);color:#7dd3fc}.kz-ctr{background:rgba(168,85,247,.2);color:#d8b4fe}.kz-cb{background:rgba(236,72,153,.2);color:#f9a8d4}.kz-ber{background:rgba(20,184,166,.2);color:#99f6e4}.kz-bp{background:rgba(30,41,59,.3);color:rgba(255,255,255,.2)}.kz-empty{background:rgba(15,32,64,.3);color:rgba(148,163,184,.18);cursor:pointer}.kz-empty:hover{background:rgba(30,61,100,.4)!important}
 /* Audit final */
 .af-sah{background:rgba(5,150,105,.3);color:#34d399}.af-mc{background:rgba(249,115,22,.25);color:#fed7aa}.af-cr{background:rgba(37,99,235,.25);color:#93c5fd}.af-abs{background:rgba(220,38,38,.3);color:#fca5a5}.af-warn{background:rgba(217,119,6,.25);color:#fbbf24}.af-inc{background:rgba(30,27,75,.5);color:#a5b4fc}.af-pending{background:rgba(30,41,59,.4);color:#64748b}.af-off{background:rgba(30,41,59,.4);color:#475569}.af-tt{background:rgba(6,78,59,.35);color:#6ee7b7}
 /* TC */
@@ -471,6 +471,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <button class="rh-tab" onclick="rhTab(this,'ctr-listing')">&#128203; Listing Anggota Bercuti</button>
         </div>
         <div id="rh-content"></div>
+        <div id="haji-grid"></div>
       </div>
 
       <!-- MINI MHKL -->
@@ -909,10 +910,13 @@ function kzLabel(v){
     OB:'OB<br><span style="font-size:5.5px;opacity:.8">BERTUGAS LUAR</span>',
     OF:'OF<br><span style="font-size:5.5px;opacity:.8">OFFDAY</span>',
   };
-  if(v==='✓'||v==='HADIR') return '<span style="font-size:10px">✓</span><br><span style="font-size:5.5px;opacity:.8">HADIR</span>'; return m[v]||v||'';
+  if(v==='✓'||v==='HADIR') return '<span style="font-size:10px">✓</span><br><span style="font-size:5.5px;opacity:.8">HADIR</span>';
+  if(!v||v==='') return '<span style="font-size:6px;color:rgba(255,255,255,.18)">— klik —</span>';
+  return m[v]||v||'';
 }
 function kzCls(v){
-  if(!v||v==='OF') return 'kz-bp';
+  if(!v) return 'kz-empty';
+  if(v==='OF') return 'kz-bp';
   if(v==='✓'||v==='HADIR') return 'kz-ok';
   const m={MC:'kz-mc',CR:'kz-cr',EL:'kz-el',
     ABS:'kz-abs',X:'kz-abs',TT:'kz-tt',TH:'kz-th',
@@ -1858,6 +1862,8 @@ function renderMCReg(){
 }
 
 function renderHRMISReg(){
+  // Ensure static preload has run before reading
+  if(typeof autoLoadHRMISPreloadStatic==='function') autoLoadHRMISPreloadStatic();
   var hData=[];
   try{hData=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');}catch(e){}
   var jabF=(document.getElementById('hr-jab-f')||{}).value||'';
@@ -2082,9 +2088,11 @@ function rayaAudit(r){
 
 function renderRaya(){
   var con=document.getElementById('raya-grid'); if(!con) return;
+  // Ensure preload runs even if called before bootApp completes
+  if(typeof autoLoadRayaPreload==='function'&&RAYA_DATA.length===0) autoLoadRayaPreload();
   var total=RAYA_DATA.length;
   if(!total){
-    con.innerHTML='<div class="empty"><div class="empty-ic">🌙</div>Tiada rekod kerja raya. Data dimuatkan dari sistem — jika kosong, semak autoLoadRayaPreload.</div>';
+    con.innerHTML='<div class="empty"><div class="empty-ic">🌙</div>Tiada rekod kerja raya. Data dimuatkan — jika masih kosong, cuba refresh halaman.</div>';
     return;
   }
   var siang=RAYA_DATA.filter(function(r){return r.shift==='SIANG'&&!r.selepas;}).length;
@@ -2166,9 +2174,11 @@ function expRaya(){
 
 function renderHaji(){
   var con=document.getElementById('haji-grid'); if(!con) return;
+  // Ensure preload runs even if called before bootApp completes
+  if(typeof autoLoadCTRPreload==='function'&&CTR_DATA.length===0) autoLoadCTRPreload();
   var total=CTR_DATA.length;
   if(!total){
-    con.innerHTML='<div class="empty"><div class="empty-ic">🕌</div>Tiada rekod CTR Raya Haji. Data dimuatkan dari sistem — jika kosong, semak autoLoadCTRPreload.</div>';
+    con.innerHTML='<div class="empty"><div class="empty-ic">🕌</div>Tiada rekod CTR Raya Haji. Data dimuatkan — jika masih kosong, cuba refresh halaman.</div>';
     return;
   }
   var ket=CTR_DATA.filter(function(c){return c.kel&&c.kel.includes('DILULUSKAN');}).length;
@@ -5371,12 +5381,9 @@ var HRMIS_PRELOAD = [
 ];
 
 function autoLoadHRMISPreloadStatic(){
-  // Load HRMIS_PRELOAD into localStorage if not already seeded
+  // Seed HRMIS_PRELOAD into localStorage — always check and add missing records
   try{
     var stored = JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');
-    // Check if preload already done (avoid duplicates)
-    var seeded = localStorage.getItem('eakha_hrmis_seeded');
-    if(seeded==='v1'&&stored.length>0) return;
     // Merge: add preload records that don't exist yet
     var added=0;
     HRMIS_PRELOAD.forEach(function(rec){
@@ -5581,6 +5588,22 @@ function autoLoadRayaPreload(){
 }
 
 
+
+// ── HAZLAN TIMECARD — Audit Data (dari Excel HAZLAN_TIME_CARD.xlsx) ──
+var HAZLAN_AUDIT = [
+  {tarikh:'01-04-2026',shift:'M',in_tc:null,out_tc:null,kzp:'MC',kzk:null,isu:'MC LAPOR — TIADA PUNCH'},
+  {tarikh:'02-04-2026',shift:'M',in_tc:null,out_tc:null,kzp:'MC',kzk:null,isu:'MC LAPOR — TIADA PUNCH'},
+  {tarikh:'05-04-2026',shift:'PT',in_tc:'13:20',out_tc:'23:47',kzp:'EL',kzk:null,remark:'EL TP HANTAR JARI',isu:'EL LAPOR — ADA PUNCH (bercanggah)'},
+  {tarikh:'08-04-2026',shift:'PG',in_tc:'07:03',out_tc:'16:12',kzp:'LAPOR LEWAT',kzk:'X LAPORAN KPL',remark:null,isu:'LEWAT LAPOR — ADA PUNCH'},
+  {tarikh:'13-04-2026',shift:'PT',in_tc:'13:56',out_tc:'23:29',kzp:'EL',kzk:'EL',remark:'EL TP HANTAR JARI',isu:'EL LAPOR — ADA PUNCH (bercanggah)'},
+  {tarikh:'14-04-2026',shift:'PT',in_tc:'16:08',out_tc:'23:29',kzp:'MC',kzk:'EL',remark:'MC/EL TP HANTAR JARI',isu:'MC/EL LAPOR — ADA PUNCH (bercanggah)'},
+  {tarikh:'17-04-2026',shift:'M',in_tc:null,out_tc:null,kzp:'CR',kzk:'CR',remark:null,isu:'CR LAPOR — TIADA PUNCH'},
+  {tarikh:'18-04-2026',shift:'M',in_tc:'00:20',out_tc:'09:22',kzp:'MC',kzk:'CR',remark:'MC/CR TP HANTAR JARI',isu:'MC/CR LAPOR — ADA PUNCH (bercanggah)'},
+  {tarikh:'22-04-2026',shift:'PT',in_tc:'13:56',out_tc:'23:06',kzp:'CR',kzk:'EL',remark:'MC/EL TP HANTAR JARI',isu:'CR/EL LAPOR — ADA PUNCH (bercanggah)'},
+  {tarikh:'25-04-2026',shift:'M',in_tc:null,out_tc:null,kzp:'CR',kzk:'CR',remark:null,isu:'CR LAPOR — TIADA PUNCH'},
+  {tarikh:'26-04-2026',shift:'M',in_tc:null,out_tc:null,kzp:'CR',kzk:'CR',remark:null,isu:'CR LAPOR — TIADA PUNCH'},
+];
+
 function autoLoadMCPreload(){
   // Reload MC from localStorage first for persistence across refreshes
   try{
@@ -5704,8 +5727,14 @@ function nav(el){
   if(pg==='kzk-staging') renderKZKStaging();
   if(pg==='tc-staging') renderTCStaging();
   if(pg==='baki') renderBaki();
-  if(pg==='raya') renderRaya();
-  if(pg==='haji'||pg==='manual-haji'){ renderHaji(); renderManualHaji(); }
+  if(pg==='raya'){
+    if(typeof autoLoadRayaPreload==='function') autoLoadRayaPreload();
+    renderRaya();
+  }
+  if(pg==='haji'||pg==='ctr-haji'||pg==='manual-haji'){
+    if(typeof autoLoadCTRPreload==='function') autoLoadCTRPreload();
+    renderRHContent(); renderHaji();
+  }
   if(pg==='upload') renderStoredFiles();
   if(pg==='anggota'){ renderAnggota(); if(AUTH.role==='admin'){var ab=document.getElementById('btn-ag-add');if(ab)ab.style.display='inline-flex';} }
   if(pg==='dash') renderDash();
@@ -5871,9 +5900,10 @@ function renderRHContent(){
 }
 
 function renderCTRDiluluskan(con){
+  if(typeof autoLoadCTRPreload==='function') autoLoadCTRPreload();
   var ctr = CTR_DATA.filter(function(c){return c.tarikh==='28/05'||c.tarikh==='28/05/2026';});
   if(!ctr.length){
-    con.innerHTML='<div class="empty"><div class="empty-ic">&#x1F4CB;</div>Tiada CTR Raya Haji. Upload senarai CTR diluluskan.</div>';
+    con.innerHTML='<div class="empty"><div class="empty-ic">&#x1F4CB;</div>Tiada CTR Raya Haji. Cuba refresh halaman.</div>';
     return;
   }
   con.innerHTML='<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
@@ -5895,6 +5925,7 @@ function renderHRMISHaji(con){
 }
 
 function renderListingBercuti(con){
+  if(typeof autoLoadCTRPreload==='function') autoLoadCTRPreload();
   var items=[];
   CTR_DATA.filter(function(c){return c.tarikh==='28/05'||c.tarikh==='28/05/2026';}).forEach(function(c){
     items.push({bil:c.bil,nama:c.nama,jab:c.jab,komp:c.komp,tarikh:'28/05/2026',jenis:'CTR RAYA HAJI',kel:c.kel,pengganti:c.pengganti});
