@@ -96,7 +96,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* KZ colors */
 .kz-ok{background:rgba(5,150,105,.25);color:#34d399}.kz-mc{background:rgba(249,115,22,.2);color:#fed7aa}.kz-cr{background:rgba(37,99,235,.2);color:#93c5fd}.kz-el{background:rgba(124,58,237,.2);color:#c4b5fd}.kz-abs{background:rgba(220,38,38,.25);color:#fca5a5}.kz-tt{background:rgba(6,78,59,.4);color:#6ee7b7}.kz-th{background:rgba(127,29,29,.4);color:#fca5a5}.kz-l{background:rgba(202,138,4,.2);color:#fde047}.kz-ll{background:rgba(161,98,7,.3);color:#fef08a}.kz-kp{background:rgba(59,130,246,.15);color:#7dd3fc}.kz-ctr{background:rgba(168,85,247,.2);color:#d8b4fe}.kz-cb{background:rgba(236,72,153,.2);color:#f9a8d4}.kz-ber{background:rgba(20,184,166,.2);color:#99f6e4}.kz-bp{background:rgba(30,41,59,.3);color:rgba(255,255,255,.2)}
 /* Audit final */
-.af-sah{background:rgba(5,150,105,.3);color:#34d399}.af-mc{background:rgba(249,115,22,.25);color:#fed7aa}.af-cr{background:rgba(37,99,235,.25);color:#93c5fd}.af-abs{background:rgba(220,38,38,.3);color:#fca5a5}.af-warn{background:rgba(217,119,6,.25);color:#fbbf24}.af-inc{background:rgba(30,27,75,.5);color:#a5b4fc}.af-off{background:rgba(30,41,59,.4);color:#475569}.af-tt{background:rgba(6,78,59,.35);color:#6ee7b7}
+.af-sah{background:rgba(5,150,105,.3);color:#34d399}.af-mc{background:rgba(249,115,22,.25);color:#fed7aa}.af-cr{background:rgba(37,99,235,.25);color:#93c5fd}.af-abs{background:rgba(220,38,38,.3);color:#fca5a5}.af-warn{background:rgba(217,119,6,.25);color:#fbbf24}.af-inc{background:rgba(30,27,75,.5);color:#a5b4fc}.af-pending{background:rgba(30,41,59,.4);color:#64748b}.af-off{background:rgba(30,41,59,.4);color:#475569}.af-tt{background:rgba(6,78,59,.35);color:#6ee7b7}
 /* TC */
 .tc-ok{background:rgba(5,150,105,.2);color:#6ee7b7}.tc-l{background:rgba(202,138,4,.2);color:#fde047}.tc-abs{background:rgba(220,38,38,.2);color:#fca5a5}.tc-off{background:rgba(30,41,59,.35);color:#475569}.tc-bp{background:rgba(30,41,59,.2);color:rgba(255,255,255,.2)}
 /* Progress */
@@ -1036,8 +1036,12 @@ function cek6(bil,d){
   if(sh==='O') return {ok:true,miss:[]};
   if(c.kzp==='TT'||c.kzk==='TT'||c.kzp==='TH'||c.kzk==='TH') return {ok:true,miss:[]};
   const miss=[];
-  if(!c.kzp) miss.push('KZ PENYELIA');
-  if(!c.kzk) miss.push('KZ KOPERAL');
+  // tc_problem hari (27-30/4): KZ kosong = pending manual, bukan BELUM LENGKAP
+  const tcProb=c.tc_problem||false;
+  if(!tcProb){
+    if(!c.kzp) miss.push('KZ PENYELIA');
+    if(!c.kzk) miss.push('KZ KOPERAL');
+  }
   const cutiOrAbs=isCuti(c.kzp)||isCuti(c.kzk)||isAbs(c.kzp)||isAbs(c.kzk);
   if(!hasThumb(c)&&!cutiOrAbs) miss.push('TIMECARD');
   if((c.kzp==='MC'||c.kzk==='MC')&&!getMC(bil,d)) miss.push('MC DITERIMA');
@@ -1064,7 +1068,10 @@ function auditFinal(bil,d){
     if(kzp==='L'||kzk==='L') return {txt:'LEWAT (TC bmsalah)',cls:'af-lw'};
     if(kzp==='LL'||kzk==='LL') return {txt:'LAPOR LEWAT (TC bmsalah)',cls:'af-lw'};
     if(isAbs(kzp)||isAbs(kzk)) return mc2?{txt:'MC SAH',cls:'af-mc'}:hr2?{txt:'HRMIS SAH',cls:'af-cr'}:{txt:'ABS - SILA MOHON CUTI',cls:'af-abs'};
-    if(!kzp&&!kzk) return {txt:'⚠ TC BERMASALAH - Isi KZ Penyelia',cls:'af-warn'};
+    if(!kzp&&!kzk){
+      // Tiada KZ = pending entry, bukan kesalahan — papar neutral
+      return {txt:'PENDING KZ\n(27-30/4 — TC bermasalah)',cls:'af-pending',inc:false};
+    }
     return {txt:(kzM||'SEMAK')+' (KZ-TC bmsalah)',cls:'af-warn'};
   }
   const mc=getMC(bil,d), hrOK=hasHR(c), thumb=hasThumb(c);
@@ -1138,6 +1145,18 @@ function auditFinal(bil,d){
     else if(t.includes('TIADA OUT'))return {txt:'SEMAK TC - TIADA OUT (cross-midnight?)',cls:'af-warn'};
     else if(t.includes('SINGLE'))   return {txt:'SEMAK TC - SINGLE PUNCH',cls:'af-warn'};
   }
+  // KZ lapor LEWAT — semak TC untuk sahkan
+  if(kzp==='L'||kzk==='L'){
+    // Shift malam: IN AWAL SAH (2200-2259) override KZ lewat
+    if(tc.txt.includes('IN AWAL SAH')) return {txt:'SAH\n(KZ lapor L — TC punch dalam tetingkap)',cls:'af-sah'};
+    // TC sahkan lewat juga
+    if(tc.txt.includes('LEWAT')) return {txt:'LEWAT\n(KZ & TC sahkan)',cls:'af-lw'};
+    // Ada thumb tapi TC ok — ikut TC
+    if(thumb&&tc.ok) return {txt:'SAH\n(KZ lapor L — semak TC)',cls:'af-sah'};
+    // Tiada TC data — ikut KZ
+    if(!thumb) return {txt:'LEWAT\n(ikut KZ — tiada punch)',cls:'af-lw'};
+  }
+  if(kzp==='LL'||kzk==='LL') return {txt:'LAPOR LEWAT\n(tiba selepas shift)',cls:'af-lw'};
   if(kzAbs) return {txt:'SEMAK KZ\n(HADIR DARI TIMECARD)',cls:'af-warn'};
   return {txt:'SAH',cls:'af-sah'};
 }
@@ -1256,8 +1275,12 @@ function renderGrid(ms,cid){
             if(x.tc.txt.includes('OFFDAY')||x.tc.txt.includes('TAHAN TUGAS')||x.tc.txt.includes('TIDAK HADIR')){
               tcTxt=x.tc.txt;
             } else if(c.tc_problem){
-              // Hari TC bermasalah
-              tcTxt='<span style="color:#fbbf24;font-size:6px;font-weight:700">\u26A0 SISTEM TC<br>BERMASALAH</span><br><span style="font-size:5px;color:#94a3b8">Rujuk KZ Penyelia</span>';
+              // Hari TC bermasalah — tunjuk status KZ jika ada, atau label neutral
+              if(c.kzp||c.kzk){
+                tcTxt='<span style="color:#fbbf24;font-size:6px;font-weight:700">\u26A0 SISTEM TC<br>BERMASALAH</span><br><span style="font-size:5px;color:#34d399">KZ: '+(c.kzp||c.kzk)+'</span>';
+              } else {
+                tcTxt='<span style="color:#94a3b8;font-size:6px;font-weight:600">TC BERMASALAH</span><br><span style="font-size:5px;color:#64748b">Tunggu KZ Penyelia</span>';
+              }
             } else if(c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length)){
               // PAPAR SEMUA PUNCH SECARA APA ADANYA - tiada paksaan IN/OUT
               var shLbl=c.tc_shift==='S'?'PG':c.tc_shift==='P'?'PT':c.tc_shift==='M'?'M':c.tc_shift==='O'?'OFF':'';
@@ -1397,8 +1420,8 @@ function getAllFlags(){
       if(!af.inc&&['af-off','af-sah','af-tt','af-th'].includes(af.cls)) continue;
       // Skip MC SAH / CTR SAH / HRMIS SAH — tidak perlu flag
       if(af.txt.includes(' SAH')&&!af.txt.includes('SEMAK')&&!af.txt.includes('HANTAR')&&!af.txt.includes('MOHON')) continue;
-      // Skip TC BERMASALAH hari 27-30/4 — ini bukan kesalahan anggota
-      if(c.tc_problem&&af.txt.includes('TC BERMASALAH')) continue;
+      // Skip TC BERMASALAH dan PENDING KZ hari 27-30/4 — bukan kesalahan anggota
+      if(c.tc_problem&&(af.txt.includes('TC BERMASALAH')||af.txt.includes('PENDING KZ')||af.txt.includes('SEMAK KZ'))) continue;
       items.push({d,af,sh,c});
     }
     if(items.length) res.push({...m,items,tot:items.length});
@@ -1836,94 +1859,122 @@ function renderMCReg(){
 
 function renderHRMISReg(){
   var hData=[];
-  try{ hData=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]'); }catch(e){}
+  try{hData=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');}catch(e){}
   var jabF=(document.getElementById('hr-jab-f')||{}).value||'';
   var q=((document.getElementById('hr-q')||{}).value||'').toLowerCase();
-  
   var notifEl=document.getElementById('hr-notif');
   var cnt=document.getElementById('hr-cnt');
   var el=document.getElementById('hr-reg-table');
   if(!el) return;
-
-  // Notify: HRMIS 27/4-30/4 tidak diflag
-  if(notifEl){
-    notifEl.innerHTML='<div class="notif n-warn">'+
-      '<b>&#9888; 27/4 – 30/4:</b> Data cuti HRMIS tempoh ini tiada rekod walaupun fail disimpan. '+
-      'Kemungkinan bug HRMIS. Tempoh ini <b>TIDAK DIFLAG</b>. Pengesahan manual mencukupi.</div>'+
-      (AUTH&&AUTH.role==='admin'?'<button class="btn btn-gn btn-sm" onclick="toggleHRMISForm()" style="margin-bottom:8px">+ Tambah Rekod HRMIS</button>':'');
-  }
-
-  // Add form (admin only)
-  var formEl=document.getElementById('hr-add-form');
-  if(formEl&&formEl.innerHTML===''&&AUTH&&AUTH.role==='admin'){
-    formEl.innerHTML='<div class="panel" style="margin-bottom:10px" id="hr-form-panel" style="display:none">'+
-      '<div class="ph"><span class="ph-title">Tambah Rekod Cuti HRMIS</span></div>'+
-      '<div class="pb"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:10px">'+
-        '<div><label class="flbl2">Nama Anggota</label>'+
-          '<select class="fsel" id="hr-f-nama" style="width:100%">'+
-            '<option value="">— Pilih —</option>'+
-            MASTER.map(function(m){return '<option value="'+m.bil+'|'+m.nama+'">'+m.nama+'</option>';}).join('')+
-          '</select></div>'+
-        '<div><label class="flbl2">Jenis Cuti</label>'+
-          '<select class="fsel" id="hr-f-jenis" style="width:100%">'+
-            ['CUTI TAHUNAN','CUTI SAKIT','CUTI KECEMASAN','CUTI BERSALIN','CUTI HAJI','LAIN-LAIN'].map(function(j){return '<option>'+j+'</option>';}).join('')+
-          '</select></div>'+
-        '<div><label class="flbl2">Tarikh Cuti Dari</label><input class="finp2" type="date" id="hr-f-dari" style="width:100%"></div>'+
-        '<div><label class="flbl2">Tarikh Cuti Hingga</label><input class="finp2" type="date" id="hr-f-hingga" style="width:100%"></div>'+
-        '<div><label class="flbl2">Tarikh Masuk Kerja</label><input class="finp2" type="date" id="hr-f-masuk" style="width:100%"></div>'+
-        '<div><label class="flbl2">Tarikh Permohonan Dibuat</label><input class="finp2" type="date" id="hr-f-mohon" style="width:100%"></div>'+
-      '</div>'+
-      '<button class="btn btn-gold btn-sm" onclick="addHRMISRec()">+ Simpan Rekod</button>'+
-      '<span id="hr-f-msg" style="font-size:8px;margin-left:8px;color:#34d399"></span>'+
-      '</div></div>';
-  }
-
-  // Filter
-  var filtered=hData.filter(function(r){
-    return (!jabF) && (!q||r.nama.toLowerCase().includes(q));
-  });
   if(cnt) cnt.textContent=hData.length+' rekod';
 
-  if(!hData.length){
-    el.innerHTML='<div class="empty"><div class="empty-ic">&#128196;</div>Tiada rekod cuti HRMIS. Tambah rekod menggunakan borang di atas.</div>';
-    return;
+  // Notif + admin button
+  if(notifEl){
+    notifEl.innerHTML='<div class="notif n-warn" style="margin-bottom:6px">'+
+      '<b>⚠ 27/4–30/4:</b> Data HRMIS tempoh ini tiada rekod (bug HRMIS). Tempoh ini <b>TIDAK DIFLAG</b>. Semak manual mencukupi.</div>'+
+      (AUTH&&AUTH.role==='admin'?'<button class="btn btn-gn btn-sm" onclick="toggleHRMISForm()" style="margin-bottom:8px">+ Tambah Rekod Cuti HRMIS</button>':'');
+  }
+
+  // Admin add form
+  var formEl=document.getElementById('hr-add-form');
+  if(formEl&&AUTH&&AUTH.role==='admin'&&!formEl.dataset.built){
+    formEl.dataset.built='1';
+    formEl.innerHTML='<div class="panel" id="hr-form-panel" style="margin-bottom:10px;display:none">'+
+      '<div class="ph"><span class="ph-title">Tambah Rekod Cuti HRMIS</span></div>'+
+      '<div class="pb"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:10px">'+
+        '<div><label class="flbl2">Nama Anggota</label><select class="fsel" id="hr-f-nama" style="width:100%"><option value="">— Pilih —</option>'+
+          MASTER.filter(function(m){return !m.pindah;}).map(function(m){return '<option value="'+m.bil+'|'+m.nama+'">'+m.nama+'</option>';}).join('')+'</select></div>'+
+        '<div><label class="flbl2">Jenis Cuti</label><select class="fsel" id="hr-f-jenis" style="width:100%">'+
+          ['CUTI TAHUNAN (CR)','CUTI SAKIT (MC)','CUTI KECEMASAN (EL)','CUTI BERSALIN (CB)','CUTI HAJI','CUTI TANPA REKOD (CTR)','LAIN-LAIN'].map(function(j){return '<option>'+j+'</option>';}).join('')+
+        '</select></div>'+
+        '<div><label class="flbl2">Tarikh Mula</label><input class="finp2" type="date" id="hr-f-dari" style="width:100%"></div>'+
+        '<div><label class="flbl2">Tarikh Tamat</label><input class="finp2" type="date" id="hr-f-hingga" style="width:100%"></div>'+
+        '<div><label class="flbl2">Tarikh Masuk Kerja</label><input class="finp2" type="date" id="hr-f-masuk" style="width:100%"></div>'+
+        '<div><label class="flbl2">Tarikh Permohonan</label><input class="finp2" type="date" id="hr-f-mohon" style="width:100%"></div>'+
+      '</div>'+
+      '<button class="btn btn-gold btn-sm" onclick="addHRMISRec()">+ Simpan</button>'+
+      '<span id="hr-f-msg" style="font-size:8px;margin-left:8px;color:#34d399"></span></div></div>';
   }
 
   // Stats
-  var totalRek=hData.length;
-  var uniqueNames=new Set(hData.map(function(r){return r.nama;})).size;
-  var statsHtml='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:12px">'+
-    [{l:'Jumlah Rekod Cuti',v:totalRek,c:'#f0b429'},{l:'Anggota Ada Cuti',v:uniqueNames,c:'#34d399'}].map(function(s){
-      return '<div style="background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:9px 12px">'+
-        '<div style="font-size:18px;font-weight:800;color:'+s.c+'">'+s.v+'</div>'+
-        '<div style="font-size:7.5px;color:rgba(255,255,255,.4);margin-top:2px">'+s.l+'</div></div>';
-    }).join('')+'</div>';
+  var totalHariHR=0, uNames=new Set();
+  hData.forEach(function(r){
+    uNames.add(r.nama);
+    var d1=r.dari?new Date(r.dari):null, d2=r.hingga?new Date(r.hingga):null;
+    totalHariHR+=d1&&d2?Math.round((d2-d1)/86400000)+1:1;
+  });
 
-  // Table
-  el.innerHTML=statsHtml+
-    '<div class="panel"><div class="ph"><span class="ph-title">Listing Cuti HRMIS ('+hData.length+' rekod)</span></div>'+
-    '<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
-      '<th>#</th><th>Nama Anggota</th><th>Jenis Cuti</th><th>Tarikh Cuti Dari</th><th>Tarikh Cuti Hingga</th>'+
-      '<th>Tarikh Masuk Kerja</th><th>Tarikh Permohonan</th><th>Bil Hari</th>'+(AUTH&&AUTH.role==='admin'?'<th>Padam</th>':'')+
-    '</tr></thead><tbody>'+
+  // Count by jenis
+  var jenisCnt={};
+  hData.forEach(function(r){ var j=r.jenis||'Lain'; jenisCnt[j]=(jenisCnt[j]||0)+1; });
+  var jenisHighest=Object.entries(jenisCnt).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(e){return e[1]+'× '+e[0];}).join(' | ');
+
+  var statsHtml='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:10px">'+
+    [{l:'Jumlah Rekod Cuti',v:hData.length,c:'#f0b429'},{l:'Anggota Ada Cuti',v:uNames.size,c:'#34d399'},
+     {l:'Jumlah Hari Cuti',v:totalHariHR,c:'#93c5fd'}
+    ].map(function(s){return '<div style="background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:8px 11px"><div style="font-size:16px;font-weight:800;color:'+s.c+'">'+s.v+'</div><div style="font-size:7px;color:rgba(255,255,255,.4);margin-top:2px">'+s.l+'</div></div>';}).join('')+'</div>';
+
+  if(!hData.length){
+    el.innerHTML=statsHtml+'<div class="empty"><div class="empty-ic">📄</div>Tiada rekod cuti HRMIS. Gunakan butang + di atas untuk tambah rekod.</div>';
+    return;
+  }
+
+  // Filter
+  var filtered=hData.filter(function(r){ return (!jabF)&&(!q||r.nama.toLowerCase().includes(q)); });
+
+  // TABLE — same format as MC listing
+  var tableHtml='<div class="panel"><div class="ph" style="background:rgba(0,20,40,.4)">'+
+    '<span class="ph-title">Cuti HRMIS Diterima — '+hData.length+' Rekod ('+totalHariHR+' hari)</span></div>'+
+    '<div style="overflow-x:auto"><table class="tbl" style="font-size:8px"><thead>'+
+      '<tr style="background:rgba(0,0,0,.5)">'+
+      '<th>#</th><th style="min-width:140px">NAMA ANGGOTA</th>'+
+      '<th>JENIS CUTI</th><th>TARIKH MULA</th><th>TARIKH TAMAT</th>'+
+      '<th>TARIKH MASUK KERJA</th><th>TARIKH PERMOHONAN</th>'+
+      '<th style="text-align:center">HARI</th><th>FLAG</th>'+
+      (AUTH&&AUTH.role==='admin'?'<th></th>':'')+
+      '</tr></thead><tbody>'+
     hData.map(function(r,i){
-      var d1=r.dari?new Date(r.dari):null;
-      var d2=r.hingga?new Date(r.hingga):null;
+      var d1=r.dari?new Date(r.dari):null, d2=r.hingga?new Date(r.hingga):null;
       var hari=d1&&d2?Math.round((d2-d1)/86400000)+1:1;
-      var noFlag=(r.dari>='2026-04-27'&&r.dari<='2026-04-30')||(r.hingga>='2026-04-27'&&r.hingga<='2026-04-30');
+      var noFlag=(r.dari>='2026-04-27'&&r.dari<='2026-04-30')||(r.hingga&&r.hingga>='2026-04-27'&&r.hingga<='2026-04-30');
       return '<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'">'+
-        '<td style="color:rgba(255,255,255,.3)">'+(i+1)+'</td>'+
-        '<td style="font-size:8.5px;font-weight:500">'+r.nama+'</td>'+
-        '<td><span style="background:rgba(37,99,235,.2);color:#93c5fd;padding:1px 6px;border-radius:3px;font-size:7.5px;font-weight:700">'+(r.jenis||'—')+'</span></td>'+
-        '<td style="font-family:monospace;font-size:8px">'+(r.dari||'—')+'</td>'+
-        '<td style="font-family:monospace;font-size:8px">'+(r.hingga||'—')+'</td>'+
-        '<td style="font-family:monospace;font-size:8px">'+(r.masuk||'—')+'</td>'+
-        '<td style="font-family:monospace;font-size:8px">'+(r.mohon||'—')+'</td>'+
-        '<td style="text-align:center;font-weight:700">'+hari+(noFlag?' <span style="background:rgba(37,99,235,.2);color:#93c5fd;padding:1px 5px;border-radius:3px;font-size:7px">NO FLAG</span>':'')+'</td>'+
-        (AUTH&&AUTH.role==='admin'?'<td><button class="btn btn-rd btn-sm" onclick="delHRMISRec('+i+')">&#10005;</button></td>':'')+
+        '<td style="color:rgba(255,255,255,.3);text-align:center">'+(i+1)+'</td>'+
+        '<td style="font-size:8px;font-weight:500">'+r.nama+'</td>'+
+        '<td><span style="background:rgba(37,99,235,.2);color:#93c5fd;padding:1px 5px;border-radius:3px;font-size:7px;font-weight:700">'+(r.jenis||'—')+'</span></td>'+
+        '<td style="font-family:monospace;font-size:8px;text-align:center">'+(r.dari||'—')+'</td>'+
+        '<td style="font-family:monospace;font-size:8px;text-align:center">'+(r.hingga||'—')+'</td>'+
+        '<td style="font-family:monospace;font-size:8px;text-align:center">'+(r.masuk||'—')+'</td>'+
+        '<td style="font-family:monospace;font-size:8px;text-align:center">'+(r.mohon||'—')+'</td>'+
+        '<td style="text-align:center;font-weight:700">'+hari+(noFlag?' <span style="background:rgba(37,99,235,.15);color:#93c5fd;padding:0 4px;border-radius:2px;font-size:6.5px">NO FLAG</span>':'')+'</td>'+
+        '<td>'+(noFlag?'<span style="font-size:7px;color:#93c5fd">TC BERMASALAH</span>':'<span style="background:rgba(5,150,105,.2);color:#34d399;padding:1px 5px;border-radius:3px;font-size:7px">SAH</span>')+'</td>'+
+        (AUTH&&AUTH.role==='admin'?'<td><button class="btn btn-rd btn-sm" onclick="delHRMISRec('+i+')" style="padding:2px 6px;font-size:7px">✕</button></td>':'')+
       '</tr>';
+    }).join('')+'</tbody></table></div></div>';
+
+  // Summary by anggota (same as MC)
+  var sumByAnggota={};
+  hData.forEach(function(r){
+    if(!sumByAnggota[r.nama]) sumByAnggota[r.nama]={nama:r.nama,count:0,hari:0};
+    sumByAnggota[r.nama].count++;
+    var d1=r.dari?new Date(r.dari):null, d2=r.hingga?new Date(r.hingga):null;
+    sumByAnggota[r.nama].hari+=d1&&d2?Math.round((d2-d1)/86400000)+1:1;
+  });
+  var sumRows=Object.values(sumByAnggota).sort(function(a,b){return b.hari-a.hari;});
+  var sumHtml='<div class="panel" style="margin-top:10px">'+
+    '<div class="ph"><span class="ph-title">Ringkasan Jumlah Hari Cuti per Anggota</span></div>'+
+    '<div style="overflow-x:auto"><table class="tbl"><thead>'+
+      '<tr><th>NAMA</th><th style="text-align:center">BIL REKOD</th><th style="text-align:center">JUMLAH HARI</th><th>STATUS</th></tr>'+
+    '</thead><tbody>'+
+    sumRows.map(function(m){
+      var status=m.hari>=10?'<span style="background:rgba(220,38,38,.2);color:#fca5a5;padding:1px 7px;border-radius:3px;font-size:7px;font-weight:700">BANYAK</span>':
+                  m.hari>=5?'<span style="background:rgba(217,119,6,.2);color:#fbbf24;padding:1px 7px;border-radius:3px;font-size:7px;font-weight:700">SEMAK</span>':
+                            '<span style="background:rgba(5,150,105,.15);color:#34d399;padding:1px 7px;border-radius:3px;font-size:7px;font-weight:700">NORMAL</span>';
+      return '<tr><td style="font-size:8.5px;font-weight:500">'+m.nama+'</td>'+
+        '<td style="text-align:center">'+m.count+'</td><td style="text-align:center;font-weight:700">'+m.hari+'</td><td>'+status+'</td></tr>';
     }).join('')+
     '</tbody></table></div></div>';
+
+  el.innerHTML=statsHtml+tableHtml+sumHtml;
 }
 
 function toggleHRMISForm(){
@@ -2030,45 +2081,63 @@ function rayaAudit(r){
 }
 
 function renderRaya(){
-  const con=document.getElementById('raya-grid'); if(!con) return;
-  if(!RAYA_DATA.length){ con.innerHTML='<div class="empty"><div class="empty-ic">📋</div>Tiada rekod kerja raya. Upload senarai atau tambah manual.</div>'; return; }
-  const total=RAYA_DATA.length, siang=RAYA_DATA.filter(r=>r.shift==='SIANG').length;
-  const malam=RAYA_DATA.filter(r=>r.shift==='MALAM').length, semak=RAYA_DATA.filter(r=>!r.tc_in&&!r.tc_out).length;
-  let html='<div class="stats" style="margin-bottom:10px">'+
-    '<div class="sc"><div class="sc-l">Jumlah Bertugas</div><div class="sc-v cg">'+total+'</div></div>'+
-    '<div class="sc"><div class="sc-l">Shift Siang</div><div class="sc-v cG">'+siang+'</div><div class="sc-s">0700-1900</div></div>'+
-    '<div class="sc"><div class="sc-l">Shift Malam</div><div class="sc-v cb">'+malam+'</div><div class="sc-s">1900-0700</div></div>'+
-    '<div class="sc"><div class="sc-l">Perlu Semak TC</div><div class="sc-v ca">'+semak+'</div></div>'+
-    '</div>';
-  const byT={};
-  RAYA_DATA.forEach(r=>{ if(!byT[r.tarikh])byT[r.tarikh]=[]; byT[r.tarikh].push(r); });
-  for(const[t,recs] of Object.entries(byT).sort()){
-    html+='<div class="panel" style="margin-bottom:10px"><div class="ph" style="background:rgba(6,78,59,.55)">'+
-      '<span class="ph-title">★ Kerja Raya '+t+'</span>'+
-      '<div style="display:flex;gap:5px">'+
-      '<span style="font-size:7px;background:rgba(6,78,59,.5);color:#34d399;padding:1px 6px;border-radius:10px">Siang: '+recs.filter(r=>r.shift==='SIANG').length+'</span>'+
-      '<span style="font-size:7px;background:rgba(30,58,95,.5);color:#93c5fd;padding:1px 6px;border-radius:10px">Malam: '+recs.filter(r=>r.shift==='MALAM').length+'</span>'+
-      '</div></div>'+
-      '<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
-      '<th>Bil</th><th>Nama</th><th>Jab</th><th>Komp</th><th>Shift Raya</th><th>Masa Tugas</th><th>TC Status</th><th>Audit Raya</th>'+
-      '</tr></thead><tbody>'+
-      recs.map((r,i)=>{
-        const a=rayaAudit(r);
-        const shBg=r.shift==='SIANG'?'rgba(6,78,59,.4)':'rgba(30,58,95,.4)';
-        const shFg=r.shift==='SIANG'?'#34d399':'#93c5fd';
-        const tcT=r.tc_in&&r.tc_out?'IN '+r.tc_in+' / OUT '+r.tc_out+(r.shift==='MALAM'?' (ESOK)':''):r.tc_in?'IN '+r.tc_in+' / TIADA OUT':r.tc_out?'TIADA IN / OUT '+r.tc_out:'TIADA PUNCH';
-        return '<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'">'+
-          '<td>'+r.bil+'</td><td style="font-weight:500;font-size:8.5px">'+r.nama+'</td>'+
-          '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+r.jab+'</td>'+
-          '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+r.komp+'</td>'+
-          '<td><span style="background:'+shBg+';color:'+shFg+';padding:2px 7px;border-radius:3px;font-size:7.5px;font-weight:700">'+r.shift+' '+(r.shift==='SIANG'?'0700-1900':'1900-0700')+'</span></td>'+
-          '<td style="font-size:8px;font-family:monospace">'+tcT+'</td>'+
-          '<td>'+(r.tc_in||r.tc_out?'<span style="color:#34d399">✓ ADA</span>':'<span style="color:#fca5a5">TIADA</span>')+'</td>'+
-          '<td><span class="'+a.cls+'" style="padding:2px 6px;border-radius:3px;font-size:7px;font-weight:700;white-space:pre">'+a.txt+'</span></td>'+
-          '</tr>';
-      }).join('')+'</tbody></table></div></div>';
+  var con=document.getElementById('raya-grid'); if(!con) return;
+  var total=RAYA_DATA.length;
+  if(!total){
+    con.innerHTML='<div class="empty"><div class="empty-ic">🌙</div>Tiada rekod kerja raya. Data dimuatkan dari sistem — jika kosong, semak autoLoadRayaPreload.</div>';
+    return;
   }
-  con.innerHTML=html;
+  var siang=RAYA_DATA.filter(function(r){return r.shift==='SIANG'&&!r.selepas;}).length;
+  var malam=RAYA_DATA.filter(function(r){return r.shift==='MALAM'&&!r.selepas;}).length;
+  var layak=RAYA_DATA.filter(function(r){return r.layak_ctr;}).length;
+  var selepas=RAYA_DATA.filter(function(r){return r.selepas;}).length;
+
+  // Stats
+  var statsHtml='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:10px">'+
+    [{l:'Jumlah Anggota',v:total,c:'#f0b429'},{l:'Shift Siang',v:siang,c:'#34d399'},
+     {l:'Shift Malam',v:malam,c:'#93c5fd'},{l:'Layak CTR Haji',v:layak,c:'#c084fc'},{l:'Bercuti Raya (Selepas)',v:selepas,c:'#fbbf24'}
+    ].map(function(s){return '<div style="background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:8px 11px"><div style="font-size:16px;font-weight:800;color:'+s.c+'">'+s.v+'</div><div style="font-size:7px;color:rgba(255,255,255,.4);margin-top:2px">'+s.l+'</div></div>';}).join('')+'</div>';
+
+  // Group by shift
+  var byShift={SIANG:[],MALAM:[],'SELEPAS SIANG':[],'SELEPAS MALAM':[]};
+  RAYA_DATA.forEach(function(r){ var k=r.selepas?(r.shift==='SIANG'?'SELEPAS SIANG':'SELEPAS MALAM'):r.shift; (byShift[k]||(byShift[k]=[])).push(r); });
+
+  var tableHtml='';
+  ['SIANG','MALAM','SELEPAS SIANG','SELEPAS MALAM'].forEach(function(sh){
+    var items=byShift[sh]||[];
+    if(!items.length) return;
+    var bg=sh==='SIANG'?'rgba(120,53,15,.5)':sh==='MALAM'?'rgba(30,27,75,.6)':sh==='SELEPAS SIANG'?'rgba(120,60,0,.4)':'rgba(50,30,80,.4)';
+    var icon=sh==='SIANG'?'☀️':sh==='MALAM'?'🌙':sh.includes('SIANG')?'🌅':'🌃';
+    tableHtml+='<div class="panel" style="margin-bottom:10px">'+
+      '<div class="ph" style="background:'+bg+'">'+
+        '<span class="ph-title">'+icon+' KERJA RAYA '+sh+' — 0700–1900 / 1900–0700 &nbsp;('+items.length+' anggota)</span>'+
+      '</div>'+
+      '<div style="overflow-x:auto"><table class="tbl" style="font-size:8px"><thead>'+
+        '<tr style="background:rgba(0,0,0,.5)">'+
+        '<th>#</th><th style="min-width:140px">NAMA ANGGOTA</th><th>JAB</th><th>KOMP</th>'+
+        '<th>TEMPOH</th><th>SHIFT</th><th>LAYAK CTR HAJI</th>'+
+        '</tr></thead><tbody>'+
+      items.map(function(r,i){
+        return '<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'">'+
+          '<td style="color:rgba(255,255,255,.3);text-align:center">'+(i+1)+'</td>'+
+          '<td style="font-weight:500;font-size:8px">'+r.nama+'</td>'+
+          '<td style="font-size:7.5px;color:rgba(255,255,255,.5)">'+r.jab+'</td>'+
+          '<td style="font-size:7.5px;color:rgba(255,255,255,.5)">'+r.komp+'</td>'+
+          '<td style="font-size:7.5px;font-family:monospace">'+r.tarikh+'</td>'+
+          '<td><span style="background:'+(sh==='SIANG'?'rgba(120,53,15,.4)':'rgba(30,27,75,.6)')+';color:'+(sh==='SIANG'?'#fde68a':'#c4b5fd')+';padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700">'+sh+'</span></td>'+
+          '<td style="text-align:center"><span style="background:rgba(124,58,237,.2);color:#c084fc;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700">'+
+            (r.layak_ctr?'✓ LAYAK':'—')+'</span></td>'+
+        '</tr>';
+      }).join('')+'</tbody></table></div></div>';
+  });
+
+  // Summary note
+  var noteHtml='<div class="notif n-ok" style="margin-top:8px">'+
+    '<b>✓ Nota:</b> Anggota yang bertugas semasa Raya Aidilfitri 2026 (19–24 Mac) adalah <b>LAYAK</b> memohon CTR Raya Haji. '+
+    'Anggota yang bercuti semasa Raya Aidilfitri (Selepas Raya: 25–30 Mac) wajib bertugas Raya tahun hadapan.'+
+  '</div>';
+
+  con.innerHTML=statsHtml+tableHtml+noteHtml;
 }
 
 function saveRaya(){
@@ -2096,49 +2165,70 @@ function expRaya(){
 }
 
 function renderHaji(){
-  const con=document.getElementById('haji-grid'); if(!con) return;
-  var CTR_TARIKH='28/05/2026', CTR_HARI=28, CTR_BULAN=5;
-  function gSh27(bil){ return gShift(bil,2026,5,CTR_HARI); }
-  const bt=[],od=[];
-  MASTER.forEach(m=>{ const sh=gSh27(m.bil); if(sh==='O')od.push({...m,sh}); else bt.push({...m,sh}); });
-  const tot=CTR_DATA.length, ket=CTR_DATA.filter(c=>c.kel.includes('KETUA')).length;
-  const sem=CTR_DATA.filter(c=>c.kel.includes('SEMAK')).length;
-  const ng=CTR_DATA.filter(c=>!c.pengganti).length;
-  let html='<div class="stats" style="margin-bottom:10px">'+
-    '<div class="sc"><div class="sc-l">CTR Diluluskan</div><div class="sc-v cg">'+tot+'</div></div>'+
-    '<div class="sc"><div class="sc-l">Ketua Cawangan</div><div class="sc-v cp">'+ket+'</div></div>'+
-    '<div class="sc"><div class="sc-l">Perlu Semak</div><div class="sc-v ca">'+sem+'</div></div>'+
-    '<div class="sc"><div class="sc-l">Tiada Pengganti</div><div class="sc-v cr">'+ng+'</div></div>'+
-    '<div class="sc"><div class="sc-l">Bertugas 27/05</div><div class="sc-v cG">'+bt.length+'</div><div class="sc-s">OT</div></div>'+
-    '</div>';
-  if(CTR_DATA.length){
-    html+='<div class="panel" style="margin-bottom:10px"><div class="ph" style="background:rgba(75,0,130,.5)"><span class="ph-title">Senarai CTR Raya Haji 2026 ('+CTR_DATA.length+')</span><button class="btn btn-sm" onclick="expCTR()">Export CSV</button></div>'+
-      '<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Bil</th><th>Nama</th><th>Jab</th><th>Komp</th><th>Tarikh</th><th>Tempoh</th><th>Status Kelulusan</th><th>Nama Pengganti</th><th>Audit Final</th><th>Flag</th></tr></thead><tbody>'+
-      CTR_DATA.map((r,i)=>{
-        const thumb=gSh(r.bil,r.d)||false;
-        const af=r.kel.includes('SEMAK')?{txt:'SEMAK CTR',cls:'af-warn'}:(thumb?{txt:'SEMAK - CTR TAPI ADA THUMB',cls:'af-warn'}:{txt:'CTR SAH',cls:'af-cr'});
-        const flag=!r.pengganti?'<span style="background:rgba(127,29,29,.4);color:#fca5a5;padding:1px 5px;border-radius:3px;font-size:7px">SEMAK PENGGANTI</span>':'';
-        return '<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'">'+
-          '<td>'+r.bil+'</td><td style="font-weight:500;font-size:8.5px">'+r.nama+'</td>'+
-          '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+r.jab+'</td>'+
-          '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+r.komp+'</td>'+
-          '<td>'+r.tarikh+'</td><td style="text-align:center">'+r.tempoh+' hari</td>'+
-          '<td style="font-size:8px;color:#c4b5fd">'+r.kel+'</td>'+
-          '<td style="font-size:8.5px">'+(r.pengganti||'<span style="color:#fca5a5">-</span>')+'</td>'+
-          '<td><span class="'+af.cls+'" style="padding:2px 5px;border-radius:3px;font-size:7.5px;font-weight:700">'+af.txt+'</span></td>'+
-          '<td>'+flag+'</td></tr>';
-      }).join('')+'</tbody></table></div></div>';
+  var con=document.getElementById('haji-grid'); if(!con) return;
+  var total=CTR_DATA.length;
+  if(!total){
+    con.innerHTML='<div class="empty"><div class="empty-ic">🕌</div>Tiada rekod CTR Raya Haji. Data dimuatkan dari sistem — jika kosong, semak autoLoadCTRPreload.</div>';
+    return;
   }
-  html+='<div class="panel"><div class="ph" style="background:rgba(30,58,95,.6)"><span class="ph-title">Jadual Hakiki 27/05 - OT vs Cuti</span></div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">'+
-    '<div style="padding:10px 13px;border-right:1px solid rgba(255,255,255,.06)">'+
-    '<div style="font-size:9.5px;font-weight:700;color:#34d399;margin-bottom:7px">Bertugas = OT ('+bt.length+')</div>'+
-    bt.map(m=>'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:8.5px"><span>'+m.nama+'</span><span style="color:#34d399;font-size:7.5px">OT - TIDAK MOHON CUTI</span></div>').join('')+
-    '</div><div style="padding:10px 13px">'+
-    '<div style="font-size:9.5px;font-weight:700;color:#93c5fd;margin-bottom:7px">Offday - Perlu Mohon Cuti ('+od.length+')</div>'+
-    od.map(m=>{ const hc=CTR_DATA.some(c=>c.bil===m.bil); return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:8.5px"><span>'+m.nama+'</span><span style="color:'+(hc?'#c4b5fd':'#fca5a5')+';font-size:7.5px;font-weight:700">'+(hc?'CTR SAH':'SEMAK HRMIS')+'</span></div>'; }).join('')+
-    '</div></div></div>';
-  con.innerHTML=html;
+  var ket=CTR_DATA.filter(function(c){return c.kel&&c.kel.includes('DILULUSKAN');}).length;
+  var sem=CTR_DATA.filter(function(c){return c.kel&&c.kel.includes('SEMAK');}).length;
+  var ng=CTR_DATA.filter(function(c){return !c.pengganti;}).length;
+
+  // Stats
+  var statsHtml='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:10px">'+
+    [{l:'Jumlah CTR',v:total,c:'#f0b429'},{l:'Diluluskan',v:ket,c:'#34d399'},
+     {l:'Perlu Semak',v:sem,c:'#fbbf24'},{l:'Tiada Pengganti',v:ng,c:ng>0?'#f87171':'#34d399'}
+    ].map(function(s){return '<div style="background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:8px 11px"><div style="font-size:16px;font-weight:800;color:'+s.c+'">'+s.v+'</div><div style="font-size:7px;color:rgba(255,255,255,.4);margin-top:2px">'+s.l+'</div></div>';}).join('')+'</div>';
+
+  // Notif
+  var notifHtml='<div class="notif n-warn" style="margin-bottom:8px">'+
+    '<b>⚠ CTR Raya Haji 28/05/2026</b> — CTR tidak tolak baki cuti. '+
+    'TIMECARD tiada punch + CTR sah = <b style="color:#34d399">CTR SAH</b>. '+
+    'TIMECARD ada thumb + CTR sah = <b style="color:#fbbf24">SEMAK</b>. '+
+    'CTR tidak boleh ditukar jadi CR biasa.'+
+  '</div>';
+
+  // Group by jabatan
+  var byJab={IKTAR:[],MHKL:[],RT:[]};
+  CTR_DATA.forEach(function(c){ (byJab[c.jab]||(byJab[c.jab]=[])).push(c); });
+
+  var tableHtml='';
+  ['IKTAR','MHKL','RT'].forEach(function(jab){
+    var items=byJab[jab]||[];
+    if(!items.length) return;
+    var bg=jab==='IKTAR'?'rgba(30,58,138,.5)':jab==='MHKL'?'rgba(6,78,59,.5)':'rgba(88,28,135,.5)';
+    tableHtml+='<div class="panel" style="margin-bottom:10px">'+
+      '<div class="ph" style="background:'+bg+'">'+
+        '<span class="ph-title">🕌 CTR RAYA HAJI — '+jab+' ('+items.length+' anggota)</span>'+
+      '</div>'+
+      '<div style="overflow-x:auto"><table class="tbl" style="font-size:8px"><thead>'+
+        '<tr style="background:rgba(0,0,0,.5)">'+
+        '<th>#</th><th style="min-width:140px">NAMA ANGGOTA</th><th>KOMP</th>'+
+        '<th>TARIKH CTR</th><th style="text-align:center">TEMPOH</th>'+
+        '<th>STATUS KELULUSAN</th><th>PENGGANTI</th><th>AUDIT TC</th>'+
+        '</tr></thead><tbody>'+
+      items.map(function(c,i){
+        var tcStatus='—';
+        if(D[c.bil]&&D[c.bil][28]){
+          var dc=D[c.bil][28];
+          if(dc.tc_in||dc.tc_out) tcStatus='<span style="color:#fbbf24;font-size:7px;font-weight:700">⚠ ADA THUMB — SEMAK</span>';
+          else tcStatus='<span style="color:#34d399;font-size:7px;font-weight:700">✓ CTR SAH</span>';
+        }
+        return '<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'">'+
+          '<td style="color:rgba(255,255,255,.3);text-align:center">'+(i+1)+'</td>'+
+          '<td style="font-weight:500;font-size:8px">'+c.nama+'</td>'+
+          '<td style="font-size:7.5px;color:rgba(255,255,255,.5)">'+c.komp+'</td>'+
+          '<td style="font-family:monospace;font-size:8px;color:#fbbf24">'+c.tarikh+'</td>'+
+          '<td style="text-align:center;font-weight:700">'+c.tempoh+'</td>'+
+          '<td><span style="background:'+(c.kel.includes('DILULUSKAN')?'rgba(5,150,105,.2)':'rgba(217,119,6,.2)')+';color:'+(c.kel.includes('DILULUSKAN')?'#34d399':'#fbbf24')+';padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700">'+c.kel+'</span></td>'+
+          '<td style="font-size:7.5px">'+(c.pengganti||'<span style="color:#f87171;font-size:7px">SEMAK PENGGANTI</span>')+'</td>'+
+          '<td>'+tcStatus+'</td>'+
+        '</tr>';
+      }).join('')+'</tbody></table></div></div>';
+  });
+
+  con.innerHTML=statsHtml+notifHtml+tableHtml;
 }
 
 function saveCTR(){
@@ -3436,6 +3526,8 @@ async function bootApp(){
   setTimeout(function(){
     try{ if(typeof autoLoadMCPreload==='function') autoLoadMCPreload(); }catch(e){console.warn('MC preload:',e);}
     try{ if(typeof autoLoadHRMISPreload==='function') autoLoadHRMISPreload(); }catch(e){console.warn('HRMIS preload:',e);}
+  try{ if(typeof autoLoadCTRPreload==='function') autoLoadCTRPreload(); }catch(e){console.warn('CTR preload:',e);}
+  try{ if(typeof autoLoadRayaPreload==='function') autoLoadRayaPreload(); }catch(e){console.warn('Raya preload:',e);}
   // Auto-render dashboard on load (small delay to ensure DOM ready)
   try{
     setTimeout(function(){ 
@@ -5268,6 +5360,163 @@ function autoLoadHRMISPreload(){
     if(n) try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
   }catch(e){console.warn('HRMIS preload:',e);}
 }
+
+
+// ── CTR RAYA HAJI KEDUA 2026 — Preloaded Data ────────────────
+// Tarikh: 28 Mei 2026 (Khamis) — CTR tidak tolak baki cuti
+// Diluluskan oleh Ketua Cawangan
+// Sumber: Senarai CTR yang telah diserahkan
+var CTR_PRELOAD = [
+  {nama:'AALIYA AAUNI BINTI MAT ZABIR',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ABDUL HAFIZ BIN YAHYA',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MUHAMMAD NASHRAN BIN MOHD ISA',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MUHAMMAD NASHRAN BIN MOHD ISA',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'KHAIRULAMIRIN BIN MUSTAFA',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ENGKU MOHAMAD MUSSHAHFIZ RIZAL BIN ENGKU MUSTAPHA',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'SAFIZAN BIN SAIDIN',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NUR AFIFAH BINTI ABDUL MAJEED',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHAMAD SYUKRI BIN ABDUL JAMIL',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ZULKIFLI BIN DAUD',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'IRWAN SYAMIR BIN MOHD ZAINAL',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ADIF JEHAIKAL BIN JEMATIN',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NOR AZUAN BIN NORDIN',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NURUL AMIRAH BINTI MOHAMMAD',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD FAIZ BIN MOHD ZAINI',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD FAIZ BIN MOHD ZAINI',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'AHMAD RIDZUAN BIN SHAZALI',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD SHAKIR BIN BIDI',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'AZMI BIN ZAKARIA',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD ERWAN SHAH BIN AZANAN',komp:'ALPHA',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ADIE PUTRA BIN GHAZALI',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'IZZUDDIN BIN ISMAIL',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'EZWAN BIN AB AZIZ',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ANASHATOL ARNAEDA BINTI JAFRI',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NABILA BINTI MUSA',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD SHAFIK BIN IBRAM',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NOR ANA NAZIRA BINTI MOHD TARMIZI',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NORAZARIN BIN HUSSIN',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MUHAMMAD ASHRAFF BIN ZULKIFLI',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD RAFANDI BIN REMLI',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD HEZRIE BIN ALIAS',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD ILHAM BIN YUSOFF',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'AHMAD HAFIZUL BIN JABAR',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NOOR ASMA HUSNA BT ZAMANI',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MUHAMMAD SAIFUL AILMI BIN ZAINUDDIN',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MUHAMMAD ZUL AIMAN BIN ZAINI',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'HAZLAN BIN MOHD RESDI',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MUHAMMAD ASLAM BIN AZLAN',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'AZLANNOR HADY BIN ABDUL TALIB',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ROME BIN ADUMAD',komp:'BRAVO',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD SABRI BIN ABD AZIZ',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD ABD HADI BIN MD NOOR',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHAMMAD WAJDI BIN JUSOH',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHAMAD KHAIRI ASWADI BIN RAFEEI',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NUR IZZATI BINTI KAMARULDZAMAN',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD SHAMSUL KAMAL BIN IBRAHIM',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'FADHIRUL ANUAR BIN RAMLI',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD ZALI HAN BIN ROSLAN',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHAMAD DZULFIKRI BIN JAAFAR',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'SAIFUL YUSRIZAL BIN YAACOB',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHAMAD IZAT AFIFUDDIN BIN MOHAMAD AZMI',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'AL-MUZZAMMIL BIN MOHAMAD RASHDI',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD HUSSIN',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHAMMAD AMIRUL ASRAH BIN ISHAK',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD FAISAL BIN SENIN',komp:'CHARLIE',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MUZAMMIL BIN MUSA',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MUHAMMAD HAFIZ BIN SUKAIME',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ADILAH FITRAH BINTI BASIR',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'SITTI SALWANI BINTI IBRAHIM',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'WAN NORHAYATI BINTI WAN HANAPI',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD SHAHRUL AZHAR BIN ZUL NAZRI',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD SHARIL BIN MOHD NASIR',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'AZIZAN BIN OMAR',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NORZAM AFFANDY BIN MUSA',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD RIDZUAN BIN NOOR AZMI',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'SITTI FAUZZIAH BINTI AHMAD',komp:'WP',gred:'KP1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'FARDZLY HISYAM BIN YUSOF',komp:'ALPHA',gred:'KP7',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NAJIB SAIDI BIN YAHYA',komp:'ALPHA',gred:'KP7',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'SITI SALMI YUSNITA BINTI ABDUL RAHMAN',komp:'',gred:'N1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NOR SYAHIRAH BINTI ABD. GHANI',komp:'',gred:'H1',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'NORIZWAN BIN ABDUL RASID',komp:'',gred:'KP2',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD ROZI BIN MAT KASIH',komp:'',gred:'KP2',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'AZRUL AMINUR BIN ENSERI',komp:'',gred:'KP2',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'ABDUL FATAH BIN ZAKARIA',komp:'',gred:'KP2',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''},
+  {nama:'MOHD MUAZIM BIN BASIR',komp:'',gred:'KP2',tarikh:'28/05/2026',kel:'DILULUSKAN KETUA CAWANGAN',tempoh:1,pengganti:''}
+];
+
+
+function autoLoadCTRPreload(){
+  if(CTR_DATA.length>0) return;
+  CTR_PRELOAD.forEach(function(c){
+    CTR_DATA.push({...c, tarikh:'28/05/2026'});
+  });
+}
+
+
+
+// ── KERJA RAYA AIDILFITRI 2026 — Preloaded ───────────────────
+// Tempoh: 19–24 Mac 2026 (Raya Aidilfitri)
+// Shift: SIANG 0700-1900 / MALAM 1900-0700
+// Anggota layak CTR Raya Haji kerana bertugas semasa Raya
+var RAYA_PRELOAD = [
+  {nama:'MOHAMMAD ALIF BIN MOHTAR',komp:'ALPHA',jab:'IKTAR',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'IRWAN SYAMIR BIN MOHD ZAINAL',komp:'ALPHA',jab:'IKTAR',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MOHAMMAD FITHRI BIN AB LATIF',komp:'DELTA',jab:'IKTAR',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MOHD AMINUDIN BIN DAUD',komp:'ALPHA',jab:'IKTAR',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MUHAMMAD AMIRULLAH BIN ABDUL SALIN',komp:'ALPHA',jab:'MHKL',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MUHAMAD TARMIZI BIN SAZALI',komp:'DELTA',jab:'RT',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'KHAIROL ISZUWAN BIN ZAKARIA',komp:'DELTA',jab:'RT',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MOHD SHAFIK BIN IBRAM',komp:'BRAVO',jab:'RT',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'HAZLAN BIN MOHD RESDI',komp:'BRAVO',jab:'MHKL',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'ANASHATOL ARNAEDA BT JAFRI',komp:'BRAVO',jab:'MHKL',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'NORAZLIDA BT RAZAB',komp:'CHARLIE',jab:'MHKL',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'AZROL NAIM BIN AB MALEK',komp:'CHARLIE',jab:'IKTAR',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'NORAZARIN BIN HUSSIN',komp:'BRAVO',jab:'IKTAR',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'AZLANNOR HADY BIN ABDUL TALIB',komp:'BRAVO',jab:'IKTAR',shift:'SIANG',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MUHAMAD TARMIZI BIN ABDULLAH',komp:'ALPHA',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA',komp:'CHARLIE',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MOHAMAD ALIFF HAIQAL BIN JAMIL',komp:'DELTA',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MOHD RASIDI BIN MOHD NASIR',komp:'CHARLIE',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'AALIYA AAUNI BINTI MAT ZABIR',komp:'ALPHA',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'NOR AINA NAZIRA BINTI MOHD TARMIZI',komp:'BRAVO',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'PB FARRAH NATASHA BT ZULKAFLI',komp:'CHARLIE',jab:'RT',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'SAIFUL YUSRIZAL BIN YAACOB',komp:'CHARLIE',jab:'RT',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MOHAMAD IZAT AFIFUDIN',komp:'CHARLIE',jab:'MHKL',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MUHAMMAD ASHLEY BIN BASHIR',komp:'CHARLIE',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MOHD LUKMAN BIN HAMDAN',komp:'DELTA',jab:'MHKL',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MUHAMMAD ZULHELMI BIN AHMAD AFAMI',komp:'BRAVO',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'NANTHAGOPAL A/L AYASAMY',komp:'ALPHA',jab:'RT',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'MUHAMMAD AFIQ FAIZ BIN BADRUDDIN',komp:'CHARLIE',jab:'RT',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'ROHISHAM BIN MOHAMAD AROF',komp:'DELTA',jab:'IKTAR',shift:'MALAM',tarikh:'19-24/03/2026',layak_ctr:true},
+  {nama:'RIMA BT OTHMAN',komp:'DELTA',jab:'IKTAR',shift:'SIANG',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'ABDULLAH BIN BAHUDIN',komp:'ALPHA',jab:'IKTAR',shift:'SIANG',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'AHMAD SHAMIL BIN NADZRI',komp:'DELTA',jab:'IKTAR',shift:'SIANG',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'LATIFA ROBANIA BINTI ABDUL RAZAK',komp:'DELTA',jab:'IKTAR',shift:'SIANG',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'SHAHRUL FITRI BIN ROSLI',komp:'ALPHA',jab:'RT',shift:'SIANG',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'MOHD SAIFUL NIZAM BIN HAMID',komp:'ALPHA',jab:'RT',shift:'SIANG',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'AZELI BIN ZABIR',komp:'CHARLIE',jab:'MHKL',shift:'SIANG',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'MUHAMAD FAHMIE BIN SAHRAN',komp:'ALPHA',jab:'MHKL',shift:'SIANG',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'MUHAMMAD BADRI BIN ARIS',komp:'CHARLIE',jab:'IKTAR',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'ZULKIFLI BIN YUSOF',komp:'BRAVO',jab:'IKTAR',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'MOHAMMAD ALIF BIN NASARUDDIN',komp:'BRAVO',jab:'MHKL',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'YUSRI BIN YUNUS',komp:'ALPHA',jab:'RT',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'ZULHILMI BIN ZAINUDIN',komp:'BRAVO',jab:'RT',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'NOR AZURA B MAMAT',komp:'BRAVO',jab:'RT',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'NUR AZIM BIN NASIRUDDIN',komp:'CHARLIE',jab:'RT',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'ROSARIZAM BIN SAMSUDIN',komp:'DELTA',jab:'RT',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'NURSYUHADA BINTI MISNAN',komp:'DELTA',jab:'MHKL',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'MOHD SOFIE BIN MOHD SHUKRI',komp:'ALPHA',jab:'MHKL',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'MOHD KHADAFEE B. MD SAAD',komp:'BRAVO',jab:'RT',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'SUHAIRI BIN ISMAIL',komp:'DELTA',jab:'MHKL',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true},
+  {nama:'MOHD ILHAM BIN YUSOF',komp:'BRAVO',jab:'IKTAR',shift:'MALAM',tarikh:'25-30/03/2026',layak_ctr:false,selepas:true}
+];
+
+
+function autoLoadRayaPreload(){
+  if(RAYA_DATA.length>0) return;
+  RAYA_PRELOAD.forEach(function(r){ RAYA_DATA.push(r); });
+}
+
 
 function autoLoadMCPreload(){
   // Reload MC from localStorage first for persistence across refreshes
