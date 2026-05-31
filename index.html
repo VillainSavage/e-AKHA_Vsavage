@@ -5312,8 +5312,20 @@ function autoLoadKZPreload(){
   KZP_PRELOAD.forEach(function(rec){
     var d=kzTarikhToDay(rec.tarikh);
     if(!d) return;
-    var ctx={raw:rec.nama,clean:rec.nama,norm:typeof normalizeName==='function'?normalizeName(rec.nama):rec.nama};
-    var matched=typeof bestMatchWithRef==='function'?bestMatchWithRef(ctx,''):null;
+    // Direct name match first (fastest, most reliable)
+    var normRec=rec.nama.toUpperCase().trim().replace(/\s+/g,' ');
+    var matched=MASTER.find(function(m){
+      var mn=m.nama.toUpperCase().trim().replace(/\s+/g,' ');
+      if(mn===normRec) return true;
+      var wa=mn.split(' '),wb=normRec.split(' ');
+      return wa.length>=2&&wb.length>=2&&wa[0]===wb[0]&&wa[wa.length-1]===wb[wb.length-1];
+    });
+    // Fallback: nameScore with string
+    if(!matched&&typeof nameScore==='function'){
+      var best=null,bestSc=0;
+      MASTER.forEach(function(m){var sc=nameScore(rec.nama,m);if(sc>bestSc){bestSc=sc;best=m;}});
+      if(bestSc>=80) matched=best;
+    }
     if(!matched||!matched.bil) return;
     var bil=matched.bil;
     if(!D[bil]||!D[bil][d]) return;
@@ -5327,8 +5339,18 @@ function autoLoadKZPreload(){
   KZK_PRELOAD.forEach(function(rec){
     var d=kzTarikhToDay(rec.tarikh);
     if(!d) return;
-    var ctx={raw:rec.nama,clean:rec.nama,norm:typeof normalizeName==='function'?normalizeName(rec.nama):rec.nama};
-    var matched=typeof bestMatchWithRef==='function'?bestMatchWithRef(ctx,''):null;
+    var normRec=rec.nama.toUpperCase().trim().replace(/\s+/g,' ');
+    var matched=MASTER.find(function(m){
+      var mn=m.nama.toUpperCase().trim().replace(/\s+/g,' ');
+      if(mn===normRec) return true;
+      var wa=mn.split(' '),wb=normRec.split(' ');
+      return wa.length>=2&&wb.length>=2&&wa[0]===wb[0]&&wa[wa.length-1]===wb[wb.length-1];
+    });
+    if(!matched&&typeof nameScore==='function'){
+      var best=null,bestSc=0;
+      MASTER.forEach(function(m){var sc=nameScore(rec.nama,m);if(sc>bestSc){bestSc=sc;best=m;}});
+      if(bestSc>=80) matched=best;
+    }
     if(!matched||!matched.bil) return;
     var bil=matched.bil;
     if(!D[bil]||!D[bil][d]) return;
