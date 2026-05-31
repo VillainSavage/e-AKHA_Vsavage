@@ -1009,13 +1009,20 @@ function tcAudit(bil,d){
       else lines.push((c.tc_in?'✓ ':'')+' OUT '+c.tc_out);
     }
   } else if(c.tc_in){
-    if(sh==='M'){ lines.push('⚠ TIADA OUT (cross-midnight - semak hari esok)'); if(cls==='tc-ok') cls='tc-warn'; }
-    else { lines.push('⚠ TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;} }
+    if(sh==='M'){
+      // Shift malam: TIADA OUT = normal (OUT hari esok, cross-midnight)
+      // Jangan set ok=false, jangan flag sebagai error
+      lines.push('SEMAK ESOK'); if(cls==='tc-ok') cls='tc-warn';
+    } else { lines.push('\u26A0 TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;} }
   }
-  // Single punch: shift malam single IN = cross-midnight, jangan flag terus
+  // Single punch: shift malam single IN = cross-midnight (SAH), jangan flag
   if((c.tc_in&&!c.tc_out)||(c.tc_out&&!c.tc_in)){
-    if(sh==='M'&&c.tc_in&&!c.tc_out){ lines.push('SEMAK ESOK'); if(cls==='tc-ok') cls='tc-warn'; }
-    else { lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false; }
+    if(sh==='M'&&c.tc_in&&!c.tc_out){
+      // Cross-midnight: IN malam ini, OUT pagi esok — ini NORMAL untuk shift malam
+      lines.push('SEMAK ESOK'); cls='tc-warn'; // ok tetap true
+    } else if(sh==='M'&&!c.tc_in&&c.tc_out){
+      lines.push('SINGLE PUNCH (OUT SAHAJA)'); cls='tc-warn'; ok=false;
+    } else { lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false; }
   }
   return {txt:lines.join('\n'),cls,ok};
 }
@@ -1268,8 +1275,18 @@ function renderGrid(ms,cid){
               }
               // Flags (HANYA selepas validasi)
               if(c.tc_audit_done){
-                var late=x.tc.txt.includes('LEWAT'), inAwal=x.tc.txt.includes('IN AWAL'), outAwal=x.tc.txt.includes('OUT AWAL');
-                var tiadaIn=x.tc.txt.includes('TIADA IN'), tiadaOut=x.tc.txt.includes('TIADA OUT'), singleP=x.tc.txt.includes('SINGLE');
+                var tcTxtU=x.tc.txt||'';
+                // IN AWAL SAH (shift malam grace period) = TIDAK flag
+                var inAwalSah=tcTxtU.includes('IN AWAL SAH');
+                var late=tcTxtU.includes('LEWAT')&&!tcTxtU.includes('LEWAT (TC');
+                var inAwal=tcTxtU.includes('IN AWAL')&&!inAwalSah; // exclude IN AWAL SAH
+                var outAwal=tcTxtU.includes('OUT AWAL');
+                // TIADA OUT untuk shift malam = SEMAK ESOK, bukan flag merah
+                var isMalamShift=(x.sh==='M');
+                var tiadaIn=tcTxtU.includes('TIADA IN');
+                var tiadaOut=tcTxtU.includes('TIADA OUT')&&!isMalamShift; // shift malam tiada out = OK
+                var singleP=tcTxtU.includes('SINGLE PUNCH');
+                var semakEsok=tcTxtU.includes('SEMAK ESOK'); // shift malam cross-midnight
                 var flagBits=[];
                 if(late) flagBits.push('<span style="color:#fbbf24;font-weight:700">LEWAT</span>');
                 if(inAwal) flagBits.push('<span style="color:#fde68a">IN AWAL</span>');
@@ -1277,6 +1294,7 @@ function renderGrid(ms,cid){
                 if(tiadaIn) flagBits.push('<span style="color:#fca5a5;font-weight:700">TIADA IN</span>');
                 if(tiadaOut) flagBits.push('<span style="color:#fca5a5;font-weight:700">TIADA OUT</span>');
                 if(singleP) flagBits.push('<span style="color:#fbbf24">SINGLE PUNCH</span>');
+                if(semakEsok) flagBits.push('<span style="color:#93c5fd;font-size:7px">SEMAK ESOK</span>');
                 if(flagBits.length) lines.push(flagBits.join(' '));
               }
               tcTxt=lines.join('<br>');
@@ -4926,13 +4944,23 @@ function applyMCPreload(targetMonth, targetYear){
     var monthDays=days.filter(function(d){return d.m===targetMonth&&d.y===targetYear;});
     if(!monthDays.length) return; // Skip — different month
     
-    // Match to MASTER (52 anggota) using bestMatchWithRef
-    var ctx={raw:rec.nama,clean:rec.nama,norm:typeof normalizeName==='function'?normalizeName(rec.nama):rec.nama.toUpperCase()};
     var kompFull=expandKomp(rec.komp);
-    var matched=typeof bestMatchWithRef==='function'?bestMatchWithRef(ctx,kompFull):
-                typeof bestMatch==='function'?bestMatch(ctx):null;
-    
-    if(!matched||!matched.bil||matched.score<70){
+    // Step 1: Direct name match (fastest, most reliable)
+    var normRec=rec.nama.toUpperCase().trim().replace(/\s+/g,' ');
+    var matched=MASTER.find(function(m){
+      var mn=m.nama.toUpperCase().trim().replace(/\s+/g,' ');
+      if(mn===normRec) return true;
+      var wa=mn.split(' '), wb=normRec.split(' ');
+      return wa.length>=2&&wb.length>=2&&wa[0]===wb[0]&&wa[wa.length-1]===wb[wb.length-1];
+    });
+    // Step 2: Fuzzy via nameScore
+    if(!matched&&typeof nameScore==='function'){
+      var bestSc2=0;
+      MASTER.forEach(function(m){var sc=nameScore(rec.nama,m);if(sc>bestSc2&&sc>=75){bestSc2=sc;matched=m;}});
+    }
+    // Step 3: bestMatch fallback
+    if(!matched&&typeof bestMatch==='function') matched=bestMatch(rec.nama);
+    if(!matched||!matched.bil){
       nUnmatched++;
       unmatched.push(rec.nama+' ('+kompFull+')');
       return;
@@ -4947,6 +4975,8 @@ function applyMCPreload(targetMonth, targetYear){
         jab:matched.jab,
         komp:matched.komp,
         tarikh:String(day.d).padStart(2,'0')+'/'+String(day.m).padStart(2,'0')+'/'+day.y,
+        dari:rec.dari,
+        hingga:rec.hingga,
         d:day.d,m:day.m,y:day.y,
         mc_type:rec.mc_type,
         klinik:rec.klinik,
