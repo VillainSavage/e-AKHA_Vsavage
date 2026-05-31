@@ -807,8 +807,14 @@ function initD(){
   // ── PRE-FILL: Status TT/TH sahaja (yang tetap sepanjang bulan) ──
   // TC data sebenar datang dari TC_PRELOAD (autoLoadTCPreload)
   for(let d=1;d<=30;d++){
-    if(gSh(7,d)!=='O'){  D[7][d].kzp='TH'; D[7][d].kzk='TH'; }     // MOHD AMINUDIN BIN DAUD (TH)
-    if(gSh(51,d)!=='O'){ D[51][d].kzp='TT'; D[51][d].kzk='TT'; }   // MOHD NAZRI BIN ISMAIL (TT)
+    if(gSh(7,d)!=='O'){  D[7][d].kzp='TH'; D[7][d].kzk='TH'; }   // MOHD AMINUDIN BIN DAUD bil:7 (TH)
+    if(gSh(51,d)!=='O'){ D[51][d].kzp='TT'; D[51][d].kzk='TT'; }  // MOHD NAZRI BIN ISMAIL bil:51 (TT)
+  }
+  // Nor Azura bil:49 (RT/BRAVO): CB dari 21 April
+  if(ACTIVE_MONTH===4){
+    for(let d=21;d<=30;d++){
+      if(D[49]&&D[49][d]&&!D[49][d].kzp){ D[49][d].kzp='CB'; D[49][d].kzk='CB'; }
+    }
   }
 }
 initD();
@@ -1020,20 +1026,22 @@ function auditFinal(bil,d){
   const c=D[bil]?.[d]; const sh=gSh(bil,d);
   if(!c) return {txt:'BELUM DIPROSES',cls:'af-bp'};
   const kzp=c.kzp||'', kzk=c.kzk||'';
-  // Hari TC bermasalah (27-30/04): guna KZ Penyelia, abaikan TC
+  // Hari TC bermasalah (27-30/04): UTAMAKAN KZ PENYELIA sebagai sumber kebenaran
   if(c.tc_problem){
     if(sh==='O') return {txt:'OFFDAY',cls:'af-off'};
-    if(kzp==='TT'||kzk==='TT') return {txt:'TAHAN TUGAS',cls:'af-off'};
-    if(kzp==='TH'||kzk==='TH') return {txt:'TIDAK HADIR',cls:'af-off'};
-    if(getMC(bil,d)) return {txt:'MC SAH\n(TC bermasalah)',cls:'af-mc'};
-    if(isCuti(kzp)||isCuti(kzk)){
-      var ct=kzp||kzk;
-      return {txt:ct+(hasHR(c)?' SAH':' - SILA MOHON')+'\n(TC bermasalah)',cls:hasHR(c)?'af-cr':'af-warn'};
-    }
-    if(kzp==='\u2713'||kzk==='\u2713'||kzp==='HADIR') return {txt:'HADIR\n(ikut KZ - TC bermasalah)',cls:'af-sah'};
-    if(kzp==='L'||kzp==='LL') return {txt:'LEWAT\n(ikut KZ - TC bermasalah)',cls:'af-warn'};
-    if(!kzp&&!kzk) return {txt:'\u26A0 TC BERMASALAH\nSila isi KZ Penyelia',cls:'af-warn'};
-    return {txt:(kzp||kzk||'SEMAK')+'\n(TC bermasalah)',cls:'af-warn'};
+    if(kzp==='TT'||kzk==='TT') return {txt:'TT - TAHAN TUGAS',cls:'af-tt'};
+    if(kzp==='TH'||kzk==='TH') return {txt:'TH - TIDAK HADIR',cls:'af-th'};
+    var kzM=kzp||kzk||'', mc2=getMC(bil,d), hr2=hasHR(c);
+    if(kzp==='✓'||kzk==='✓'||kzp==='HADIR'||kzk==='HADIR') return {txt:'SAH (KZ-TC bmsalah)',cls:'af-sah'};
+    if(kzp==='MC'||kzk==='MC') return mc2?{txt:'MC SAH',cls:'af-mc'}:{txt:'MC - HANTAR SURAT',cls:'af-mc'};
+    if(['CB','CBR'].includes(kzp)||['CB','CBR'].includes(kzk)) return {txt:(kzp||kzk)+' SAH',cls:'af-cr'};
+    if(kzp==='CTR'||kzk==='CTR') return hr2?{txt:'CTR SAH',cls:'af-cr'}:{txt:'CTR - ISI HRMIS',cls:'af-warn'};
+    if(['EL','CR'].includes(kzp)||['EL','CR'].includes(kzk)){var lb=['EL'].includes(kzp)||['EL'].includes(kzk)?'EL':'CR'; return hr2?{txt:lb+' SAH',cls:'af-cr'}:{txt:lb+' - SILA MOHON HRMIS',cls:'af-warn'};}
+    if(kzp==='L'||kzk==='L') return {txt:'LEWAT (TC bmsalah)',cls:'af-lw'};
+    if(kzp==='LL'||kzk==='LL') return {txt:'LAPOR LEWAT (TC bmsalah)',cls:'af-lw'};
+    if(isAbs(kzp)||isAbs(kzk)) return mc2?{txt:'MC SAH',cls:'af-mc'}:hr2?{txt:'HRMIS SAH',cls:'af-cr'}:{txt:'ABS - SILA MOHON CUTI',cls:'af-abs'};
+    if(!kzp&&!kzk) return {txt:'⚠ TC BERMASALAH - Isi KZ Penyelia',cls:'af-warn'};
+    return {txt:(kzM||'SEMAK')+' (KZ-TC bmsalah)',cls:'af-warn'};
   }
   const mc=getMC(bil,d), hrOK=hasHR(c), thumb=hasThumb(c);
   const tc=tcAudit(bil,d);
@@ -1298,6 +1306,27 @@ function renderMaster(jab){
   renderGrid(ms,'master-grid');
 }
 
+
+// ── RENDER MINI GRID (IKTAR / MHKL / RT) ────────────────────────
+function renderMiniGrid(jab, komp){
+  var cid = jab.toLowerCase()+'-grid';
+  var ms = MASTER.filter(function(m){
+    return m.jab===jab && (!komp||m.komp===komp);
+  });
+  renderGrid(ms, cid);
+  // Update button states
+  var pg = jab.toLowerCase();
+  var con = document.getElementById('page-'+pg);
+  if(con){
+    con.querySelectorAll('button.btn-sm').forEach(function(b){
+      var bc = b.getAttribute('onclick')||'';
+      var isAll = bc.includes('null') && !komp;
+      var isMatch = komp && bc.includes("'"+komp+"'");
+      b.classList.toggle('on', isAll||isMatch);
+    });
+  }
+}
+
 function miniTab(jab,el){
   const pg=jab.toLowerCase();
   const komp=el.dataset.k||'';
@@ -1308,15 +1337,31 @@ function miniTab(jab,el){
 }
 
 // ── OUTPUT PERHATIAN ──────────────────────────────────────────────
+// Anggota dikecualikan dari Output Perhatian
+var EXEMPT_OUTPUT=[
+  'MOHD AMINUDIN BIN DAUD',    // bil 7 - TH (tahan tugas)
+  'MOHD NAZRI BIN ISMAIL',     // bil 51 - TT (tahan tugas)
+  'NOR AZURA BINTI MAMAT @ MUHAMMAD', // bil 49 - CB
+  'MUHAMMAD NAZRI ISMAIL',     // alias
+  'MOHD AMINUDDIN',            // alias
+];
 function getAllFlags(){
   const res=[];
   MASTER.forEach(m=>{
+    // Tahan tugas + CB tidak perlu flag dalam output perhatian
+    if(EXEMPT_OUTPUT.some(function(e){return m.nama.toUpperCase().indexOf(e.toUpperCase())>=0||e.toUpperCase().indexOf(m.nama.toUpperCase().split(' ')[1])>=0;})) return;
     const items=[];
     for(let d=1;d<=30;d++){
       const sh=gSh(m.bil,d); if(sh==='O') continue;
+      const c=D[m.bil]?.[d]||{};
+      // Skip hari TT/TH/CB
+      if(c.kzp==='TT'||c.kzk==='TT'||c.kzp==='TH'||c.kzk==='TH') continue;
+      if(['CB','CBR'].includes(c.kzp)||['CB','CBR'].includes(c.kzk)) continue;
       const af=auditFinal(m.bil,d);
       if(!af.inc&&['af-off','af-sah','af-tt','af-th'].includes(af.cls)) continue;
-      items.push({d,af,sh,c:D[m.bil][d]||{}});
+      // Skip MC SAH / CTR SAH / HRMIS SAH — tidak perlu flag
+      if(af.txt.includes(' SAH')&&!af.txt.includes('SEMAK')&&!af.txt.includes('HANTAR')&&!af.txt.includes('MOHON')) continue;
+      items.push({d,af,sh,c});
     }
     if(items.length) res.push({...m,items,tot:items.length});
   });
@@ -3132,7 +3177,32 @@ async function bootApp(){
   setTimeout(function(){
     try{ if(typeof autoLoadMCPreload==='function') autoLoadMCPreload(); }catch(e){console.warn('MC preload:',e);}
     try{ if(typeof autoLoadHRMISPreload==='function') autoLoadHRMISPreload(); }catch(e){console.warn('HRMIS preload:',e);}
-    try{ if(typeof autoLoadTCPreload==='function') autoLoadTCPreload(); }catch(e){console.warn('TC preload:',e);}
+  // Auto-render dashboard on load (small delay to ensure DOM ready)
+  try{
+    setTimeout(function(){ 
+      try{ renderDash(); }catch(e){ console.warn('renderDash:',e); }
+    }, 100);
+  }catch(e){}
+
+  // Reload saved D[] from localStorage (persist KZ edits across refreshes)
+  try{
+    var savedD=JSON.parse(localStorage.getItem('eakha_data')||'null');
+    if(savedD) Object.keys(savedD).forEach(function(bil){
+      Object.keys(savedD[bil]).forEach(function(day){
+        var s=savedD[bil][day],b=+bil,d=+day;
+        if(!D[b]||!D[b][d]) return;
+        if(s.kzp) D[b][d].kzp=s.kzp;
+        if(s.kzk) D[b][d].kzk=s.kzk;
+        if(s.hrmis) D[b][d].hrmis=s.hrmis;
+        if(s.note) D[b][d].note=s.note;
+        if(s.ot) D[b][d].ot=s.ot;
+        if(s.tc_in&&!D[b][d].tc_in) D[b][d].tc_in=s.tc_in;
+        if(s.tc_out&&!D[b][d].tc_out) D[b][d].tc_out=s.tc_out;
+      });
+    });
+  }catch(e){console.warn('Load D:',e);}
+    try{ if(typeof autoLoadTCPreload==='function') autoLoadTCPreload();
+    try{ if(typeof markTCProblemDays==='function') markTCProblemDays(); }catch(e){} }catch(e){console.warn('TC preload:',e);}
     try{ if(typeof autoLoadKZPreload==='function') autoLoadKZPreload(); }catch(e){console.warn('KZ preload:',e);}
     // Save D ONCE after ALL preloads complete (elak partial save)
     try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
@@ -4924,10 +4994,19 @@ function autoLoadHRMISPreload(){
     });
     if(n&&typeof logAction==='function') logAction('PRE-LOAD HRMIS','Load '+stored.length+' rekod → '+n+' hari',n,'OK');
     if(n&&typeof toast==='function') toast('Pre-load HRMIS: '+n+' hari cuti diisi','ok');
+    if(n) try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
   }catch(e){console.warn('HRMIS preload:',e);}
 }
 
 function autoLoadMCPreload(){
+  // Reload MC from localStorage first for persistence across refreshes
+  try{
+    var saved=JSON.parse(localStorage.getItem('eakha_mc')||'[]');
+    saved.forEach(function(s){
+      var dup=MC_DATA.find(function(x){return x.bil===s.bil&&x.tarikh===s.tarikh;});
+      if(!dup) MC_DATA.push(s);
+    });
+  }catch(e){}
   // Always merge MC preload (dedupe by bil+dari)
   var preCount=MC_DATA.filter(function(m){return m.source==='preload';}).length;
   if(preCount>=40) return; // only skip if fully loaded
@@ -4966,9 +5045,9 @@ function nav(el){
   closeMob();
   if(pg==='master') renderMaster(null);
   if(pg==='output'){updFlags();renderOutput('');}
-  if(pg==='mhkl') miniTab('MHKL',document.querySelector('#tabs-mhkl .ftab'));
-  if(pg==='iktar') miniTab('IKTAR',document.querySelector('#tabs-iktar .ftab'));
-  if(pg==='rt') miniTab('RT',document.querySelector('#tabs-rt .ftab'));
+  if(pg==='mhkl') renderMiniGrid('MHKL',null);
+  if(pg==='iktar') renderMiniGrid('IKTAR',null);
+  if(pg==='rt') renderMiniGrid('RT',null);
   if(pg==='mc-reg') renderMCReg();
   if(pg==='kzp-staging') renderKZPStaging();
   if(pg==='kzk-staging') renderKZKStaging();
