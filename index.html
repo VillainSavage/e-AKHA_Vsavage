@@ -258,6 +258,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="sb-item" data-pg="kzk-staging" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>KZ Koperal</div>
     <div class="sb-item" data-pg="tc-staging" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>TIMECARD</div>
     <div class="sb-item" data-pg="mc-reg" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81"/></svg>MC Diterima</div>
+    <div class="sb-item" data-pg="hrmis-reg" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Cuti HRMIS</div>
     <div class="sb-item" data-pg="baki" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Baki Cuti</div>
     <div class="sb-sec-hdr">RAYA</div>
     <div class="sb-item" data-pg="raya" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Kerja Raya Aidilfitri</div>
@@ -376,11 +377,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
       <!-- MC REG -->
       <div class="page" id="page-mc-reg">
-        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
           <select class="fsel" id="mc-jab-f" onchange="renderMCReg()"><option value="">Semua Jabatan</option><option>IKTAR</option><option>MHKL</option><option>RT</option></select>
-          <select class="fsel" id="mc-bulan-f" onchange="renderMCReg()"><option value="">Bulan Ini + Hadapan</option><option value="Bulan Ini">Bulan Ini</option><option value="Bulan Hadapan">Bulan Hadapan</option></select>
+          <select class="fsel" id="mc-komp-f" onchange="renderMCReg()"><option value="">Semua Kompeni</option><option>ALPHA</option><option>BRAVO</option><option>CHARLIE</option><option>DELTA</option></select>
+          <input class="finp2" id="mc-q" placeholder="Cari nama / klinik..." style="width:180px" oninput="renderMCReg()">
+          <span id="mc-cnt" style="font-size:8px;color:rgba(255,255,255,.4);margin-left:auto"></span>
         </div>
-        <div id="mc-grid"></div>
+        <div id="mc-tinggi-alert"></div>
+        <div id="mc-reg-table"></div>
+      </div>
+
+      <!-- CUTI HRMIS -->
+      <div class="page" id="page-hrmis-reg">
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+          <select class="fsel" id="hr-jab-f" onchange="renderHRMISReg()"><option value="">Semua Jabatan</option><option>IKTAR</option><option>MHKL</option><option>RT</option></select>
+          <input class="finp2" id="hr-q" placeholder="Cari nama..." style="width:180px" oninput="renderHRMISReg()">
+          <span id="hr-cnt" style="font-size:8px;color:rgba(255,255,255,.4);margin-left:auto"></span>
+        </div>
+        <div id="hr-notif" style="margin-bottom:8px"></div>
+        <div id="hr-add-form" style="display:none"></div>
+        <div id="hr-reg-table"></div>
       </div>
 
       <!-- BAKI CUTI -->
@@ -1361,6 +1377,8 @@ function getAllFlags(){
       if(!af.inc&&['af-off','af-sah','af-tt','af-th'].includes(af.cls)) continue;
       // Skip MC SAH / CTR SAH / HRMIS SAH — tidak perlu flag
       if(af.txt.includes(' SAH')&&!af.txt.includes('SEMAK')&&!af.txt.includes('HANTAR')&&!af.txt.includes('MOHON')) continue;
+      // Skip TC BERMASALAH hari 27-30/4 — ini bukan kesalahan anggota
+      if(c.tc_problem&&af.txt.includes('TC BERMASALAH')) continue;
       items.push({d,af,sh,c});
     }
     if(items.length) res.push({...m,items,tot:items.length});
@@ -1664,47 +1682,268 @@ function exportMCCsv(){
 }
 
 function renderMCReg(){
-  // MC TINGGI alert (untuk teguran)
+  // ── Stats ──────────────────────────────────────────────────
+  var allMC = MC_DATA.filter(function(r){ return r.source==='preload'||r.source; });
+  // Deduplicate by bil+dari+no_mc to get unique records (not expanded day-by-day)
+  var seen={}, uniqRecs=[];
+  allMC.forEach(function(r){
+    var key=(r.bil||r.nama)+'|'+(r.tarikh||r.dari||'')+'|'+(r.no_mc||r.siri||'');
+    if(!seen[key]){ seen[key]=true; uniqRecs.push(r); }
+  });
+
+  // ── Filters ─────────────────────────────────────────────────
+  var jabF=(document.getElementById('mc-jab-f')||{}).value||'';
+  var kompF=(document.getElementById('mc-komp-f')||{}).value||'';
+  var q=((document.getElementById('mc-q')||{}).value||'').toLowerCase();
+  var filtered=uniqRecs.filter(function(r){
+    return (!jabF||r.jab===jabF) &&
+           (!kompF||r.komp===kompF) &&
+           (!q||r.nama.toLowerCase().includes(q)||(r.klinik||'').toLowerCase().includes(q)||(r.no_mc||r.siri||'').toLowerCase().includes(q));
+  });
+
+  var el=document.getElementById('mc-reg-table');
+  var cnt=document.getElementById('mc-cnt');
   var alertEl=document.getElementById('mc-tinggi-alert');
+  if(cnt) cnt.textContent=filtered.length+' rekod';
+
+  // ── MC Tinggi Alert ─────────────────────────────────────────
   if(alertEl){
-    var tinggi=getMCTinggi().filter(function(m){return m.days>=4;});
+    var tinggi=getMCTinggi().filter(function(m){return m.days>=3;});
     if(tinggi.length){
-      alertEl.innerHTML='<div class="notif n-warn" style="flex-direction:column;align-items:flex-start"><div style="font-weight:700;margin-bottom:4px">\u26A0 Anggota MC Tinggi (perlu teguran):</div>'+tinggi.slice(0,10).map(function(m){return '<div style="font-size:8px;padding:1px 0">\u2022 '+m.nama+' ('+m.jab+') \u2014 <b style="color:#fb923c">'+m.days+' hari MC</b> dalam '+m.count+' kali</div>';}).join('')+'</div>';
+      // Hazlan flag
+      var hazlanAlert='';
+      var hazlan=tinggi.find(function(m){return m.nama&&m.nama.toUpperCase().includes('HAZLAN');});
+      if(hazlan) hazlanAlert='<div class="notif n-err" style="margin-top:6px"><b>&#9888; HAZLAN BIN MOHD RESDI — Semak Disiplin:</b> MC diterima TAPI ada punch biometrik pada hari sama. KZ Penyelia wajib semak semula semua rekod.</div>';
+      alertEl.innerHTML='<div class="notif n-warn" style="flex-direction:column;align-items:flex-start;margin-bottom:8px">'+
+        '<div style="font-weight:700;margin-bottom:5px">&#9888; Anggota MC Tinggi (&#8805;3 hari) — Perlu Perhatian:</div>'+
+        tinggi.map(function(m){
+          return '<div style="font-size:8px;padding:1px 0">&#8226; <b>'+m.nama+'</b> ('+m.jab+') &mdash; <b style="color:#fb923c">'+m.days+' hari MC</b> dalam '+m.count+' kali</div>';
+        }).join('')+'</div>'+hazlanAlert;
     } else { alertEl.innerHTML=''; }
   }
-  const q=(document.getElementById('mc-q')?.value||'').toLowerCase();
-  const jabF=document.getElementById('mc-jab-f')?.value||'';
-  const jenisF=document.getElementById('mc-jenis-f')?.value||'';
-  const rows=MC_DATA.filter(r=>(!jabF||r.jab===jabF)&&(!jenisF||r.jenis===jenisF)&&
-    (!q||r.nama.toLowerCase().includes(q)||r.klinik.toLowerCase().includes(q)||(r.siri||'').toLowerCase().includes(q)));
-  const el=document.getElementById('mc-reg-table');
-  const cnt=document.getElementById('mc-cnt');
-  if(cnt) cnt.textContent=rows.length+' rekod';
-  const byJenis={'Bulan Ini':[],'Bulan Hadapan':[],'Backdated':[]};
-  rows.forEach(r=>(byJenis[r.jenis]||(byJenis[r.jenis]=[])).push(r));
-  let html='';
-  for(const[jenis,items] of Object.entries(byJenis)){
-    if(!items.length) continue;
-    const bg=jenis==='Bulan Ini'?'rgba(124,45,18,.55)':jenis==='Backdated'?'rgba(75,0,130,.5)':'rgba(30,58,95,.5)';
-    html+='<div class="panel" style="margin-bottom:10px"><div class="ph" style="background:'+bg+'"><span class="ph-title">'+jenis+' ('+items.length+' rekod · '+items.reduce((s,r)=>s+r.hari,0)+' hari)</span></div>'+
-      '<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
-      '<th>Nama</th><th>Jab</th><th>Komp</th><th>Dari</th><th>Hingga</th><th>Hari</th><th>Klinik / Hospital</th><th>No Siri</th><th>Status</th>'+
-      '</tr></thead><tbody>'+
-      items.map((r,i)=>'<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'">'+
-        '<td style="font-weight:500;font-size:8.5px">'+r.nama+'</td>'+
-        '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+r.jab+'</td>'+
-        '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+r.komp+'</td>'+
-        '<td>'+r.dari+'</td><td>'+(r.hingga||r.dari)+'</td>'+
-        '<td style="text-align:center;font-weight:700;color:'+(r.hari>=3?'#fca5a5':'#fbbf24')+'">'+r.hari+'</td>'+
-        '<td style="font-size:8.5px">'+r.klinik+'</td>'+
-        '<td style="font-family:monospace;font-size:7.5px">'+(r.siri||'-')+'</td>'+
-        '<td><span style="background:rgba(5,150,105,.2);color:#34d399;padding:1px 6px;border-radius:3px;font-size:7px;font-weight:700">SAH</span></td>'+
-        '</tr>').join('')+
-      '</tbody></table></div></div>';
+  if(!el) return;
+
+  // ── Stats cards ─────────────────────────────────────────────
+  var totalRek=uniqRecs.length;
+  var totalHari=0; var uniqueNames=new Set();
+  uniqRecs.forEach(function(r){ totalHari+=(r.hari||1); uniqueNames.add(r.nama||r.bil); });
+  var mcTinggiCount=getMCTinggi().filter(function(m){return m.days>=3;}).length;
+  var statsHtml='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:12px">'+
+    [{l:'Jumlah Rekod MC',v:totalRek,c:'#f0b429'},
+     {l:'Anggota Ada MC',v:uniqueNames.size,c:'#34d399'},
+     {l:'Jumlah Hari MC',v:totalHari,c:'#93c5fd'},
+     {l:'MC Tinggi (≥3 hari)',v:mcTinggiCount,c:mcTinggiCount>0?'#f87171':'#34d399'}
+    ].map(function(s){
+      return '<div style="background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:9px 12px">'+
+        '<div style="font-size:18px;font-weight:800;color:'+s.c+'">'+s.v+'</div>'+
+        '<div style="font-size:7.5px;color:rgba(255,255,255,.4);margin-top:2px">'+s.l+'</div></div>';
+    }).join('')+'</div>';
+
+  // ── Table ────────────────────────────────────────────────────
+  if(!filtered.length){
+    el.innerHTML=statsHtml+'<div class="empty"><div class="empty-ic">&#128203;</div>Tiada rekod MC</div>';
+    return;
   }
-  if(!html) html='<div class="empty"><div class="empty-ic">📋</div>Tiada rekod MC</div>';
-  el.innerHTML=html;
+
+  // Group by bulanLabel
+  var byBulan={'Bulan Ini':[],'Bulan Lain':[],'':[]};
+  filtered.forEach(function(r){ (byBulan[r.bulanLabel]||(byBulan[r.bulanLabel]=[])).push(r); });
+
+  var tableHtml='';
+  ['Bulan Ini','Bulan Lain',''].forEach(function(label){
+    var items=byBulan[label]||[];
+    if(!items.length) return;
+    var bg=label==='Bulan Ini'?'rgba(124,45,18,.5)':'rgba(30,58,95,.4)';
+    var dispLabel=label||'Lain-lain';
+    tableHtml+='<div class="panel" style="margin-bottom:10px">'+
+      '<div class="ph" style="background:'+bg+'">'+
+        '<span class="ph-title">'+dispLabel+' ('+items.length+' rekod &mdash; '+items.reduce(function(s,r){return s+(r.hari||1);},0)+' hari)</span>'+
+      '</div>'+
+      '<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
+        '<th>#</th><th>Nama Anggota</th><th>Jab</th><th>Komp</th>'+
+        '<th>Tarikh Dari</th><th>Tarikh Hingga</th><th>Nama Klinik</th><th>No Rujukan MC</th><th>Bil Hari</th>'+
+      '</tr></thead><tbody>'+
+      items.map(function(r,i){
+        var isHaz=r.nama&&r.nama.toUpperCase().includes('HAZLAN');
+        var tarikhDari=r.dari||r.tarikh||'';
+        var tarikhHingga=r.hingga||(r.hari>1?'':'');
+        return '<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'">'+
+          '<td style="color:rgba(255,255,255,.3)">'+(i+1)+'</td>'+
+          '<td style="font-size:8.5px;font-weight:500'+(isHaz?';color:#fb923c':'')+'">'+r.nama+(isHaz?' <span style="background:rgba(220,38,38,.3);color:#fca5a5;padding:1px 5px;border-radius:3px;font-size:7px">ISU</span>':'')+'</td>'+
+          '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+r.jab+'</td>'+
+          '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+r.komp+'</td>'+
+          '<td style="font-family:monospace;font-size:8px">'+tarikhDari+'</td>'+
+          '<td style="font-family:monospace;font-size:8px">'+(tarikhHingga||tarikhDari)+'</td>'+
+          '<td style="font-size:8.5px">'+(r.klinik||'&#8212;')+'</td>'+
+          '<td style="font-family:monospace;font-size:8px;color:#f0b429">'+(r.no_mc||r.siri||'&#8212;')+'</td>'+
+          '<td style="text-align:center;font-weight:700;color:'+(r.hari>=5?'#f87171':r.hari>=3?'#fbbf24':'#34d399')+'">'+r.hari+'</td>'+
+        '</tr>';
+      }).join('')+
+      '</tbody></table></div></div>';
+  });
+
+  // ── Summary per anggota ──────────────────────────────────────
+  var sumByAnggota={};
+  uniqRecs.forEach(function(r){
+    var k=r.bil||r.nama;
+    if(!sumByAnggota[k]) sumByAnggota[k]={nama:r.nama,jab:r.jab,komp:r.komp,count:0,hari:0};
+    sumByAnggota[k].count++;
+    sumByAnggota[k].hari+=(r.hari||1);
+  });
+  var sumRows=Object.values(sumByAnggota).sort(function(a,b){return b.hari-a.hari;});
+  var sumHtml='<div class="panel" style="margin-top:10px">'+
+    '<div class="ph"><span class="ph-title">Ringkasan Jumlah Hari MC per Anggota</span></div>'+
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
+      '<th>Nama</th><th>Jab</th><th>Komp</th><th>Bil Rekod</th><th>Jumlah Hari</th><th>Status</th>'+
+    '</tr></thead><tbody>'+
+    sumRows.map(function(m){
+      var status=m.hari>=5?'<span style="background:rgba(220,38,38,.2);color:#fca5a5;padding:1px 7px;border-radius:3px;font-size:7px;font-weight:700">TINGGI</span>':
+                 m.hari>=3?'<span style="background:rgba(217,119,6,.2);color:#fbbf24;padding:1px 7px;border-radius:3px;font-size:7px;font-weight:700">SEMAK</span>':
+                           '<span style="background:rgba(5,150,105,.15);color:#34d399;padding:1px 7px;border-radius:3px;font-size:7px;font-weight:700">NORMAL</span>';
+      return '<tr>'+
+        '<td style="font-size:8.5px;font-weight:500">'+m.nama+'</td>'+
+        '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+m.jab+'</td>'+
+        '<td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+m.komp+'</td>'+
+        '<td style="text-align:center">'+m.count+'</td>'+
+        '<td style="text-align:center;font-weight:700">'+m.hari+'</td>'+
+        '<td>'+status+'</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div></div>';
+
+  el.innerHTML=statsHtml+tableHtml+sumHtml;
 }
+
+function renderHRMISReg(){
+  var hData=[];
+  try{ hData=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]'); }catch(e){}
+  var jabF=(document.getElementById('hr-jab-f')||{}).value||'';
+  var q=((document.getElementById('hr-q')||{}).value||'').toLowerCase();
+  
+  var notifEl=document.getElementById('hr-notif');
+  var cnt=document.getElementById('hr-cnt');
+  var el=document.getElementById('hr-reg-table');
+  if(!el) return;
+
+  // Notify: HRMIS 27/4-30/4 tidak diflag
+  if(notifEl){
+    notifEl.innerHTML='<div class="notif n-warn">'+
+      '<b>&#9888; 27/4 – 30/4:</b> Data cuti HRMIS tempoh ini tiada rekod walaupun fail disimpan. '+
+      'Kemungkinan bug HRMIS. Tempoh ini <b>TIDAK DIFLAG</b>. Pengesahan manual mencukupi.</div>'+
+      (AUTH&&AUTH.role==='admin'?'<button class="btn btn-gn btn-sm" onclick="toggleHRMISForm()" style="margin-bottom:8px">+ Tambah Rekod HRMIS</button>':'');
+  }
+
+  // Add form (admin only)
+  var formEl=document.getElementById('hr-add-form');
+  if(formEl&&formEl.innerHTML===''&&AUTH&&AUTH.role==='admin'){
+    formEl.innerHTML='<div class="panel" style="margin-bottom:10px" id="hr-form-panel" style="display:none">'+
+      '<div class="ph"><span class="ph-title">Tambah Rekod Cuti HRMIS</span></div>'+
+      '<div class="pb"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:10px">'+
+        '<div><label class="flbl2">Nama Anggota</label>'+
+          '<select class="fsel" id="hr-f-nama" style="width:100%">'+
+            '<option value="">— Pilih —</option>'+
+            MASTER.map(function(m){return '<option value="'+m.bil+'|'+m.nama+'">'+m.nama+'</option>';}).join('')+
+          '</select></div>'+
+        '<div><label class="flbl2">Jenis Cuti</label>'+
+          '<select class="fsel" id="hr-f-jenis" style="width:100%">'+
+            ['CUTI TAHUNAN','CUTI SAKIT','CUTI KECEMASAN','CUTI BERSALIN','CUTI HAJI','LAIN-LAIN'].map(function(j){return '<option>'+j+'</option>';}).join('')+
+          '</select></div>'+
+        '<div><label class="flbl2">Tarikh Cuti Dari</label><input class="finp2" type="date" id="hr-f-dari" style="width:100%"></div>'+
+        '<div><label class="flbl2">Tarikh Cuti Hingga</label><input class="finp2" type="date" id="hr-f-hingga" style="width:100%"></div>'+
+        '<div><label class="flbl2">Tarikh Masuk Kerja</label><input class="finp2" type="date" id="hr-f-masuk" style="width:100%"></div>'+
+        '<div><label class="flbl2">Tarikh Permohonan Dibuat</label><input class="finp2" type="date" id="hr-f-mohon" style="width:100%"></div>'+
+      '</div>'+
+      '<button class="btn btn-gold btn-sm" onclick="addHRMISRec()">+ Simpan Rekod</button>'+
+      '<span id="hr-f-msg" style="font-size:8px;margin-left:8px;color:#34d399"></span>'+
+      '</div></div>';
+  }
+
+  // Filter
+  var filtered=hData.filter(function(r){
+    return (!jabF) && (!q||r.nama.toLowerCase().includes(q));
+  });
+  if(cnt) cnt.textContent=hData.length+' rekod';
+
+  if(!hData.length){
+    el.innerHTML='<div class="empty"><div class="empty-ic">&#128196;</div>Tiada rekod cuti HRMIS. Tambah rekod menggunakan borang di atas.</div>';
+    return;
+  }
+
+  // Stats
+  var totalRek=hData.length;
+  var uniqueNames=new Set(hData.map(function(r){return r.nama;})).size;
+  var statsHtml='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:12px">'+
+    [{l:'Jumlah Rekod Cuti',v:totalRek,c:'#f0b429'},{l:'Anggota Ada Cuti',v:uniqueNames,c:'#34d399'}].map(function(s){
+      return '<div style="background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:9px 12px">'+
+        '<div style="font-size:18px;font-weight:800;color:'+s.c+'">'+s.v+'</div>'+
+        '<div style="font-size:7.5px;color:rgba(255,255,255,.4);margin-top:2px">'+s.l+'</div></div>';
+    }).join('')+'</div>';
+
+  // Table
+  el.innerHTML=statsHtml+
+    '<div class="panel"><div class="ph"><span class="ph-title">Listing Cuti HRMIS ('+hData.length+' rekod)</span></div>'+
+    '<div style="overflow-x:auto"><table class="tbl"><thead><tr>'+
+      '<th>#</th><th>Nama Anggota</th><th>Jenis Cuti</th><th>Tarikh Cuti Dari</th><th>Tarikh Cuti Hingga</th>'+
+      '<th>Tarikh Masuk Kerja</th><th>Tarikh Permohonan</th><th>Bil Hari</th>'+(AUTH&&AUTH.role==='admin'?'<th>Padam</th>':'')+
+    '</tr></thead><tbody>'+
+    hData.map(function(r,i){
+      var d1=r.dari?new Date(r.dari):null;
+      var d2=r.hingga?new Date(r.hingga):null;
+      var hari=d1&&d2?Math.round((d2-d1)/86400000)+1:1;
+      var noFlag=(r.dari>='2026-04-27'&&r.dari<='2026-04-30')||(r.hingga>='2026-04-27'&&r.hingga<='2026-04-30');
+      return '<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'">'+
+        '<td style="color:rgba(255,255,255,.3)">'+(i+1)+'</td>'+
+        '<td style="font-size:8.5px;font-weight:500">'+r.nama+'</td>'+
+        '<td><span style="background:rgba(37,99,235,.2);color:#93c5fd;padding:1px 6px;border-radius:3px;font-size:7.5px;font-weight:700">'+(r.jenis||'—')+'</span></td>'+
+        '<td style="font-family:monospace;font-size:8px">'+(r.dari||'—')+'</td>'+
+        '<td style="font-family:monospace;font-size:8px">'+(r.hingga||'—')+'</td>'+
+        '<td style="font-family:monospace;font-size:8px">'+(r.masuk||'—')+'</td>'+
+        '<td style="font-family:monospace;font-size:8px">'+(r.mohon||'—')+'</td>'+
+        '<td style="text-align:center;font-weight:700">'+hari+(noFlag?' <span style="background:rgba(37,99,235,.2);color:#93c5fd;padding:1px 5px;border-radius:3px;font-size:7px">NO FLAG</span>':'')+'</td>'+
+        (AUTH&&AUTH.role==='admin'?'<td><button class="btn btn-rd btn-sm" onclick="delHRMISRec('+i+')">&#10005;</button></td>':'')+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div></div>';
+}
+
+function toggleHRMISForm(){
+  var f=document.getElementById('hr-add-form');
+  if(f) f.style.display=f.style.display==='none'?'block':'none';
+}
+
+function addHRMISRec(){
+  if(!reqAdmin()) return;
+  var nameVal=(document.getElementById('hr-f-nama')||{}).value||'';
+  var jenis=(document.getElementById('hr-f-jenis')||{}).value||'';
+  var dari=(document.getElementById('hr-f-dari')||{}).value||'';
+  var hingga=(document.getElementById('hr-f-hingga')||{}).value||'';
+  var masuk=(document.getElementById('hr-f-masuk')||{}).value||'';
+  var mohon=(document.getElementById('hr-f-mohon')||{}).value||'';
+  var msg=document.getElementById('hr-f-msg');
+  if(!nameVal||!dari||!hingga){if(msg){msg.style.color='#f87171';msg.textContent='Nama, tarikh dari dan hingga wajib diisi.';}return;}
+  var parts=nameVal.split('|');
+  var nama=parts[1]||nameVal;
+  var data=[];
+  try{data=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');}catch(e){}
+  data.push({nama:nama,jenis:jenis,dari:dari,hingga:hingga,masuk:masuk,mohon:mohon});
+  try{localStorage.setItem('eakha_hrmis',JSON.stringify(data));}catch(e){}
+  if(msg){msg.style.color='#34d399';msg.textContent='Rekod berjaya disimpan!';}
+  setTimeout(function(){
+    try{if(typeof autoLoadHRMISPreload==='function') autoLoadHRMISPreload();}catch(e){}
+    renderHRMISReg();
+  },400);
+}
+
+function delHRMISRec(idx){
+  if(!reqAdmin()) return;
+  if(!confirm('Padam rekod ini?')) return;
+  var data=[];
+  try{data=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');}catch(e){}
+  data.splice(idx,1);
+  try{localStorage.setItem('eakha_hrmis',JSON.stringify(data));}catch(e){}
+  renderHRMISReg();
+}
+
 
 function toggleMCForm(){ const f=document.getElementById('mc-form'); f.style.display=f.style.display==='none'?'block':'none'; }
 function addMC(){
@@ -5023,7 +5262,7 @@ const PG_TITLES={
   'kzk-staging':'KZ Koperal',
   'tc-staging':'TIMECARD',
   mhkl:'Mini File: MHKL',iktar:'Mini File: IKTAR',rt:'Mini File: RT',
-  'mc-reg':'MC Diterima',baki:'Baki Cuti',
+  'mc-reg':'MC Diterima','hrmis-reg':'Cuti HRMIS',baki:'Baki Cuti',
   raya:'Kerja Raya Aidilfitri 2026',
   'ctr-haji':'Modul Raya Haji 2026',
   haji:'CTR Raya Haji 2026 (Lama)',
@@ -5049,6 +5288,7 @@ function nav(el){
   if(pg==='iktar') renderMiniGrid('IKTAR',null);
   if(pg==='rt') renderMiniGrid('RT',null);
   if(pg==='mc-reg') renderMCReg();
+  if(pg==='hrmis-reg') renderHRMISReg();
   if(pg==='kzp-staging') renderKZPStaging();
   if(pg==='kzk-staging') renderKZKStaging();
   if(pg==='tc-staging') renderTCStaging();
