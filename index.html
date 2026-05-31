@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v3.1</title>
+  <title>e-AKHA Vsavage v5.1</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -951,22 +951,50 @@ function tcAudit(bil,d){
 
   if(c.tc_in){
     let late=0, early=0;
-    if(sh==='M'){ late=inM>=shSt?inM-shSt:inM+(1440-shSt); if(inM>60&&inM<1200) early=shSt-inM; }
-    else { late=inM-shSt; early=shSt-inM; }
-    if(!c.ot&&early>60){ lines.push('IN AWAL'); lines.push('IN '+c.tc_in+' ('+fmtMin(early)+' awal)'); cls='tc-lw'; ok=false; }
-    else if(!c.ot&&late>6){ lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+late+'min)'); cls='tc-lw'; ok=false; }
-    else lines.push('✓ IN '+c.tc_in);
+    if(sh==='M'){
+      // Shift Malam: IN sah = 2200-2359 (1 jam awal dibenarkan), lewat = selepas 2305
+      // shSt=1380 (2300). inM=0-1439.
+      var in2200=(inM>=1320); // 2200-2359 = 1320-1439
+      var inMidnight=(inM<120);   // 0000-0159 = masih dalam shift malam
+      if(in2200||inMidnight){
+        // Dalam tetingkap sah
+        if(inM>=1320&&inM<1380){ lines.push('\u2713 IN AWAL SAH'); lines.push('IN '+c.tc_in+' (dalam tetingkap 1 jam)'); }
+        else if(!c.ot&&inM>=1380+6){ late=inM-1380; lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+late+'min)'); cls='tc-lw'; ok=false; }
+        else lines.push('\u2713 IN '+c.tc_in);
+      } else {
+        // Di luar tetingkap - sangat lewat atau salah shift
+        lines.push('\u26A0 IN DI LUAR WAKTU'); lines.push('IN '+c.tc_in+' (semak shift)'); cls='tc-lw'; ok=false;
+      }
+    } else { late=inM-shSt; early=shSt-inM;
+      if(!c.ot&&early>60){ lines.push('IN AWAL'); lines.push('IN '+c.tc_in+' ('+fmtMin(early)+' awal)'); cls='tc-lw'; ok=false; }
+      else if(!c.ot&&late>6){ lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+late+'min)'); cls='tc-lw'; ok=false; }
+      else lines.push('\u2713 IN '+c.tc_in);
+    }
   } else if(c.tc_out){ lines.push('⚠ TIADA IN'); lines.push('(OUT: '+c.tc_out+')'); cls='tc-warn'; ok=false; }
 
   if(c.tc_out){
-    let earlyOut=0;
-    if(sh==='S'||sh==='P') earlyOut=shEn-outM;
-    else earlyOut=outM<420?(420-outM):0;
-    if(!c.ot&&earlyOut>60){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out+' (-'+fmtMin(earlyOut)+')'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
-    else lines.push((c.tc_in?'✓ ':'')+'OUT '+c.tc_out+(sh==='M'?' (ESOK)':''));
-  } else if(c.tc_in){ lines.push('⚠ TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;} }
-
-  if((c.tc_in&&!c.tc_out)||(c.tc_out&&!c.tc_in)){ lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false; }
+    if(sh==='M'){
+      // OUT shift malam: sah = 0630-0730 (390-450 min dari tengah malam)
+      var outSah=(outM>=390&&outM<=450);
+      var outAwal=(outM>0&&outM<390);
+      if(outSah) lines.push('✓ OUT '+c.tc_out+' (ESOK - SAH)');
+      else if(outAwal){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out+' (sebelum 0630)'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
+      else lines.push('✓ OUT '+c.tc_out+' (ESOK)');
+    } else {
+      let earlyOut=0;
+      if(sh==='S'||sh==='P') earlyOut=shEn-outM;
+      if(!c.ot&&earlyOut>60){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out+' (-'+fmtMin(earlyOut)+')'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
+      else lines.push((c.tc_in?'✓ ':'')+' OUT '+c.tc_out);
+    }
+  } else if(c.tc_in){
+    if(sh==='M'){ lines.push('⚠ TIADA OUT (cross-midnight - semak hari esok)'); if(cls==='tc-ok') cls='tc-warn'; }
+    else { lines.push('⚠ TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;} }
+  }
+  // Single punch: shift malam single IN = cross-midnight, jangan flag terus
+  if((c.tc_in&&!c.tc_out)||(c.tc_out&&!c.tc_in)){
+    if(sh==='M'&&c.tc_in&&!c.tc_out){ lines.push('SEMAK ESOK'); if(cls==='tc-ok') cls='tc-warn'; }
+    else { lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false; }
+  }
   return {txt:lines.join('\n'),cls,ok};
 }
 
@@ -1069,12 +1097,14 @@ function auditFinal(bil,d){
   // Ada thumb
   if(!tc.ok){
     const t=tc.txt.split('\n')[0];
-    if(t.includes('LEWAT'))    return {txt:t,cls:'af-lw'};
-    if(t.includes('IN AWAL'))  return {txt:t,cls:'af-lw'};
-    if(t.includes('OUT AWAL')) return {txt:t,cls:'af-lw'};
-    if(t.includes('TIADA IN')) return {txt:'SEMAK TC - TIADA IN',cls:'af-warn'};
-    if(t.includes('TIADA OUT'))return {txt:'SEMAK TC - TIADA OUT',cls:'af-warn'};
-    if(t.includes('SINGLE'))   return {txt:'SEMAK TC - SINGLE PUNCH',cls:'af-warn'};
+    if(t.includes('IN AWAL SAH'))  { /* Shift malam: IN awal tapi SAH - teruskan */ }
+    else if(t.includes('SEMAK ESOK')) return {txt:'SAH (TC cross-midnight)',cls:'af-sah'};
+    else if(t.includes('LEWAT'))    return {txt:t,cls:'af-lw'};
+    else if(t.includes('IN AWAL'))  return {txt:t,cls:'af-lw'};
+    else if(t.includes('OUT AWAL')) return {txt:t,cls:'af-lw'};
+    else if(t.includes('TIADA IN')) return {txt:'SEMAK TC - TIADA IN',cls:'af-warn'};
+    else if(t.includes('TIADA OUT'))return {txt:'SEMAK TC - TIADA OUT (cross-midnight?)',cls:'af-warn'};
+    else if(t.includes('SINGLE'))   return {txt:'SEMAK TC - SINGLE PUNCH',cls:'af-warn'};
   }
   if(kzAbs) return {txt:'SEMAK KZ\n(HADIR DARI TIMECARD)',cls:'af-warn'};
   return {txt:'SAH',cls:'af-sah'};
@@ -3076,11 +3106,11 @@ async function bootApp(){
   // Auto-clear stale localStorage if MASTER changed (v4.0)
   try{
     var dataVer=localStorage.getItem('eakha_data_version');
-    if(dataVer!=='v4.9'){
+    if(dataVer!=='v5.1'){
       localStorage.removeItem('eakha_data');
       localStorage.removeItem('eakha_mc');
       localStorage.removeItem('eakha_audit_state');
-      localStorage.setItem('eakha_data_version','v4.9');
+      localStorage.setItem('eakha_data_version','v5.1');
       console.log('[bootApp] Stale data cleared - migrated to v4.0');
     }
   }catch(e){}
@@ -3101,6 +3131,7 @@ async function bootApp(){
   // Auto-load pre-loaded data after MASTER + D ready
   setTimeout(function(){
     try{ if(typeof autoLoadMCPreload==='function') autoLoadMCPreload(); }catch(e){console.warn('MC preload:',e);}
+    try{ if(typeof autoLoadHRMISPreload==='function') autoLoadHRMISPreload(); }catch(e){console.warn('HRMIS preload:',e);}
     try{ if(typeof autoLoadTCPreload==='function') autoLoadTCPreload(); }catch(e){console.warn('TC preload:',e);}
     try{ if(typeof autoLoadKZPreload==='function') autoLoadKZPreload(); }catch(e){console.warn('KZ preload:',e);}
     // Save D ONCE after ALL preloads complete (elak partial save)
@@ -4487,6 +4518,7 @@ function loadAuditState(){
 // Auto-padan ke MASTER 52 anggota, auto-pecah multi-day MC
 // ══════════════════════════════════════════════════════════════
 var MC_PRELOAD = [
+  // ── BORANG SEMAKAN 11.05.2026 (Page 1) ──
   {bil:1,nama:"SHAHRUL FITRI BIN ROSLI",mc_type:"MC",komp:"A",klinik:"K.K KUALA LUMPUR",dari:"17.04.2026",hingga:"17.04.2026",no_mc:"BJ090364",hari:1},
   {bil:2,nama:"MOHAMMAD ALIF BIN NASARUDDIN",mc_type:"MC",komp:"B",klinik:"KLINIK MEDIVA",dari:"29.04.2026",hingga:"29.04.2026",no_mc:"5085",hari:1},
   {bil:3,nama:"AALIYA AAUNI BINTI MAT ZABIR",mc_type:"MC",komp:"A",klinik:"KLINIK NURUL",dari:"17.04.2026",hingga:"18.04.2026",no_mc:"258",hari:2},
@@ -4495,10 +4527,11 @@ var MC_PRELOAD = [
   {bil:6,nama:"MOHD RASIDI MOHD NASIR",mc_type:"MC",komp:"C",klinik:"KLINIK SHUJAI",dari:"25.04.2026",hingga:"26.04.2026",no_mc:"41339",hari:2},
   {bil:7,nama:"MUHAMMAD BADRI BIN ARIS",mc_type:"MC",komp:"C",klinik:"KLINIK DR IZHAM BUKIT CHERAS",dari:"23.04.2026",hingga:"24.04.2026",no_mc:"52725",hari:2},
   {bil:8,nama:"WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA",mc_type:"MC",komp:"C",klinik:"KLINIK HAYAT",dari:"27.04.2026",hingga:"28.04.2026",no_mc:"2604-28323",hari:2},
-  {bil:9,nama:"MUHMMAD FAHMIE BIN SAHRAN",mc_type:"MC",komp:"A",klinik:"K.K GOMBAK SETIA",dari:"17.04.2026",hingga:"18.04.2026",no_mc:"BH908357",hari:2},
+  {bil:9,nama:"MUHAMAD FAHMIE BIN SAHRAN",mc_type:"MC",komp:"A",klinik:"K.K GOMBAK SETIA",dari:"17.04.2026",hingga:"18.04.2026",no_mc:"BH908357",hari:2},
   {bil:10,nama:"MUHAMMAD BADRI BIN ARIS",mc_type:"MC",komp:"C",klinik:"KLINIK IMPIAN",dari:"03.05.2026",hingga:"04.05.2026",no_mc:"46873",hari:2},
   {bil:11,nama:"MOHD RASIDI MOHD NASIR",mc_type:"MC",komp:"C",klinik:"POLIKLINIK PANDAMARAN JAYA",dari:"04.05.2026",hingga:"04.05.2026",no_mc:"16121",hari:1},
   {bil:12,nama:"MOHD LUKMAN BIN HAMDAN",mc_type:"MC",komp:"D",klinik:"KLINIK OSH",dari:"07.05.2026",hingga:"08.05.2026",no_mc:"AC1172010",hari:1},
+  // ── BORANG SEMAKAN 18.05.2026 (Page 2) ──
   {bil:13,nama:"MOHAMAD AMIERUL BIN ADNAN",mc_type:"MC",komp:"WP1",klinik:"KLINIK OSH",dari:"14.05.2026",hingga:"15.05.2026",no_mc:"AC1172166",hari:2},
   {bil:14,nama:"MUHAMMAD TARMIZI BIN SAZALI",mc_type:"MC",komp:"D",klinik:"K.K TAMAN MEDAN",dari:"07.05.2026",hingga:"09.05.2026",no_mc:"BH318888",hari:2},
   {bil:15,nama:"MUHAMMAD TARMIZI BIN SAZALI",mc_type:"MC",komp:"D",klinik:"K.K TAMAN MEDAN",dari:"22.04.2026",hingga:"22.04.2026",no_mc:"BH318660",hari:1},
@@ -4510,38 +4543,39 @@ var MC_PRELOAD = [
   {bil:21,nama:"NUR SYUHADA BINTI MISNAN",mc_type:"MC",komp:"D",klinik:"HOSPITAL SELAYANG",dari:"14.02.2026",hingga:"16.02.2026",no_mc:"AAN513664",hari:3},
   {bil:22,nama:"NUR SYUHADA BINTI MISNAN",mc_type:"MC",komp:"D",klinik:"KLINIK OSH",dari:"13.05.2026",hingga:"13.05.2026",no_mc:"AC1172164",hari:1},
   {bil:23,nama:"SUHAIRI BIN ISMAIL",mc_type:"MC",komp:"D",klinik:"KLINIK PERGIGIAN SERENDAH",dari:"16.04.2026",hingga:"16.04.2026",no_mc:"BD226954",hari:1},
+  // ── BORANG SEMAKAN 28.04.2026 (Page 3) ──
   {bil:24,nama:"ABDULLAH BIN BAHUDIN",mc_type:"MC",komp:"A",klinik:"KLINIK MEDIVIRON KL TRADERS",dari:"22.04.2026",hingga:"22.04.2026",no_mc:"MC39503",hari:1},
-  {bil:25,nama:"WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA",mc_type:"MC",komp:"C",klinik:"KLINIK HAYAT",dari:"01.04.2026",hingga:"02.04.2026",no_mc:"MC2604-27350",hari:2},
-  {bil:26,nama:"HAZLAN BIN MOHD RESDI",mc_type:"MC",komp:"B",klinik:"KLINIK MENARA",dari:"04.03.2026",hingga:"05.03.2026",no_mc:"25983",hari:2},
-  {bil:27,nama:"HAZLAN BIN MOHD RESDI",mc_type:"MC",komp:"B",klinik:"UNI KLINIK KL TRADERS",dari:"01.04.2026",hingga:"02.04.2026",no_mc:"MC-4528",hari:2},
-  {bil:28,nama:"MOHAMMAD ALIF BIN NASARUDDIN",mc_type:"MC",komp:"B",klinik:"KLINIK EVE",dari:"16.04.2026",hingga:"16.04.2026",no_mc:"MC-4528",hari:1},
-  {bil:29,nama:"ANASHATOL ARNAEDA BINTI JAFRI",mc_type:"MC",komp:"B",klinik:"POLIKLINIK DAMAI DAN SURGERI",dari:"05.04.2026",hingga:"06.04.2026",no_mc:"173150",hari:2},
-  {bil:30,nama:"ANASHATOL ARNAEDA BINTI JAFRI",mc_type:"MC",komp:"B",klinik:"K.K SEMENYIH",dari:"16.04.2026",hingga:"17.04.2026",no_mc:"BX590076",hari:2},
-  {bil:31,nama:"FARRAH NATASHA BINTI ZULKAFLI",mc_type:"MC",komp:"C",klinik:"POLIKLINIK AN-NISA'",dari:"24.04.2026",hingga:"24.04.2026",no_mc:"105321",hari:1},
-  {bil:32,nama:"FARRAH NATASHA BINTI ZULKAFLI",mc_type:"MC",komp:"C",klinik:"KLINIK SALLEH",dari:"16.04.2026",hingga:"17.04.2026",no_mc:"4704",hari:2},
-  {bil:33,nama:"YUSRI BIN YUNUS",mc_type:"MC",komp:"A",klinik:"K.K RAWANG",dari:"09.03.2026",hingga:"09.03.2026",no_mc:"AY553841",hari:1},
-  {bil:34,nama:"YUSRI BIN YUNUS",mc_type:"MC",komp:"A",klinik:"POLIKLINIK PRIMA",dari:"08.03.2026",hingga:"08.03.2026",no_mc:"26/3772",hari:1},
-  {bil:35,nama:"FARRAH NATASHA BINTI ZULKAFLI",mc_type:"MC",komp:"C",klinik:"KLINIK SALLEH",dari:"12.04.2026",hingga:"12.04.2026",no_mc:"4496",hari:1},
-  {bil:36,nama:"MOHD RASIDI BIN MOHD NASIR",mc_type:"MC",komp:"C",klinik:"K.K PELABUHAN KLANG",dari:"03.04.2026",hingga:"03.04.2026",no_mc:"BJ755941",hari:1},
-  {bil:37,nama:"MOHD RASIDI BIN MOHD NASIR",mc_type:"MC",komp:"C",klinik:"POLIKLINIK DAN SURGERI TELUK PULAI",dari:"11.04.2026",hingga:"11.04.2026",no_mc:"MC02585",hari:1},
-  {bil:38,nama:"MUHAMMAD ASHLEY BIN BASHIR",mc_type:"MC",komp:"C",klinik:"K.K KUALA LUMPUR",dari:"11.04.2026",hingga:"11.04.2026",no_mc:"BJ088018",hari:1},
-  {bil:39,nama:"IRWAN SYAMIR BIN MOHD ZAINAL",mc_type:"MC",komp:"A",klinik:"KLINIK UTAMA",dari:"18.04.2026",hingga:"18.04.2026",no_mc:"24389",hari:1},
-  {bil:40,nama:"RIMA BINTI OTHMAN",mc_type:"MC",komp:"D",klinik:"KLINIK ZAHARIN",dari:"20.04.2026",hingga:"21.04.2026",no_mc:"180191",hari:2},
-  {bil:41,nama:"MUHAMMAD ALIFF BIN MOHTAR",mc_type:"MC",komp:"A",klinik:"KLINIK OSH",dari:"17.04.2026",hingga:"17.04.2026",no_mc:"AC1136805",hari:1},
-  {bil:42,nama:"NUR SYUHADA BINTI MISNAN",mc_type:"MC",komp:"D",klinik:"KLINIK PAKAR WANITA DAN KELUARGA",dari:"16.04.2026",hingga:"16.04.2026",no_mc:"3512",hari:1},
-  {bil:43,nama:"NUR SYUHADA BINTI MISNAN",mc_type:"MC",komp:"D",klinik:"KLINIK ZULKIFLI",dari:"27.02.2026",hingga:"27.02.2026",no_mc:"19669",hari:1},
-  {bil:44,nama:"NUR SYUHADA BINTI MISNAN",mc_type:"MC",komp:"D",klinik:"KLINIK OSH",dari:"25.02.2026",hingga:"26.02.2026",no_mc:"AC1156925",hari:2},
-  {bil:45,nama:"NANTHA GOPAL A/L AYASAMY",mc_type:"MC",komp:"A",klinik:"OSH HKL",dari:"09.04.2026",hingga:"09.04.2026",no_mc:"AC1156638",hari:1},
-  {bil:46,nama:"NOR AZURA BINTI MAMAT @MUHAMMAD",mc_type:"MC",komp:"B",klinik:"HTA",dari:"08.04.2026",hingga:"08.04.2026",no_mc:"AC001337",hari:1},
-  {bil:47,nama:"NOR AZURA BINTI MAMAT @MUHAMMAD",mc_type:"MC",komp:"B",klinik:"KK KUALA LUMPUR",dari:"09.04.2026",hingga:"09.04.2026",no_mc:"BH234482",hari:1},
-  {bil:48,nama:"MOHD KHADAFEE BIN MD SAAD",mc_type:"MC",komp:"B",klinik:"OSH HKL",dari:"16.03.2026",hingga:"17.03.2026",no_mc:"AC1146847",hari:2},
-  {bil:49,nama:"SAIFUL YUSRIZAL BIN YAACOB",mc_type:"MC",komp:"C",klinik:"KLINIK KELUARGA DESA",dari:"09.04.2026",hingga:"09.04.2026",no_mc:"200161",hari:1},
-  {bil:50,nama:"MOHD SHAFIK BIN IBRAM",mc_type:"MC",komp:"B",klinik:"KK KESIHATAN ASTANA RAJA",dari:"08.04.2026",hingga:"08.04.2026",no_mc:"AE071484",hari:1},
-  {bil:51,nama:"AHMAD SHAMIL BIN NADZRI",mc_type:"MC",komp:"D",klinik:"HOSPITAL SG. SIPUT",dari:"11.04.2026",hingga:"11.04.2026",no_mc:"BC624203",hari:1},
-  {bil:52,nama:"MOHD LUKMAN BIN HAMDAN",mc_type:"MC",komp:"D",klinik:"KLINIK BAKTI",dari:"31.03.2026",hingga:"31.03.2026",no_mc:"4883",hari:1},
-  {bil:53,nama:"SUHAIRI BIN ISMAIL",mc_type:"MC",komp:"D",klinik:"KLINIK PERGIGIAN SERENDAH",dari:"13.04.2026",hingga:"13.04.2026",no_mc:"BD226934",hari:1},
-  {bil:54,nama:"SUHAIRI BIN ISMAIL",mc_type:"MC",komp:"D",klinik:"KK SERENDAH",dari:"17.03.2026",hingga:"18.03.2026",no_mc:"BF995791",hari:2}
-];
+  {bil:25,nama:"WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA",mc_type:"MC",komp:"D",klinik:"KLINIK HAYAT",dari:"07.04.2026",hingga:"08.04.2026",no_mc:"22500-MCS04",hari:2},
+  {bil:26,nama:"HAZLAN BIN MOHD RESDI",mc_type:"MC",komp:"B",klinik:"KLINIK MENARA",dari:"04.04.2026",hingga:"05.04.2026",no_mc:"25983",hari:2},
+  {bil:27,nama:"HAZLAN BIN MOHD RESDI",mc_type:"MC",komp:"B",klinik:"KLINIK HAYAT",dari:"01.04.2026",hingga:"02.04.2026",no_mc:"22/2348",hari:2},
+  {bil:28,nama:"MOHAMMAD ALIF BIN NASARUDDIN",mc_type:"MC",komp:"B",klinik:"UNI KLINIK KL TRADERS",dari:"01.04.2026",hingga:"02.04.2026",no_mc:"MC-4528",hari:2},
+  {bil:29,nama:"ANASHATOL ARNAEDA BINTI JAFRI",mc_type:"MC",komp:"B",klinik:"KLINIK EVE",dari:"16.04.2026",hingga:"16.04.2026",no_mc:"MC-4528",hari:1},
+  {bil:30,nama:"ANASHATOL ARNAEDA BINTI JAFRI",mc_type:"MC",komp:"B",klinik:"POLIKLINIK DAMAI DAN SURGERI",dari:"05.04.2026",hingga:"06.04.2026",no_mc:"173150",hari:2},
+  {bil:31,nama:"FARRAH NATASHA BINTI ZULKAFLI",mc_type:"MC",komp:"C",klinik:"K.X SEMENYIH",dari:"16.04.2026",hingga:"17.04.2026",no_mc:"BK590076",hari:2},
+  {bil:32,nama:"FARRAH NATASHA BINTI ZULKAFLI",mc_type:"MC",komp:"C",klinik:"POLIKLINIK AN-NISAT",dari:"24.04.2026",hingga:"24.04.2026",no_mc:"105321",hari:1},
+  {bil:33,nama:"FARRAH NATASHA BINTI ZULKAFLI",mc_type:"MC",komp:"C",klinik:"KLINIK SALLEH",dari:"16.04.2026",hingga:"17.04.2026",no_mc:"4704",hari:2},
+  {bil:34,nama:"YUSRI BIN YUNUS",mc_type:"MC",komp:"A",klinik:"K.K RAWANG",dari:"09.03.2026",hingga:"09.03.2026",no_mc:"AY553841",hari:1},
+  {bil:35,nama:"YUSRI BIN YUNUS",mc_type:"MC",komp:"A",klinik:"POLIKLINIK PRIMA",dari:"08.03.2026",hingga:"08.03.2026",no_mc:"3/777",hari:1},
+  {bil:36,nama:"MOHD RASIDI BIN MOHD NASIR",mc_type:"MC",komp:"C",klinik:"POLIKLINIK DAN SURGERI TELUK PULAI",dari:"11.04.2026",hingga:"11.04.2026",no_mc:"MC91585",hari:1},
+  {bil:37,nama:"MUHAMMAD ASHLEY BIN BASHIR",mc_type:"MC",komp:"C",klinik:"K.K KUALA LUMPUR",dari:"11.04.2026",hingga:"11.04.2026",no_mc:"BJ080580",hari:1},
+  {bil:38,nama:"IRWAN SYAMIR BIN MOHD ZAINAL",mc_type:"MC",komp:"A",klinik:"KLINIK UTAMA",dari:"18.04.2026",hingga:"18.04.2026",no_mc:"24389",hari:1},
+  {bil:39,nama:"RIMA BINTI OTHMAN",mc_type:"MC",komp:"D",klinik:"KLINIK ZAHARIN",dari:"20.04.2026",hingga:"21.04.2026",no_mc:"180159",hari:2},
+  {bil:40,nama:"MUHAMMAD ALLIF BIN MOHTAR",mc_type:"MC",komp:"A",klinik:"KLINIK OSH",dari:"17.04.2026",hingga:"17.04.2026",no_mc:"AC1136805",hari:1},
+  {bil:41,nama:"NUR SYUHADA BINTI MISNAN",mc_type:"MC",komp:"D",klinik:"KLINIK PAKAR WANITA DAN KELUARGA",dari:"16.04.2026",hingga:"16.04.2026",no_mc:"3512",hari:1},
+  {bil:42,nama:"NUR SYUHADA BINTI MISNAN",mc_type:"MC",komp:"D",klinik:"KLINIK ZULKIFLI",dari:"27.02.2026",hingga:"27.02.2026",no_mc:"19669",hari:1},
+  {bil:43,nama:"NUR SYUHADA BINTI MISNAN",mc_type:"MC",komp:"D",klinik:"KLINIK OSH",dari:"25.02.2026",hingga:"26.02.2026",no_mc:"AC1136925",hari:2},
+  // ── BORANG SEMAKAN 17.04.2026 (Page 4) ──
+  {bil:44,nama:"NANTHAGOPAL A/L AYASAMY",mc_type:"MC",komp:"A",klinik:"OSH HKL",dari:"09.04.2026",hingga:"09.04.2026",no_mc:"AC1156638",hari:1},
+  {bil:45,nama:"NOR AZURA BINTI MAMAT @ MUHAMAD",mc_type:"MC",komp:"B",klinik:"HTA",dari:"08.04.2026",hingga:"08.04.2026",no_mc:"AC000337",hari:1},
+  {bil:46,nama:"NOR AZURA BINTI MAMAT @ MUHAMAD",mc_type:"MC",komp:"B",klinik:"K.K KUALA LUMPUR",dari:"09.04.2026",hingga:"09.04.2026",no_mc:"BH234482",hari:1},
+  {bil:47,nama:"MOHD KHADAFEE BIN MD SAAD",mc_type:"MC",komp:"B",klinik:"OSH HKL",dari:"16.03.2026",hingga:"17.03.2026",no_mc:"AC1146847",hari:2},
+  {bil:48,nama:"SAIFUL YUSRIZAL BIN YAACOB",mc_type:"MC",komp:"C",klinik:"KLINIK KELUARGA DESA",dari:"09.04.2026",hingga:"09.04.2026",no_mc:"200161",hari:1},
+  {bil:49,nama:"MOHD SHAFIK BIN IBRAM",mc_type:"MC",komp:"B",klinik:"KK KESIHATAN ASTANA RAJA",dari:"08.04.2026",hingga:"08.04.2026",no_mc:"AE071484",hari:1},
+  {bil:50,nama:"AHMAD SHAMIL BIN NADZRI",mc_type:"MC",komp:"D",klinik:"HOSPITAL SG. SIPUT",dari:"11.04.2026",hingga:"11.04.2026",no_mc:"BC624203",hari:1},
+  {bil:51,nama:"MOHD LUKMAN BIN HAMDAN",mc_type:"MC",komp:"D",klinik:"KLINIK BAKTI",dari:"31.03.2026",hingga:"31.03.2026",no_mc:"E883",hari:1},
+  {bil:52,nama:"SUHAIRI BIN ISMAIL",mc_type:"MC",komp:"D",klinik:"KLINIK PERGIGIAN SERENDAH",dari:"13.04.2026",hingga:"13.04.2026",no_mc:"BD226934",hari:1},
+  {bil:53,nama:"SUHAIRI BIN ISMAIL",mc_type:"MC",komp:"D",klinik:"KK SERENDAH",dari:"17.03.2026",hingga:"18.03.2026",no_mc:"BF598791",hari:1},
+]
 
 // Convert komp shorthand to full kompeni name
 function expandKomp(k){
@@ -4855,6 +4889,42 @@ function autoLoadKZPreload(){
   
   console.log('[KZ pre-load] KZP: '+nKZP+', KZK: '+nKZK);
   if(typeof toast==='function') toast('Pre-load KZ: '+nKZP+' penyelia, '+nKZK+' koperal','ok');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// HRMIS PRELOAD ENGINE
+// Load cuti HRMIS dari localStorage → D[bil][day].hrmis
+// ══════════════════════════════════════════════════════════════
+function autoLoadHRMISPreload(){
+  try{
+    var stored=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');
+    if(!stored.length) return;
+    var n=0;
+    stored.forEach(function(rec){
+      if(!rec.nama||!rec.dari) return;
+      // Normalize date: yyyy-mm-dd -> dd/mm/yyyy
+      function nd(s){if(!s)return '';if(s.includes('-')){var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];}return s;}
+      var matched=MASTER.find(function(m){
+        var a=m.nama.toUpperCase().trim(), b=rec.nama.toUpperCase().trim();
+        if(a===b) return true;
+        var wa=a.split(' '), wb=b.split(' ');
+        return wa[0]===wb[0]&&wa[wa.length-1]===wb[wb.length-1];
+      });
+      if(!matched) return;
+      var days=typeof expandMCDays==='function'?expandMCDays(nd(rec.dari),nd(rec.hingga||rec.dari)):[];
+      days.forEach(function(day){
+        if(day.m===ACTIVE_MONTH&&day.y===ACTIVE_YEAR){
+          if(D[matched.bil]&&D[matched.bil][day.d]&&!D[matched.bil][day.d].hrmis){
+            D[matched.bil][day.d].hrmis=rec.jenis||'CUTI';
+            n++;
+          }
+        }
+      });
+    });
+    if(n&&typeof logAction==='function') logAction('PRE-LOAD HRMIS','Load '+stored.length+' rekod → '+n+' hari',n,'OK');
+    if(n&&typeof toast==='function') toast('Pre-load HRMIS: '+n+' hari cuti diisi','ok');
+  }catch(e){console.warn('HRMIS preload:',e);}
 }
 
 function autoLoadMCPreload(){
