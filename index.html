@@ -3520,25 +3520,8 @@ async function bootApp(){
   }catch(e){}
   applyRoleUI();
   initSupa();
-  // Load localStorage
+  // Load localStorage (MC/RAYA/CTR only — D[] merge happens after preloads)
   try{
-    const dd=localStorage.getItem('eakha_data');
-    if(dd){ const p=JSON.parse(dd); Object.keys(p).forEach(function(b){ if(D[b]) Object.keys(p[b]).forEach(function(dy){
-      if(!D[b][dy]) return;
-      var s=p[b][dy];
-      // Only overwrite with saved value if saved value is non-empty (preserve initD prefills)
-      if(s.kzp) D[b][dy].kzp=s.kzp;
-      if(s.kzk) D[b][dy].kzk=s.kzk;
-      if(s.hrmis) D[b][dy].hrmis=s.hrmis;
-      if(s.note) D[b][dy].note=s.note;
-      if(s.ot!==undefined) D[b][dy].ot=s.ot;
-      if(s.tc_in) D[b][dy].tc_in=s.tc_in;
-      if(s.tc_out) D[b][dy].tc_out=s.tc_out;
-      if(s.kzp_jam) D[b][dy].kzp_jam=s.kzp_jam;
-      if(s.pengganti) D[b][dy].pengganti=s.pengganti;
-      if(s.pengganti_nama) D[b][dy].pengganti_nama=s.pengganti_nama;
-      if(s.tc_problem!==undefined) D[b][dy].tc_problem=s.tc_problem;
-    }); }); }
     const mc=localStorage.getItem('eakha_mc');
     if(mc){ const p=JSON.parse(mc); p.forEach(r=>{ if(!MC_DATA.some(m=>m.bil===r.bil&&m.dari===r.dari)) MC_DATA.push(r); }); }
     const rv=localStorage.getItem('eakha_raya'); if(rv) RAYA_DATA=JSON.parse(rv)||[];
@@ -3565,7 +3548,31 @@ async function bootApp(){
     try{ if(typeof autoLoadTCPreload==='function') autoLoadTCPreload();
     try{ if(typeof markTCProblemDays==='function') markTCProblemDays(); }catch(e){} }catch(e){console.warn('TC preload:',e);}
     try{ if(typeof autoLoadKZPreload==='function') autoLoadKZPreload(); }catch(e){console.warn('KZ preload:',e);}
-    // Save D ONCE after ALL preloads complete (elak partial save)
+    // ── Merge user edits from localStorage ON TOP of preloads ──
+    // This is the correct order: preloads fill base data, then user edits override
+    try{
+      var savedD=JSON.parse(localStorage.getItem('eakha_data')||'null');
+      if(savedD) Object.keys(savedD).forEach(function(bil){
+        if(!D[+bil]) return;
+        Object.keys(savedD[bil]).forEach(function(day){
+          var s=savedD[bil][day], b=+bil, d=+day;
+          if(!D[b][d]) return;
+          // User edits WIN — only apply non-empty saved values
+          if(s.kzp) D[b][d].kzp=s.kzp;
+          if(s.kzk) D[b][d].kzk=s.kzk;
+          if(s.hrmis) D[b][d].hrmis=s.hrmis;
+          if(s.note) D[b][d].note=s.note;
+          if(s.ot) D[b][d].ot=s.ot;
+          if(s.kzp_jam) D[b][d].kzp_jam=s.kzp_jam;
+          if(s.pengganti) D[b][d].pengganti=s.pengganti;
+          if(s.pengganti_nama) D[b][d].pengganti_nama=s.pengganti_nama;
+          // tc_in/tc_out: user edit wins, but don't clear TC preload
+          if(s.tc_in) D[b][d].tc_in=s.tc_in;
+          if(s.tc_out) D[b][d].tc_out=s.tc_out;
+        });
+      });
+    }catch(e){console.warn('D merge:',e);}
+    // Save D ONCE after ALL preloads + user merge complete
     try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
     try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
     try{ if(typeof renderDash==='function') renderDash(); }catch(e){}
@@ -5311,10 +5318,9 @@ function autoLoadKZPreload(){
     var bil=matched.bil;
     if(!D[bil]||!D[bil][d]) return;
     var code=mapKZStatus(rec.status);
-    // Only write if kzp not already set (manual entry takes priority)
-    if(!D[bil][d].kzp){ D[bil][d].kzp=code; nKZP++; }
-    if(rec.jam&&!D[bil][d].kzp_jam) D[bil][d].kzp_jam=rec.jam;
-    if(rec.pengganti&&!D[bil][d].pengganti){ D[bil][d].pengganti=true; D[bil][d].pengganti_nama=rec.pengganti; }
+    D[bil][d].kzp=code; nKZP++;
+    if(rec.jam) D[bil][d].kzp_jam=rec.jam;
+    if(rec.pengganti){ D[bil][d].pengganti=true; D[bil][d].pengganti_nama=rec.pengganti; }
   });
   
   // ── KZ KOPERAL ──
@@ -5327,10 +5333,9 @@ function autoLoadKZPreload(){
     var bil=matched.bil;
     if(!D[bil]||!D[bil][d]) return;
     var code=mapKZStatus(rec.status);
-    // Only write if kzk not already set (manual entry takes priority)
-    if(!D[bil][d].kzk){ D[bil][d].kzk=code; nKZK++; }
-    if(rec.pos&&!D[bil][d].kzk_pos) D[bil][d].kzk_pos=rec.pos;
-    if(rec.ot&&!D[bil][d].ot) D[bil][d].ot=true;
+    D[bil][d].kzk=code; nKZK++;
+    if(rec.pos) D[bil][d].kzk_pos=rec.pos;
+    if(rec.ot) D[bil][d].ot=true;
   });
   
   console.log('[KZ pre-load] KZP: '+nKZP+', KZK: '+nKZK);
