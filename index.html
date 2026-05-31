@@ -3525,7 +3525,8 @@ async function bootApp(){
   // Auto-load pre-loaded data after MASTER + D ready
   setTimeout(function(){
     try{ if(typeof autoLoadMCPreload==='function') autoLoadMCPreload(); }catch(e){console.warn('MC preload:',e);}
-    try{ if(typeof autoLoadHRMISPreload==='function') autoLoadHRMISPreload(); }catch(e){console.warn('HRMIS preload:',e);}
+    try{ if(typeof autoLoadHRMISPreloadStatic==='function') autoLoadHRMISPreloadStatic(); }catch(e){console.warn('HRMIS static:',e);}
+  try{ if(typeof autoLoadHRMISPreload==='function') autoLoadHRMISPreload(); }catch(e){console.warn('HRMIS preload:',e);}
   try{ if(typeof autoLoadCTRPreload==='function') autoLoadCTRPreload(); }catch(e){console.warn('CTR preload:',e);}
   try{ if(typeof autoLoadRayaPreload==='function') autoLoadRayaPreload(); }catch(e){console.warn('Raya preload:',e);}
   // Auto-render dashboard on load (small delay to ensure DOM ready)
@@ -5329,6 +5330,68 @@ function autoLoadKZPreload(){
 // HRMIS PRELOAD ENGINE
 // Load cuti HRMIS dari localStorage → D[bil][day].hrmis
 // ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// HRMIS PRELOAD — Data Permohonan Cuti (dari Borang Semakan)
+// Sumber: Gabungan_Gambar_Permohonan_Cuti_Sahaja.pdf
+// ══════════════════════════════════════════════════════════════
+var HRMIS_PRELOAD = [
+  // ── April 2026 ──
+  {nama:'NANTHAGOPAL A/L AYASAMY',        jenis:'CUTI SAKIT (MC)',      dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
+  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI SAKIT (MC)',     dari:'2026-04-08',hingga:'2026-04-08',masuk:'2026-04-09',mohon:'2026-04-08'},
+  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI SAKIT (MC)',     dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
+  {nama:'MOHD KHADAFEE BIN MD SAAD',       jenis:'CUTI SAKIT (MC)',     dari:'2026-03-16',hingga:'2026-03-17',masuk:'2026-03-18',mohon:'2026-03-16'},
+  {nama:'SAIFUL YUSRIZAL BIN YAACOB',      jenis:'CUTI SAKIT (MC)',     dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
+  {nama:'MOHD SHAFIK BIN IBRAM',           jenis:'CUTI SAKIT (MC)',     dari:'2026-04-08',hingga:'2026-04-08',masuk:'2026-04-09',mohon:'2026-04-08'},
+  {nama:'AHMAD SHAMIL BIN NADZRI',         jenis:'CUTI SAKIT (MC)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
+  {nama:'MOHD LUKMAN BIN HAMDAN',          jenis:'CUTI SAKIT (MC)',     dari:'2026-03-31',hingga:'2026-03-31',masuk:'2026-04-01',mohon:'2026-03-31'},
+  {nama:'SUHAIRI BIN ISMAIL',              jenis:'CUTI SAKIT (MC)',     dari:'2026-04-13',hingga:'2026-04-13',masuk:'2026-04-14',mohon:'2026-04-13'},
+  {nama:'SUHAIRI BIN ISMAIL',              jenis:'CUTI SAKIT (MC)',     dari:'2026-04-17',hingga:'2026-04-18',masuk:'2026-04-19',mohon:'2026-04-17'},
+  {nama:'WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA',jenis:'CUTI SAKIT (MC)',dari:'2026-04-22',hingga:'2026-04-22',masuk:'2026-04-23',mohon:'2026-04-22'},
+  {nama:'HAZLAN BIN MOHD RESDI',           jenis:'CUTI SAKIT (MC)',     dari:'2026-04-04',hingga:'2026-04-05',masuk:'2026-04-06',mohon:'2026-04-04'},
+  {nama:'HAZLAN BIN MOHD RESDI',           jenis:'CUTI SAKIT (MC)',     dari:'2026-04-01',hingga:'2026-04-02',masuk:'2026-04-03',mohon:'2026-04-01'},
+  {nama:'MOHAMMAD ALIF BIN NASARUDDIN',    jenis:'CUTI SAKIT (MC)',     dari:'2026-04-01',hingga:'2026-04-02',masuk:'2026-04-03',mohon:'2026-04-01'},
+  {nama:'ANASHATOL ARNAEDA BINTI JAFRI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-16',hingga:'2026-04-16',masuk:'2026-04-17',mohon:'2026-04-16'},
+  {nama:'ANASHATOL ARNAEDA BINTI JAFRI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-05',hingga:'2026-04-06',masuk:'2026-04-07',mohon:'2026-04-05'},
+  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-16',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-16'},
+  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-24',hingga:'2026-04-24',masuk:'2026-04-25',mohon:'2026-04-24'},
+  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-16',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-16'},
+  {nama:'YUSRI BIN YUNUS',                 jenis:'CUTI SAKIT (MC)',     dari:'2026-03-09',hingga:'2026-03-09',masuk:'2026-03-10',mohon:'2026-03-09'},
+  {nama:'YUSRI BIN YUNUS',                 jenis:'CUTI SAKIT (MC)',     dari:'2026-03-08',hingga:'2026-03-08',masuk:'2026-03-09',mohon:'2026-03-08'},
+  {nama:'MOHD RASIDI BIN MOHD NASIR',      jenis:'CUTI SAKIT (MC)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
+  {nama:'MUHAMMAD ASHLEY BIN BASHIR',      jenis:'CUTI SAKIT (MC)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
+  {nama:'IRWAN SYAMIR BIN MOHD ZAINAL',    jenis:'CUTI SAKIT (MC)',     dari:'2026-04-18',hingga:'2026-04-18',masuk:'2026-04-19',mohon:'2026-04-18'},
+  {nama:'RIMA BINTI OTHMAN',               jenis:'CUTI SAKIT (MC)',     dari:'2026-04-20',hingga:'2026-04-21',masuk:'2026-04-22',mohon:'2026-04-20'},
+  {nama:'MUHAMMAD ALLIF BIN MOHTAR',       jenis:'CUTI SAKIT (MC)',     dari:'2026-04-17',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-17'},
+  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI SAKIT (MC)',     dari:'2026-04-16',hingga:'2026-04-16',masuk:'2026-04-17',mohon:'2026-04-16'},
+  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI SAKIT (MC)',     dari:'2026-02-27',hingga:'2026-02-27',masuk:'2026-02-28',mohon:'2026-02-27'},
+  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI SAKIT (MC)',     dari:'2026-02-25',hingga:'2026-02-26',masuk:'2026-02-27',mohon:'2026-02-25'},
+  // ── Cuti Bersalin ──
+  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI BERSALIN (CB)',  dari:'2026-04-21',hingga:'2026-07-21',masuk:'2026-07-22',mohon:'2026-04-10'},
+];
+
+function autoLoadHRMISPreloadStatic(){
+  // Load HRMIS_PRELOAD into localStorage if not already seeded
+  try{
+    var stored = JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');
+    // Check if preload already done (avoid duplicates)
+    var seeded = localStorage.getItem('eakha_hrmis_seeded');
+    if(seeded==='v1'&&stored.length>0) return;
+    // Merge: add preload records that don't exist yet
+    var added=0;
+    HRMIS_PRELOAD.forEach(function(rec){
+      var dup=stored.find(function(s){
+        return s.nama===rec.nama&&s.dari===rec.dari&&s.jenis===rec.jenis;
+      });
+      if(!dup){ stored.push(rec); added++; }
+    });
+    if(added>0){
+      localStorage.setItem('eakha_hrmis', JSON.stringify(stored));
+      localStorage.setItem('eakha_hrmis_seeded','v1');
+    }
+  }catch(e){console.warn('HRMIS static preload:',e);}
+}
+
 function autoLoadHRMISPreload(){
   try{
     var stored=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');
