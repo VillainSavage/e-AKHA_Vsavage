@@ -3523,7 +3523,22 @@ async function bootApp(){
   // Load localStorage
   try{
     const dd=localStorage.getItem('eakha_data');
-    if(dd){ const p=JSON.parse(dd); Object.keys(p).forEach(function(b){ if(D[b]) Object.keys(p[b]).forEach(function(dy){ if(D[b][dy]) Object.assign(D[b][dy],p[b][dy]); }); }); }
+    if(dd){ const p=JSON.parse(dd); Object.keys(p).forEach(function(b){ if(D[b]) Object.keys(p[b]).forEach(function(dy){
+      if(!D[b][dy]) return;
+      var s=p[b][dy];
+      // Only overwrite with saved value if saved value is non-empty (preserve initD prefills)
+      if(s.kzp) D[b][dy].kzp=s.kzp;
+      if(s.kzk) D[b][dy].kzk=s.kzk;
+      if(s.hrmis) D[b][dy].hrmis=s.hrmis;
+      if(s.note) D[b][dy].note=s.note;
+      if(s.ot!==undefined) D[b][dy].ot=s.ot;
+      if(s.tc_in) D[b][dy].tc_in=s.tc_in;
+      if(s.tc_out) D[b][dy].tc_out=s.tc_out;
+      if(s.kzp_jam) D[b][dy].kzp_jam=s.kzp_jam;
+      if(s.pengganti) D[b][dy].pengganti=s.pengganti;
+      if(s.pengganti_nama) D[b][dy].pengganti_nama=s.pengganti_nama;
+      if(s.tc_problem!==undefined) D[b][dy].tc_problem=s.tc_problem;
+    }); }); }
     const mc=localStorage.getItem('eakha_mc');
     if(mc){ const p=JSON.parse(mc); p.forEach(r=>{ if(!MC_DATA.some(m=>m.bil===r.bil&&m.dari===r.dari)) MC_DATA.push(r); }); }
     const rv=localStorage.getItem('eakha_raya'); if(rv) RAYA_DATA=JSON.parse(rv)||[];
@@ -3546,23 +3561,7 @@ async function bootApp(){
     }, 100);
   }catch(e){}
 
-  // Reload saved D[] from localStorage (persist KZ edits across refreshes)
-  try{
-    var savedD=JSON.parse(localStorage.getItem('eakha_data')||'null');
-    if(savedD) Object.keys(savedD).forEach(function(bil){
-      Object.keys(savedD[bil]).forEach(function(day){
-        var s=savedD[bil][day],b=+bil,d=+day;
-        if(!D[b]||!D[b][d]) return;
-        if(s.kzp) D[b][d].kzp=s.kzp;
-        if(s.kzk) D[b][d].kzk=s.kzk;
-        if(s.hrmis) D[b][d].hrmis=s.hrmis;
-        if(s.note) D[b][d].note=s.note;
-        if(s.ot) D[b][d].ot=s.ot;
-        if(s.tc_in&&!D[b][d].tc_in) D[b][d].tc_in=s.tc_in;
-        if(s.tc_out&&!D[b][d].tc_out) D[b][d].tc_out=s.tc_out;
-      });
-    });
-  }catch(e){console.warn('Load D:',e);}
+  // D[] already loaded by Object.assign above — no duplicate reload needed
     try{ if(typeof autoLoadTCPreload==='function') autoLoadTCPreload();
     try{ if(typeof markTCProblemDays==='function') markTCProblemDays(); }catch(e){} }catch(e){console.warn('TC preload:',e);}
     try{ if(typeof autoLoadKZPreload==='function') autoLoadKZPreload(); }catch(e){console.warn('KZ preload:',e);}
@@ -3850,7 +3849,10 @@ function saveCEdit(){
   if(kzp==='TT'){for(var dd=1;dd<=30;dd++){if(D[bil][dd]&&gSh(bil,dd)!=='O'){D[bil][dd].kzp='TT';D[bil][dd].kzk='TT';}}}
 
   // Save & refresh
-  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+  try{
+    localStorage.setItem('eakha_data',JSON.stringify(D));
+    localStorage.setItem('eakha_data_version','v5.1'); // preserve version on manual edit
+  }catch(e){}
   saveToDB(bil,4,d);
 
   document.getElementById('ce-stat').textContent='\u2713 Disimpan — Audit: '+auditFinal(bil,d).txt.replace('\n',' | ');
@@ -5309,10 +5311,10 @@ function autoLoadKZPreload(){
     var bil=matched.bil;
     if(!D[bil]||!D[bil][d]) return;
     var code=mapKZStatus(rec.status);
-    D[bil][d].kzp=code;
-    if(rec.jam) D[bil][d].kzp_jam=rec.jam;
-    if(rec.pengganti){ D[bil][d].pengganti=true; D[bil][d].pengganti_nama=rec.pengganti; }
-    nKZP++;
+    // Only write if kzp not already set (manual entry takes priority)
+    if(!D[bil][d].kzp){ D[bil][d].kzp=code; nKZP++; }
+    if(rec.jam&&!D[bil][d].kzp_jam) D[bil][d].kzp_jam=rec.jam;
+    if(rec.pengganti&&!D[bil][d].pengganti){ D[bil][d].pengganti=true; D[bil][d].pengganti_nama=rec.pengganti; }
   });
   
   // ── KZ KOPERAL ──
@@ -5325,10 +5327,10 @@ function autoLoadKZPreload(){
     var bil=matched.bil;
     if(!D[bil]||!D[bil][d]) return;
     var code=mapKZStatus(rec.status);
-    D[bil][d].kzk=code;
-    if(rec.pos) D[bil][d].kzk_pos=rec.pos;
-    if(rec.ot) D[bil][d].ot=true;
-    nKZK++;
+    // Only write if kzk not already set (manual entry takes priority)
+    if(!D[bil][d].kzk){ D[bil][d].kzk=code; nKZK++; }
+    if(rec.pos&&!D[bil][d].kzk_pos) D[bil][d].kzk_pos=rec.pos;
+    if(rec.ot&&!D[bil][d].ot) D[bil][d].ot=true;
   });
   
   console.log('[KZ pre-load] KZP: '+nKZP+', KZK: '+nKZK);
