@@ -3510,12 +3510,12 @@ async function bootApp(){
   // Auto-clear stale localStorage if MASTER changed (v4.0)
   try{
     var dataVer=localStorage.getItem('eakha_data_version');
+    // Only clear MC/audit state on version change — NEVER clear D[] (KZP/TC user data)
     if(dataVer!=='v5.1'){
-      localStorage.removeItem('eakha_data');
-      localStorage.removeItem('eakha_mc');
+      // Keep eakha_data (KZP/TC edits) — only clear staging caches
       localStorage.removeItem('eakha_audit_state');
+      localStorage.removeItem('eakha_mc'); // will be reseeded from MC_PRELOAD
       localStorage.setItem('eakha_data_version','v5.1');
-      console.log('[bootApp] Stale data cleared - migrated to v4.0');
     }
   }catch(e){}
   applyRoleUI();
@@ -3529,7 +3529,7 @@ async function bootApp(){
   } catch(e){}
   if(SUPA_OK) await loadDB();
   populateSels();
-  renderDash(); renderMCReg(); renderBaki(); renderRaya(); renderHaji();
+  // Defer rendering until after all preloads complete (see setTimeout below)
   // Auto-load pre-loaded data after MASTER + D ready
   setTimeout(function(){
     try{ if(typeof autoLoadMCPreload==='function') autoLoadMCPreload(); }catch(e){console.warn('MC preload:',e);}
@@ -3574,9 +3574,14 @@ async function bootApp(){
     }catch(e){console.warn('D merge:',e);}
     // Save D ONCE after ALL preloads + user merge complete
     try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
-    try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
-    try{ if(typeof renderDash==='function') renderDash(); }catch(e){}
-    try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+    // Render all pages after ALL preloads + merge complete
+    try{ populateSels(); }catch(e){}
+    try{ renderDash(); }catch(e){}
+    try{ renderMaster(null); }catch(e){}
+    try{ renderMCReg(); }catch(e){}
+    try{ renderBaki(); }catch(e){}
+    try{ updFlags(); }catch(e){}
+    console.log('[bootApp] All preloads complete. D[] ready.');
   }, 300);
 }
 
@@ -6063,10 +6068,11 @@ function sahTerima(type){
   toProcess.forEach(function(r){
     if(!r.bil||!r.d) return;
     if(!D[r.bil]||!D[r.bil][r.d]) return;
-    if(type==='kzp'&&!D[r.bil][r.d].kzp){ D[r.bil][r.d].kzp=r.status||r.val||''; n++; }
-    else if(type==='kzk'&&!D[r.bil][r.d].kzk){ D[r.bil][r.d].kzk=r.status||r.val||''; n++; }
+    // Staging data ALWAYS wins over preload — user upload is authoritative
+    if(type==='kzp'){ D[r.bil][r.d].kzp=r.status||r.val||''; if(r.jam) D[r.bil][r.d].kzp_jam=r.jam; n++; }
+    else if(type==='kzk'){ D[r.bil][r.d].kzk=r.status||r.val||''; n++; }
     else if(type==='tc'){
-      if(!D[r.bil][r.d].tc_in&&r.tc_in){ D[r.bil][r.d].tc_in=r.tc_in; D[r.bil][r.d].tc_out=r.tc_out||''; n++; }
+      if(r.tc_in){ D[r.bil][r.d].tc_in=r.tc_in; D[r.bil][r.d].tc_out=r.tc_out||''; n++; }
     }
   });
   // Clear high-conf from staging
