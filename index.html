@@ -884,7 +884,15 @@ function daysRange(dari,hingga){
   else if(a.m<4&&end.m>4)   for(let x=1;x<=30;x++) out.push(x);
   return out;
 }
-function getMC(bil,d){ return MC_DATA.find(mc=>+mc.bil===+bil&&mc.jenis==='Bulan Ini'&&daysRange(mc.dari,mc.hingga).includes(+d))||null; }
+function getMC(bil,d){
+  // Primary: use pre-expanded mc.d (stored by applyMCPreload)
+  var r = MC_DATA.find(function(mc){ return +mc.bil===+bil && mc.d===+d && mc.bulanLabel==='Bulan Ini'; });
+  if(r) return r;
+  // Fallback: use daysRange for records added via manual entry (no .d field)
+  return MC_DATA.find(function(mc){
+    return +mc.bil===+bil && (mc.bulanLabel==='Bulan Ini'||mc.m===4) && daysRange(mc.dari||mc.tarikh, mc.hingga||mc.tarikh).includes(+d);
+  })||null;
+}
 function hasThumb(c){ return !!(c&&(c.tc_in||c.tc_out)); }
 function toMins(t){ if(!t) return null; const[h,m]=t.split(':').map(Number); return h*60+m; }
 function fmtMin(m){ return m>=60?Math.floor(m/60)+'j '+(m%60)+'min':m+'min'; }
@@ -1234,7 +1242,7 @@ function renderGrid(ms,cid){
           if(sh==='O'){ mcT='OFFDAY'; }
           else if(mcR){
             const rng=daysRange(mcR.dari,mcR.hingga); const pos=rng.indexOf(d)+1;
-            mcT='MC '+mcR.hari+' HARI'+(mcR.hari>1?' (H'+pos+'/'+mcR.hari+')':'')+'\n'+mcR.klinik+'\n'+mcR.siri;
+            mcT='MC '+mcR.hari+' HARI'+(mcR.hari>1?' (H'+pos+'/'+mcR.hari+')':'')+'\n'+mcR.klinik+'\n'+(mcR.no_mc||mcR.siri||'');
             mcBg='rgba(124,45,18,.42)'; mcFg='#fed7aa';
           } else if(c.kzp==='MC'||c.kzk==='MC'){
             mcT='TIADA DOKUMEN\nSila serahkan MC'; mcBg='rgba(127,29,29,.3)'; mcFg='#fca5a5';
