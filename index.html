@@ -3532,6 +3532,8 @@ async function bootApp(){
   // Defer rendering until after all preloads complete (see setTimeout below)
   // Auto-load pre-loaded data after MASTER + D ready
   setTimeout(function(){
+    // ── Load persisted AUDIT_STATE first ──
+    try{ if(typeof loadAuditState==='function') loadAuditState(); }catch(e){}
     try{ if(typeof autoLoadMCPreload==='function') autoLoadMCPreload(); }catch(e){console.warn('MC preload:',e);}
     try{ if(typeof autoLoadHRMISPreloadStatic==='function') autoLoadHRMISPreloadStatic(); }catch(e){console.warn('HRMIS static:',e);}
   try{ if(typeof autoLoadHRMISPreload==='function') autoLoadHRMISPreload(); }catch(e){console.warn('HRMIS preload:',e);}
@@ -3574,6 +3576,58 @@ async function bootApp(){
     }catch(e){console.warn('D merge:',e);}
     // Save D ONCE after ALL preloads + user merge complete
     try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
+    // Auto re-run tc_all → tc_in/tc_out assignment on refresh
+    // (mirrors what validasiAudit does, without resetting AUDIT_STATE)
+    try{
+      MASTER.forEach(function(m){
+        for(var d=1;d<=30;d++){
+          var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
+          if(!c||c.tc_in||c.tc_out||!c.tc_all||!c.tc_all.length) continue;
+          var sh=gSh(m.bil,d); if(sh==='O') continue;
+          var shSt=sh==='S'?420:sh==='P'?900:sh==='M'?1380:0;
+          var shEn=sh==='S'?900:sh==='P'?1380:sh==='M'?420:0;
+          var isMalam=sh==='M', isPetang=sh==='P';
+          var combined=c.tc_all.slice();
+          var nextDay=D[m.bil]&&D[m.bil][d+1]?D[m.bil][d+1]:null;
+          if((isPetang||isMalam)&&nextDay&&nextDay.tc_all){
+            nextDay.tc_all.forEach(function(t){
+              var mins=toMins(t);
+              if(mins<=360) combined.push({t:t,nextDay:true,mins:mins+1440});
+            });
+          }
+          var pts=combined.map(function(x){
+            if(typeof x==='object') return x;
+            return {t:x,nextDay:false,mins:toMins(x)};
+          });
+          function distFV2(m4,tgt){
+            var d1=Math.abs(m4-tgt);
+            return (isMalam||isPetang)?Math.min(d1,Math.abs(m4+1440-tgt),Math.abs(m4-1440-tgt)):d1;
+          }
+          var bIn=pts.reduce(function(a,b){return distFV2(a.mins%1440,shSt)<=distFV2(b.mins%1440,shSt)?a:b;});
+          var outCandidates=pts.filter(function(p){return p.t!==bIn.t||p.nextDay;});
+          if(outCandidates.length){
+            var bOut=outCandidates.reduce(function(a,b){
+              var da=isMalam||isPetang?Math.abs(a.mins-(shEn+(shEn<shSt?1440:0))):Math.abs(a.mins-shEn);
+              var db=isMalam||isPetang?Math.abs(b.mins-(shEn+(shEn<shSt?1440:0))):Math.abs(b.mins-shEn);
+              return da<=db?a:b;
+            });
+            c.tc_in=bIn.t; c.tc_out=bOut.t;
+            if(bOut.nextDay) c.tc_out_nextday=true;
+          } else {
+            c.tc_in=bIn.t; c.tc_out='';
+          }
+          if(!c.kzp){
+            var inMins=bIn.mins%1440;
+            var late=isMalam?Math.min(Math.abs(inMins-shSt),Math.abs(inMins+1440-shSt)):inMins-shSt;
+            c.kzp=late>10?'L':'✓';
+            if(!c.kzk) c.kzk=c.kzp;
+          }
+        }
+      });
+      // Save after tc_all processing
+      try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+    }catch(e){console.warn('tc_all auto-assign:',e);}
+
     // Render all pages after ALL preloads + merge complete
     try{ populateSels(); }catch(e){}
     try{ renderDash(); }catch(e){}
@@ -4746,6 +4800,8 @@ function kemaskiniMaster(){
   log('Status: AUDIT FINAL = BELUM VALIDASI (tekan butang 3 untuk validasi)','warn');
   
   try{localStorage.setItem('eakha_audit_state',JSON.stringify(AUDIT_STATE));}catch(e){}
+  // Save D[] too — ensure all staging data is persisted
+  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
   
   renderMaster(null);
   renderDash();
@@ -4940,6 +4996,8 @@ function validasiAudit(){
   log('Output Perhatian dijana...','info');
   
   try{localStorage.setItem('eakha_audit_state',JSON.stringify(AUDIT_STATE));}catch(e){}
+  // Save D[] too — validasiAudit modifies tc_in, kzp from tc_all
+  try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
   
   renderMaster(null);
   renderDash();
@@ -6072,7 +6130,10 @@ function sahTerima(type){
     if(type==='kzp'){ D[r.bil][r.d].kzp=r.status||r.val||''; if(r.jam) D[r.bil][r.d].kzp_jam=r.jam; n++; }
     else if(type==='kzk'){ D[r.bil][r.d].kzk=r.status||r.val||''; n++; }
     else if(type==='tc'){
-      if(r.tc_in){ D[r.bil][r.d].tc_in=r.tc_in; D[r.bil][r.d].tc_out=r.tc_out||''; n++; }
+      // Save tc_all (all punches) so tc_in/tc_out can be re-assigned on refresh
+      if(r.tc_all&&r.tc_all.length) D[r.bil][r.d].tc_all=r.tc_all;
+      if(r.tc_in){ D[r.bil][r.d].tc_in=r.tc_in; D[r.bil][r.d].tc_out=r.tc_out||''; }
+      n++;
     }
   });
   // Clear high-conf from staging
