@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.1</title>
+  <title>e-AKHA Vsavage v5.2 FIXED</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -215,7 +215,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input class="finp2" id="l-id" type="text" placeholder="ID Pengguna" style="width:100%;margin-bottom:8px">
     <input class="finp2" id="l-pw" type="password" placeholder="Kata Laluan" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-gold" id="l-btn" style="width:100%;justify-content:center;font-size:10px;padding:9px" onclick="doLogin()">Log Masuk</button>
-    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v3.1 · April 2026</div>
+    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.2 FIXED · 2026</div>
   </div>
 </div>
 
@@ -229,7 +229,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
       <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
         <div class="month-badge" id="active-month-badge">April 2026</div>
-        <span style="font-size:7px;color:rgba(255,255,255,.25)">v3.1</span>
+        <span style="font-size:7px;color:rgba(255,255,255,.25)">v5.2</span>
       </div>
     </div>
     <div style="padding:6px 10px 2px">
@@ -348,33 +348,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div id="output-grid"></div>
       </div>
 
-      <!-- KZP STAGING -->
-      <div class="page" id="page-kzp-staging">
-        <div class="notif n-info">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
-          <div><b>KZ Penyelia — Staging.</b> Data belum masuk Master File. Semak dan tekan <b>SAH TERIMA</b>.</div>
-        </div>
-        <div id="kzp-staging-grid"></div>
-      </div>
-
-      <!-- KZK STAGING -->
-      <div class="page" id="page-kzk-staging">
-        <div class="notif n-info">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
-          <div><b>KZ Koperal — Staging.</b> Data belum masuk Master File.</div>
-        </div>
-        <div id="kzk-staging-grid"></div>
-      </div>
-
-      <!-- TC STAGING -->
-      <div class="page" id="page-tc-staging">
-        <div class="notif n-info">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;flex-shrink:0"><circle cx="12" cy="12" r="10"/></svg>
-          <div><b>TIMECARD — Staging.</b> Semak punch IN/OUT yang dipilih.</div>
-        </div>
-        <div id="tc-staging-grid"></div>
-      </div>
-
       <!-- MC REG -->
       <div class="page" id="page-mc-reg">
         <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
@@ -429,22 +402,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <span id="tc-cnt" style="font-size:8px;color:rgba(255,255,255,.4)"></span>
         </div>
         <div id="tc-staging-table"></div>
-      </div>
-
-      <!-- MC DITERIMA -->
-      <div class="page" id="page-mc-reg">
-        <div class="notif n-info" style="margin-bottom:8px">Rekod MC Diterima · untuk kenal pasti anggota dengan MC tinggi (perlu teguran)</div>
-        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
-          <input class="fsel" id="mc-q" placeholder="Cari nama/klinik/siri..." oninput="renderMCReg()" style="flex:1;min-width:140px">
-          <select class="fsel" id="mc-jab-f" onchange="renderMCReg()">
-            <option value="">Semua Jabatan</option>
-            <option>IKTAR</option><option>MHKL</option><option>RT</option>
-          </select>
-          <button class="btn btn-sm" onclick="exportMCCsv()">Export CSV</button>
-          <span id="mc-cnt" style="font-size:8px;color:rgba(255,255,255,.4)"></span>
-        </div>
-        <div id="mc-tinggi-alert" style="margin-bottom:8px"></div>
-        <div id="mc-reg-table"></div>
       </div>
 
       <div class="page" id="page-baki"><div id="baki-grid"></div></div>
@@ -523,6 +480,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <button class="btn btn-sm" onclick="exportAnggota()">Export CSV</button>
           <button class="btn btn-gold btn-sm" id="btn-ang-add" onclick="showAngForm(null)" style="display:none">+ Tambah</button>
         </div>
+        <div class="panel" id="ang-import-sec" style="display:none;margin-bottom:8px">
+          <div class="ph"><span class="ph-title">Import Senarai Anggota / Jabatan Lain</span></div>
+          <div class="pb" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label class="btn btn-bl btn-sm" style="position:relative;overflow:hidden">Import CSV / Excel
+              <input type="file" accept=".csv,.xlsx,.xls" onchange="importAnggota(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer">
+            </label>
+            <span style="font-size:8px;color:rgba(255,255,255,.4)">Kolum: Bil, Nama, Jabatan, Kompeni, Status, Catatan. Jabatan selain IKTAR/MHKL/RT disimpan sebagai Jabatan Lain.</span>
+            <span id="ang-import-log" style="font-size:8px;color:#93c5fd"></span>
+          </div>
+        </div>
         <div class="tab-jab" id="ang-jab-tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
           <button class="tab-jab-btn on" data-jab="IKTAR" onclick="angJabTab(this)" title="Kaji Saraf">IKTAR (24)</button>
           <button class="tab-jab-btn" data-jab="MHKL" onclick="angJabTab(this)" title="Hospital Madani - Wad Bersalin Lama & Wound Care">MHKL (12)</button>
@@ -539,6 +506,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <button class="tab-jab-btn lain" data-jab="WR" onclick="angJabTab(this)" title="Wisma Rekod">WR</button>
           <button class="tab-jab-btn lain" data-jab="IUNA" onclick="angJabTab(this)" title="IUN-A · Wad Lama (Uro & Nefro)">IUN-A</button>
           <button class="tab-jab-btn lain" data-jab="IUNB" onclick="angJabTab(this)" title="IUN-B · Bangunan Baru (Wad Bedah & Unit Rawatan Rapi)">IUN-B</button>
+          <button class="tab-jab-btn lain" data-jab="GERAKAN" onclick="angJabTab(this)" title="Gerakan">GERAKAN</button>
         </div>
         <div class="panel" id="ang-form-panel" style="display:none">
           <div class="ph"><span class="ph-title" id="ang-form-title">Tambah Anggota</span><button class="btn btn-sm" onclick="hideAngForm()">&#x2715;</button></div>
@@ -546,6 +514,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:flex-end">
               <div><label class="flbl2">Bil</label><input class="finp2" type="number" id="af-bil" style="width:52px"></div>
               <div style="flex:1;min-width:200px"><label class="flbl2">Nama Penuh</label><input class="finp2" id="af-nama" placeholder="NAMA PENUH"></div>
+              <div><label class="flbl2">IC / Staff ID</label><input class="finp2" id="af-ic" style="width:120px" placeholder="optional"></div>
               <div><label class="flbl2">Jabatan</label><select class="fsel" id="af-jab" onchange="afJabChange()"><option>IKTAR</option><option>MHKL</option><option>RT</option><option value="LAIN">Jabatan Lain</option></select></div>
               <div id="af-lain-div" style="display:none"><label class="flbl2">Nama Jabatan</label><input class="finp2" id="af-lain-nama" style="width:130px"></div>
               <div><label class="flbl2">Kompeni</label><select class="fsel" id="af-komp"><option>ALPHA</option><option>BRAVO</option><option>CHARLIE</option><option>DELTA</option></select></div>
@@ -726,8 +695,9 @@ const VIEW_PASS = '633283';
 // ── LOCAL ACCOUNTS (checked FIRST — no Supabase dependency) ─────
 const ADMINS = [
   {id:'sjnadilah', pw:'912012',  nama:'SJN Adilah', role:'OWNER · AUDITOR'},
-  {id:'smamierul', pw:'6438670', nama:'SM Amierul', role:'ADMIN'},
-  {id:'tuannajib', pw:'68828',   nama:'Tuan Najib', role:'ADMIN'},
+  {id:'sjn.adilah', pw:'912012',  nama:'SJN Adilah', role:'OWNER · AUDITOR'},
+  {id:'smamierul', pw:'2438670', nama:'SM Amierul', role:'ADMIN'},
+  {id:'sm.amierul', pw:'2438670', nama:'SM Amierul', role:'ADMIN'},
 ];
 
 // ── SHIFT ENGINE ─────────────────────────────────────────────────
@@ -1908,7 +1878,7 @@ function renderHRMISReg(){
         '<div><label class="flbl2">Nama Anggota</label><select class="fsel" id="hr-f-nama" style="width:100%"><option value="">— Pilih —</option>'+
           MASTER.filter(function(m){return !m.pindah;}).map(function(m){return '<option value="'+m.bil+'|'+m.nama+'">'+m.nama+'</option>';}).join('')+'</select></div>'+
         '<div><label class="flbl2">Jenis Cuti</label><select class="fsel" id="hr-f-jenis" style="width:100%">'+
-          ['CUTI TAHUNAN (CR)','CUTI SAKIT (MC)','CUTI KECEMASAN (EL)','CUTI BERSALIN (CB)','CUTI HAJI','CUTI TANPA REKOD (CTR)','LAIN-LAIN'].map(function(j){return '<option>'+j+'</option>';}).join('')+
+          ['CUTI REHAT (CR)','CUTI SAKIT (MC)','CUTI KECEMASAN (EL)','CUTI BERSALIN (CB)','CUTI HAJI','CUTI TANPA REKOD (CTR)','LAIN-LAIN'].map(function(j){return '<option>'+j+'</option>';}).join('')+
         '</select></div>'+
         '<div><label class="flbl2">Tarikh Mula</label><input class="finp2" type="date" id="hr-f-dari" style="width:100%"></div>'+
         '<div><label class="flbl2">Tarikh Tamat</label><input class="finp2" type="date" id="hr-f-hingga" style="width:100%"></div>'+
@@ -3054,8 +3024,7 @@ async function procAll(){
           if(d<1||d>30) return;
           if(D[member.bil]&&D[member.bil][d]&&!D[member.bil][d].hrmis){
             D[member.bil][d].hrmis=ct+' SAH';
-            if(!D[member.bil][d].kzp) D[member.bil][d].kzp=ct;
-            if(!D[member.bil][d].kzk) D[member.bil][d].kzk=ct;
+            // HRMIS tidak boleh override KZ Penyelia/Koperal
             nHr++;updated++;
             log('\u2713 HRMIS: '+member.nama+' hari '+d+' \u2192 '+ct+' SAH','ok');
           }
@@ -3416,7 +3385,7 @@ async function loadDB(){
   if(!SUPA_OK) return;
   showLoad('Memuatkan data dari Supabase...');
   try{
-    const {data,error}=await supa.from('audit_cells').select('*').eq('tahun',2026).eq('bulan',4);
+    const {data,error}=await supa.from('audit_cells').select('*').eq('tahun',ACTIVE_YEAR).eq('bulan',ACTIVE_MONTH);
     if(!error&&data) data.forEach(r=>{
       if(!D[r.bil]?.[r.hari]) return; var c=D[r.bil][r.hari];
       if(r.kz_penyelia) c.kzp=r.kz_penyelia; if(r.kz_koperal) c.kzk=r.kz_koperal;
@@ -3433,7 +3402,7 @@ async function saveToDB(bil,bln,hari){
   if(!SUPA_OK) return;
   const c=D[bil]?.[hari]; if(!c) return;
   const af=auditFinal(bil,hari);
-  try{ await supa.from('audit_cells').upsert({bil,tahun:2026,bulan:bln,hari,shift_hakiki:gSh(bil,hari),kz_penyelia:c.kzp,kz_koperal:c.kzk,tc_in:c.tc_in,tc_out:c.tc_out,ot_sambung:c.ot,hrmis:c.hrmis,pengganti:c.pengganti,note:c.note,audit_final:af.txt,updated_at:new Date().toISOString()},{onConflict:'bil,tahun,bulan,hari'}); }
+  try{ await supa.from('audit_cells').upsert({bil,tahun:ACTIVE_YEAR,bulan:bln,hari,shift_hakiki:gSh(bil,hari),kz_penyelia:c.kzp,kz_koperal:c.kzk,tc_in:c.tc_in,tc_out:c.tc_out,ot_sambung:c.ot,hrmis:c.hrmis,pengganti:c.pengganti,note:c.note,audit_final:af.txt,updated_at:new Date().toISOString()},{onConflict:'bil,tahun,bulan,hari'}); }
   catch(e){ console.error(e); }
 }
 
@@ -3476,8 +3445,13 @@ async function doLogin(){
   btn.disabled=true; btn.textContent='Mengesahkan...';
 
   // CHECK LOCAL ACCOUNTS FIRST
-  // Viewer: password 633283 only (no ID needed)
-  if(pw==='633283'&&(!id||id===''||id==='viewer')){
+  // Tuan Najib: viewer/report sahaja
+  if((id==='tuannajib'||id==='tuan.najib'||id==='najib') && pw==='633283'){
+    AUTH={loggedIn:true,role:'viewer',id:'tuannajib',nama:'Tuan Najib',jawatan:'VIEWER · JANA LAPORAN'};
+    clearErr(err); saveSess(); bootApp(); return;
+  }
+  // Viewer biasa: password 662633 sahaja
+  if(pw==='662633'&&(!id||id===''||id==='viewer')){
     AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'};
     clearErr(err); saveSess(); bootApp(); return;
   }
@@ -3536,8 +3510,8 @@ async function bootApp(){
     // Only clear MC/audit state on version change — NEVER clear D[] (KZP/TC user data)
     if(dataVer!=='v5.1'){
       // Keep eakha_data (KZP/TC edits) — only clear staging caches
-      localStorage.removeItem('eakha_audit_state');
-      localStorage.removeItem('eakha_mc'); // will be reseeded from MC_PRELOAD
+      // PATCH v5.2: jangan padam audit selepas debug/version change
+      // PATCH v5.2: jangan padam MC selepas debug/version change
       localStorage.setItem('eakha_data_version','v5.1');
     }
   }catch(e){}
@@ -4064,16 +4038,9 @@ function autoFillFromKZ(){
       // KZP→KZK sync: if one has data, copy to other if empty
       if(c.kzp&&!c.kzk){D[m.bil][d].kzk=c.kzp;n++;}
       if(c.kzk&&!c.kzp){D[m.bil][d].kzp=c.kzk;n++;}
-      // MC→HRMIS suggestion flag
-      // L6 auto-fill from MC_DATA
+      // MC tidak boleh auto-copy ke HRMIS. HRMIS tidak boleh auto-copy ke KZ.
       var mc=getMC(m.bil,d);
-      if(mc&&!c.hrmis){D[m.bil][d].hrmis='MC SAH';n++;}
       // TC: if KZP=L/LL/ABS/TH and no TC, don't flag as error
-      // CTR/CR/EL with HRMIS → auto-set KZP if empty
-      if(c.hrmis&&!c.kzp){
-        var ht=c.hrmis.replace(' SAH','');
-        D[m.bil][d].kzp=ht; D[m.bil][d].kzk=ht; n++;
-      }
     }
   });
   try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
@@ -5336,7 +5303,7 @@ function resetSystemData(){
   try{
     localStorage.removeItem('eakha_data');
     localStorage.removeItem('eakha_mc');
-    localStorage.removeItem('eakha_audit_state');
+    // PATCH v5.2: jangan padam audit selepas debug/version change
     localStorage.removeItem('eakha_auditlog');
   }catch(e){}
   MC_DATA = [];
@@ -5494,35 +5461,35 @@ function autoLoadKZPreload(){
 // ══════════════════════════════════════════════════════════════
 var HRMIS_PRELOAD = [
   // ── April 2026 ──
-  {nama:'NANTHAGOPAL A/L AYASAMY',        jenis:'CUTI SAKIT (MC)',      dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
-  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI SAKIT (MC)',     dari:'2026-04-08',hingga:'2026-04-08',masuk:'2026-04-09',mohon:'2026-04-08'},
-  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI SAKIT (MC)',     dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
-  {nama:'MOHD KHADAFEE BIN MD SAAD',       jenis:'CUTI SAKIT (MC)',     dari:'2026-03-16',hingga:'2026-03-17',masuk:'2026-03-18',mohon:'2026-03-16'},
-  {nama:'SAIFUL YUSRIZAL BIN YAACOB',      jenis:'CUTI SAKIT (MC)',     dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
-  {nama:'MOHD SHAFIK BIN IBRAM',           jenis:'CUTI SAKIT (MC)',     dari:'2026-04-08',hingga:'2026-04-08',masuk:'2026-04-09',mohon:'2026-04-08'},
-  {nama:'AHMAD SHAMIL BIN NADZRI',         jenis:'CUTI SAKIT (MC)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
-  {nama:'MOHD LUKMAN BIN HAMDAN',          jenis:'CUTI SAKIT (MC)',     dari:'2026-03-31',hingga:'2026-03-31',masuk:'2026-04-01',mohon:'2026-03-31'},
-  {nama:'SUHAIRI BIN ISMAIL',              jenis:'CUTI SAKIT (MC)',     dari:'2026-04-13',hingga:'2026-04-13',masuk:'2026-04-14',mohon:'2026-04-13'},
-  {nama:'SUHAIRI BIN ISMAIL',              jenis:'CUTI SAKIT (MC)',     dari:'2026-04-17',hingga:'2026-04-18',masuk:'2026-04-19',mohon:'2026-04-17'},
-  {nama:'WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA',jenis:'CUTI SAKIT (MC)',dari:'2026-04-22',hingga:'2026-04-22',masuk:'2026-04-23',mohon:'2026-04-22'},
-  {nama:'HAZLAN BIN MOHD RESDI',           jenis:'CUTI SAKIT (MC)',     dari:'2026-04-04',hingga:'2026-04-05',masuk:'2026-04-06',mohon:'2026-04-04'},
-  {nama:'HAZLAN BIN MOHD RESDI',           jenis:'CUTI SAKIT (MC)',     dari:'2026-04-01',hingga:'2026-04-02',masuk:'2026-04-03',mohon:'2026-04-01'},
-  {nama:'MOHAMMAD ALIF BIN NASARUDDIN',    jenis:'CUTI SAKIT (MC)',     dari:'2026-04-01',hingga:'2026-04-02',masuk:'2026-04-03',mohon:'2026-04-01'},
-  {nama:'ANASHATOL ARNAEDA BINTI JAFRI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-16',hingga:'2026-04-16',masuk:'2026-04-17',mohon:'2026-04-16'},
-  {nama:'ANASHATOL ARNAEDA BINTI JAFRI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-05',hingga:'2026-04-06',masuk:'2026-04-07',mohon:'2026-04-05'},
-  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-16',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-16'},
-  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-24',hingga:'2026-04-24',masuk:'2026-04-25',mohon:'2026-04-24'},
-  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI SAKIT (MC)',     dari:'2026-04-16',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-16'},
-  {nama:'YUSRI BIN YUNUS',                 jenis:'CUTI SAKIT (MC)',     dari:'2026-03-09',hingga:'2026-03-09',masuk:'2026-03-10',mohon:'2026-03-09'},
-  {nama:'YUSRI BIN YUNUS',                 jenis:'CUTI SAKIT (MC)',     dari:'2026-03-08',hingga:'2026-03-08',masuk:'2026-03-09',mohon:'2026-03-08'},
-  {nama:'MOHD RASIDI BIN MOHD NASIR',      jenis:'CUTI SAKIT (MC)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
-  {nama:'MUHAMMAD ASHLEY BIN BASHIR',      jenis:'CUTI SAKIT (MC)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
-  {nama:'IRWAN SYAMIR BIN MOHD ZAINAL',    jenis:'CUTI SAKIT (MC)',     dari:'2026-04-18',hingga:'2026-04-18',masuk:'2026-04-19',mohon:'2026-04-18'},
-  {nama:'RIMA BINTI OTHMAN',               jenis:'CUTI SAKIT (MC)',     dari:'2026-04-20',hingga:'2026-04-21',masuk:'2026-04-22',mohon:'2026-04-20'},
-  {nama:'MUHAMMAD ALLIF BIN MOHTAR',       jenis:'CUTI SAKIT (MC)',     dari:'2026-04-17',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-17'},
-  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI SAKIT (MC)',     dari:'2026-04-16',hingga:'2026-04-16',masuk:'2026-04-17',mohon:'2026-04-16'},
-  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI SAKIT (MC)',     dari:'2026-02-27',hingga:'2026-02-27',masuk:'2026-02-28',mohon:'2026-02-27'},
-  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI SAKIT (MC)',     dari:'2026-02-25',hingga:'2026-02-26',masuk:'2026-02-27',mohon:'2026-02-25'},
+  {nama:'NANTHAGOPAL A/L AYASAMY',        jenis:'CUTI REHAT (CR)',      dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
+  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI REHAT (CR)',     dari:'2026-04-08',hingga:'2026-04-08',masuk:'2026-04-09',mohon:'2026-04-08'},
+  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI REHAT (CR)',     dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
+  {nama:'MOHD KHADAFEE BIN MD SAAD',       jenis:'CUTI REHAT (CR)',     dari:'2026-03-16',hingga:'2026-03-17',masuk:'2026-03-18',mohon:'2026-03-16'},
+  {nama:'SAIFUL YUSRIZAL BIN YAACOB',      jenis:'CUTI REHAT (CR)',     dari:'2026-04-09',hingga:'2026-04-09',masuk:'2026-04-10',mohon:'2026-04-09'},
+  {nama:'MOHD SHAFIK BIN IBRAM',           jenis:'CUTI REHAT (CR)',     dari:'2026-04-08',hingga:'2026-04-08',masuk:'2026-04-09',mohon:'2026-04-08'},
+  {nama:'AHMAD SHAMIL BIN NADZRI',         jenis:'CUTI REHAT (CR)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
+  {nama:'MOHD LUKMAN BIN HAMDAN',          jenis:'CUTI REHAT (CR)',     dari:'2026-03-31',hingga:'2026-03-31',masuk:'2026-04-01',mohon:'2026-03-31'},
+  {nama:'SUHAIRI BIN ISMAIL',              jenis:'CUTI REHAT (CR)',     dari:'2026-04-13',hingga:'2026-04-13',masuk:'2026-04-14',mohon:'2026-04-13'},
+  {nama:'SUHAIRI BIN ISMAIL',              jenis:'CUTI REHAT (CR)',     dari:'2026-04-17',hingga:'2026-04-18',masuk:'2026-04-19',mohon:'2026-04-17'},
+  {nama:'WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA',jenis:'CUTI REHAT (CR)',dari:'2026-04-22',hingga:'2026-04-22',masuk:'2026-04-23',mohon:'2026-04-22'},
+  {nama:'HAZLAN BIN MOHD RESDI',           jenis:'CUTI REHAT (CR)',     dari:'2026-04-04',hingga:'2026-04-05',masuk:'2026-04-06',mohon:'2026-04-04'},
+  {nama:'HAZLAN BIN MOHD RESDI',           jenis:'CUTI REHAT (CR)',     dari:'2026-04-01',hingga:'2026-04-02',masuk:'2026-04-03',mohon:'2026-04-01'},
+  {nama:'MOHAMMAD ALIF BIN NASARUDDIN',    jenis:'CUTI REHAT (CR)',     dari:'2026-04-01',hingga:'2026-04-02',masuk:'2026-04-03',mohon:'2026-04-01'},
+  {nama:'ANASHATOL ARNAEDA BINTI JAFRI',   jenis:'CUTI REHAT (CR)',     dari:'2026-04-16',hingga:'2026-04-16',masuk:'2026-04-17',mohon:'2026-04-16'},
+  {nama:'ANASHATOL ARNAEDA BINTI JAFRI',   jenis:'CUTI REHAT (CR)',     dari:'2026-04-05',hingga:'2026-04-06',masuk:'2026-04-07',mohon:'2026-04-05'},
+  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI REHAT (CR)',     dari:'2026-04-16',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-16'},
+  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI REHAT (CR)',     dari:'2026-04-24',hingga:'2026-04-24',masuk:'2026-04-25',mohon:'2026-04-24'},
+  {nama:'FARRAH NATASHA BINTI ZULKAFLI',   jenis:'CUTI REHAT (CR)',     dari:'2026-04-16',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-16'},
+  {nama:'YUSRI BIN YUNUS',                 jenis:'CUTI REHAT (CR)',     dari:'2026-03-09',hingga:'2026-03-09',masuk:'2026-03-10',mohon:'2026-03-09'},
+  {nama:'YUSRI BIN YUNUS',                 jenis:'CUTI REHAT (CR)',     dari:'2026-03-08',hingga:'2026-03-08',masuk:'2026-03-09',mohon:'2026-03-08'},
+  {nama:'MOHD RASIDI BIN MOHD NASIR',      jenis:'CUTI REHAT (CR)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
+  {nama:'MUHAMMAD ASHLEY BIN BASHIR',      jenis:'CUTI REHAT (CR)',     dari:'2026-04-11',hingga:'2026-04-11',masuk:'2026-04-12',mohon:'2026-04-11'},
+  {nama:'IRWAN SYAMIR BIN MOHD ZAINAL',    jenis:'CUTI REHAT (CR)',     dari:'2026-04-18',hingga:'2026-04-18',masuk:'2026-04-19',mohon:'2026-04-18'},
+  {nama:'RIMA BINTI OTHMAN',               jenis:'CUTI REHAT (CR)',     dari:'2026-04-20',hingga:'2026-04-21',masuk:'2026-04-22',mohon:'2026-04-20'},
+  {nama:'MUHAMMAD ALLIF BIN MOHTAR',       jenis:'CUTI REHAT (CR)',     dari:'2026-04-17',hingga:'2026-04-17',masuk:'2026-04-18',mohon:'2026-04-17'},
+  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI REHAT (CR)',     dari:'2026-04-16',hingga:'2026-04-16',masuk:'2026-04-17',mohon:'2026-04-16'},
+  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI REHAT (CR)',     dari:'2026-02-27',hingga:'2026-02-27',masuk:'2026-02-28',mohon:'2026-02-27'},
+  {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI REHAT (CR)',     dari:'2026-02-25',hingga:'2026-02-26',masuk:'2026-02-27',mohon:'2026-02-25'},
   // ── Cuti Bersalin ──
   {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI BERSALIN (CB)',  dari:'2026-04-21',hingga:'2026-07-21',masuk:'2026-07-22',mohon:'2026-04-10'},
 ];
@@ -6243,6 +6210,364 @@ function confLabel(c){
 
 // ── UPDATE nav() to handle new pages ───────────────────────────
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.2 FIX PATCH
+   Fokus: persistence, HRMIS=CR, MC audit context, Jabatan Lain,
+          nav hanging, staging save, active month safety.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  window.EAKHA_PATCH_VERSION = 'v5.2-fixed-20260604';
+
+  // --- Safe helpers ---
+  function safeJSON(v, fallback){ try{return JSON.parse(v||'');}catch(e){return fallback;} }
+  function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
+  function activeY(){ return (typeof ACTIVE_YEAR!=='undefined' && ACTIVE_YEAR) ? ACTIVE_YEAR : 2026; }
+  function activeM(){ return (typeof ACTIVE_MONTH!=='undefined' && ACTIVE_MONTH) ? ACTIVE_MONTH : 4; }
+  function activeDays(){ return daysInMonth(activeY(), activeM()); }
+  window.daysInActiveMonth = activeDays;
+  window.getDatasetKey = function(){ return 'eakha_dataset_'+activeY()+'_'+activeM(); };
+
+  // Patch shift/date to active month, not fixed April.
+  if(typeof gShift==='function'){
+    window.gSh = gSh = function(bil,d){ return gShift(bil, activeY(), activeM(), d); };
+  }
+  window.dow = dow = function(d){ return new Date(activeY(), activeM()-1, d).getDay(); };
+
+  // Jabatan Lain: add missing GERAKAN mapping.
+  if(typeof JAB_INFO!=='undefined'){
+    JAB_INFO.GERAKAN = JAB_INFO.GERAKAN || {nama:'Gerakan', skop:'JABATAN_LAIN'};
+  }
+  if(typeof JAB_SUFFIX_MAP!=='undefined'){
+    Object.assign(JAB_SUFFIX_MAP, {'GERAKAN':'GERAKAN','BILIK GERAKAN':'GERAKAN','PUSAT GERAKAN':'GERAKAN','OP GERAKAN':'GERAKAN'});
+  }
+
+  // Role helpers: viewer cannot edit.
+  window.isOwner = function(){ return AUTH && AUTH.role==='admin' && /OWNER/i.test(AUTH.jawatan||''); };
+  window.isEditor = function(){ return AUTH && AUTH.role==='admin'; };
+
+  // Cuti HRMIS taxonomy. MC hardcopy is not HRMIS row.
+  window.hrmisCode = function(v){
+    var s=String(v||'').toUpperCase();
+    if(/CUTI\s*REHAT|CUTI\s*TAHUNAN|\bCR\b/.test(s)) return 'CR';
+    if(/CUTI\s*SAKIT|\bMC\b|SAKIT/.test(s)) return 'MC';
+    if(/KECEMASAN|EMERGENCY|\bEL\b/.test(s)) return 'EL';
+    if(/TANPA\s*REKOD|\bCTR\b/.test(s)) return 'CTR';
+    if(/BERSALIN|\bCBR?\b/.test(s)) return 'CB';
+    if(/HAJI/.test(s)) return 'HAJI';
+    return s.trim()?s.trim():'CR';
+  };
+  window.hrmisLabel = function(v){
+    var c=hrmisCode(v);
+    if(c==='CR') return 'CR SAH';
+    if(c==='MC') return 'MC SAH HRMIS';
+    if(c==='EL') return 'EL SAH';
+    if(c==='CTR') return 'CTR SAH';
+    if(c==='CB') return 'CB SAH';
+    if(c==='HAJI') return 'CUTI HAJI SAH';
+    return c+' SAH';
+  };
+
+  // In this system, "isCuti" for HRMIS-required leave must exclude MC.
+  window.isCuti = isCuti = function(v){ return ['CR','EL','CTR','CB','CBR','K/P','HAJI'].includes(String(v||'').toUpperCase()); };
+  window.isMCStatus = function(v){ return /(^|\b)(MC|SAKIT)(\b|$)/i.test(String(v||'')); };
+  window.hasRealPunch = function(c){ return !!(c && (c.tc_in || c.tc_out || (c.tc_all && c.tc_all.length))); };
+  window.hasHR = hasHR = function(c){
+    if(!c) return false;
+    var h=String(c.hrmis||'').trim();
+    if(!h || h==='-') return false;
+    // Legacy auto-fill from MC_DATA must not count as HRMIS unless record is real.
+    if(/^MC\s*SAH$/i.test(h) && !c._hrmis_rec) return false;
+    return true;
+  };
+
+  // getMC active-month aware; fallback to original logic for April/preload.
+  var oldGetMC = (typeof getMC==='function') ? getMC : null;
+  window.getMC = getMC = function(bil,d){
+    var bilN=+bil, dN=+d, mNow=activeM(), yNow=activeY();
+    if(typeof D!=='undefined' && D[bilN] && D[bilN][dN] && D[bilN][dN]._mc){
+      var direct=D[bilN][dN]._mc;
+      if(!direct.m || direct.m===mNow) return direct;
+    }
+    if(typeof MC_DATA!=='undefined'){
+      for(var i=0;i<MC_DATA.length;i++){
+        var mc=MC_DATA[i]; if(+mc.bil!==bilN) continue;
+        if(mc.m && +mc.m!==mNow) continue;
+        var ok=false;
+        if(+mc.d===dN && (!mc.m || +mc.m===mNow)) ok=true;
+        if(!ok){
+          try{
+            var days = (typeof expandMCDays==='function') ? expandMCDays(mc.dari||mc.tarikh, mc.hingga||mc.tarikh) : [];
+            ok = days.some(function(x){ return +x.d===dN && (!x.m || +x.m===mNow) && (!x.y || +x.y===yNow); });
+          }catch(e){
+            try{ ok = daysRange(mc.dari||mc.tarikh, mc.hingga||mc.tarikh).indexOf(dN)>=0 && (!mc.m || +mc.m===mNow); }catch(_e){}
+          }
+        }
+        if(ok){ if(typeof D!=='undefined' && D[bilN]&&D[bilN][dN]) D[bilN][dN]._mc=mc; return mc; }
+      }
+    }
+    return oldGetMC ? oldGetMC(bilN,dN) : null;
+  };
+
+  // Normalize legacy HRMIS cells and ensure MC hardcopy never fills HRMIS row.
+  window.normalizeHRMISAll = function(){
+    try{
+      if(typeof HRMIS_PRELOAD!=='undefined') HRMIS_PRELOAD.forEach(function(r){ if(r && /CUTI\s*SAKIT\s*\(MC\)/i.test(r.jenis||'')) r.jenis='CUTI REHAT (CR)'; });
+      if(typeof D==='undefined') return;
+      Object.keys(D).forEach(function(b){
+        Object.keys(D[b]||{}).forEach(function(dd){
+          var c=D[b][dd]; if(!c) return;
+          if(c._hrmis_rec && c._hrmis_rec.jenis){ c.hrmis = hrmisLabel(c._hrmis_rec.jenis); return; }
+          var h=String(c.hrmis||'').trim();
+          if(!h) return;
+          if(/^CUTI\s*REHAT|CUTI\s*TAHUNAN|\bCR\b/i.test(h)) c.hrmis='CR SAH';
+          else if(/^CUTI\s*KECEMASAN|\bEL\b/i.test(h)) c.hrmis='EL SAH';
+          else if(/^CUTI\s*TANPA\s*REKOD|\bCTR\b/i.test(h)) c.hrmis='CTR SAH';
+          else if(/^CUTI\s*BERSALIN|\bCBR?\b/i.test(h)) c.hrmis='CB SAH';
+          // Legacy bug: MC hardcopy copied into HRMIS. Remove unless real HRMIS record says MC.
+          if(/^MC\s*SAH$/i.test(String(c.hrmis||'')) && !c._hrmis_rec) c.hrmis='';
+        });
+      });
+      try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+    }catch(e){ console.warn('[patch] normalizeHRMISAll:',e); }
+  };
+
+  // Dataset snapshot persistence by month.
+  window.saveDataset = function(reason){
+    try{
+      var snap={
+        patch:EAKHA_PATCH_VERSION,
+        version:'v5.2', tahun:activeY(), bulan:activeM(), reason:reason||'AUTO',
+        savedAt:new Date().toISOString(), savedBy:(AUTH&&AUTH.id)||'system',
+        D:(typeof D!=='undefined')?D:{},
+        AUDIT_STATE:(typeof AUDIT_STATE!=='undefined')?AUDIT_STATE:{},
+        MC_DATA:(typeof MC_DATA!=='undefined')?MC_DATA:[],
+        HRMIS_DATA:safeJSON(localStorage.getItem('eakha_hrmis'),[]),
+        RAYA_DATA:(typeof RAYA_DATA!=='undefined')?RAYA_DATA:[],
+        CTR_DATA:(typeof CTR_DATA!=='undefined')?CTR_DATA:[],
+        STAGING:(typeof STAGING!=='undefined')?STAGING:{},
+        BAKI_CUTI:(typeof BAKI_CUTI!=='undefined')?BAKI_CUTI:{},
+        CUSTOM_ANGGOTA:(typeof CUSTOM_ANGGOTA!=='undefined')?CUSTOM_ANGGOTA:[],
+        ANGGOTA_LAIN:(typeof ANGGOTA_LAIN!=='undefined')?ANGGOTA_LAIN:[]
+      };
+      localStorage.setItem(getDatasetKey(), JSON.stringify(snap));
+      localStorage.setItem('eakha_last_dataset_key', getDatasetKey());
+      return true;
+    }catch(e){ console.warn('[patch] saveDataset:',e); return false; }
+  };
+  window.loadDataset = function(){
+    try{
+      var raw=localStorage.getItem(getDatasetKey()); if(!raw) return false;
+      var s=JSON.parse(raw);
+      if(s.D && typeof D!=='undefined'){
+        Object.keys(s.D).forEach(function(b){ if(!D[b]) D[b]={}; Object.keys(s.D[b]||{}).forEach(function(d){ D[b][d]=Object.assign(D[b][d]||{}, s.D[b][d]); }); });
+      }
+      if(s.AUDIT_STATE && typeof AUDIT_STATE!=='undefined') AUDIT_STATE=s.AUDIT_STATE;
+      if(Array.isArray(s.MC_DATA) && typeof MC_DATA!=='undefined') MC_DATA=s.MC_DATA;
+      if(Array.isArray(s.HRMIS_DATA)) localStorage.setItem('eakha_hrmis', JSON.stringify(s.HRMIS_DATA));
+      if(Array.isArray(s.RAYA_DATA) && typeof RAYA_DATA!=='undefined') RAYA_DATA=s.RAYA_DATA;
+      if(Array.isArray(s.CTR_DATA) && typeof CTR_DATA!=='undefined') CTR_DATA=s.CTR_DATA;
+      if(s.STAGING && typeof STAGING!=='undefined') STAGING=s.STAGING;
+      if(s.BAKI_CUTI && typeof BAKI_CUTI!=='undefined') BAKI_CUTI=s.BAKI_CUTI;
+      if(Array.isArray(s.CUSTOM_ANGGOTA) && typeof CUSTOM_ANGGOTA!=='undefined') CUSTOM_ANGGOTA=s.CUSTOM_ANGGOTA;
+      if(Array.isArray(s.ANGGOTA_LAIN) && typeof ANGGOTA_LAIN!=='undefined') ANGGOTA_LAIN=s.ANGGOTA_LAIN;
+      normalizeHRMISAll();
+      return true;
+    }catch(e){ console.warn('[patch] loadDataset:',e); return false; }
+  };
+
+  // Buttons for snapshot recovery.
+  window.manualSaveSnapshot = function(){ normalizeHRMISAll(); saveDataset('MANUAL SNAPSHOT'); try{toast('Snapshot bulan ini disimpan ✓','ok');}catch(e){} };
+  window.manualRestoreSnapshot = function(){
+    var ok=loadDataset();
+    try{ renderMaster(null); renderDash(); renderOutput(''); renderMCReg(); renderHRMISReg(); renderAngFull(); updFlags(); }catch(e){}
+    try{toast(ok?'Snapshot dipulihkan ✓':'Tiada snapshot bulan ini','ok');}catch(e){}
+  };
+  function injectSnapshotButtons(){
+    var bar=document.querySelector('#topbar > div[style*="margin-left:auto"]');
+    if(bar && !document.getElementById('btn-snapshot-save')){
+      var b=document.createElement('button'); b.id='btn-snapshot-save'; b.className='btn btn-sm'; b.style.fontSize='7.5px'; b.textContent='Simpan Snapshot'; b.onclick=manualSaveSnapshot;
+      var r=document.createElement('button'); r.id='btn-snapshot-restore'; r.className='btn btn-sm'; r.style.fontSize='7.5px'; r.textContent='Pulih Snapshot'; r.onclick=manualRestoreSnapshot;
+      bar.appendChild(b); bar.appendChild(r);
+    }
+  }
+
+  // Context-aware 6-layer completeness.
+  window.cek6 = cek6 = function(bil,d){
+    var c=(typeof D!=='undefined' && D[bil]&&D[bil][d])?D[bil][d]:{}; var sh=gSh(bil,d);
+    if(!c) return {ok:false,miss:['Semua data']};
+    if(sh==='O') return {ok:true,miss:[]};
+    if(['TT','TH'].includes(c.kzp)||['TT','TH'].includes(c.kzk)) return {ok:true,miss:[]};
+    var miss=[];
+    if(!c.kzp) miss.push('KZ PENYELIA');
+    if(!c.kzk) miss.push('KZ KOPERAL');
+    var kzpMC=isMCStatus(c.kzp), kzkMC=isMCStatus(c.kzk), mc=getMC(bil,d);
+    var kzHR=isCuti(c.kzp)||isCuti(c.kzk);
+    var tcAda=hasRealPunch(c)||c.tc_problem;
+    if(kzpMC||kzkMC){ if(!mc && !(c._hrmis_rec && hrmisCode(c._hrmis_rec.jenis)==='MC')) miss.push('MC DITERIMA'); return {ok:miss.length===0,miss:miss}; }
+    if(kzHR){ if(!hasHR(c)) miss.push('CUTI HRMIS'); return {ok:miss.length===0,miss:miss}; }
+    if(!tcAda && !mc && !hasHR(c)) miss.push('TIMECARD');
+    return {ok:miss.length===0,miss:miss};
+  };
+  window.checkLayersComplete = checkLayersComplete = function(bil,d){
+    var c=(typeof D!=='undefined' && D[bil]&&D[bil][d])?D[bil][d]:{}; var sh=gSh(bil,d); var mc=getMC(bil,d);
+    if(sh==='O') return {complete:true,offday:true,layers:{shift:'OFFDAY'},missing:[]};
+    if(['TT','TH'].includes(c.kzp)||['TT','TH'].includes(c.kzk)) return {complete:true,special:true,layers:{shift:sh},missing:[]};
+    var r=cek6(bil,d); return {complete:r.ok,layers:{shift:!!sh,kzp:!!c.kzp,kzk:!!c.kzk,tc:hasRealPunch(c)||c.tc_problem,mc:!!mc,hr:hasHR(c)},missing:r.miss};
+  };
+
+  // Audit Final: MC sah does not require timecard or HRMIS.
+  var oldAuditFinal = (typeof auditFinal==='function') ? auditFinal : null;
+  window.auditFinal = auditFinal = function(bil,d){
+    var c=(typeof D!=='undefined' && D[bil]&&D[bil][d])?D[bil][d]:{}; var sh=gSh(bil,d);
+    if(!c) return {txt:'BELUM DIPROSES',cls:'af-bp'};
+    var kzp=String(c.kzp||'').toUpperCase(), kzk=String(c.kzk||'').toUpperCase();
+    if(sh==='O') return hasRealPunch(c)?{txt:'OFFDAY / OT - ABAIKAN',cls:'af-off'}:{txt:'OFFDAY',cls:'af-off'};
+    if(kzp==='TT'||kzk==='TT') return {txt:'TT - TAHAN TUGAS',cls:'af-tt'};
+    if(kzp==='TH'||kzk==='TH') return {txt:'TH - TIDAK HADIR TUGAS',cls:'af-th'};
+    var mc=getMC(bil,d), adaPunch=hasRealPunch(c), kzpMC=isMCStatus(kzp), kzkMC=isMCStatus(kzk);
+    if((kzpMC||kzkMC||mc) && mc){
+      return adaPunch ? {txt:'MC SAH\n(ADA THUMB - SEMAK SHIFT)',cls:'af-warn'} : {txt:'SAH\nMC SAH',cls:'af-sah'};
+    }
+    if((kzpMC||kzkMC) && !mc){
+      if(c._hrmis_rec && hrmisCode(c._hrmis_rec.jenis)==='MC' && !adaPunch) return {txt:'SAH\nMC SAH HRMIS',cls:'af-sah'};
+      return {txt:'MOHON HANTAR MC',cls:'af-warn'};
+    }
+    var wantsHR=isCuti(kzp)||isCuti(kzk);
+    if(wantsHR){
+      var label=(['EL'].includes(kzp)||['EL'].includes(kzk))?'EL':(['CTR'].includes(kzp)||['CTR'].includes(kzk))?'CTR':(['CB','CBR'].includes(kzp)||['CB','CBR'].includes(kzk))?'CB':'CR';
+      if(hasHR(c)) return adaPunch?{txt:label+' SAH\n(ADA THUMB - SEMAK)',cls:'af-warn'}:{txt:'SAH\n'+label+' SAH',cls:'af-sah'};
+      return {txt:'SILA MOHON CUTI\n(TIADA HRMIS)',cls:'af-abs'};
+    }
+    var ck=cek6(bil,d);
+    if(!ck.ok){
+      var m=ck.miss.length<=2?ck.miss.join(' + '):ck.miss.slice(0,2).join(' + ')+' +'+(ck.miss.length-2)+' lagi';
+      return {txt:'AUDIT BELUM LENGKAP\nSEMAK: '+m,cls:'af-inc',inc:true,miss:ck.miss};
+    }
+    return oldAuditFinal ? oldAuditFinal(bil,d) : {txt:'SAH',cls:'af-sah'};
+  };
+
+  // Auto-fill must not copy MC to HRMIS or HRMIS to KZ.
+  window.autoFillFromKZ = autoFillFromKZ = function(){
+    if(!reqAdmin()) return;
+    var n=0;
+    try{
+      MASTER.forEach(function(m){ for(var d=1; d<=30; d++){
+        var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null; if(!c || gSh(m.bil,d)==='O') continue;
+        if(c.kzp && !c.kzk){ c.kzk=c.kzp; n++; }
+        if(c.kzk && !c.kzp){ c.kzp=c.kzk; n++; }
+      }});
+      normalizeHRMISAll(); saveDataset('AUTO-FILL KZ ONLY'); localStorage.setItem('eakha_data',JSON.stringify(D));
+      renderMaster(null); renderDash(); updFlags(); toast(n+' rekod KZ diselaraskan ✓','ok');
+    }catch(e){ console.error(e); toast('Auto-fill gagal: '+e.message,'warn'); }
+  };
+
+  // Save processed staging before clearing it.
+  window.sahTerima = sahTerima = function(type){
+    if(!reqAdmin()) return;
+    var data=(STAGING&&STAGING[type])?STAGING[type]:[];
+    var processed=data.filter(function(r){ return (r.conf||0)>=80; });
+    var n=0;
+    processed.forEach(function(r){
+      if(!r.bil || !r.d || !D[r.bil] || !D[r.bil][r.d]) return;
+      var c=D[r.bil][r.d];
+      if(type==='kzp'){ c.kzp=r.status||r.val||''; if(r.jam) c.kzp_jam=r.jam; if(r.pengganti_nama) c.pengganti_nama=r.pengganti_nama; n++; }
+      else if(type==='kzk'){ c.kzk=r.status||r.val||''; if(r.pos) c.kzk_pos=r.pos; n++; }
+      else if(type==='tc'){ if(r.tc_all&&r.tc_all.length) c.tc_all=r.tc_all; if(r.tc_in){c.tc_in=r.tc_in;c.tc_out=r.tc_out||'';} n++; }
+      else if(type==='hr'){ c.hrmis=hrmisLabel(r.status||r.val||r.jenis||'CR'); c._hrmis_rec=r; n++; }
+      else if(type==='mc'){ n++; }
+    });
+    try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
+    normalizeHRMISAll(); saveDataset('SAH TERIMA '+String(type||'').toUpperCase());
+    try{ if(typeof SUPA_OK!=='undefined' && SUPA_OK) processed.forEach(function(r){ if(D[r.bil]&&D[r.bil][r.d]) saveToDB(r.bil,activeM(),r.d); }); }catch(e){}
+    STAGING[type]=data.filter(function(r){ return (r.conf||0)<80; });
+    try{ logAction('SAH TERIMA', String(type).toUpperCase()+' staging → Master File', n, 'OK'); }catch(e){}
+    try{ renderMaster(null); renderDash(); updFlags(); }catch(e){}
+    try{ toast(n+' rekod disahkan → Master File ✓','ok'); }catch(e){}
+    try{ if(type==='kzp') renderKZPStaging(); else if(type==='kzk') renderKZKStaging(); else if(type==='tc') renderTCStaging(); }catch(e){}
+  };
+
+  // Jabatan Lain edit alias.
+  window.renderAnggota = function(){ return renderAngFull(); };
+  window.showAngLainForm = function(idx){
+    if(!reqAdmin()) return;
+    var m=ANGGOTA_LAIN && ANGGOTA_LAIN[idx]; if(!m) return;
+    showAngForm({jab:'LAIN'});
+    var set=function(id,v){ var el=document.getElementById(id); if(el) el.value=v||''; };
+    set('af-bil',m.bil); set('af-nama',m.nama); set('af-ic',m.ic); set('af-jab','LAIN'); set('af-lain-nama',m.jabLain||''); set('af-komp',m.komp||'ALPHA'); set('af-status',m.status||'aktif'); set('af-nota',m.catatan||'');
+    try{afJabChange();}catch(e){}
+  };
+
+  // Navigation fix: update title and correct Senarai Anggota renderer.
+  window.nav = nav = function(el){
+    var pg=el && el.dataset ? el.dataset.pg : ''; if(!pg) return;
+    document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
+    document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('on');});
+    var p=document.getElementById('page-'+pg); if(p) p.classList.add('on');
+    if(el.classList) el.classList.add('on');
+    var title=(typeof PG_TITLES!=='undefined' && PG_TITLES[pg])?PG_TITLES[pg]:pg;
+    var pgT=document.getElementById('pg-title'); if(pgT) pgT.textContent=title;
+    var tb=document.getElementById('tb-title'); if(tb) tb.textContent=title;
+    try{closeMob();}catch(e){}
+    try{
+      if(pg==='master') renderMaster(null);
+      if(pg==='output'){updFlags();renderOutput('');}
+      if(pg==='mhkl') renderMiniGrid('MHKL',null);
+      if(pg==='iktar') renderMiniGrid('IKTAR',null);
+      if(pg==='rt') renderMiniGrid('RT',null);
+      if(pg==='mc-reg'){ renderMCReg(); setTimeout(function(){try{renderMCCrossCheck();}catch(e){}},100); }
+      if(pg==='hrmis-reg'){ normalizeHRMISAll(); renderHRMISReg(); }
+      if(pg==='kzp-staging') renderKZPStaging();
+      if(pg==='kzk-staging') renderKZKStaging();
+      if(pg==='tc-staging') renderTCStaging();
+      if(pg==='baki') renderBaki();
+      if(pg==='raya'){ if(typeof autoLoadRayaPreload==='function') autoLoadRayaPreload(); renderRaya(); }
+      if(pg==='haji'||pg==='ctr-haji'||pg==='manual-haji'){ if(typeof autoLoadCTRPreload==='function') autoLoadCTRPreload(); renderRHContent(); renderHaji(); }
+      if(pg==='upload') renderStoredFiles();
+      if(pg==='anggota') renderAngFull();
+      if(pg==='dash') renderDash();
+    }catch(e){ console.error('[patch nav]',e); try{toast('Ralat paparan: '+e.message,'warn');}catch(_e){} }
+  };
+
+  // Wrap main actions with dataset snapshot.
+  function wrapSave(name, reason){
+    try{
+      var old=window[name] || eval(name); if(typeof old!=='function') return;
+      window[name]=eval(name+' = function(){ var r=old.apply(this,arguments); try{ normalizeHRMISAll(); saveDataset(reason||name); }catch(e){} return r; }');
+    }catch(e){}
+  }
+  wrapSave('kemaskiniMaster','KEMASKINI MASTER');
+  wrapSave('validasiAudit','VALIDASI AUDIT');
+  wrapSave('saveAngForm','SIMPAN ANGGOTA');
+
+  // Patch boot flow after original preload completes.
+  if(typeof bootApp==='function'){
+    var oldBoot=bootApp;
+    bootApp = window.bootApp = async function(){
+      var r = await oldBoot.apply(this, arguments);
+      injectSnapshotButtons();
+      setTimeout(function(){ try{ loadDataset(); normalizeHRMISAll(); injectSnapshotButtons(); renderDash(); renderMaster(null); updFlags(); }catch(e){console.warn('[patch boot restore]',e);} }, 900);
+      setTimeout(function(){ try{ saveDataset('BOOT AUTOSAVE'); }catch(e){} }, 1800);
+      return r;
+    };
+  }
+
+  // Patch setMonth to load isolated dataset for chosen month.
+  if(typeof setMonth==='function'){
+    var oldSetMonth=setMonth;
+    setMonth = window.setMonth = function(el){
+      var r=oldSetMonth.apply(this, arguments);
+      try{ loadDataset(); normalizeHRMISAll(); renderDash(); renderMaster(null); renderMCReg(); renderHRMISReg(); renderBaki(); updFlags(); saveDataset('SET MONTH'); }catch(e){}
+      return r;
+    };
+  }
+
+  // Autosave on refresh/debug.
+  window.addEventListener('beforeunload', function(){ try{ normalizeHRMISAll(); saveDataset('BEFORE_UNLOAD'); }catch(e){} });
+  document.addEventListener('DOMContentLoaded', injectSnapshotButtons);
+})();
 
 
 </script>
