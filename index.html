@@ -6570,6 +6570,274 @@ function confLabel(c){
 })();
 
 
+
+/* ══════════════════════════════════════════════════════════════
+   PATCH v5.3 — HRMIS CR migration + CUSTOM_ANGGOTA zero-error fix
+   Purpose:
+   1) Legacy HRMIS preload records wrongly saved as CUTI SAKIT (MC) are
+      migrated back to CUTI REHAT (CR) by matching HRMIS_PRELOAD name/date.
+   2) CUSTOM_ANGGOTA global is guaranteed before Senarai Anggota renders.
+   3) Snapshot/load/save/render flows normalise HRMIS before display.
+══════════════════════════════════════════════════════════════ */
+var CUSTOM_ANGGOTA = window.CUSTOM_ANGGOTA || [];
+window.CUSTOM_ANGGOTA = CUSTOM_ANGGOTA;
+if(typeof loadCustomAnggota !== 'function'){
+  function loadCustomAnggota(){
+    try{
+      var raw = localStorage.getItem('eakha_custom_anggota');
+      if(raw){
+        var arr = JSON.parse(raw);
+        if(Array.isArray(arr)){
+          CUSTOM_ANGGOTA.length = 0;
+          arr.forEach(function(x){ CUSTOM_ANGGOTA.push(x); });
+          window.CUSTOM_ANGGOTA = CUSTOM_ANGGOTA;
+        }
+      }
+    }catch(e){ console.warn('[v5.3] loadCustomAnggota:', e); }
+  }
+}
+if(typeof saveCustomAnggota !== 'function'){
+  function saveCustomAnggota(){
+    try{ localStorage.setItem('eakha_custom_anggota', JSON.stringify(CUSTOM_ANGGOTA || [])); }catch(e){}
+    try{
+      var lain = (typeof ANGGOTA_LAIN !== 'undefined' && Array.isArray(ANGGOTA_LAIN)) ? ANGGOTA_LAIN : [];
+      localStorage.setItem('eakha_anggota_custom', JSON.stringify({custom:CUSTOM_ANGGOTA || [], lain:lain}));
+    }catch(e){}
+  }
+}
+
+(function(){
+  var PATCH = 'v5.3-HRMIS-CR-CUSTOM';
+  window.EAKHA_PATCH_VERSION = PATCH;
+
+  function normName(v){ return String(v||'').toUpperCase().replace(/[^A-Z0-9@ ]+/g,' ').replace(/\s+/g,' ').trim(); }
+  function recKey(r){ return normName(r && r.nama) + '|' + String((r && (r.dari || r.tarikh)) || '') + '|' + String((r && (r.hingga || r.dari || r.tarikh)) || ''); }
+
+  function buildHRMISPreloadMap(){
+    var map = {};
+    try{
+      if(typeof HRMIS_PRELOAD !== 'undefined' && Array.isArray(HRMIS_PRELOAD)){
+        HRMIS_PRELOAD.forEach(function(r){ if(r && r.nama && r.dari) map[recKey(r)] = r; });
+      }
+    }catch(e){}
+    return map;
+  }
+
+  window.normalizeHRMISRecordsStore = function(){
+    var changed = 0, arr = [];
+    try{ arr = JSON.parse(localStorage.getItem('eakha_hrmis') || '[]'); }catch(e){ arr=[]; }
+    if(!Array.isArray(arr)) arr=[];
+    var pre = buildHRMISPreloadMap();
+    var seen = {};
+    var clean = [];
+    arr.forEach(function(r){
+      if(!r || !r.nama) return;
+      var k = recKey(r);
+      var p = pre[k];
+      if(p){
+        // Authoritative static list: these are Cuti Rehat unless the preload itself says otherwise.
+        if(r.jenis !== p.jenis){ r.jenis = p.jenis; changed++; }
+        if(!r.masuk && p.masuk) r.masuk = p.masuk;
+        if(!r.mohon && p.mohon) r.mohon = p.mohon;
+        r.kodCuti = /BERSALIN/i.test(r.jenis||'') ? 'CB' : 'CR';
+        r._source = r._source || 'HRMIS_PRELOAD_MIGRATED';
+      }else if(/^\s*CUTI\s*SAKIT\s*\(\s*MC\s*\)\s*$/i.test(String(r.jenis||'')) && !r._keepMC){
+        // Legacy v5.2 bug: imported HRMIS leave listing was labelled MC.
+        // Convert legacy generic records only. Future explicit MC can set _keepMC=true.
+        r.jenis = 'CUTI REHAT (CR)';
+        r.kodCuti = 'CR';
+        r._source = r._source || 'LEGACY_HRMIS_MC_TO_CR';
+        changed++;
+      }
+      var unique = recKey(r) + '|' + String(r.jenis||'');
+      if(!seen[unique]){ seen[unique]=1; clean.push(r); }
+      else changed++;
+    });
+    try{
+      if(typeof HRMIS_PRELOAD !== 'undefined' && Array.isArray(HRMIS_PRELOAD)){
+        HRMIS_PRELOAD.forEach(function(p){
+          if(!p || !p.nama || !p.dari) return;
+          var k = recKey(p) + '|' + String(p.jenis||'');
+          var exists = clean.some(function(r){ return recKey(r) === recKey(p); });
+          if(!exists){ clean.push(Object.assign({}, p, {kodCuti:/BERSALIN/i.test(p.jenis||'')?'CB':'CR', _source:'HRMIS_PRELOAD'})); changed++; }
+        });
+      }
+    }catch(e){}
+    if(changed || JSON.stringify(clean)!==JSON.stringify(arr)){
+      try{ localStorage.setItem('eakha_hrmis', JSON.stringify(clean)); }catch(e){}
+    }
+    return clean;
+  };
+
+  function hrmisCode53(v){
+    var s = String(v||'').toUpperCase();
+    if(/CUTI\s*REHAT|CUTI\s*TAHUNAN|\bCR\b/.test(s)) return 'CR';
+    if(/CUTI\s*TANPA\s*REKOD|\bCTR\b/.test(s)) return 'CTR';
+    if(/CUTI\s*BERSALIN|\bCBR?\b/.test(s)) return 'CB';
+    if(/CUTI\s*KECEMASAN|EMERGENCY|\bEL\b/.test(s)) return 'EL';
+    if(/CUTI\s*HAJI|\bHAJI\b/.test(s)) return 'HAJI';
+    if(/CUTI\s*SAKIT|\bMC\b|SAKIT/.test(s)) return 'MC';
+    return s.trim()?s.trim():'CR';
+  }
+  window.hrmisCode = hrmisCode = hrmisCode53;
+  window.hrmisLabel = hrmisLabel = function(v){
+    var c = hrmisCode53(v);
+    if(c==='CR') return 'CR SAH';
+    if(c==='CTR') return 'CTR SAH';
+    if(c==='CB') return 'CB SAH';
+    if(c==='EL') return 'EL SAH';
+    if(c==='HAJI') return 'CUTI HAJI SAH';
+    if(c==='MC') return 'MC SAH HRMIS';
+    return c+' SAH';
+  };
+
+  var oldNorm = (typeof normalizeHRMISAll === 'function') ? normalizeHRMISAll : null;
+  window.normalizeHRMISAll = normalizeHRMISAll = function(){
+    try{ normalizeHRMISRecordsStore(); }catch(e){}
+    try{
+      var preloadMap = buildHRMISPreloadMap();
+      if(typeof D !== 'undefined'){
+        Object.keys(D||{}).forEach(function(b){
+          Object.keys(D[b]||{}).forEach(function(dd){
+            var c = D[b][dd]; if(!c) return;
+            if(c._hrmis_rec){
+              var p = preloadMap[recKey(c._hrmis_rec)];
+              if(p) c._hrmis_rec.jenis = p.jenis;
+              if(/^\s*CUTI\s*SAKIT\s*\(\s*MC\s*\)\s*$/i.test(String(c._hrmis_rec.jenis||'')) && !c._hrmis_rec._keepMC){
+                c._hrmis_rec.jenis = 'CUTI REHAT (CR)';
+              }
+              c.hrmis = hrmisLabel(c._hrmis_rec.jenis);
+              return;
+            }
+            var h = String(c.hrmis||'').trim();
+            if(!h) return;
+            if(/^CUTI\s*REHAT|CUTI\s*TAHUNAN|\bCR\b/i.test(h)) c.hrmis='CR SAH';
+            else if(/^CUTI\s*KECEMASAN|\bEL\b/i.test(h)) c.hrmis='EL SAH';
+            else if(/^CUTI\s*TANPA\s*REKOD|\bCTR\b/i.test(h)) c.hrmis='CTR SAH';
+            else if(/^CUTI\s*BERSALIN|\bCBR?\b/i.test(h)) c.hrmis='CB SAH';
+            else if(/^MC\s*SAH$/i.test(h) && !c._hrmis_rec) c.hrmis='';
+          });
+        });
+        try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      }
+    }catch(e){ console.warn('[v5.3] normalizeHRMISAll:', e); }
+    if(oldNorm){ try{ oldNorm(); }catch(e){} }
+  };
+
+  // Patch preload static: update existing duplicates, not only add missing.
+  var oldStatic = (typeof autoLoadHRMISPreloadStatic === 'function') ? autoLoadHRMISPreloadStatic : null;
+  window.autoLoadHRMISPreloadStatic = autoLoadHRMISPreloadStatic = function(){
+    var before = normalizeHRMISRecordsStore();
+    try{
+      var stored = before.slice();
+      var added = 0, changed = 0;
+      if(typeof HRMIS_PRELOAD !== 'undefined' && Array.isArray(HRMIS_PRELOAD)){
+        HRMIS_PRELOAD.forEach(function(rec){
+          var dup = stored.find(function(s){ return recKey(s) === recKey(rec); });
+          if(dup){
+            if(dup.jenis !== rec.jenis){ dup.jenis = rec.jenis; changed++; }
+            if(!dup.masuk && rec.masuk) dup.masuk = rec.masuk;
+            if(!dup.mohon && rec.mohon) dup.mohon = rec.mohon;
+            dup.kodCuti = /BERSALIN/i.test(dup.jenis||'')?'CB':'CR';
+          }else{
+            stored.push(Object.assign({}, rec, {kodCuti:/BERSALIN/i.test(rec.jenis||'')?'CB':'CR', _source:'HRMIS_PRELOAD'}));
+            added++;
+          }
+        });
+      }
+      if(added || changed) localStorage.setItem('eakha_hrmis', JSON.stringify(stored));
+    }catch(e){ console.warn('[v5.3] HRMIS static:', e); }
+    if(oldStatic){ try{ oldStatic(); }catch(e){} }
+    normalizeHRMISRecordsStore();
+  };
+
+  var oldPreload = (typeof autoLoadHRMISPreload === 'function') ? autoLoadHRMISPreload : null;
+  window.autoLoadHRMISPreload = autoLoadHRMISPreload = function(){
+    normalizeHRMISRecordsStore();
+    var r = oldPreload ? oldPreload.apply(this, arguments) : undefined;
+    normalizeHRMISAll();
+    return r;
+  };
+
+  var oldRenderHR = (typeof renderHRMISReg === 'function') ? renderHRMISReg : null;
+  if(oldRenderHR){
+    window.renderHRMISReg = renderHRMISReg = function(){
+      normalizeHRMISRecordsStore();
+      normalizeHRMISAll();
+      return oldRenderHR.apply(this, arguments);
+    };
+  }
+
+  var oldSaveDataset = (typeof saveDataset === 'function') ? saveDataset : null;
+  if(oldSaveDataset){
+    window.saveDataset = saveDataset = function(reason){
+      normalizeHRMISRecordsStore();
+      normalizeHRMISAll();
+      return oldSaveDataset.apply(this, arguments);
+    };
+  }
+
+  var oldLoadDataset = (typeof loadDataset === 'function') ? loadDataset : null;
+  if(oldLoadDataset){
+    window.loadDataset = loadDataset = function(){
+      var r = oldLoadDataset.apply(this, arguments);
+      normalizeHRMISRecordsStore();
+      normalizeHRMISAll();
+      return r;
+    };
+  }
+
+  // Ensure Senarai Anggota does not crash even on legacy stores.
+  function safeLoadAnggota(){
+    try{
+      if(typeof loadAnggotaStore === 'function') loadAnggotaStore();
+      if(!Array.isArray(CUSTOM_ANGGOTA)){ CUSTOM_ANGGOTA=[]; window.CUSTOM_ANGGOTA=CUSTOM_ANGGOTA; }
+      if(typeof ANGGOTA_LAIN !== 'undefined' && !Array.isArray(ANGGOTA_LAIN)) ANGGOTA_LAIN=[];
+      if(typeof migrateJabatanLain === 'function') migrateJabatanLain();
+    }catch(e){ console.warn('[v5.3] safeLoadAnggota:', e); }
+  }
+  safeLoadAnggota();
+
+  var oldRenderAng = (typeof renderAngFull === 'function') ? renderAngFull : null;
+  if(oldRenderAng){
+    window.renderAngFull = renderAngFull = function(){
+      safeLoadAnggota();
+      try{
+        var sec=document.getElementById('ang-lain-section'), grid=document.getElementById('ang-grid');
+        if(!sec || !grid) return oldRenderAng.apply(this, arguments);
+      }catch(e){}
+      return oldRenderAng.apply(this, arguments);
+    };
+    window.renderAnggota = function(){ return renderAngFull(); };
+  }
+
+  var oldBoot = (typeof bootApp === 'function') ? bootApp : null;
+  if(oldBoot){
+    window.bootApp = bootApp = async function(){
+      safeLoadAnggota();
+      normalizeHRMISRecordsStore();
+      var r = await oldBoot.apply(this, arguments);
+      [100,700,1300,2400].forEach(function(ms){
+        setTimeout(function(){
+          try{
+            safeLoadAnggota();
+            normalizeHRMISRecordsStore();
+            normalizeHRMISAll();
+            if(document.getElementById('page-hrmis-reg') && document.getElementById('page-hrmis-reg').classList.contains('on')) renderHRMISReg();
+            if(document.getElementById('page-anggota') && document.getElementById('page-anggota').classList.contains('on')) renderAngFull();
+            if(typeof renderMaster === 'function') renderMaster(null);
+            if(typeof saveDataset === 'function') oldSaveDataset ? oldSaveDataset('V5.3 MIGRATION') : saveDataset('V5.3 MIGRATION');
+          }catch(e){ console.warn('[v5.3] boot delayed:', e); }
+        }, ms);
+      });
+      return r;
+    };
+  }
+
+  // Run once immediately for users who already have old browser data.
+  try{ normalizeHRMISRecordsStore(); normalizeHRMISAll(); }catch(e){}
+})();
+
 </script>
 </body>
 </html>
