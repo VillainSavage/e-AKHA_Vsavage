@@ -3417,7 +3417,13 @@ async function loadDB(){
   showLoad('Memuatkan data dari Supabase...');
   try{
     const {data,error}=await supa.from('audit_cells').select('*').eq('tahun',2026).eq('bulan',4);
-    if(!error&&data) data.forEach(r=>{ if(D[r.bil]?.[r.hari]) Object.assign(D[r.bil][r.hari],{kzp:r.kz_penyelia||'',kzk:r.kz_koperal||'',tc_in:r.tc_in||'',tc_out:r.tc_out||'',ot:r.ot_sambung||false,hrmis:r.hrmis||'',pengganti:r.pengganti||false,note:r.note||''}); });
+    if(!error&&data) data.forEach(r=>{
+      if(!D[r.bil]?.[r.hari]) return; var c=D[r.bil][r.hari];
+      if(r.kz_penyelia) c.kzp=r.kz_penyelia; if(r.kz_koperal) c.kzk=r.kz_koperal;
+      if(r.tc_in) c.tc_in=r.tc_in; if(r.tc_out) c.tc_out=r.tc_out;
+      if(r.ot_sambung) c.ot=r.ot_sambung; if(r.hrmis) c.hrmis=r.hrmis;
+      if(r.pengganti) c.pengganti=r.pengganti; if(r.note) c.note=r.note;
+    });
     toast((data?.length||0)+' rekod dimuatkan \u2713','ok');
   } catch(e){ console.error(e); }
   finally{ hideLoad(); }
@@ -4829,6 +4835,7 @@ function kemaskiniMaster(){
   try{localStorage.setItem('eakha_audit_state',JSON.stringify(AUDIT_STATE));}catch(e){}
   // Save D[] too — ensure all staging data is persisted
   try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+  try{ if(SUPA_OK) MASTER.forEach(function(m){ for(var dd=1;dd<=30;dd++){ var c=D[m.bil]&&D[m.bil][dd]; if(c&&(c.kzp||c.kzk||c.tc_in||c.hrmis)) saveToDB(m.bil,ACTIVE_MONTH,dd); }}); }catch(e){}
   
   renderMaster(null);
   renderDash();
@@ -6192,6 +6199,7 @@ function sahTerima(type){
   // Clear high-conf from staging
   STAGING[type]=data.filter(function(r){return r.conf<80;});
   try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+  try{ if(SUPA_OK)(STAGING[type]||[]).forEach(function(r){ if(D[r.bil]&&D[r.bil][r.d]) saveToDB(r.bil,ACTIVE_MONTH,r.d); }); }catch(e){}
   logAction('SAH TERIMA', type.toUpperCase()+' staging → Master File', n, 'OK');
   renderMaster(null); renderDash(); updFlags();
   toast(n+' rekod disahkan → Master File ✓','ok');
