@@ -6607,7 +6607,7 @@ if(typeof saveCustomAnggota !== 'function'){
 }
 
 (function(){
-  var PATCH = 'v5.3-HRMIS-CR-CUSTOM';
+  var PATCH = 'v5.4-HRMIS-CR-CUSTOM-DATA-SAFE';
   window.EAKHA_PATCH_VERSION = PATCH;
 
   function normName(v){ return String(v||'').toUpperCase().replace(/[^A-Z0-9@ ]+/g,' ').replace(/\s+/g,' ').trim(); }
@@ -6838,6 +6838,268 @@ if(typeof saveCustomAnggota !== 'function'){
   try{ normalizeHRMISRecordsStore(); normalizeHRMISAll(); }catch(e){}
 })();
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   PATCH v5.4 — DATA SAFE DEPLOY / AUTO RECOVERY
+   Purpose:
+   - Prevent new HTML deploy/debug from overwriting completed Master data.
+   - Capture old localStorage before boot/preload writes.
+   - Restore best available eakha_data / eakha_dataset automatically.
+   - Keep Audit Final, MC, HRMIS and Output state after refresh/deploy.
+══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var PATCH='v5.4-DATA-SAFE-RECOVERY';
+  window.EAKHA_PATCH_VERSION = PATCH;
+
+  var nativeSet = Storage.prototype.setItem;
+  var nativeGet = Storage.prototype.getItem;
+  var nativeRemove = Storage.prototype.removeItem;
+
+  function parseJSON(raw){ try{return JSON.parse(raw||'');}catch(e){return null;} }
+  function nowStamp(){ return new Date().toISOString().replace(/[:.]/g,'-'); }
+  function activeYearSafe(){ return (typeof ACTIVE_YEAR!=='undefined' && ACTIVE_YEAR) ? ACTIVE_YEAR : 2026; }
+  function activeMonthSafe(){ return (typeof ACTIVE_MONTH!=='undefined' && ACTIVE_MONTH) ? ACTIVE_MONTH : 4; }
+  function datasetKeySafe(){ return 'eakha_dataset_'+activeYearSafe()+'_'+activeMonthSafe(); }
+
+  function extractD(obj){
+    if(!obj || typeof obj!=='object') return null;
+    if(obj.D && typeof obj.D==='object') return obj.D;
+    // D-like object: keys are bil numbers, each has day objects
+    var ks=Object.keys(obj||{});
+    var numeric=ks.filter(function(k){return /^\d+$/.test(k);}).length;
+    return numeric ? obj : null;
+  }
+
+  function cellScore(c){
+    if(!c || typeof c!=='object') return 0;
+    var n=0;
+    ['kzp','kzk','tc_in','tc_out','hrmis','note','pengganti','pengganti_nama','ot','tc_shift','mc'].forEach(function(k){
+      var v=c[k]; if(v!==undefined && v!==null && String(v).trim()!=='' && String(v).trim()!=='-') n++;
+    });
+    if(c.tc_all && c.tc_all.length) n += Math.min(3,c.tc_all.length);
+    if(c._mc) n += 3;
+    if(c._hrmis_rec) n += 3;
+    if(c.tc_problem) n += 1;
+    return n;
+  }
+
+  function scoreD(d){
+    var total=0, cells=0;
+    if(!d || typeof d!=='object') return 0;
+    Object.keys(d).forEach(function(b){
+      var row=d[b]||{};
+      Object.keys(row).forEach(function(day){
+        var s=cellScore(row[day]);
+        if(s>0){ cells++; total += s; }
+      });
+    });
+    // Weight cells too, so many light records beat one heavy record.
+    return total + cells;
+  }
+
+  function scoreAudit(a){
+    var n=0;
+    if(!a || typeof a!=='object') return 0;
+    Object.keys(a).forEach(function(b){ Object.keys(a[b]||{}).forEach(function(d){ if(a[b][d] && a[b][d].status) n++; }); });
+    return n;
+  }
+
+  function candidateFromRaw(key, raw){
+    var obj=parseJSON(raw), d=extractD(obj), snap=null;
+    if(!d) return null;
+    if(obj && obj.D) snap=obj;
+    var sc=scoreD(d);
+    if(snap && snap.AUDIT_STATE) sc += Math.min(100, scoreAudit(snap.AUDIT_STATE)/5);
+    return {key:key, raw:raw, obj:obj, snap:snap, D:d, score:sc};
+  }
+
+  function allCandidates(){
+    var out=[];
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i);
+        if(!k) continue;
+        if(k==='eakha_data' || /^eakha_dataset_/.test(k) || /^eakha_guard_/.test(k) || k==='eakha_boot_predeploy_backup'){
+          var raw=nativeGet.call(localStorage,k);
+          var c=candidateFromRaw(k, raw);
+          if(!c && k==='eakha_boot_predeploy_backup'){
+            var obj=parseJSON(raw); if(obj && obj.D) c={key:k, raw:JSON.stringify(obj.D), obj:obj.D, D:obj.D, snap:obj.snap||null, score:scoreD(obj.D)};
+          }
+          if(c && c.score>0) out.push(c);
+        }
+      }
+      var last=nativeGet.call(localStorage,'eakha_last_dataset_key');
+      if(last){ var c2=candidateFromRaw(last, nativeGet.call(localStorage,last)); if(c2) out.push(c2); }
+    }catch(e){ console.warn('[v5.4] scan candidates:',e); }
+    out.sort(function(a,b){ return b.score-a.score; });
+    return out;
+  }
+
+  function bestCandidate(){
+    var c=allCandidates();
+    return c.length ? c[0] : null;
+  }
+
+  function saveGuardBackup(raw, label){
+    if(!raw) return;
+    try{ nativeSet.call(localStorage, 'eakha_guard_backup_'+nowStamp()+'_'+String(label||'data').replace(/\W+/g,'_'), raw); }catch(e){}
+  }
+
+  // Disaster guard: block destructive writes that would replace a completed month with blank/preload-only data.
+  if(!window.__EAKHA_STORAGE_GUARD_V54){
+    window.__EAKHA_STORAGE_GUARD_V54 = true;
+    Storage.prototype.setItem = function(k,v){
+      try{
+        if(k==='eakha_data' || /^eakha_dataset_/.test(String(k))){
+          var oldRaw = nativeGet.call(this,k);
+          var oldC = candidateFromRaw(k, oldRaw);
+          var newC = candidateFromRaw(k, v);
+          var oldScore = oldC ? oldC.score : 0;
+          var newScore = newC ? newC.score : 0;
+          if(oldScore >= 80 && newScore < oldScore * 0.55){
+            saveGuardBackup(oldRaw, k+'_blocked_overwrite');
+            console.warn('[e-AKHA '+PATCH+'] blocked low-score overwrite for '+k+' old='+oldScore+' new='+newScore);
+            return; // prevent data loss during boot/debug/deploy
+          }
+          if(newScore >= 80){
+            nativeSet.call(this, k==='eakha_data' ? 'eakha_guard_last_good_data' : 'eakha_guard_last_good_dataset', v);
+          }
+        }
+      }catch(e){ console.warn('[v5.4] setItem guard:',e); }
+      return nativeSet.apply(this, arguments);
+    };
+  }
+
+  function mergeBestIntoD(cand, reason){
+    if(!cand || !cand.D || typeof D==='undefined') return false;
+    var currentScore = scoreD(D);
+    if(cand.score <= currentScore + 10 && reason!=='FORCE') return false;
+
+    try{
+      Object.keys(cand.D).forEach(function(b){
+        if(!D[b]) D[b]={};
+        Object.keys(cand.D[b]||{}).forEach(function(day){
+          if(!D[b][day]) D[b][day]={};
+          var src=cand.D[b][day]||{}, dst=D[b][day];
+          Object.keys(src).forEach(function(k){
+            var v=src[k];
+            if(v===undefined || v===null) return;
+            // Do not replace a filled current value with empty legacy value.
+            if((v==='' || v==='-') && dst[k]!==undefined && dst[k]!=='' && dst[k]!=='-') return;
+            dst[k]=v;
+          });
+        });
+      });
+
+      if(cand.snap){
+        if(cand.snap.AUDIT_STATE && typeof AUDIT_STATE!=='undefined'){
+          AUDIT_STATE = cand.snap.AUDIT_STATE;
+          try{ nativeSet.call(localStorage,'eakha_audit_state',JSON.stringify(AUDIT_STATE)); }catch(e){}
+        }
+        if(Array.isArray(cand.snap.MC_DATA) && typeof MC_DATA!=='undefined') MC_DATA = cand.snap.MC_DATA;
+        if(Array.isArray(cand.snap.HRMIS_DATA)) nativeSet.call(localStorage,'eakha_hrmis',JSON.stringify(cand.snap.HRMIS_DATA));
+        if(Array.isArray(cand.snap.RAYA_DATA) && typeof RAYA_DATA!=='undefined') RAYA_DATA = cand.snap.RAYA_DATA;
+        if(Array.isArray(cand.snap.CTR_DATA) && typeof CTR_DATA!=='undefined') CTR_DATA = cand.snap.CTR_DATA;
+        if(cand.snap.STAGING && typeof STAGING!=='undefined') STAGING = cand.snap.STAGING;
+        if(cand.snap.BAKI_CUTI && typeof BAKI_CUTI!=='undefined') BAKI_CUTI = cand.snap.BAKI_CUTI;
+        if(Array.isArray(cand.snap.ANGGOTA_LAIN) && typeof ANGGOTA_LAIN!=='undefined') ANGGOTA_LAIN = cand.snap.ANGGOTA_LAIN;
+        if(Array.isArray(cand.snap.CUSTOM_ANGGOTA) && typeof CUSTOM_ANGGOTA!=='undefined') CUSTOM_ANGGOTA = cand.snap.CUSTOM_ANGGOTA;
+      }
+
+      try{ if(typeof normalizeHRMISAll==='function') normalizeHRMISAll(); }catch(e){}
+      try{ nativeSet.call(localStorage,'eakha_data',JSON.stringify(D)); }catch(e){}
+      try{ if(typeof saveDataset==='function') saveDataset('AUTO RECOVER '+(reason||'')); }catch(e){}
+      try{
+        if(typeof renderMaster==='function') renderMaster(null);
+        if(typeof renderDash==='function') renderDash();
+        if(typeof renderOutput==='function') renderOutput('');
+        if(typeof renderMCReg==='function') renderMCReg();
+        if(typeof renderHRMISReg==='function') renderHRMISReg();
+        if(typeof updFlags==='function') updFlags();
+      }catch(e){}
+      console.warn('[e-AKHA '+PATCH+'] restored '+cand.key+' score='+cand.score+' previous='+currentScore+' reason='+reason);
+      return true;
+    }catch(e){ console.warn('[v5.4] mergeBestIntoD:',e); return false; }
+  }
+
+  window.eakhaRestoreBestBackup = function(force){
+    var b=bestCandidate();
+    if(!b){ try{toast('Tiada backup/snapshot ditemui','warn');}catch(e){} return false; }
+    var ok=mergeBestIntoD(b, force?'FORCE':'MANUAL');
+    try{toast(ok?'Data terbaik dipulihkan ✓ ('+b.key+')':'Tiada data lebih lengkap untuk dipulihkan','ok');}catch(e){}
+    return ok;
+  };
+
+  function injectRecoverButton(){
+    try{
+      var bar=document.querySelector('#topbar > div[style*="margin-left:auto"]');
+      if(bar && !document.getElementById('btn-recover-best')){
+        var x=document.createElement('button');
+        x.id='btn-recover-best'; x.className='btn btn-sm'; x.style.fontSize='7.5px';
+        x.textContent='Pulih Data Auto';
+        x.title='Pulihkan data terbaik daripada snapshot/localStorage backup sebelum deploy';
+        x.onclick=function(){ eakhaRestoreBestBackup(true); };
+        bar.appendChild(x);
+      }
+    }catch(e){}
+  }
+
+  // Patch boot: capture best data BEFORE original boot/preload can overwrite it.
+  if(typeof bootApp==='function' && !window.__EAKHA_BOOT_GUARD_V54){
+    window.__EAKHA_BOOT_GUARD_V54 = true;
+    var prevBoot = bootApp;
+    bootApp = window.bootApp = async function(){
+      var before = bestCandidate();
+      try{
+        if(before && before.score>=80){
+          nativeSet.call(localStorage,'eakha_boot_predeploy_backup',JSON.stringify({savedAt:new Date().toISOString(), key:before.key, score:before.score, D:before.D, snap:before.snap||null}));
+          // Put strongest data back into eakha_data before older boot logic starts.
+          nativeSet.call(localStorage,'eakha_data',JSON.stringify(before.D));
+        }
+      }catch(e){ console.warn('[v5.4] preboot capture:',e); }
+
+      var r = await prevBoot.apply(this, arguments);
+      injectRecoverButton();
+      [60,250,700,1200,2200,3600].forEach(function(ms){
+        setTimeout(function(){
+          try{
+            injectRecoverButton();
+            var b = before && before.score>=80 ? before : bestCandidate();
+            if(b) mergeBestIntoD(b, 'BOOT '+ms+'ms');
+          }catch(e){ console.warn('[v5.4] delayed recover:',e); }
+        }, ms);
+      });
+      return r;
+    };
+  }
+
+  // Save best snapshot on every successful render/action, but guard prevents downgrades.
+  function wrapActionV54(name, reason){
+    try{
+      var old = window[name] || eval(name);
+      if(typeof old!=='function' || old.__v54_wrapped) return;
+      var neu = function(){
+        var r = old.apply(this, arguments);
+        setTimeout(function(){ try{ if(typeof saveDataset==='function') saveDataset(reason||name); }catch(e){} }, 50);
+        return r;
+      };
+      neu.__v54_wrapped = true;
+      window[name] = eval(name+' = neu');
+    }catch(e){}
+  }
+  ['kemaskiniMaster','validasiAudit','sahTerima','saveAngForm','manualSaveSnapshot'].forEach(function(n){ wrapActionV54(n, 'V5.4 '+n); });
+
+  window.addEventListener('beforeunload', function(){
+    try{
+      var b=bestCandidate();
+      if(b && b.score>=80) nativeSet.call(localStorage,'eakha_guard_beforeunload_'+nowStamp(), b.raw || JSON.stringify(b.snap||b.D));
+      if(typeof saveDataset==='function') saveDataset('BEFORE UNLOAD V5.4');
+    }catch(e){}
+  });
+  document.addEventListener('DOMContentLoaded', injectRecoverButton);
+})();
 </script>
 </body>
 </html>
