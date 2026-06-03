@@ -871,7 +871,8 @@ MC_DATA = [
 // ── HELPERS ──────────────────────────────────────────────────────
 function parseDM(s){
   if(!s) return null;
-  const m=s.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  // Support formats: DD/MM, DD-MM, DD.MM, DD/MM/YYYY, DD.MM.YYYY
+  const m=s.match(/(\d{1,2})[\/\-\.](\d{1,2})/);
   return m?{d:+m[1],m:+m[2]}:null;
 }
 function daysRange(dari,hingga){
@@ -885,20 +886,28 @@ function daysRange(dari,hingga){
   return out;
 }
 function getMC(bil,d){
-  // Primary: use pre-expanded mc.d (stored by applyMCPreload)
-  var r = MC_DATA.find(function(mc){ return +mc.bil===+bil && mc.d===+d && mc.bulanLabel==='Bulan Ini'; });
-  if(r) return r;
-  // Fallback: use daysRange for records added via manual entry (no .d field)
-  return MC_DATA.find(function(mc){
-    return +mc.bil===+bil && (mc.bulanLabel==='Bulan Ini'||mc.m===4) && daysRange(mc.dari||mc.tarikh, mc.hingga||mc.tarikh).includes(+d);
-  })||null;
+  var bilN=+bil, dN=+d;
+  // Method 1: direct D[] reference (fastest — set by applyMCPreload)
+  if(D[bilN]&&D[bilN][dN]&&D[bilN][dN]._mc) return D[bilN][dN]._mc;
+  // Method 2: pre-expanded mc.d field
+  var r=MC_DATA.find(function(mc){ return +mc.bil===bilN && +mc.d===dN && (mc.bulanLabel==='Bulan Ini'||mc.m===4); });
+  if(r){ if(D[bilN]&&D[bilN][dN]) D[bilN][dN]._mc=r; return r; }
+  // Method 3: date range (dot/slash/dash format all supported via fixed parseDM)
+  r=MC_DATA.find(function(mc){
+    if(+mc.bil!==bilN) return false;
+    if(mc.m&&mc.m!==4) return false;
+    var days=daysRange(mc.dari||mc.tarikh, mc.hingga||mc.tarikh);
+    return days.includes(dN);
+  });
+  if(r&&D[bilN]&&D[bilN][dN]) D[bilN][dN]._mc=r;
+  return r||null;
 }
 function hasThumb(c){ return !!(c&&(c.tc_in||c.tc_out)); }
 function toMins(t){ if(!t) return null; const[h,m]=t.split(':').map(Number); return h*60+m; }
 function fmtMin(m){ return m>=60?Math.floor(m/60)+'j '+(m%60)+'min':m+'min'; }
 function isCuti(v){ return ['MC','CR','EL','CTR','CB','CBR','K/P'].includes(v); }
 function isAbs(v){  return ['ABS','X','LL'].includes(v); }
-function hasHR(c){  return !!(c&&c.hrmis&&c.hrmis.trim()); }
+function hasHR(c){ return !!(c&&((c.hrmis&&c.hrmis.trim())||c._hrmis_rec)); }
 
 // KZ CSS class
 function kzLabel(v){
@@ -3635,6 +3644,16 @@ async function bootApp(){
       // Save after tc_all processing
       try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
     }catch(e){console.warn('tc_all auto-assign:',e);}
+    // Rebuild D[][].mc_ references after localStorage merge
+    try{
+      MC_DATA.forEach(function(mc){
+        var bil=+mc.bil, d=+(mc.d||0);
+        if(!d||!D[bil]||!D[bil][d]) return;
+        if(!D[bil][d]._mc) D[bil][d]._mc=mc;
+      });
+    }catch(e){}
+    // Rebuild HRMIS references — re-run autoLoadHRMISPreload to fill D[].hrmis
+    try{ if(typeof autoLoadHRMISPreload==='function') autoLoadHRMISPreload(); }catch(e){}
 
     // Render all pages after ALL preloads + merge complete
     try{ populateSels(); }catch(e){}
@@ -5098,9 +5117,29 @@ function expandKomp(k){
 // Parse DD.MM.YYYY → {d,m,y}
 function parseMCDate(s){
   if(!s) return null;
-  var p=s.split('.');
-  if(p.length<3) return null;
-  return {d:parseInt(p[0]),m:parseInt(p[1]),y:parseInt(p[2])};
+  // Support: DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY
+  var p;
+  if(s.includes('.')){
+    p=s.split('.');
+    if(p.length>=3) return {d:parseInt(p[0]),m:parseInt(p[1]),y:parseInt(p[2])};
+  }
+  if(s.match(/^\d{4}-/)){
+    // YYYY-MM-DD format
+    p=s.split('-');
+    if(p.length>=3) return {d:parseInt(p[2]),m:parseInt(p[1]),y:parseInt(p[0])};
+  }
+  if(s.includes('/')){
+    p=s.split('/');
+    if(p.length>=3){
+      if(p[0].length===4) return {d:parseInt(p[2]),m:parseInt(p[1]),y:parseInt(p[0])};
+      return {d:parseInt(p[0]),m:parseInt(p[1]),y:parseInt(p[2])};
+    }
+  }
+  if(s.includes('-')&&!s.match(/^\d{4}-/)){
+    p=s.split('-');
+    if(p.length>=3) return {d:parseInt(p[0]),m:parseInt(p[1]),y:parseInt(p[2])};
+  }
+  return null;
 }
 
 // Get all days between dari and hingga (inclusive)
@@ -5171,8 +5210,9 @@ function applyMCPreload(targetMonth, targetYear){
         bulanLabel:day.m===targetMonth?'Bulan Ini':'Bulan Lain'
       });
       
-      // Auto-fill D[bil][day].kzp = 'MC' if empty
+      // Set direct reference in D[] for O(1) getMC lookup
       if(D[matched.bil]&&D[matched.bil][day.d]){
+        D[matched.bil][day.d]._mc=MC_DATA[MC_DATA.length-1]; // reference to just-pushed record
         if(!D[matched.bil][day.d].kzp) D[matched.bil][day.d].kzp='MC';
         if(!D[matched.bil][day.d].kzk) D[matched.bil][day.d].kzk='MC';
       }
@@ -5484,17 +5524,16 @@ function autoLoadHRMISPreloadStatic(){
   // Seed HRMIS_PRELOAD into localStorage — always check and add missing records
   try{
     var stored = JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');
-    // Merge: add preload records that don't exist yet
+    // Always merge — add any preload records not yet in localStorage
     var added=0;
     HRMIS_PRELOAD.forEach(function(rec){
       var dup=stored.find(function(s){
-        return s.nama===rec.nama&&s.dari===rec.dari&&s.jenis===rec.jenis;
+        return s.nama===rec.nama&&s.dari===rec.dari;
       });
       if(!dup){ stored.push(rec); added++; }
     });
     if(added>0){
       localStorage.setItem('eakha_hrmis', JSON.stringify(stored));
-      localStorage.setItem('eakha_hrmis_seeded','v1');
     }
   }catch(e){console.warn('HRMIS static preload:',e);}
 }
@@ -5506,28 +5545,33 @@ function autoLoadHRMISPreload(){
     var n=0;
     stored.forEach(function(rec){
       if(!rec.nama||!rec.dari) return;
-      // Normalize date: yyyy-mm-dd -> dd/mm/yyyy
-      function nd(s){if(!s)return '';if(s.includes('-')){var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];}return s;}
+      // Match by name (exact then first+last word)
+      var normRec=rec.nama.toUpperCase().trim().replace(/\s+/g,' ');
       var matched=MASTER.find(function(m){
-        var a=m.nama.toUpperCase().trim(), b=rec.nama.toUpperCase().trim();
-        if(a===b) return true;
-        var wa=a.split(' '), wb=b.split(' ');
-        return wa[0]===wb[0]&&wa[wa.length-1]===wb[wb.length-1];
+        var mn=m.nama.toUpperCase().trim().replace(/\s+/g,' ');
+        if(mn===normRec) return true;
+        var wa=mn.split(' '),wb=normRec.split(' ');
+        return wa.length>=2&&wb.length>=2&&wa[0]===wb[0]&&wa[wa.length-1]===wb[wb.length-1];
       });
       if(!matched) return;
-      var days=typeof expandMCDays==='function'?expandMCDays(nd(rec.dari),nd(rec.hingga||rec.dari)):[];
+      // expandMCDays now works with YYYY-MM-DD directly via fixed parseMCDate
+      var days=typeof expandMCDays==='function'?expandMCDays(rec.dari,rec.hingga||rec.dari):[];
       days.forEach(function(day){
         if(day.m===ACTIVE_MONTH&&day.y===ACTIVE_YEAR){
-          if(D[matched.bil]&&D[matched.bil][day.d]&&!D[matched.bil][day.d].hrmis){
+          if(D[matched.bil]&&D[matched.bil][day.d]){
+            // Always set hrmis (preload wins)
             D[matched.bil][day.d].hrmis=rec.jenis||'CUTI';
+            D[matched.bil][day.d]._hrmis_rec=rec; // direct reference
             n++;
           }
         }
       });
     });
-    if(n&&typeof logAction==='function') logAction('PRE-LOAD HRMIS','Load '+stored.length+' rekod → '+n+' hari',n,'OK');
-    if(n&&typeof toast==='function') toast('Pre-load HRMIS: '+n+' hari cuti diisi','ok');
-    if(n) try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+    if(n){
+      if(typeof logAction==='function') logAction('PRE-LOAD HRMIS','Load '+stored.length+' rekod → '+n+' hari',n,'OK');
+      if(typeof toast==='function') toast('Pre-load HRMIS: '+n+' hari cuti diisi','ok');
+      try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
+    }
   }catch(e){console.warn('HRMIS preload:',e);}
 }
 
@@ -5714,8 +5758,9 @@ function autoLoadMCPreload(){
     });
   }catch(e){}
   // Always merge MC preload (dedupe by bil+dari)
-  var preCount=MC_DATA.filter(function(m){return m.source==='preload';}).length;
-  if(preCount>=40) return; // only skip if fully loaded
+  // Check if records have proper .d field (not just source tag)
+  var preCount=MC_DATA.filter(function(m){return m.source==='preload'&&typeof m.d!=='undefined';}).length;
+  if(preCount>=40) return; // only skip if fully loaded with proper .d fields
   var res=applyMCPreload(4,2026); // April 2026
   if(typeof toast==='function') toast('Pre-load MC: '+res.matched+' anggota, '+res.days+' hari','ok');
   if(typeof logAction==='function') logAction('PRE-LOAD MC','Auto-load 54 rekod dari Borang Semakan',res.matched,'OK');
