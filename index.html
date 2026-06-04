@@ -297,6 +297,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-sm" style="font-size:7.5px;color:#fca5a5" onclick="generateTeguranReport()">&#9888; Teguran</button>
         <button class="btn btn-gold btn-sm" onclick="expPDF()" id="btn-pdf">PDF</button>
         <button class="btn btn-sm" onclick="expCSV()">CSV</button>
+        <button class="btn btn-gold btn-sm" onclick="eakhaBossOpenPrint()" title="Buka snapshot layout Master File untuk Save as PDF / Print">Snapshot Bos</button>
+        <button class="btn btn-sm" onclick="eakhaBossDownloadDOC()" title="Muat turun format Word/DOC dengan layout seperti Master File">Word Layout</button>
+        <button class="btn btn-sm" onclick="eakhaBossDownloadXLS()" title="Muat turun format Excel/XLS dengan layout seperti Master File">Excel Layout</button>
       </div>
     </div>
 
@@ -1001,24 +1004,44 @@ function tcAudit(bil,d){
         lines.push('\u2713 IN '+c.tc_in);
       }
     } else { late=inM-shSt; early=shSt-inM;
-      if(!c.ot&&early>60){ lines.push('IN AWAL'); lines.push('IN '+c.tc_in+' ('+fmtMin(early)+' awal)'); cls='tc-lw'; ok=false; }
-      else if(!c.ot&&late>6){ lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+late+'min)'); cls='tc-lw'; ok=false; }
+      if(!c.ot&&early>60&&early<=120){
+        // 1-2 jam awal — IN AWAL, flagkan sahaja
+        lines.push('IN AWAL'); lines.push('IN '+c.tc_in+' ('+fmtMin(early)+' awal)');
+        cls='tc-warn'; // ok=true, tidak flag sebagai kesalahan — beri amaran sahaja
+      } else if(!c.ot&&early>120){
+        // >2 jam awal — di luar tetingkap, kemungkinan OT sebelumnya
+        lines.push('\u26A0 IN AWAL (luar tetingkap)'); lines.push('IN '+c.tc_in+' ('+fmtMin(early)+' awal)');
+        cls='tc-warn'; ok=false;
+      } else if(!c.ot&&late>6){ lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+late+'min)'); cls='tc-lw'; ok=false; }
       else lines.push('\u2713 IN '+c.tc_in);
     }
   } else if(c.tc_out){ lines.push('\u26A0 TIADA IN'); lines.push('(OUT: '+c.tc_out+')'); cls='tc-warn'; ok=false; }
 
   if(c.tc_out){
     if(sh==='M'){
-      var outSah=(outM>=390&&outM<=450);
-      var outAwal=(outM>0&&outM<390);
+      var outSah=(outM>=360&&outM<=480); // 06:00-08:00 (±1 jam dari 07:00)
+      var outAwal=(outM>0&&outM<360); // sebelum 06:00 = out terlalu awal
       if(outSah) lines.push('\u2713 OUT '+c.tc_out+' (ESOK - SAH)');
       else if(outAwal){ lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (sebelum 0630)'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
       else lines.push('\u2713 OUT '+c.tc_out+' (ESOK)');
     } else {
-      let earlyOut=0;
-      if(sh==='S'||sh==='P') earlyOut=shEn-outM;
-      if(!c.ot&&earlyOut>60){ lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (-'+fmtMin(earlyOut)+')'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
-      else lines.push((c.tc_in?'\u2713 ':'')+' OUT '+c.tc_out);
+      let earlyOut=0, lateOut=0;
+      if(sh==='S'||sh==='P'){
+        earlyOut = outM < shEn ? shEn-outM : 0;
+        lateOut  = outM > shEn ? outM-shEn : 0;
+      }
+      if(!c.ot&&earlyOut>60){
+        // Keluar awal sebelum shift tamat
+        lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (-'+fmtMin(earlyOut)+')');
+        if(cls==='tc-ok'){cls='tc-lw';ok=false;}
+      } else if(!c.ot&&lateOut>120){
+        // Keluar >2 jam selepas shift tamat tanpa OT — luar tetingkap
+        lines.push('\u26A0 OUT LEWAT (luar tetingkap)');
+        lines.push('OUT '+c.tc_out+' (+'+fmtMin(lateOut)+' selepas shift tamat)');
+        if(cls==='tc-ok'){cls='tc-warn';ok=false;}
+      } else {
+        lines.push((c.tc_in?'\u2713 ':'')+' OUT '+c.tc_out);
+      }
     }
   } else if(c.tc_in&&sh==='M'){
     // Shift malam tiada OUT = cross-midnight, NORMAL
@@ -1036,6 +1059,10 @@ function tcAudit(bil,d){
       lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false;
     }
     // Shift malam single IN: handled above (SEMAK ESOK), skip here
+  }
+  // Tunjuk OT jika dikesan
+  if(c.tc_ot&&c.tc_ot_in){
+    lines.push('OT: IN '+c.tc_ot_in+(c.tc_ot_out?' · OUT '+c.tc_ot_out:''));
   }
   return {txt:lines.join('\n'),cls,ok};
 }
@@ -3391,6 +3418,97 @@ function expPDF(){
   w.document.close(); setTimeout(()=>w.print(),500);
 }
 
+
+// ── BOSS SNAPSHOT EXPORT (LIVE MASTER LAYOUT) ─────────────────────
+function eakhaBossSafeText(v){ return String(v==null?'':v).replace(/[<>]/g,function(c){return c==='<'?'&lt;':'&gt;';}); }
+function eakhaBossMonthLabel(){
+  var m = (typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:(+localStorage.getItem('eakha_active_month')||4));
+  var y = (typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:(+localStorage.getItem('eakha_active_year')||2026));
+  try{ return monthName(m)+' '+y; }catch(e){ var mn=['','Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember']; return (mn[m]||('Bulan '+m))+' '+y; }
+}
+function eakhaBossFileBase(){
+  var m = (typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:(+localStorage.getItem('eakha_active_month')||4));
+  var y = (typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:(+localStorage.getItem('eakha_active_year')||2026));
+  return 'eAKHA_Master_File_'+y+'_'+String(m).padStart(2,'0')+'_Layout_Bos';
+}
+function eakhaBossEnsureMaster(){
+  try{
+    var q=document.getElementById('m-search'); if(q) q.value='';
+    if(typeof renderMaster==='function') renderMaster(null);
+  }catch(e){ console.warn('[Boss Snapshot] render master:',e); }
+  return document.getElementById('master-grid');
+}
+function eakhaBossBuildHTML(kind){
+  var grid=eakhaBossEnsureMaster();
+  if(!grid || !grid.innerHTML.trim()){
+    try{ toast('Master File belum dipaparkan / data belum dimuat','warn'); }catch(e){}
+    return '';
+  }
+  var styles='';
+  try{ styles=Array.from(document.querySelectorAll('style')).map(function(x){return x.innerHTML;}).join('\n'); }catch(e){}
+  var month=eakhaBossMonthLabel();
+  var user=(document.getElementById('user-topbar')||{}).textContent||'';
+  var count=(document.getElementById('master-count')||{}).textContent||'';
+  var info=(document.getElementById('master-info')||{}).textContent||'';
+  var generated=new Date().toLocaleString('ms-MY');
+  var note = kind==='xls' ? 'Format Excel/XLS — layout 7 lapisan seperti paparan live.' : 'Snapshot rasmi — layout 7 lapisan seperti paparan live website.';
+  var extraCss = `
+    html,body{height:auto!important;overflow:auto!important;background:#ffffff!important;color:#111!important;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;}
+    .boss-page{padding:10px;background:#fff;color:#111;}
+    .boss-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;border-bottom:2px solid #0f1f3d;padding-bottom:7px;}
+    .boss-title{font-size:13px;font-weight:800;color:#0f1f3d;line-height:1.2;}
+    .boss-sub{font-size:8px;color:#334155;margin-top:3px;line-height:1.35;}
+    .boss-meta{font-size:7.5px;color:#334155;text-align:right;line-height:1.35;min-width:180px;}
+    .boss-actions{position:sticky;top:0;z-index:999;background:#fff;border-bottom:1px solid #ddd;padding:8px;display:flex;gap:6px;}
+    .boss-actions button{font-size:11px;padding:5px 10px;border:1px solid #999;background:#f8fafc;border-radius:4px;cursor:pointer;}
+    .boss-master .mg-wrap,.boss-master{overflow:visible!important;width:max-content!important;max-width:none!important;}
+    .boss-master .mg,.boss-master .grid{border-collapse:collapse!important;width:auto!important;min-width:max-content!important;font-size:6.1px!important;line-height:1.12!important;}
+    .boss-master .gh,.boss-master .gh-nm,.boss-master .gh-lyr,.boss-master .ntd,.boss-master .ltd{position:static!important;left:auto!important;top:auto!important;z-index:auto!important;}
+    .boss-master .gh-nm{min-width:125px!important;max-width:125px!important;}
+    .boss-master .gh-lyr{min-width:72px!important;max-width:72px!important;}
+    .boss-master .ntd{min-width:125px!important;max-width:125px!important;}
+    .boss-master .ltd{min-width:72px!important;max-width:72px!important;}
+    .boss-master .dc,.boss-master .gh-d{min-width:54px!important;max-width:54px!important;padding:2px!important;font-size:5.8px!important;}
+    .boss-master .nn{font-size:6.5px!important;}
+    .boss-master .nb{font-size:7px!important;}
+    .boss-master .nm{font-size:5.6px!important;}
+    .boss-master .dc-pre{white-space:pre-line!important;line-height:1.15!important;}
+    .boss-foot{font-size:7px;color:#475569;margin-top:8px;border-top:1px solid #cbd5e1;padding-top:5px;}
+    @media print{
+      @page{size:A3 landscape;margin:5mm;}
+      body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;zoom:.68;}
+      .boss-actions{display:none!important;}
+      .boss-page{padding:0!important;}
+    }
+  `;
+  return '<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>'+eakhaBossSafeText('Master File '+month)+'</title><style>'+styles+'\n'+extraCss+'</style></head><body>'+
+    (kind==='print'?'<div class="boss-actions"><button onclick="window.print()">Print / Save PDF</button><button onclick="window.close()">Tutup</button></div>':'')+
+    '<div class="boss-page"><div class="boss-head"><div><div class="boss-title">MASTER FILE AUDIT KEHADIRAN e-AKHA VSAVAGE</div><div class="boss-sub">Hospital Kuala Lumpur · KPL · Bulan Audit: <b>'+eakhaBossSafeText(month)+'</b><br>'+eakhaBossSafeText(note)+'</div></div><div class="boss-meta">Dijana: '+eakhaBossSafeText(generated)+'<br>'+eakhaBossSafeText(user)+'<br>'+eakhaBossSafeText(count)+' '+eakhaBossSafeText(info)+'</div></div>'+
+    '<div class="boss-master"><div class="mg-wrap">'+grid.innerHTML+'</div></div><div class="boss-foot">Dokumen ini dijana terus daripada paparan Master File live. Semak bulan audit sebelum serahan kepada pegawai penyelia.</div></div></body></html>';
+}
+function eakhaBossOpenPrint(){
+  var html=eakhaBossBuildHTML('print'); if(!html) return;
+  var w=window.open('','_blank');
+  if(!w){ try{ toast('Pop-up disekat. Benarkan pop-up untuk export snapshot.','warn'); }catch(e){} return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} },700);
+}
+function eakhaBossDownloadBlob(html, mime, filename){
+  var blob=new Blob(['\ufeff'+html],{type:mime+';charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},1000);
+}
+function eakhaBossDownloadDOC(){
+  var html=eakhaBossBuildHTML('doc'); if(!html) return;
+  eakhaBossDownloadBlob(html,'application/msword',eakhaBossFileBase()+'.doc');
+  try{ toast('Word Layout dimuat turun ✓','ok'); }catch(e){}
+}
+function eakhaBossDownloadXLS(){
+  var html=eakhaBossBuildHTML('xls'); if(!html) return;
+  eakhaBossDownloadBlob(html,'application/vnd.ms-excel',eakhaBossFileBase()+'.xls');
+  try{ toast('Excel Layout dimuat turun ✓','ok'); }catch(e){}
+}
+
 // ── SUPABASE ─────────────────────────────────────────────────────
 let supa=null, SUPA_OK=false;
 
@@ -3623,17 +3741,18 @@ async function bootApp(){
             return (isMalam||isPetang)?Math.min(d1,Math.abs(m4+1440-tgt),Math.abs(m4-1440-tgt)):d1;
           }
           var bIn=pts.reduce(function(a,b){return distFV2(a.mins%1440,shSt)<=distFV2(b.mins%1440,shSt)?a:b;});
-          var outCandidates=pts.filter(function(p){return p.t!==bIn.t||p.nextDay;});
+          if(!bIn){ c.tc_in=''; c.tc_out=''; }  // tiada IN sah — TIADA IN untuk audit
+          var outCandidates=bIn?pts.filter(function(p){return p.t!==bIn.t||p.nextDay;}):[];
           if(outCandidates.length){
             var bOut=outCandidates.reduce(function(a,b){
               var da=isMalam||isPetang?Math.abs(a.mins-(shEn+(shEn<shSt?1440:0))):Math.abs(a.mins-shEn);
               var db=isMalam||isPetang?Math.abs(b.mins-(shEn+(shEn<shSt?1440:0))):Math.abs(b.mins-shEn);
               return da<=db?a:b;
             });
-            c.tc_in=bIn.t; c.tc_out=bOut.t;
-            if(bOut.nextDay) c.tc_out_nextday=true;
+            if(bIn){ c.tc_in=bIn.t; c.tc_out=bOut.t;
+              if(bOut.nextDay) c.tc_out_nextday=true; }
           } else {
-            c.tc_in=bIn.t; c.tc_out='';
+            if(bIn){ c.tc_in=bIn.t; c.tc_out=''; }
           }
           if(!c.kzp){
             var inMins=bIn.mins%1440;
@@ -4960,8 +5079,13 @@ function validasiAudit(){
             if(typeof x==='object') return x;
             return {t:x,nextDay:false,mins:toMins(x)};
           });
-          // Pilih IN: terdekat dengan shift start
+          // ── Tetapkan tetingkap IN yang sah ───────────────────────
+          // Pilih IN: terdekat dengan shift start (semua punch)
           var bIn=pts.reduce(function(a,b){return distFV(a.mins%1440,shSt)<=distFV(b.mins%1440,shSt)?a:b;});
+          // Pilih IN: terdekat dengan shift start, dalam tetingkap sah sahaja
+          var bIn=validInPts.length
+            ? validInPts.reduce(function(a,b){return distFV(a.mins%1440,shSt)<=distFV(b.mins%1440,shSt)?a:b;})
+            : null; // tiada IN sah dalam tetingkap
           // Pilih OUT: terdekat dengan shift end (boleh cross-day)
           var outCandidates=pts.filter(function(p){return p.t!==bIn.t||p.nextDay;});
           var bOut=null;
@@ -4972,11 +5096,30 @@ function validasiAudit(){
               return da<=db?a:b;
             });
           }
-          c.tc_in=bIn.t;
-          c.tc_out=bOut?bOut.t:'';
-          if(bOut&&bOut.nextDay) c.tc_out_nextday=true;
+          c.tc_in=bIn.t; c.tc_out=bOut?bOut.t:''; if(bOut&&bOut.nextDay) c.tc_out_nextday=true;
+          // ── OT Detection ──────────────────────────────────────
+          // Jika ada punch ≤5 min selepas tc_out = OT dimulakan
+          if(bIn&&bOut){
+            var otInCandidates=pts.filter(function(p){
+              if(!bOut||p.t===bOut.t) return false;
+              var diff=(p.mins-bOut.mins%1440+1440)%1440;
+              return diff>=0&&diff<=8; // ≤8 min selepas hakiki OUT = OT IN
+            });
+            if(otInCandidates.length){
+              c.tc_ot=true;
+              var otIn=otInCandidates[0];
+              // OT OUT = punch terjauh selepas OT IN (max 8 jam)
+              var otOutCandidates=pts.filter(function(p){
+                if(p.t===bIn.t||p.t===bOut.t||p.t===otIn.t) return false;
+                var diff=(p.mins-otIn.mins+1440)%1440;
+                return diff>0&&diff<=510; // dalam 8.5 jam selepas OT IN
+              });
+              c.tc_ot_in=otIn.t;
+              c.tc_ot_out=otOutCandidates.length?otOutCandidates[otOutCandidates.length-1].t:'';
+            }
+          }
           // Set KZP
-          if(!c.kzp){
+          if(bIn&&!c.kzp){
             var inMins=bIn.mins%1440;
             var late=isMalam?Math.min(Math.abs(inMins-shSt),Math.abs(inMins+1440-shSt)):inMins-shSt;
             c.kzp=late>10?'L':'\u2713';
