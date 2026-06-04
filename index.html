@@ -3439,47 +3439,56 @@ function authTab(t,el){
 }
 
 async function doLogin(){
-  const id=(document.getElementById('l-id').value||'').trim().toLowerCase();
-  const pw=document.getElementById('l-pw').value||'';
+  const idEl=document.getElementById('l-id');
+  const pwEl=document.getElementById('l-pw');
   const btn=document.getElementById('l-btn');
   const err=document.getElementById('l-err');
-  if(!id||!pw){ showAuthErr(err,'Sila masukkan ID dan kata laluan.'); return; }
-  btn.disabled=true; btn.textContent='Mengesahkan...';
-
-  // CHECK LOCAL ACCOUNTS FIRST
-  // Tuan Najib: viewer/report sahaja
-  if((id==='tuannajib'||id==='tuan.najib'||id==='najib') && pw==='633283'){
-    AUTH={loggedIn:true,role:'viewer',id:'tuannajib',nama:'Tuan Najib',jawatan:'VIEWER · JANA LAPORAN'};
-    clearErr(err); saveSess(); bootApp(); return;
+  const id=(idEl?idEl.value:'').trim().toLowerCase().replace(/\s+/g,'');
+  const pw=(pwEl?pwEl.value:'').trim();
+  function showE(m){ if(err){err.textContent=m;err.style.display='block';} }
+  function clearE(){ if(err){err.textContent='';err.style.display='none';} }
+  if(!id||!pw){ showE('Sila masukkan ID pengguna dan kata laluan.'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Mengesahkan...'; }
+  const LOCAL={
+    'sjnadilah': {pw:'912012',  role:'admin', nama:'SJN Adilah',  jawatan:'OWNER · AUDITOR'},
+    'sjn.adilah':{pw:'912012',  role:'admin', nama:'SJN Adilah',  jawatan:'OWNER · AUDITOR'},
+    'adilah':    {pw:'912012',  role:'admin', nama:'SJN Adilah',  jawatan:'OWNER · AUDITOR'},
+    'smamierul': {pw:'2438670', role:'admin', nama:'SM Amierul',  jawatan:'ADMIN'},
+    'sm.amierul':{pw:'2438670', role:'admin', nama:'SM Amierul',  jawatan:'ADMIN'},
+    'amierul':   {pw:'2438670', role:'admin', nama:'SM Amierul',  jawatan:'ADMIN'},
+    'tuannajib': {pw:'633283',  role:'viewer',nama:'Tuan Najib',  jawatan:'VIEWER · JANA LAPORAN'},
+    'tuan.najib':{pw:'633283',  role:'viewer',nama:'Tuan Najib',  jawatan:'VIEWER · JANA LAPORAN'},
+    'najib':     {pw:'633283',  role:'viewer',nama:'Tuan Najib',  jawatan:'VIEWER · JANA LAPORAN'},
+    'viewer':    {pw:'662633',  role:'viewer',nama:'Viewer',       jawatan:'VIEWER'},
+  };
+  const acc=LOCAL[id];
+  if(acc&&acc.pw===pw){
+    AUTH={loggedIn:true,role:acc.role,id,nama:acc.nama,jawatan:acc.jawatan};
+    clearE(); if(typeof saveSess==='function') saveSess();
+    document.getElementById('auth-wall').style.display='none';
+    document.getElementById('app').style.display='flex';
+    try{ await bootApp(); }catch(e){ console.error('[login]',e); }
+    return;
   }
-  // Viewer biasa: password 662633 sahaja
-  if(pw==='662633'&&(!id||id===''||id==='viewer')){
-    AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'};
-    clearErr(err); saveSess(); bootApp(); return;
-  }
-  const acc=ADMINS.find(a=>a.id===id&&a.pw===pw);
-  if(acc){
-    AUTH={loggedIn:true,role:'admin',id,nama:acc.nama,jawatan:acc.role};
-    clearErr(err); saveSess(); bootApp(); return;
-  }
-
-  // Try Supabase auth
-  if(SUPA_OK){
+  if(typeof SUPA_OK!=='undefined'&&SUPA_OK&&typeof supa!=='undefined'){
     try{
       const email=id.includes('@')?id:id+'@kpl.hkl.gov.my';
       const {data,error}=await supa.auth.signInWithPassword({email,password:pw});
       if(!error&&data?.user){
-        AUTH={loggedIn:true,role:'admin',id,nama:data.user.user_metadata?.nama||id,jawatan:data.user.user_metadata?.jawatan||'Admin'};
-        clearErr(err); saveSess(); bootApp(); return;
+        AUTH={loggedIn:true,role:'admin',id,nama:data.user.user_metadata?.nama||id,jawatan:'Admin'};
+        clearE(); if(typeof saveSess==='function') saveSess();
+        document.getElementById('auth-wall').style.display='none';
+        document.getElementById('app').style.display='flex';
+        try{ await bootApp(); }catch(e){}
+        return;
       }
-    } catch(e){}
+    }catch(e){}
   }
-
-  showAuthErr(err,'ID atau kata laluan tidak sah.');
-  document.getElementById('l-pw').value='';
-  document.querySelector('.acard').classList.add('shake');
-  setTimeout(()=>document.querySelector('.acard').classList.remove('shake'),400);
-  btn.disabled=false; btn.textContent='Log Masuk';
+  showE('ID atau kata laluan tidak sah. Cuba semula.');
+  if(pwEl) pwEl.value='';
+  const card=document.querySelector('.acard');
+  if(card){ card.classList.add('shake'); setTimeout(()=>card.classList.remove('shake'),400); }
+  if(btn){ btn.disabled=false; btn.textContent='Log Masuk'; }
 }
 
 function doViewer(){
