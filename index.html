@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.2 FIXED</title>
+  <title>e-AKHA Vsavage v5.7 MONTH MASTER SAFE</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -215,7 +215,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input class="finp2" id="l-id" type="text" placeholder="ID Pengguna" style="width:100%;margin-bottom:8px">
     <input class="finp2" id="l-pw" type="password" placeholder="Kata Laluan" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-gold" id="l-btn" style="width:100%;justify-content:center;font-size:10px;padding:9px" onclick="doLogin()">Log Masuk</button>
-    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.2 FIXED · 2026</div>
+    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.6.2 HRMIS MASTER FIXED · 2026</div>
   </div>
 </div>
 
@@ -229,7 +229,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
       <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
         <div class="month-badge" id="active-month-badge">April 2026</div>
-        <span style="font-size:7px;color:rgba(255,255,255,.25)">v5.2</span>
+        <span style="font-size:7px;color:rgba(255,255,255,.25)">v5.7</span>
       </div>
     </div>
     <div style="padding:6px 10px 2px">
@@ -1185,7 +1185,7 @@ function renderGrid(ms,cid){
       // Header
       let hdr='<tr><th class="gh gh-nm" rowspan="2">Nama Anggota</th>';
       hdr+='<th class="gh" style="position:sticky;left:105px;z-index:5;min-width:80px;background:var(--navy)" rowspan="2">Lapisan Data</th>';
-      for(let d=1;d<=30;d++){
+      for(let d=1;d<=daysInActiveMonth();d++){
         const dw=dow(d);
         const dc=dw===0?'sun':dw===6?'sat':'';
         hdr+='<th class="gh '+dc+'" style="min-width:68px">'+d+'<br><span style="font-size:5.5px;opacity:.55">'+DOW[dw]+'</span></th>';
@@ -1196,8 +1196,8 @@ function renderGrid(ms,cid){
       ms2.forEach(m=>{
         let hadir=0,mc=0,cr=0,ab=0,lw=0,sp=0,fl=0;
         const days=[];
-        for(let d=1;d<=30;d++){
-          const sh=gSh(m.bil,d); const c=D[m.bil][d]||{};
+        for(let d=1;d<=daysInActiveMonth();d++){
+          const sh=gSh(m.bil,d); const c=(D[m.bil]&&D[m.bil][d])?D[m.bil][d]:{};
           const mcR=getMC(m.bil,d); const tc=tcAudit(m.bil,d); const af=auditFinal(m.bil,d);
           // Summary
           if(sh!=='O'&&c.kzp!=='TT'&&c.kzk!=='TT'&&c.kzp!=='TH'&&c.kzk!=='TH'){
@@ -1230,8 +1230,9 @@ function renderGrid(ms,cid){
           }
           // HR layer
           let hrT='-', hrBg='rgba(30,41,59,.2)', hrFg='rgba(148,163,184,.35)';
-          if(sh==='O'){ hrT='OFFDAY'; }
-          else if(c.hrmis){ hrT=c.hrmis; hrBg='rgba(30,58,95,.4)'; hrFg='#93c5fd'; }
+          // v5.6.2: paparkan HRMIS sebenar dahulu. Jangan sorok cuti HRMIS di bawah OFFDAY.
+          if(c.hrmis){ hrT=c.hrmis; hrBg='rgba(30,58,95,.4)'; hrFg='#93c5fd'; }
+          else if(sh==='O'){ hrT='OFFDAY'; }
           else if(isCuti(c.kzp)||isCuti(c.kzk)||isCuti(c.kzp)||isCuti(c.kzk)){ hrT='TIADA PERMOHONAN\nSila mohon'; hrBg='rgba(120,53,15,.25)'; hrFg='#fde68a'; }
           days.push({d,sh,shBg,shFg,kzpV,kzkV,tc,mcT,mcBg,mcFg,hrT,hrBg,hrFg,af,m_bil:m.bil});
         }
@@ -1347,7 +1348,7 @@ function renderGrid(ms,cid){
     html+='</div>';
   });
   con.innerHTML=html||'<div class="empty"><div class="empty-ic">📊</div>Tiada data</div>';
-  if(document.getElementById('master-info')) document.getElementById('master-info').textContent=ms.length+' anggota · 7 lapisan · April 2026';
+  if(document.getElementById('master-info')) document.getElementById('master-info').textContent=ms.length+' anggota · 7 lapisan · '+(MONTHS_MS[ACTIVE_MONTH]||'Bulan')+' '+ACTIVE_YEAR;
 }
 
 function renderMaster(jab){
@@ -1401,7 +1402,7 @@ function getAllFlags(){
     // Tahan tugas + CB tidak perlu flag dalam output perhatian
     if(EXEMPT_OUTPUT.some(function(e){return m.nama.toUpperCase().indexOf(e.toUpperCase())>=0||e.toUpperCase().indexOf(m.nama.toUpperCase().split(' ')[1])>=0;})) return;
     const items=[];
-    for(let d=1;d<=30;d++){
+    for(let d=1;d<=daysInActiveMonth();d++){
       const sh=gSh(m.bil,d); if(sh==='O') continue;
       const c=D[m.bil]?.[d]||{};
       // Skip hari TT/TH/CB
@@ -1456,7 +1457,7 @@ function ensureAuditReady(force){
   if(anyDone&&!force) return;
   // Assign IN/OUT for all cells based on shift (sama logik validasi)
   MASTER.forEach(function(m){
-    for(var d=1;d<=30;d++){
+    for(var d=1;d<=daysInActiveMonth();d++){
       var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
       if(!c) continue;
       if(c.tc_problem){ c.tc_audit_done=true; continue; }
@@ -1631,7 +1632,7 @@ function renderKZPStaging(){
   var q=(document.getElementById('kzp-q')?.value||'').toLowerCase();
   var rows=[];
   MASTER.forEach(function(m){
-    for(var d=1;d<=30;d++){
+    for(var d=1;d<=daysInActiveMonth();d++){
       var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
       if(!c||!c.kzp) continue;
       if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
@@ -1654,7 +1655,7 @@ function renderKZKStaging(){
   var q=(document.getElementById('kzk-q')?.value||'').toLowerCase();
   var rows=[];
   MASTER.forEach(function(m){
-    for(var d=1;d<=30;d++){
+    for(var d=1;d<=daysInActiveMonth();d++){
       var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
       if(!c||!c.kzk) continue;
       if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
@@ -1677,7 +1678,7 @@ function renderTCStaging(){
   var q=(document.getElementById('tc-q')?.value||'').toLowerCase();
   var rows=[];
   MASTER.forEach(function(m){
-    for(var d=1;d<=30;d++){
+    for(var d=1;d<=daysInActiveMonth();d++){
       var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
       if(!c) continue;
       var hasPunch=c.tc_all&&c.tc_all.length;
@@ -4773,12 +4774,14 @@ function kemaskiniMaster(){
   var log=function(m,t){if(lb) addLog(lb,m,t||'info');};
   
   log('Memulakan kemaskini Master File dari 6 tab lapisan...','info');
+  // v5.6.2: rebuild HRMIS store/tab into D[][] before counting Master cells
+  try{ if(typeof eakhaSyncHRMISStoreToMaster==='function') eakhaSyncHRMISStoreToMaster('KEMASKINI MASTER'); }catch(e){ console.warn('[v5.6.2] HRMIS sync before master:', e); }
   
   // Re-render every cell based on D[][] data
   var filled={kzp:0,kzk:0,tc:0,mc:0,hr:0};
   var empty=0;
   MASTER.forEach(function(m){
-    for(var d=1;d<=30;d++){
+    for(var d=1;d<=daysInActiveMonth();d++){
       var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
       if(!c) continue;
       if(c.kzp) filled.kzp++;
@@ -4802,7 +4805,7 @@ function kemaskiniMaster(){
   try{localStorage.setItem('eakha_audit_state',JSON.stringify(AUDIT_STATE));}catch(e){}
   // Save D[] too — ensure all staging data is persisted
   try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}
-  try{ if(SUPA_OK) MASTER.forEach(function(m){ for(var dd=1;dd<=30;dd++){ var c=D[m.bil]&&D[m.bil][dd]; if(c&&(c.kzp||c.kzk||c.tc_in||c.hrmis)) saveToDB(m.bil,ACTIVE_MONTH,dd); }}); }catch(e){}
+  try{ if(SUPA_OK) MASTER.forEach(function(m){ for(var dd=1;dd<=daysInActiveMonth();dd++){ var c=D[m.bil]&&D[m.bil][dd]; if(c&&(c.kzp||c.kzk||c.tc_in||c.hrmis)) saveToDB(m.bil,ACTIVE_MONTH,dd); }}); }catch(e){}
   
   renderMaster(null);
   renderDash();
@@ -4887,7 +4890,7 @@ function validasiAudit(){
   var stats={sah:0,flagged:0,offday:0,tt_th:0,incomplete:0,total:0};
   MASTER.forEach(function(m){
     if(!AUDIT_STATE[m.bil]) AUDIT_STATE[m.bil]={};
-    for(var d=1;d<=30;d++){
+    for(var d=1;d<=daysInActiveMonth();d++){
       var sh=gSh(m.bil,d);
       if(sh==='O'){
         AUDIT_STATE[m.bil][d]={status:'offday',ts:new Date().toISOString()};
@@ -6454,7 +6457,7 @@ function confLabel(c){
     if(!reqAdmin()) return;
     var n=0;
     try{
-      MASTER.forEach(function(m){ for(var d=1; d<=30; d++){
+      MASTER.forEach(function(m){ for(var d=1; d<=daysInActiveMonth(); d++){
         var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null; if(!c || gSh(m.bil,d)==='O') continue;
         if(c.kzp && !c.kzk){ c.kzk=c.kzp; n++; }
         if(c.kzk && !c.kzp){ c.kzp=c.kzk; n++; }
@@ -7100,6 +7103,584 @@ if(typeof saveCustomAnggota !== 'function'){
   });
   document.addEventListener('DOMContentLoaded', injectRecoverButton);
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   PATCH v5.6.2 — HRMIS → MASTER FILE FULL SYNC
+   Fix: HRMIS register uses localStorage(eakha_hrmis), but Master grid uses D[bil][day].hrmis.
+   This rebuilds D[][] from the HRMIS register every time Master/boot/update runs.
+══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var PATCH='v5.6.2-HRMIS-MASTER-FULL-SYNC';
+  window.EAKHA_HRMIS_PATCH_VERSION = PATCH;
+
+  function yNow(){ return (typeof ACTIVE_YEAR!=='undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026; }
+  function mNow(){ return (typeof ACTIVE_MONTH!=='undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4; }
+  function dim(y,m){ return new Date(y,m,0).getDate(); }
+  function safeJSON(v,fb){ try{ var x=JSON.parse(v||''); return Array.isArray(x)?x:fb; }catch(e){ return fb; } }
+  function canonName(v){
+    return String(v||'').toUpperCase()
+      .replace(/[^A-Z0-9@ ]+/g,' ')
+      .replace(/\bMUHAMMAD\b/g,'MOHAMAD')
+      .replace(/\bMOHAMMAD\b/g,'MOHAMAD')
+      .replace(/\bMOHD\b/g,'MOHAMAD')
+      .replace(/\bMUHD\b/g,'MOHAMAD')
+      .replace(/\bALLIF\b/g,'ALIFF')
+      .replace(/\s+/g,' ').trim();
+  }
+  function parseDate(v){
+    var s=String(v||'').trim(); if(!s) return null;
+    var p;
+    if(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)){ p=s.split(/[-/]/); return new Date(+p[0],+p[1]-1,+p[2]); }
+    if(/^\d{1,2}[\/.\-]\d{1,2}([\/.\-]\d{2,4})?$/.test(s)){
+      p=s.split(/[\/.\-]/); var yy=p[2]?+p[2]:yNow(); if(yy<100) yy+=2000; return new Date(yy,+p[1]-1,+p[0]);
+    }
+    var d=new Date(s); return isNaN(d.getTime())?null:d;
+  }
+  function activeDaysInRange(dari,hingga){
+    var a=parseDate(dari), b=parseDate(hingga||dari); if(!a||!b) return [];
+    if(b<a){ var t=a; a=b; b=t; }
+    var out=[], y=yNow(), m=mNow(), cur=new Date(a.getFullYear(),a.getMonth(),a.getDate()), guard=0;
+    while(cur<=b && guard<370){
+      if(cur.getFullYear()===y && (cur.getMonth()+1)===m) out.push(cur.getDate());
+      cur.setDate(cur.getDate()+1); guard++;
+    }
+    return out;
+  }
+  function findMemberByHRMISName(nama){
+    if(typeof MASTER==='undefined') return null;
+    var cn=canonName(nama);
+    var exact=MASTER.find(function(m){ return canonName(m.nama)===cn; });
+    if(exact) return exact;
+    // Use existing project fuzzy function if available.
+    try{
+      if(typeof nameScore==='function'){
+        var best=null,score=0;
+        MASTER.forEach(function(m){ var sc=nameScore(nama,m); if(sc>score){score=sc;best=m;} });
+        if(best && score>=72) return best;
+      }
+      if(typeof bestMatch==='function'){
+        var bm=bestMatch(String(nama||'')); if(bm && bm.bil) return bm;
+      }
+    }catch(e){}
+    // Token overlap fallback.
+    var toks=cn.split(' ').filter(function(x){ return x.length>2 && !['BIN','BINTI','BT','A/L','AL'].includes(x); });
+    var best2=null,score2=0;
+    MASTER.forEach(function(m){
+      var mn=canonName(m.nama), mt=mn.split(' '), sc=0;
+      toks.forEach(function(t){ if(mt.indexOf(t)>=0) sc++; });
+      if(toks.length && mt[0]===toks[0]) sc+=1;
+      if(sc>score2){ score2=sc; best2=m; }
+    });
+    return score2>=2?best2:null;
+  }
+  function hrLabel(rec){
+    var v=(rec && (rec.jenis||rec.kodCuti||rec.status||rec.val)) || 'CR';
+    try{ if(typeof hrmisLabel==='function') return hrmisLabel(v); }catch(e){}
+    var s=String(v||'').toUpperCase();
+    if(/BERSALIN|\bCBR?\b/.test(s)) return 'CB SAH';
+    if(/TANPA\s*REKOD|\bCTR\b/.test(s)) return 'CTR SAH';
+    if(/KECEMASAN|\bEL\b/.test(s)) return 'EL SAH';
+    if(/SAKIT|\bMC\b/.test(s)) return 'MC SAH HRMIS';
+    return 'CR SAH';
+  }
+  function readHRMISStore(){
+    try{ if(typeof autoLoadHRMISPreloadStatic==='function') autoLoadHRMISPreloadStatic(); }catch(e){}
+    try{ if(typeof normalizeHRMISRecordsStore==='function') return normalizeHRMISRecordsStore() || []; }catch(e){}
+    return safeJSON(localStorage.getItem('eakha_hrmis'),[]);
+  }
+
+  window.eakhaSyncHRMISStoreToMaster = function(reason){
+    var arr=readHRMISStore(), y=yNow(), m=mNow(), maxD=dim(y,m);
+    var stats={store:arr.length, activeRecords:0, activeDays:0, applied:0, unmatched:[], skippedOtherMonth:0};
+    if(typeof D==='undefined' || typeof MASTER==='undefined') return stats;
+
+    // Clear HRMIS cells previously generated from HRMIS store, then rebuild from current register.
+    try{
+      Object.keys(D||{}).forEach(function(b){
+        Object.keys(D[b]||{}).forEach(function(dd){
+          var c=D[b][dd]; if(!c) return;
+          if(c._hrmis_from_store || c._hrmis_rec){
+            c.hrmis=''; delete c._hrmis_rec; delete c._hrmis_from_store;
+          }
+        });
+      });
+    }catch(e){}
+
+    arr.forEach(function(rec){
+      if(!rec || !rec.nama) return;
+      var days=activeDaysInRange(rec.dari||rec.tarikh, rec.hingga||rec.dari||rec.tarikh);
+      if(!days.length){ stats.skippedOtherMonth++; return; }
+      var mem=findMemberByHRMISName(rec.nama);
+      if(!mem || !mem.bil){ stats.unmatched.push(rec.nama); return; }
+      stats.activeRecords++;
+      days.forEach(function(day){
+        if(day<1 || day>maxD) return;
+        if(!D[mem.bil]) D[mem.bil]={};
+        if(!D[mem.bil][day]) D[mem.bil][day]={kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],ot:false,hrmis:'',pengganti:false,note:''};
+        D[mem.bil][day].hrmis=hrLabel(rec);
+        D[mem.bil][day]._hrmis_rec=rec;
+        D[mem.bil][day]._hrmis_from_store=true;
+        stats.activeDays++; stats.applied++;
+      });
+    });
+
+    try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+    try{ window.EAKHA_LAST_HRMIS_SYNC=Object.assign({reason:reason||'AUTO',ts:new Date().toISOString()},stats); }catch(e){}
+    try{ console.log('[HRMIS sync '+PATCH+']', stats); }catch(e){}
+    return stats;
+  };
+
+  // Override bridge: register/localStorage → Master D[][].
+  var oldAuto = (typeof autoLoadHRMISPreload==='function') ? autoLoadHRMISPreload : null;
+  window.autoLoadHRMISPreload = autoLoadHRMISPreload = function(){
+    try{ if(oldAuto) oldAuto.apply(this, arguments); }catch(e){ console.warn('[v5.6.2] old HRMIS preload:',e); }
+    var st=eakhaSyncHRMISStoreToMaster('AUTOLOAD');
+    try{ if(st && st.applied && typeof toast==='function') toast('HRMIS → Master: '+st.applied+' hari daripada '+st.activeRecords+' rekod aktif','ok'); }catch(e){}
+    return st;
+  };
+
+  function wrapRender(name, reason){
+    try{
+      var old=window[name] || eval(name); if(typeof old!=='function' || old.__hrmis562) return;
+      var neu=function(){ try{ eakhaSyncHRMISStoreToMaster(reason||name); }catch(e){} return old.apply(this, arguments); };
+      neu.__hrmis562=true; window[name]=eval(name+' = neu');
+    }catch(e){}
+  }
+  wrapRender('renderMaster','RENDER MASTER');
+  wrapRender('renderMiniGrid','RENDER MINI');
+  wrapRender('renderHRMISReg','RENDER HRMIS TAB');
+
+  // Kemaskini Master must rebuild HRMIS before it counts filled.hr.
+  try{
+    var oldKem = window.kemaskiniMaster || kemaskiniMaster;
+    if(typeof oldKem==='function' && !oldKem.__hrmis562){
+      var neuKem=function(){ try{ eakhaSyncHRMISStoreToMaster('KEMASKINI MASTER PRECOUNT'); }catch(e){} return oldKem.apply(this, arguments); };
+      neuKem.__hrmis562=true; window.kemaskiniMaster = kemaskiniMaster = neuKem;
+    }
+  }catch(e){}
+
+  // Rebuild after dataset restore and boot delayed tasks so snapshots cannot downgrade HRMIS cells.
+  try{
+    if(typeof loadDataset==='function'){
+      var oldLoad=loadDataset;
+      window.loadDataset = loadDataset = function(){ var r=oldLoad.apply(this, arguments); try{ eakhaSyncHRMISStoreToMaster('LOAD DATASET'); }catch(e){} return r; };
+    }
+  }catch(e){}
+  try{
+    if(typeof bootApp==='function' && !window.__EAKHA_HRMIS_BOOT_562){
+      window.__EAKHA_HRMIS_BOOT_562=true;
+      var oldBoot=bootApp;
+      window.bootApp = bootApp = async function(){
+        var r=await oldBoot.apply(this, arguments);
+        [150,500,1000,1800,3000].forEach(function(ms){ setTimeout(function(){
+          try{ eakhaSyncHRMISStoreToMaster('BOOT '+ms); if(typeof renderMaster==='function') renderMaster(null); if(typeof renderHRMISReg==='function' && document.getElementById('page-hrmis-reg')?.classList.contains('on')) renderHRMISReg(); }catch(e){}
+        },ms); });
+        return r;
+      };
+    }
+  }catch(e){}
+
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){ try{ eakhaSyncHRMISStoreToMaster('DOM READY'); if(typeof renderMaster==='function') renderMaster(null); }catch(e){} }, 800);
+  });
+})();
+
+
+
+/* ══════════════════════════════════════════════════════════════
+   PATCH v5.7 — MONTH-ISOLATED MASTERFILE / NO CROSS-MONTH OVERWRITE
+   Tujuan:
+   1) Master File D[][] disimpan ikut bulan aktif: eakha_master_YYYY_MM.
+   2) Tukar bulan = simpan bulan semasa → reset D kosong bulan baru → load bulan baru.
+   3) eakha_data hanya compatibility/current view; bukan lagi sumber utama Master.
+   4) Static April preload tidak bocor ke bulan Mei/Jun kecuali cuti cross-month yang sah.
+══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var PATCH = 'v5.7-MONTH-ISOLATED-MASTERFILE';
+  window.EAKHA_MASTER_PATCH_VERSION = PATCH;
+
+  function pad(n){ return String(+n).padStart(2,'0'); }
+  function yNow(){ return (typeof ACTIVE_YEAR !== 'undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026; }
+  function mNow(){ return (typeof ACTIVE_MONTH !== 'undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4; }
+  function monthName(m){ return (typeof MONTHS_MS !== 'undefined' && MONTHS_MS[+m]) ? MONTHS_MS[+m] : ('Bulan '+m); }
+  function dim(y,m){ return new Date(+y,+m,0).getDate(); }
+  function activeDays(){ return dim(yNow(), mNow()); }
+  window.daysInActiveMonth = activeDays;
+
+  function masterKey(y,m){ return 'eakha_master_'+(+y)+'_'+pad(m); }
+  function datasetKey(y,m){ return 'eakha_dataset_'+(+y)+'_'+(+m); }
+  function auditKey(y,m){ return 'eakha_audit_state_'+(+y)+'_'+pad(m); }
+  function hrmisKey(y,m){ return 'eakha_hrmis_'+(+y)+'_'+pad(m); }
+  function mcKey(y,m){ return 'eakha_mc_'+(+y)+'_'+pad(m); }
+
+  window.getMasterMonthKey = function(){ return masterKey(yNow(), mNow()); };
+  window.getDatasetKey = function(){ return datasetKey(yNow(), mNow()); };
+
+  function parseJSON(raw, fb){ try{ var x=JSON.parse(raw||''); return x==null?fb:x; }catch(e){ return fb; } }
+  function clone(x){ try{ return JSON.parse(JSON.stringify(x)); }catch(e){ return x; } }
+  function cell(){ return {kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''}; }
+  function hasVal(v){ return v!==undefined && v!==null && String(v).trim()!=='' && String(v).trim()!=='-'; }
+
+  function scoreCell(c){
+    if(!c || typeof c !== 'object') return 0;
+    var n=0;
+    ['kzp','kzk','tc_in','tc_out','hrmis','note','pengganti','pengganti_nama','ot','tc_shift','kzp_jam','kzk_pos'].forEach(function(k){ if(hasVal(c[k])) n++; });
+    if(c.tc_all && c.tc_all.length) n += Math.min(4,c.tc_all.length);
+    if(c._mc) n += 3;
+    if(c._hrmis_rec) n += 3;
+    if(c.tc_problem) n += 1;
+    return n;
+  }
+  function scoreD(obj){
+    var s=0;
+    try{ Object.keys(obj||{}).forEach(function(b){ Object.keys(obj[b]||{}).forEach(function(d){ s += scoreCell(obj[b][d]); }); }); }catch(e){}
+    return s;
+  }
+  function extractD(obj){
+    if(!obj || typeof obj !== 'object') return null;
+    if(obj.D && typeof obj.D === 'object') return obj.D;
+    var ks=Object.keys(obj||{}), numeric=ks.filter(function(k){ return /^\d+$/.test(k); }).length;
+    return numeric ? obj : null;
+  }
+
+  function shiftFor(bil,y,m,d){
+    try{ if(typeof gShift==='function') return gShift(bil,+y,+m,+d); }catch(e){}
+    try{ if(typeof gSh==='function') return gSh(bil,+d); }catch(e){}
+    return '';
+  }
+  if(typeof gShift==='function'){
+    window.gSh = gSh = function(bil,d){ return gShift(bil, yNow(), mNow(), d); };
+  }
+  window.dow = dow = function(d){ return new Date(yNow(), mNow()-1, +d).getDay(); };
+
+  function resetBlankMaster(y,m){
+    if(typeof D === 'undefined' || typeof MASTER === 'undefined') return;
+    Object.keys(D).forEach(function(k){ delete D[k]; });
+    MASTER.filter(function(x){ return !x.pindah; }).forEach(function(mem){
+      D[mem.bil] = {};
+      for(var d=1; d<=dim(y,m); d++) D[mem.bil][d] = cell();
+      try{ if(typeof BAKI !== 'undefined' && !BAKI[mem.bil]) BAKI[mem.bil]={asal:0,cr:0,el:0}; }catch(e){}
+    });
+    applyFixedStatus(y,m);
+  }
+
+  function applyFixedStatus(y,m){
+    var max=dim(y,m);
+    for(var d=1; d<=max; d++){
+      try{
+        if(D[7] && D[7][d] && shiftFor(7,y,m,d)!=='O') { D[7][d].kzp='TH'; D[7][d].kzk='TH'; }
+        if(D[51] && D[51][d] && shiftFor(51,y,m,d)!=='O') { D[51][d].kzp='TT'; D[51][d].kzk='TT'; }
+      }catch(e){}
+      // Cuti Bersalin Nor Azura: 21/04/2026 – 21/07/2026. Kekalkan sebagai status khas merentas bulan.
+      try{
+        var dt=new Date(+y,+m-1,d), a=new Date(2026,3,21), b=new Date(2026,6,21);
+        if(D[49] && D[49][d] && dt>=a && dt<=b){
+          if(!D[49][d].kzp) D[49][d].kzp='CB';
+          if(!D[49][d].kzk) D[49][d].kzk='CB';
+        }
+      }catch(e){}
+    }
+  }
+
+  function mergeDIntoCurrent(src){
+    if(!src || typeof D === 'undefined') return;
+    var max=activeDays();
+    Object.keys(src||{}).forEach(function(b){
+      if(!D[b]) D[b]={};
+      Object.keys(src[b]||{}).forEach(function(dd){
+        var d=+dd; if(!d || d<1 || d>max) return;
+        if(!D[b][d]) D[b][d]=cell();
+        var dst=D[b][d], rec=src[b][dd]||{};
+        Object.keys(rec).forEach(function(k){
+          var v=rec[k];
+          if((v==='' || v===null || v===undefined) && hasVal(dst[k])) return;
+          dst[k]=v;
+        });
+      });
+    });
+    applyFixedStatus(yNow(), mNow());
+  }
+
+  function readMasterPayload(y,m){
+    var p=parseJSON(localStorage.getItem(masterKey(y,m)), null);
+    if(p && p.D) return p;
+    return null;
+  }
+  function bestLegacyAprilD(){
+    var keys=['eakha_data','eakha_dataset_2026_4','eakha_last_dataset_key','eakha_guard_last_good_data','eakha_guard_last_good_dataset','eakha_boot_predeploy_backup'];
+    var best=null;
+    keys.forEach(function(k){
+      try{
+        var realKey = k==='eakha_last_dataset_key' ? localStorage.getItem(k) : k;
+        if(!realKey) return;
+        var raw=localStorage.getItem(realKey); if(!raw) return;
+        var obj=parseJSON(raw,null); var d=extractD(obj); if(!d) return;
+        var sc=scoreD(d); if(!best || sc>best.score) best={key:realKey,D:d,score:sc,raw:raw,obj:obj};
+      }catch(e){}
+    });
+    return best;
+  }
+  function migrateLegacyAprilOnce(){
+    try{
+      var k=masterKey(2026,4);
+      var existing=readMasterPayload(2026,4);
+      if(existing && scoreD(existing.D)>=60) return false;
+      var b=bestLegacyAprilD();
+      if(b && b.score>0){
+        localStorage.setItem(k, JSON.stringify({patch:PATCH,migratedFrom:b.key,tahun:2026,bulan:4,savedAt:new Date().toISOString(),reason:'MIGRATE LEGACY APRIL',score:b.score,D:b.D,AUDIT_STATE:parseJSON(localStorage.getItem('eakha_audit_state'),{})}));
+        localStorage.setItem('eakha_master_migration_backup_'+new Date().toISOString().replace(/[:.]/g,'-'), b.raw || JSON.stringify(b.D));
+        return true;
+      }
+    }catch(e){ console.warn('[v5.7] migrate legacy:',e); }
+    return false;
+  }
+
+  function parseDate(v){
+    var s=String(v||'').trim(); if(!s) return null;
+    var p;
+    if(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)){ p=s.split(/[-/]/); return new Date(+p[0],+p[1]-1,+p[2]); }
+    if(/^\d{1,2}[\/.\-]\d{1,2}([\/.\-]\d{2,4})?$/.test(s)){ p=s.split(/[\/.\-]/); var yy=p[2]?+p[2]:yNow(); if(yy<100) yy+=2000; return new Date(yy,+p[1]-1,+p[0]); }
+    var d=new Date(s); return isNaN(d.getTime())?null:d;
+  }
+  function recOverlapsMonth(rec,y,m){
+    var a=parseDate(rec && (rec.dari||rec.tarikh)), b=parseDate(rec && (rec.hingga||rec.dari||rec.tarikh));
+    if(!a || !b) return false; if(b<a){ var t=a; a=b; b=t; }
+    var start=new Date(+y,+m-1,1), end=new Date(+y,+m,0);
+    return a<=end && b>=start;
+  }
+  function seedHRMISForMonth(y,m){
+    var stored=parseJSON(localStorage.getItem('eakha_hrmis'),[]); if(!Array.isArray(stored)) stored=[];
+    try{
+      if(typeof HRMIS_PRELOAD !== 'undefined' && Array.isArray(HRMIS_PRELOAD)){
+        HRMIS_PRELOAD.forEach(function(rec){
+          if(+y===2026 && (+m===4 || recOverlapsMonth(rec,y,m))){
+            var dup=stored.some(function(s){ return String(s.nama)===String(rec.nama) && String(s.dari)===String(rec.dari) && String(s.hingga||s.dari)===String(rec.hingga||rec.dari); });
+            if(!dup) stored.push(Object.assign({},rec,{_source:rec._source||'HRMIS_PRELOAD_MONTH'}));
+          }
+        });
+      }
+    }catch(e){}
+    localStorage.setItem('eakha_hrmis', JSON.stringify(stored));
+    localStorage.setItem(hrmisKey(y,m), JSON.stringify(stored));
+    return stored;
+  }
+
+  // Prevent static April evidence from being injected into other months.
+  var oldTC = (typeof autoLoadTCPreload === 'function') ? autoLoadTCPreload : null;
+  if(oldTC){ window.autoLoadTCPreload = autoLoadTCPreload = function(){ if(yNow()!==2026 || mNow()!==4) return; return oldTC.apply(this, arguments); }; }
+  var oldKZ = (typeof autoLoadKZPreload === 'function') ? autoLoadKZPreload : null;
+  if(oldKZ){ window.autoLoadKZPreload = autoLoadKZPreload = function(){ if(yNow()!==2026 || mNow()!==4) return; return oldKZ.apply(this, arguments); }; }
+  var oldMCPre = (typeof autoLoadMCPreload === 'function') ? autoLoadMCPreload : null;
+  if(oldMCPre){ window.autoLoadMCPreload = autoLoadMCPreload = function(){ if(yNow()!==2026 || mNow()!==4) return; return oldMCPre.apply(this, arguments); }; }
+  var oldHRStatic = (typeof autoLoadHRMISPreloadStatic === 'function') ? autoLoadHRMISPreloadStatic : null;
+  window.autoLoadHRMISPreloadStatic = autoLoadHRMISPreloadStatic = function(){ return seedHRMISForMonth(yNow(), mNow()); };
+
+  function loadSideStoresFromSnapshot(snap,y,m){
+    try{
+      if(snap && Array.isArray(snap.HRMIS_DATA)){
+        localStorage.setItem('eakha_hrmis', JSON.stringify(snap.HRMIS_DATA));
+        localStorage.setItem(hrmisKey(y,m), JSON.stringify(snap.HRMIS_DATA));
+      }else{
+        var hm=parseJSON(localStorage.getItem(hrmisKey(y,m)), null);
+        if(Array.isArray(hm)) localStorage.setItem('eakha_hrmis', JSON.stringify(hm));
+        else { localStorage.setItem('eakha_hrmis','[]'); seedHRMISForMonth(y,m); }
+      }
+    }catch(e){}
+    try{
+      if(typeof MC_DATA !== 'undefined'){
+        if(snap && Array.isArray(snap.MC_DATA)) MC_DATA = snap.MC_DATA;
+        else {
+          var mm=parseJSON(localStorage.getItem(mcKey(y,m)), null);
+          if(Array.isArray(mm)) MC_DATA = mm;
+          else if(!(+y===2026 && +m===4)) MC_DATA = [];
+        }
+      }
+    }catch(e){}
+    try{ if(snap && Array.isArray(snap.RAYA_DATA) && typeof RAYA_DATA !== 'undefined') RAYA_DATA=snap.RAYA_DATA; }catch(e){}
+    try{ if(snap && Array.isArray(snap.CTR_DATA) && typeof CTR_DATA !== 'undefined') CTR_DATA=snap.CTR_DATA; }catch(e){}
+    try{ if(snap && snap.STAGING && typeof STAGING !== 'undefined') STAGING=snap.STAGING; }catch(e){}
+    try{ if(snap && snap.BAKI_CUTI && typeof BAKI_CUTI !== 'undefined') BAKI_CUTI=snap.BAKI_CUTI; }catch(e){}
+  }
+
+  function loadMonthData(y,m,opts){
+    opts=opts||{};
+    migrateLegacyAprilOnce();
+    try{
+      resetBlankMaster(y,m);
+      var snap=parseJSON(localStorage.getItem(datasetKey(y,m)), null);
+      loadSideStoresFromSnapshot(snap,y,m);
+      var mp=readMasterPayload(y,m);
+      var sourceD = mp && mp.D ? mp.D : (snap && snap.D ? snap.D : null);
+      if(sourceD) mergeDIntoCurrent(sourceD);
+      try{
+        var ast = (mp && mp.AUDIT_STATE) || (snap && snap.AUDIT_STATE) || parseJSON(localStorage.getItem(auditKey(y,m)), {});
+        if(typeof AUDIT_STATE !== 'undefined') AUDIT_STATE = ast || {};
+        localStorage.setItem('eakha_audit_state', JSON.stringify(AUDIT_STATE||{}));
+      }catch(e){}
+      try{ if(typeof normalizeHRMISAll==='function') normalizeHRMISAll(); }catch(e){}
+      try{ if(typeof eakhaSyncHRMISStoreToMaster==='function') eakhaSyncHRMISStoreToMaster('LOAD MONTH '+y+'-'+pad(m)); }catch(e){}
+      try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      if(!opts.noSave) saveMasterMonth('LOAD MONTH');
+      return !!sourceD;
+    }catch(e){ console.error('[v5.7] loadMonthData:', e); return false; }
+  }
+
+  function saveMasterMonth(reason){
+    try{
+      var y=yNow(), m=mNow();
+      try{ if(typeof eakhaSyncHRMISStoreToMaster==='function') eakhaSyncHRMISStoreToMaster('SAVE MASTER '+(reason||'')); }catch(e){}
+      try{ if(typeof normalizeHRMISAll==='function') normalizeHRMISAll(); }catch(e){}
+      var payload={patch:PATCH,tahun:y,bulan:m,monthLabel:monthName(m)+' '+y,reason:reason||'AUTO',savedAt:new Date().toISOString(),savedBy:(typeof AUTH!=='undefined' && AUTH && AUTH.id)||'system',score:scoreD(D),D:clone(D),AUDIT_STATE:(typeof AUDIT_STATE!=='undefined')?clone(AUDIT_STATE):{}};
+      localStorage.setItem(masterKey(y,m), JSON.stringify(payload));
+      try{ localStorage.setItem(auditKey(y,m), JSON.stringify(payload.AUDIT_STATE||{})); }catch(e){}
+      try{ localStorage.setItem(hrmisKey(y,m), localStorage.getItem('eakha_hrmis')||'[]'); }catch(e){}
+      try{ if(typeof MC_DATA !== 'undefined') localStorage.setItem(mcKey(y,m), JSON.stringify(MC_DATA||[])); }catch(e){}
+      try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      return true;
+    }catch(e){ console.warn('[v5.7] saveMasterMonth:', e); return false; }
+  }
+  window.saveMasterMonth = saveMasterMonth;
+
+  window.saveDataset = function(reason){
+    try{
+      saveMasterMonth(reason||'SAVE DATASET');
+      var y=yNow(), m=mNow();
+      var snap={patch:PATCH,tahun:y,bulan:m,version:'v5.7',reason:reason||'AUTO',savedAt:new Date().toISOString(),savedBy:(typeof AUTH!=='undefined' && AUTH && AUTH.id)||'system',D:clone(D),AUDIT_STATE:(typeof AUDIT_STATE!=='undefined')?clone(AUDIT_STATE):{},MC_DATA:(typeof MC_DATA!=='undefined')?clone(MC_DATA):[],HRMIS_DATA:parseJSON(localStorage.getItem('eakha_hrmis'),[]),RAYA_DATA:(typeof RAYA_DATA!=='undefined')?clone(RAYA_DATA):[],CTR_DATA:(typeof CTR_DATA!=='undefined')?clone(CTR_DATA):[],STAGING:(typeof STAGING!=='undefined')?clone(STAGING):{},BAKI_CUTI:(typeof BAKI_CUTI!=='undefined')?clone(BAKI_CUTI):{},CUSTOM_ANGGOTA:(typeof CUSTOM_ANGGOTA!=='undefined')?clone(CUSTOM_ANGGOTA):[],ANGGOTA_LAIN:(typeof ANGGOTA_LAIN!=='undefined')?clone(ANGGOTA_LAIN):[]};
+      localStorage.setItem(datasetKey(y,m), JSON.stringify(snap));
+      localStorage.setItem('eakha_last_dataset_key', datasetKey(y,m));
+      return true;
+    }catch(e){ console.warn('[v5.7] saveDataset:', e); return false; }
+  };
+  try{ saveDataset = window.saveDataset; }catch(e){}
+
+  window.loadDataset = function(){ return loadMonthData(yNow(), mNow(), {noSave:true}); };
+  try{ loadDataset = window.loadDataset; }catch(e){}
+
+  function updateMonthUI(m){
+    try{
+      document.querySelectorAll('.month-item').forEach(function(el){ el.classList.toggle('on', +el.dataset.bulan===+m); });
+      var badge=document.getElementById('active-month-badge'); if(badge) badge.textContent=monthName(m)+' '+yNow();
+      var tb=document.getElementById('tb-sub'); if(tb) tb.textContent='Penyelia: SJN Adilah · 52 anggota · Bulan audit: '+monthName(m)+' '+yNow();
+    }catch(e){}
+  }
+  function renderAfterMonthLoad(){
+    try{ if(typeof populateSels==='function') populateSels(); }catch(e){}
+    try{ if(typeof renderDash==='function') renderDash(); }catch(e){}
+    try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
+    try{ if(typeof renderMCReg==='function') renderMCReg(); }catch(e){}
+    try{ if(typeof renderHRMISReg==='function' && document.getElementById('page-hrmis-reg') && document.getElementById('page-hrmis-reg').classList.contains('on')) renderHRMISReg(); }catch(e){}
+    try{ if(typeof renderBaki==='function') renderBaki(); }catch(e){}
+    try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+  }
+
+  window.setMonth = setMonth = function(elOrMonth){
+    var newM = (typeof elOrMonth === 'number') ? +elOrMonth : +(elOrMonth && elOrMonth.dataset ? elOrMonth.dataset.bulan : mNow());
+    if(!newM || newM<1 || newM>12) return;
+    try{ saveDataset('LEAVE MONTH '+monthName(mNow())); }catch(e){}
+    ACTIVE_MONTH = newM;
+    localStorage.setItem('eakha_active_year', String(yNow()));
+    localStorage.setItem('eakha_active_month', String(newM));
+    updateMonthUI(newM);
+    var existed = loadMonthData(yNow(), newM, {noSave:false});
+    renderAfterMonthLoad();
+    try{ toast(monthName(newM)+' '+yNow()+' dipilih · Master '+(existed?'dipulihkan':'baru/kosong'),'ok'); }catch(e){}
+  };
+
+  window.manualSaveSnapshot = function(){
+    saveDataset('MANUAL SNAPSHOT');
+    try{ toast('Snapshot '+monthName(mNow())+' '+yNow()+' disimpan ✓','ok'); }catch(e){}
+  };
+  window.manualRestoreSnapshot = function(){
+    var ok=loadMonthData(yNow(), mNow(), {noSave:true});
+    renderAfterMonthLoad();
+    try{ toast(ok?'Snapshot bulan ini dipulihkan ✓':'Tiada snapshot bulan ini','ok'); }catch(e){}
+  };
+
+  function wrapAction(name, reason){
+    try{
+      var old = window[name] || eval(name);
+      if(typeof old !== 'function' || old.__v57_monthsafe) return;
+      var neu = function(){
+        var r = old.apply(this, arguments);
+        setTimeout(function(){ try{ saveDataset(reason||name); }catch(e){} }, 80);
+        return r;
+      };
+      neu.__v57_monthsafe=true;
+      window[name]=neu;
+      try{ eval(name+' = window["'+name+'"];'); }catch(e){}
+    }catch(e){}
+  }
+  ['procAll','sahTerima','kemaskiniMaster','validasiAudit','saveCEdit','clearCEdit','undoLast','autoFillFromKZ','saveAngForm','renderMaster','renderMiniGrid'].forEach(function(n){ wrapAction(n,'V5.7 '+n); });
+
+  // Reset is now per active month only, not all months.
+  try{
+    window.resetSystemData = resetSystemData = function(){
+      if(!confirm('PADAM data Master bulan aktif sahaja ('+monthName(mNow())+' '+yNow()+')? Bulan lain tidak disentuh.')) return;
+      resetBlankMaster(yNow(),mNow());
+      if(typeof AUDIT_STATE !== 'undefined') AUDIT_STATE={};
+      localStorage.removeItem(masterKey(yNow(),mNow()));
+      localStorage.removeItem(datasetKey(yNow(),mNow()));
+      saveDataset('RESET ACTIVE MONTH');
+      renderAfterMonthLoad();
+      try{ toast('Data bulan aktif direset sahaja ✓','ok'); }catch(e){}
+    };
+  }catch(e){}
+
+  function injectMonthStatus(){
+    try{
+      var bar=document.querySelector('#topbar > div[style*="margin-left:auto"]');
+      if(bar && !document.getElementById('btn-month-master-status')){
+        var b=document.createElement('button');
+        b.id='btn-month-master-status'; b.className='btn btn-sm'; b.style.fontSize='7.5px';
+        b.textContent='Master: Bulan Aktif';
+        b.title='Master File kini disimpan ikut bulan. Key: '+masterKey(yNow(),mNow());
+        b.onclick=function(){ saveDataset('CHECKPOINT BUTTON'); try{ toast('Master '+monthName(mNow())+' tersimpan ✓','ok'); }catch(e){} };
+        bar.appendChild(b);
+      }
+    }catch(e){}
+  }
+
+  var prevBoot = (typeof bootApp === 'function') ? bootApp : null;
+  if(prevBoot && !window.__EAKHA_BOOT_MONTHSAFE_V57){
+    window.__EAKHA_BOOT_MONTHSAFE_V57 = true;
+    window.bootApp = bootApp = async function(){
+      migrateLegacyAprilOnce();
+      var storedM = +localStorage.getItem('eakha_active_month') || mNow() || 4;
+      if(storedM<1 || storedM>12) storedM=4;
+      ACTIVE_MONTH = storedM;
+      updateMonthUI(storedM);
+      try{
+        var p=readMasterPayload(yNow(),storedM) || parseJSON(localStorage.getItem(datasetKey(yNow(),storedM)), null);
+        if(p && p.D) localStorage.setItem('eakha_data', JSON.stringify(p.D));
+      }catch(e){}
+      var r = await prevBoot.apply(this, arguments);
+      injectMonthStatus();
+      [120,650,1400,2600,4200].forEach(function(ms){ setTimeout(function(){
+        try{
+          ACTIVE_MONTH = storedM;
+          updateMonthUI(storedM);
+          loadMonthData(yNow(), storedM, {noSave:false});
+          injectMonthStatus();
+          renderAfterMonthLoad();
+          if(ms===4200) saveDataset('BOOT MONTH SAFE FINAL');
+        }catch(e){ console.warn('[v5.7] delayed month restore:', e); }
+      }, ms); });
+      return r;
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    injectMonthStatus();
+    setTimeout(function(){ try{ migrateLegacyAprilOnce(); loadMonthData(yNow(),mNow(),{noSave:false}); injectMonthStatus(); renderAfterMonthLoad(); }catch(e){} }, 1100);
+  });
+  window.addEventListener('beforeunload', function(){ try{ saveDataset('BEFORE UNLOAD V5.7'); }catch(e){} });
+
+  try{ console.log('[e-AKHA '+PATCH+'] ready. Master key: '+masterKey(yNow(),mNow())); }catch(e){}
+})();
+
 </script>
 </body>
 </html>
