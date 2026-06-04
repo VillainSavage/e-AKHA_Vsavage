@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.6 DATA SAFE</title>
+  <title>e-AKHA Vsavage v5.2 FIXED</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -714,7 +714,7 @@ function gShift(bil,y,m,d){
   const off=KO[BK[bil]]||0;
   return CY[((diff+off)%8+8)%8];
 }
-function gSh(bil,d){ return gShift(bil,(typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026),(typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:4),d); }
+function gSh(bil,d){ return gShift(bil,2026,4,d); }
 
 const SHL = {P:'PETANG',S:'PAGI',M:'MALAM',O:'OFFDAY'};
 const SHT = {P:'1500-2300',S:'0700-1500',M:'2300-0700',O:'Rehat'};
@@ -1223,11 +1223,6 @@ function renderGrid(ms,cid){
             const rng=daysRange(mcR.dari,mcR.hingga); const pos=rng.indexOf(d)+1;
             mcT='MC '+mcR.hari+' HARI'+(mcR.hari>1?' (H'+pos+'/'+mcR.hari+')':'')+'\n'+mcR.klinik+'\n'+(mcR.no_mc||mcR.siri||'');
             mcBg='rgba(124,45,18,.42)'; mcFg='#fed7aa';
-          } else if(c.special_cb || c.mc==='TIADA PERMOHONAN' || c.mc_no_permohonan){
-            mcT='TIADA PERMOHONAN';
-            if(c.special_cb) mcT+='\n(CUTI BERSALIN)';
-            if(c.special_tt) mcT+='\n(TAHAN TUGAS)';
-            mcBg='rgba(30,41,59,.22)'; mcFg='rgba(203,213,225,.75)';
           } else if(c.kzp==='MC'||c.kzk==='MC'){
             mcT='TIADA DOKUMEN\nSila serahkan MC'; mcBg='rgba(127,29,29,.3)'; mcFg='#fca5a5';
           } else if(isAbs(c.kzp)||isAbs(c.kzk)){
@@ -1398,8 +1393,6 @@ var EXEMPT_OUTPUT=[
   'NOR AZURA BINTI MAMAT @ MUHAMMAD', // bil 49 - CB
   'MUHAMMAD NAZRI ISMAIL',     // alias
   'MOHD AMINUDDIN',            // alias
-  'ASREE',                    // tahan tugas
-  'ASRI',                     // alias Asree
   'MOHD FAHMIE BIN HAMIL',     // bil 39 - PINDAH (tiada dalam audit)
 ];
 function getAllFlags(){
@@ -5498,7 +5491,7 @@ var HRMIS_PRELOAD = [
   {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI REHAT (CR)',     dari:'2026-02-27',hingga:'2026-02-27',masuk:'2026-02-28',mohon:'2026-02-27'},
   {nama:'NUR SYUHADA BINTI MISNAN',        jenis:'CUTI REHAT (CR)',     dari:'2026-02-25',hingga:'2026-02-26',masuk:'2026-02-27',mohon:'2026-02-25'},
   // ── Cuti Bersalin ──
-  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI BERSALIN (CTR)', dari:'2026-04-21',hingga:'2026-07-21',masuk:'2026-07-22',mohon:'2026-04-10',kodCuti:'CTR'},
+  {nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI BERSALIN (CB)',  dari:'2026-04-21',hingga:'2026-07-21',masuk:'2026-07-22',mohon:'2026-04-10'},
 ];
 
 function autoLoadHRMISPreloadStatic(){
@@ -7108,6 +7101,7 @@ if(typeof saveCustomAnggota !== 'function'){
   document.addEventListener('DOMContentLoaded', injectRecoverButton);
 })();
 </script>
+
 <script>
 /* ══════════════════════════════════════════════════════════════
    PATCH v5.6 — CUTI BERSALIN + TT/TH + TC 27-30 APRIL
@@ -7165,8 +7159,10 @@ if(typeof saveCustomAnggota !== 'function'){
     return c ? c+' SAH' : '';
   }
 
+  // Override HRMIS taxonomy so Cuti Bersalin appears as CTR Cuti Bersalin, not generic CB/MC.
   window.hrmisCode = hrmisCode = function(v){ var c=codeHR(v); return c==='CTR_CB'?'CTR':(c||'CR'); };
   window.hrmisLabel = hrmisLabel = labelHR;
+
   window.isTCProblemDayV56 = isTCProblemDate;
 
   function applySpecialCases(){
@@ -7194,6 +7190,7 @@ if(typeof saveCustomAnggota !== 'function'){
             c.mc_no_permohonan=true;
             c.hrmis='CTR CUTI BERSALIN SAH';
             c._hrmis_rec={nama:m.nama, jenis:'CUTI BERSALIN (CTR)', kodCuti:'CTR', dari:'2026-04-21', hingga:'2026-07-21', masuk:'2026-07-22', mohon:'2026-04-10', _source:'SPECIAL_CB_V56'};
+            // Timecard is intentionally ABS for this leave category. Do not carry punch unless user manually enters it.
             if(!c.manual_tc_keep){ c.tc_in=''; c.tc_out=''; c.tc_all=[]; }
           }
           if(isSpecialTTBil(bil) && !isOff(bil,d)){
@@ -7210,6 +7207,8 @@ if(typeof saveCustomAnggota !== 'function'){
           }
         }
       });
+
+      // LocalStorage HRMIS list migration: ensure Nor Azura maternity record is present as CTR Cuti Bersalin.
       try{
         var arr=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');
         if(!Array.isArray(arr)) arr=[];
@@ -7227,6 +7226,7 @@ if(typeof saveCustomAnggota !== 'function'){
   }
   window.applySpecialCasesV56 = applySpecialCases;
 
+  // Normalize HRMIS after old normalizers run.
   var oldNormalize = (typeof normalizeHRMISAll==='function') ? normalizeHRMISAll : null;
   window.normalizeHRMISAll = normalizeHRMISAll = function(){
     if(oldNormalize){ try{ oldNormalize(); }catch(e){} }
@@ -7242,6 +7242,7 @@ if(typeof saveCustomAnggota !== 'function'){
     }catch(e){ console.warn('[v5.6] normalizeHRMISAll:',e); }
   };
 
+  // TIMECARD audit override: ABS is neutral for Cuti Bersalin and TT/TH special cases.
   var oldTcAudit56 = (typeof tcAudit==='function') ? tcAudit : null;
   window.tcAudit = tcAudit = function(bil,d){
     var c=C(bil,d)||{};
@@ -7327,6 +7328,7 @@ if(typeof saveCustomAnggota !== 'function'){
     return oldAuditFinal56 ? oldAuditFinal56(bil,d) : {txt:'SAH',cls:'af-sah'};
   };
 
+  // Output Perhatian: explicitly remove special CB/TT and neutral TC-problem pending cases.
   var oldGetAllFlags56 = (typeof getAllFlags==='function') ? getAllFlags : null;
   window.getAllFlags = getAllFlags = function(){
     var arr = oldGetAllFlags56 ? oldGetAllFlags56() : [];
@@ -7364,6 +7366,292 @@ if(typeof saveCustomAnggota !== 'function'){
   document.addEventListener('DOMContentLoaded', function(){ [100,500,1200,2500].forEach(function(ms){ setTimeout(function(){ try{ applySpecialCases(); if(ms===1200) refreshAll(); }catch(e){} },ms); }); });
   window.addEventListener('beforeunload', function(){ try{ applySpecialCases(); if(typeof saveDataset==='function') saveDataset('BEFORE_UNLOAD V5.6'); }catch(e){} });
 })();
+</script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// PATCH v5.7 — MC OWNER GUARD / NAME-SAFE MATCHING
+// Purpose:
+// 1) MC must belong to the correct Master File member by NAME, not stale bil number.
+// 2) Prevent one MC record from appearing under another member after deploy/snapshot.
+// 3) Example: MC39503 / Klinik Mediviron KL Traders / 22.04.2026 belongs to
+//    ABDULLAH BIN BAHUDIN (current MASTER bil 4), NOT MOHAMMAD ALIFF BIN MOHTAR.
+// ══════════════════════════════════════════════════════════════
+(function(){
+  if(window.__EAKHA_V57_MC_OWNER_GUARD__) return;
+  window.__EAKHA_V57_MC_OWNER_GUARD__ = true;
+
+  function mcNormName(v){
+    return String(v||'').toUpperCase()
+      .replace(/MOHAMMAD/g,'MOHAMAD')
+      .replace(/MOHAMED/g,'MOHAMAD')
+      .replace(/MUHAMMAD/g,'MUHAMAD')
+      .replace(/MUHD\b/g,'MOHD')
+      .replace(/MOHD\./g,'MOHD')
+      .replace(/ALLIF/g,'ALIFF')
+      .replace(/HAIKAL/g,'HAIQAL')
+      .replace(/AUNI/g,'AAUNI')
+      .replace(/NURSYUHADA/g,'NUR SYUHADA')
+      .replace(/NANTHA\s*GOPAL/g,'NANTHAGOPAL')
+      .replace(/MAMAT\s*@\s*MUHAMAD/g,'MAMAT @ MUHAMAD')
+      .replace(/MAMAT\s*@\s*MUHAMMAD/g,'MAMAT @ MUHAMAD')
+      .replace(/MAMAT @ MUHAMAD/g,'MAMAT MUHAMAD')
+      .replace(/TAMAN @ MUHAMAD/g,'MAMAT MUHAMAD')
+      .replace(/TAMAN @ MUHAMMAD/g,'MAMAT MUHAMAD')
+      .replace(/A\/L/g,'AL')
+      .replace(/@/g,' ')
+      .replace(/[^A-Z0-9 ]+/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+
+  function mcTokens(v){
+    var stop = {BIN:1,BINTI:1,BT:1,MOHD:1,MOHAMAD:1,MD:1,AL:1,ABD:1,AB:1,A:1,L:1};
+    return mcNormName(v).split(' ').filter(function(t){ return t.length>2 && !stop[t]; });
+  }
+
+  function mcTokenScore(a,b){
+    var A=mcTokens(a), B=mcTokens(b);
+    if(!A.length || !B.length) return 0;
+    var hit=0;
+    A.forEach(function(x){ if(B.indexOf(x)>=0) hit++; });
+    var score = Math.round((hit/Math.max(A.length,B.length))*100);
+    var na=mcNormName(a), nb=mcNormName(b);
+    if(na===nb) score=100;
+    if(nb.indexOf(na)>=0 || na.indexOf(nb)>=0) score=Math.max(score,92);
+    if(A[0] && B[0] && A[0]===B[0]) score+=8;
+    if(A.length>1 && B.length>1 && A[A.length-1]===B[B.length-1]) score+=8;
+    return Math.min(100,score);
+  }
+
+  function masterByBil(bil){
+    bil=+bil;
+    return (typeof MASTER!=='undefined' && MASTER||[]).find(function(m){ return +m.bil===bil; }) || null;
+  }
+
+  function hardMCOwnerBil(name){
+    var n=mcNormName(name);
+    var map={};
+    function add(names,bil){ names.forEach(function(x){ map[mcNormName(x)]=bil; }); }
+    add(['MOHAMAD ALIFF BIN MOHTAR','MOHAMMAD ALIFF BIN MOHTAR','MUHAMMAD ALLIF BIN MOHTAR','MUHAMMAD ALIFF BIN MOHTAR'],2);
+    add(['ABDULLAH BIN BAHUDIN'],4);
+    add(['AALIYA AAUNI BINTI MAT ZABIR','AALIYA AUNI BINTI MAT ZABIR'],15);
+    add(['NOR AINA NAZIRA BINTI MOHD TARMIZI'],20);
+    add(['WAN NOR FATHIYYAH BINTI WAN AHMAD','WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA'],11);
+    add(['MOHD RASIDI BIN MOHD NASIR','MOHD RASIDI MOHD NASIR'],13);
+    add(['MUHAMMAD BADRI BIN ARIS'],14);
+    add(['RIMA BINTI OTHMAN'],3);
+    add(['MOHAMAD ALIFF HAIQAL BIN JAMIL','MOHAMAD ALIFF HAIQAL BIN MD JAMIL','MUHD ALIFF HAIQAL BIN JAMIL'],5);
+    add(['AHMAD SHAMIL BIN NADZRI'],10);
+    add(['MUHAMAD FAHMIE BIN SAHRAN','MUHAMMAD FAHMIE BIN SAHRAN'],34);
+    add(['HAZLAN BIN MOHD RESDI'],24);
+    add(['ANASHATOL ARNAEDA BINTI JAFRI'],33);
+    add(['MOHAMAD ALIF BIN NASARUDDIN','MOHAMMAD ALIF BIN NASARUDDIN'],29);
+    add(['SUHAIRI BIN ISMAIL'],31);
+    add(['NUR SYUHADA BINTI MISNAN','NURSYUHADA BINTI MISNAN'],35);
+    add(['NANTHAGOPAL A/L AYASAMY','NANTHA GOPAL A/L AYASAMY'],46);
+    add(['SHAHRUL FITRI BIN ROSLI'],40);
+    add(['NOR AZURA BINTI MAMAT @ MUHAMMAD','NOR AZURA BINTI MAMAT @ MUHAMAD','NOR AZURA BINTI TAMAN @ MUHAMMAD','NOR AZURA BINTI TAMAN @ MUHAMAD'],49);
+    add(['FARRAH NATASHA BINTI ZULKAFLI'],50);
+    add(['SAIFUL YUSRIZAL BIN YAACOB'],48);
+    add(['MUHAMMAD TARMIZI BIN SAZALI'],44);
+    add(['IRWAN SYAMIR BIN MOHD ZAINAL','IRWAN SHAMIR BIN MOHD ZAINAL'],19);
+    add(['MOHD KHADAFEE BIN MD SAAD'],38);
+    add(['MOHD SHAFIK BIN IBRAM'],41);
+    add(['YUSRI BIN YUNUS'],37);
+    add(['MUHAMMAD ASHLEY BIN BASHIR'],9);
+    add(['MOHD LUKMAN BIN HAMDAN'],26);
+    return map[n] || null;
+  }
+
+  function resolveMCOwner(rec){
+    if(!rec) return null;
+    var rawName = rec.nama || rec.name || rec.member || rec.nama_anggota || '';
+    var hardBil = hardMCOwnerBil(rawName);
+    if(hardBil) return masterByBil(hardBil);
+
+    var old = masterByBil(rec.bil);
+    if(old && mcTokenScore(rawName, old.nama)>=88) return old;
+
+    var best=null, bestScore=0;
+    (typeof MASTER!=='undefined' && MASTER||[]).forEach(function(m){
+      var sc=mcTokenScore(rawName,m.nama);
+      if(rec.komp && m.komp && String(rec.komp).toUpperCase().indexOf(String(m.komp).toUpperCase()[0])>=0) sc+=2;
+      if(sc>bestScore){ bestScore=sc; best=m; }
+    });
+    return bestScore>=78 ? best : null;
+  }
+
+  function parseAnyDate(s){
+    s=String(s||'').trim();
+    var m;
+    if((m=s.match(/^(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/))) return {y:+m[1],m:+m[2],d:+m[3]};
+    if((m=s.match(/^(\d{1,2})[-\/\.](\d{1,2})(?:[-\/\.](\d{2,4}))?/))){
+      var y=m[3]?+m[3]:(typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026);
+      if(y<100) y+=2000;
+      return {d:+m[1],m:+m[2],y:y};
+    }
+    return null;
+  }
+
+  function daysForMC(rec,targetMonth,targetYear){
+    targetMonth=targetMonth || (typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:4);
+    targetYear=targetYear || (typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026);
+    if(rec && rec.d && (!rec.m || +rec.m===+targetMonth) && (!rec.y || +rec.y===+targetYear)) return [+rec.d];
+    var a=parseAnyDate(rec && (rec.dari || rec.tarikh || rec.date));
+    var b=parseAnyDate(rec && (rec.hingga || rec.tarikh || rec.date || rec.dari));
+    if(!a) return [];
+    if(!b) b=a;
+    var out=[];
+    // Current system is month based; only expand days within active month/year.
+    if(a.y===targetYear && b.y===targetYear && a.m===targetMonth && b.m===targetMonth){
+      for(var i=a.d;i<=b.d;i++) out.push(i);
+    } else if(a.y===targetYear && a.m===targetMonth && (b.y>targetYear || b.m>targetMonth)){
+      var maxDay = targetMonth===4 ? 30 : 31;
+      for(var j=a.d;j<=maxDay;j++) out.push(j);
+    } else if(b.y===targetYear && b.m===targetMonth && (a.y<targetYear || a.m<targetMonth)){
+      for(var k=1;k<=b.d;k++) out.push(k);
+    }
+    return out;
+  }
+
+  function mcIncludesDay(rec,d){
+    return daysForMC(rec).indexOf(+d)>=0;
+  }
+
+  function mcBelongsToBil(rec,bil){
+    var owner=resolveMCOwner(rec);
+    return !!(owner && +owner.bil===+bil);
+  }
+
+  function clearMCRefs(){
+    try{
+      Object.keys(D||{}).forEach(function(b){
+        Object.keys(D[b]||{}).forEach(function(d){ if(D[b][d]) delete D[b][d]._mc; });
+      });
+    }catch(e){}
+  }
+
+  function normalizeMCOwnership(){
+    try{
+      if(!Array.isArray(MC_DATA)) return {fixed:0,unmatched:0,records:0};
+      var fixed=[], seen={}, unmatched=[];
+      MC_DATA.forEach(function(rec){
+        var owner=resolveMCOwner(rec);
+        if(!owner){
+          rec._mc_owner_error='UNMATCHED_NAME';
+          unmatched.push(rec.nama||'?');
+          return;
+        }
+        var clone=Object.assign({},rec,{
+          bil:owner.bil,
+          nama:owner.nama,
+          jab:owner.jab,
+          komp:owner.komp,
+          _mc_owner_checked:true,
+          _mc_owner_checked_at:new Date().toISOString()
+        });
+        var no=String(clone.no_mc||clone.siri||clone.no||'').toUpperCase().replace(/\s+/g,'');
+        var ds=daysForMC(clone).join('-') || (clone.dari||clone.tarikh||'');
+        var key=[clone.bil,ds,no,mcNormName(clone.klinik||'')].join('|');
+        if(seen[key]) return;
+        seen[key]=1;
+        fixed.push(clone);
+      });
+      MC_DATA.length=0;
+      fixed.forEach(function(r){ MC_DATA.push(r); });
+
+      clearMCRefs();
+      MC_DATA.forEach(function(mc){
+        var days=daysForMC(mc);
+        days.forEach(function(day){
+          if(D[mc.bil] && D[mc.bil][day]) D[mc.bil][day]._mc=mc;
+        });
+      });
+      try{ localStorage.setItem('eakha_mc',JSON.stringify(MC_DATA)); }catch(e){}
+      try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
+      window.__EAKHA_MC_OWNER_LAST_REPORT__={fixed:fixed.length,unmatched:unmatched.length,unmatchedList:unmatched};
+      return window.__EAKHA_MC_OWNER_LAST_REPORT__;
+    }catch(e){
+      console.warn('normalizeMCOwnership v5.7:',e);
+      return {fixed:0,unmatched:0,error:String(e)};
+    }
+  }
+
+  var oldGetMC57 = (typeof getMC==='function') ? getMC : null;
+  window.getMC = getMC = function(bil,d){
+    bil=+bil; d=+d;
+    var cell = D[bil] && D[bil][d] ? D[bil][d] : null;
+    if(cell && cell._mc){
+      if(mcBelongsToBil(cell._mc,bil) && mcIncludesDay(cell._mc,d)) return cell._mc;
+      delete cell._mc; // stale snapshot / wrong previous bil
+    }
+    var rec=null;
+    if(Array.isArray(MC_DATA)){
+      rec=MC_DATA.find(function(mc){ return mcBelongsToBil(mc,bil) && mcIncludesDay(mc,d); }) || null;
+    }
+    if(rec){ if(cell) cell._mc=rec; return rec; }
+    return null;
+  };
+
+  // Override applyMCPreload so MC records are name-owned and MC does not auto-fill KZ layers.
+  if(typeof applyMCPreload==='function' && !applyMCPreload.__v57_owner_safe){
+    var oldApplyMCPreload57 = applyMCPreload;
+    applyMCPreload = window.applyMCPreload = function(targetMonth,targetYear){
+      var res = oldApplyMCPreload57.apply(this,arguments);
+      normalizeMCOwnership();
+      return res;
+    };
+    applyMCPreload.__v57_owner_safe=true;
+  }
+
+  function renderAfterMCRepair(){
+    try{ normalizeMCOwnership(); }catch(e){}
+    try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
+    try{ if(typeof renderMCReg==='function') renderMCReg(); }catch(e){}
+    try{ if(typeof renderOutput==='function') renderOutput(''); }catch(e){}
+    try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+    try{ if(typeof saveDataset==='function') saveDataset('V5.7 MC OWNER FIX'); }catch(e){}
+  }
+
+  // Run after boot/preloads/localStorage merge. Multiple delays cover GitHub Pages/cache timing.
+  [700,1500,3000,5000].forEach(function(ms){ setTimeout(renderAfterMCRepair,ms); });
+
+  if(typeof bootApp==='function' && !bootApp.__v57_mc_owner_wrapped){
+    var oldBoot57 = bootApp;
+    bootApp = window.bootApp = async function(){
+      var r = await oldBoot57.apply(this,arguments);
+      [900,1800,3500].forEach(function(ms){ setTimeout(renderAfterMCRepair,ms); });
+      return r;
+    };
+    bootApp.__v57_mc_owner_wrapped=true;
+  }
+
+  // Manual button for audit user.
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      try{
+        var bar=document.querySelector('.topbar div[style*="margin-left:auto"]') || document.querySelector('.topbar');
+        if(bar && !document.getElementById('btn-mc-owner-fix')){
+          var btn=document.createElement('button');
+          btn.id='btn-mc-owner-fix';
+          btn.className='btn btn-sm';
+          btn.style.fontSize='7.5px';
+          btn.textContent='Fix MC Owner';
+          btn.title='Semak semula pemilik MC ikut nama Master File';
+          btn.onclick=function(){
+            var rep=normalizeMCOwnership();
+            renderAfterMCRepair();
+            if(typeof toast==='function') toast('MC owner checked: '+(rep.fixed||0)+' rekod, '+(rep.unmatched||0)+' unmatched','ok');
+          };
+          bar.appendChild(btn);
+        }
+      }catch(e){}
+    },500);
+  });
+
+  window.eAKHAFixMCOwner = renderAfterMCRepair;
+})();
+
 </script>
 </body>
 </html>
