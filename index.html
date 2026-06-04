@@ -963,58 +963,79 @@ function tcAudit(bil,d){
   const shEn=sh==='S'?900:sh==='P'?1380:420;
   let lines=[], cls='tc-ok', ok=true;
 
+  var inAwalSah=false; // flag: IN dalam tetingkap 1 jam awal shift malam
   if(c.tc_in){
     let late=0, early=0;
     if(sh==='M'){
-      // Shift Malam: IN sah = 2200-2359 (1 jam awal dibenarkan), lewat = selepas 2305
-      // shSt=1380 (2300). inM=0-1439.
-      var in2200=(inM>=1320); // 2200-2359 = 1320-1439
-      var inMidnight=(inM<120);   // 0000-0159 = masih dalam shift malam
-      if(in2200||inMidnight){
-        // Dalam tetingkap sah
-        if(inM>=1320&&inM<1380){ lines.push('\u2713 IN AWAL SAH'); lines.push('IN '+c.tc_in+' (dalam tetingkap 1 jam)'); }
-        else if(!c.ot&&inM>=1380+6){ late=inM-1380; lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+late+'min)'); cls='tc-lw'; ok=false; }
-        else lines.push('\u2713 IN '+c.tc_in);
+      // SHIFT MALAM — shSt=2300 (1380 min)
+      // Tetingkap masuk:  1 jam awal = 2200-2259 (1320-1379) → SAH
+      // Terlalu awal     : sebelum 2200 (<1320) → TIDAK SAH (kecuali OT)
+      // Dalam masa       : 2300-2305 (1380-1385) → SAH
+      // Lewat            : selepas 2305 (>1385) → LEWAT
+      // Cross-midnight IN: 0000-0059 (<60) → SAH (shift masih berjalan)
+      var inAwal1j=(inM>=1320&&inM<1380);  // 2200-2259: 1 jam awal SAJA
+      var inTerlaluAwal=(inM>=60&&inM<1320); // sebelum 2200 (bukan midnight) → TIDAK SAH
+      var inMidnight=(inM>=0&&inM<120);      // 0000-0159: masih dalam shift
+      var inShiftNormal=(inM>=1380&&inM<=1385); // 2300-2305: tepat masa
+      var inLewat=(inM>1385&&inM<1440);         // selepas 2305: lewat
+      if(inAwal1j){
+        // ✓ 1 jam awal — SAH
+        inAwalSah=true;
+        lines.push('\u2713 IN AWAL SAH');
+        lines.push('IN '+c.tc_in+' (dalam tetingkap 1 jam)');
+        // ok = true (tidak perlu tukar)
+      } else if(inTerlaluAwal&&!c.ot){
+        // > 1 jam awal tanpa OT — TIDAK SAH
+        var minAwal=1320-inM;
+        lines.push('\u26A0 IN TERLALU AWAL');
+        lines.push('IN '+c.tc_in+' ('+minAwal+'min sebelum tetingkap)');
+        cls='tc-lw'; ok=false;
+      } else if(inShiftNormal||inMidnight){
+        lines.push('\u2713 IN '+c.tc_in);
+      } else if(inLewat&&!c.ot){
+        late=inM-1380;
+        lines.push('LEWAT');
+        lines.push('IN '+c.tc_in+' (+'+late+'min)');
+        cls='tc-lw'; ok=false;
       } else {
-        // Di luar tetingkap - sangat lewat atau salah shift
-        lines.push('\u26A0 IN DI LUAR WAKTU'); lines.push('IN '+c.tc_in+' (semak shift)'); cls='tc-lw'; ok=false;
+        lines.push('\u2713 IN '+c.tc_in);
       }
     } else { late=inM-shSt; early=shSt-inM;
       if(!c.ot&&early>60){ lines.push('IN AWAL'); lines.push('IN '+c.tc_in+' ('+fmtMin(early)+' awal)'); cls='tc-lw'; ok=false; }
       else if(!c.ot&&late>6){ lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+late+'min)'); cls='tc-lw'; ok=false; }
       else lines.push('\u2713 IN '+c.tc_in);
     }
-  } else if(c.tc_out){ lines.push('⚠ TIADA IN'); lines.push('(OUT: '+c.tc_out+')'); cls='tc-warn'; ok=false; }
+  } else if(c.tc_out){ lines.push('\u26A0 TIADA IN'); lines.push('(OUT: '+c.tc_out+')'); cls='tc-warn'; ok=false; }
 
   if(c.tc_out){
     if(sh==='M'){
-      // OUT shift malam: sah = 0630-0730 (390-450 min dari tengah malam)
       var outSah=(outM>=390&&outM<=450);
       var outAwal=(outM>0&&outM<390);
-      if(outSah) lines.push('✓ OUT '+c.tc_out+' (ESOK - SAH)');
-      else if(outAwal){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out+' (sebelum 0630)'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
-      else lines.push('✓ OUT '+c.tc_out+' (ESOK)');
+      if(outSah) lines.push('\u2713 OUT '+c.tc_out+' (ESOK - SAH)');
+      else if(outAwal){ lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (sebelum 0630)'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
+      else lines.push('\u2713 OUT '+c.tc_out+' (ESOK)');
     } else {
       let earlyOut=0;
       if(sh==='S'||sh==='P') earlyOut=shEn-outM;
-      if(!c.ot&&earlyOut>60){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out+' (-'+fmtMin(earlyOut)+')'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
-      else lines.push((c.tc_in?'✓ ':'')+' OUT '+c.tc_out);
+      if(!c.ot&&earlyOut>60){ lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (-'+fmtMin(earlyOut)+')'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
+      else lines.push((c.tc_in?'\u2713 ':'')+' OUT '+c.tc_out);
     }
-  } else if(c.tc_in){
-    if(sh==='M'){
-      // Shift malam: TIADA OUT = normal (OUT hari esok, cross-midnight)
-      // Jangan set ok=false, jangan flag sebagai error
-      lines.push('SEMAK ESOK'); if(cls==='tc-ok') cls='tc-warn';
-    } else { lines.push('\u26A0 TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;} }
+  } else if(c.tc_in&&sh==='M'){
+    // Shift malam tiada OUT = cross-midnight, NORMAL
+    // Jika IN AWAL SAH → papar SEMAK ESOK sahaja (jangan duplicate)
+    if(!inAwalSah){ lines.push('SEMAK ESOK'); if(cls==='tc-ok') cls='tc-warn'; }
+    else { lines.push('SEMAK ESOK'); cls='tc-warn'; } // IN AWAL + tiada OUT = SEMAK ESOK
+  } else if(c.tc_in&&sh!=='M'){
+    lines.push('\u26A0 TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;}
   }
-  // Single punch: shift malam single IN = cross-midnight (SAH), jangan flag
+  // Single punch check - HANYA untuk bukan shift malam
   if((c.tc_in&&!c.tc_out)||(c.tc_out&&!c.tc_in)){
-    if(sh==='M'&&c.tc_in&&!c.tc_out){
-      // Cross-midnight: IN malam ini, OUT pagi esok — ini NORMAL untuk shift malam
-      lines.push('SEMAK ESOK'); cls='tc-warn'; // ok tetap true
-    } else if(sh==='M'&&!c.tc_in&&c.tc_out){
+    if(sh==='M'&&!c.tc_in&&c.tc_out){
       lines.push('SINGLE PUNCH (OUT SAHAJA)'); cls='tc-warn'; ok=false;
-    } else { lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false; }
+    } else if(sh!=='M'){
+      lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false;
+    }
+    // Shift malam single IN: handled above (SEMAK ESOK), skip here
   }
   return {txt:lines.join('\n'),cls,ok};
 }
