@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.6 DATA SAFE</title>
+  <title>e-AKHA Vsavage v5.6.1 LOGIN SAFE + MC OWNER SAFE</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -215,7 +215,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input class="finp2" id="l-id" type="text" placeholder="ID Pengguna" style="width:100%;margin-bottom:8px">
     <input class="finp2" id="l-pw" type="password" placeholder="Kata Laluan" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-gold" id="l-btn" style="width:100%;justify-content:center;font-size:10px;padding:9px" onclick="doLogin()">Log Masuk</button>
-    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.2 FIXED · 2026</div>
+    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.6.1 LOGIN SAFE · 2026</div>
   </div>
 </div>
 
@@ -229,7 +229,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="sb-logo-s">Hospital Kuala Lumpur · KPL</div>
       <div style="margin-top:4px;display:flex;align-items:center;gap:5px">
         <div class="month-badge" id="active-month-badge">April 2026</div>
-        <span style="font-size:7px;color:rgba(255,255,255,.25)">v5.2</span>
+        <span style="font-size:7px;color:rgba(255,255,255,.25)">v5.6.1</span>
       </div>
     </div>
     <div style="padding:6px 10px 2px">
@@ -7359,11 +7359,300 @@ if(typeof saveCustomAnggota !== 'function'){
       neu.__v56_wrapped=true; window[name]=eval(name+' = neu');
     }catch(e){}
   }
-  ['bootApp','kemaskiniMaster','validasiAudit','renderMaster','renderDash','updFlags','manualRestoreSnapshot','eakhaRestoreBestBackup','setMonth'].forEach(wrapAction);
+  ['kemaskiniMaster','validasiAudit','manualRestoreSnapshot','eakhaRestoreBestBackup','setMonth'].forEach(wrapAction);
 
   document.addEventListener('DOMContentLoaded', function(){ [100,500,1200,2500].forEach(function(ms){ setTimeout(function(){ try{ applySpecialCases(); if(ms===1200) refreshAll(); }catch(e){} },ms); }); });
   window.addEventListener('beforeunload', function(){ try{ applySpecialCases(); if(typeof saveDataset==='function') saveDataset('BEFORE_UNLOAD V5.6'); }catch(e){} });
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   PATCH v5.6.1 — LOGIN SAFE + MC OWNER SAFE
+   Purpose:
+   - Revert live login behaviour to stable v5.6 style.
+   - Stop boot/render auto-fix recursion that caused "Page Unresponsive".
+   - Keep local accounts exactly as requested:
+     SJN Adilah 912012 · SM Amierul 2438670 · Tuan Najib 633283 · Viewer 662633.
+   - MC owner lookup follows Master File name, but does NOT auto-render recursively.
+══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  window.EAKHA_PATCH_VERSION = 'v5.6.1-login-safe-mc-owner-safe-20260604';
+
+  function $(id){ return document.getElementById(id); }
+  function safeText(el, txt){ if(el) el.textContent = txt; }
+  function setLoginBtn(enabled, txt){
+    var b=$('l-btn'); if(!b) return;
+    b.disabled = !enabled;
+    b.textContent = txt || 'Log Masuk';
+  }
+  function showLoginErr(msg){
+    var e=$('l-err');
+    if(e){ e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; }
+  }
+  function normalizeId(v){
+    return String(v||'').trim().toLowerCase().replace(/\s+/g,'').replace(/[_-]+/g,'.');
+  }
+  function safeBoot(){
+    try{
+      var aw=$('auth-wall'), app=$('app');
+      if(aw) aw.style.display='none';
+      if(app) app.style.display='flex';
+      setLoginBtn(true,'Log Masuk');
+    }catch(e){}
+    if(window.__EAKHA_BOOTING_SAFE) return;
+    window.__EAKHA_BOOTING_SAFE = true;
+    setTimeout(async function(){
+      try{
+        if(typeof bootApp === 'function') await bootApp();
+      }catch(e){
+        console.error('[v5.6.1 safeBoot]', e);
+        try{
+          var aw=$('auth-wall'), app=$('app');
+          if(aw) aw.style.display='none';
+          if(app) app.style.display='flex';
+          if(typeof applyRoleUI === 'function') applyRoleUI();
+        }catch(_e){}
+      }finally{
+        setTimeout(function(){ window.__EAKHA_BOOTING_SAFE=false; }, 1200);
+      }
+    }, 40);
+  }
+
+  // Prevent repeated boot calls from login/session/patch timers.
+  if(typeof bootApp === 'function' && !bootApp.__loginSafeWrapped){
+    var _bootApp = bootApp;
+    bootApp = window.bootApp = async function(){
+      if(window.__EAKHA_BOOT_RUNNING) return;
+      window.__EAKHA_BOOT_RUNNING = true;
+      try{
+        return await _bootApp.apply(this, arguments);
+      }catch(e){
+        console.error('[v5.6.1 bootApp guarded]', e);
+        try{
+          var aw=$('auth-wall'), app=$('app');
+          if(aw) aw.style.display='none';
+          if(app) app.style.display='flex';
+          if(typeof applyRoleUI === 'function') applyRoleUI();
+        }catch(_e){}
+      }finally{
+        setTimeout(function(){ window.__EAKHA_BOOT_RUNNING=false; }, 1500);
+      }
+    };
+    bootApp.__loginSafeWrapped = true;
+  }
+
+  // Override login to avoid null .acard error and to keep local accounts independent from Supabase.
+  window.doLogin = doLogin = async function(){
+    var idRaw = ($('l-id') && $('l-id').value) || '';
+    var id = normalizeId(idRaw);
+    var pw = ($('l-pw') && $('l-pw').value) || '';
+    if(!idRaw.trim() || !pw){ showLoginErr('Sila masukkan ID dan kata laluan.'); return; }
+    showLoginErr('');
+    setLoginBtn(false,'Mengesahkan...');
+
+    try{
+      // OWNER — SJN Adilah
+      if(['sjnadilah','sjn.adilah','adilah','sjn.adilahfitrah'].indexOf(id)>=0 && pw==='912012'){
+        AUTH={loggedIn:true,role:'admin',id:'sjnadilah',nama:'SJN Adilah',jawatan:'OWNER · AUDITOR'};
+        if(typeof saveSess==='function') saveSess();
+        safeBoot(); return;
+      }
+
+      // ADMIN — SM Amierul
+      if(['smamierul','sm.amierul','amierul'].indexOf(id)>=0 && pw==='2438670'){
+        AUTH={loggedIn:true,role:'admin',id:'smamierul',nama:'SM Amierul',jawatan:'ADMIN'};
+        if(typeof saveSess==='function') saveSess();
+        safeBoot(); return;
+      }
+
+      // VIEWER — Tuan Najib
+      if(['tuannajib','tuan.najib','najib'].indexOf(id)>=0 && pw==='633283'){
+        AUTH={loggedIn:true,role:'viewer',id:'tuannajib',nama:'Tuan Najib',jawatan:'VIEWER · JANA LAPORAN'};
+        if(typeof saveSess==='function') saveSess();
+        safeBoot(); return;
+      }
+
+      // VIEWER umum
+      if(['viewer','view','penonton'].indexOf(id)>=0 && pw==='662633'){
+        AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'};
+        if(typeof saveSess==='function') saveSess();
+        safeBoot(); return;
+      }
+
+      // Existing ADMINS array fallback
+      try{
+        if(typeof ADMINS !== 'undefined' && Array.isArray(ADMINS)){
+          var acc = ADMINS.find(function(a){ return normalizeId(a.id)===id && a.pw===pw; });
+          if(acc){
+            AUTH={loggedIn:true,role:'admin',id:acc.id,nama:acc.nama,jawatan:acc.role};
+            if(typeof saveSess==='function') saveSess();
+            safeBoot(); return;
+          }
+        }
+      }catch(e){}
+
+      // Supabase fallback only after local accounts fail.
+      if(typeof SUPA_OK !== 'undefined' && SUPA_OK && typeof supa !== 'undefined' && supa){
+        try{
+          var email = idRaw.indexOf('@')>=0 ? idRaw.trim() : idRaw.trim()+'@kpl.hkl.gov.my';
+          var res = await supa.auth.signInWithPassword({email:email,password:pw});
+          if(!res.error && res.data && res.data.user){
+            AUTH={loggedIn:true,role:'admin',id:idRaw.trim(),nama:(res.data.user.user_metadata&&res.data.user.user_metadata.nama)||idRaw.trim(),jawatan:(res.data.user.user_metadata&&res.data.user.user_metadata.jawatan)||'Admin'};
+            if(typeof saveSess==='function') saveSess();
+            safeBoot(); return;
+          }
+        }catch(e){}
+      }
+
+      showLoginErr('ID atau kata laluan tidak sah.');
+      if($('l-pw')) $('l-pw').value='';
+      setLoginBtn(true,'Log Masuk');
+    }catch(e){
+      console.error('[v5.6.1 doLogin]', e);
+      showLoginErr('Ralat login. Sila refresh dan cuba semula.');
+      setLoginBtn(true,'Log Masuk');
+    }
+  };
+
+  window.doViewer = doViewer = function(){
+    var pw = ($('v-pw') && $('v-pw').value) || '662633';
+    if(pw !== '662633' && pw !== '633283'){ showLoginErr('Kod akses tidak sah.'); return; }
+    AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'};
+    if(typeof saveSess==='function') saveSess();
+    safeBoot();
+  };
+
+  // Safe MC owner mapping — no recursive render, no auto-delete valid MCs.
+  function N(v){ return String(v||'').trim().toUpperCase().replace(/\s+/g,' '); }
+  function nameTokens(v){
+    return N(v).replace(/\b(BIN|BINTI|A\/L|A\/P|AL|AP|PB|KPL|LKPL|KONST|SJN|SM|MOHD|MOHAMAD|MUHAMMAD|MUHD)\b/g,' ')
+      .replace(/\s+/g,' ').trim().split(' ').filter(function(x){ return x.length>2; });
+  }
+  function nameScore(a,b){
+    var A=nameTokens(a), B=nameTokens(b);
+    if(!A.length || !B.length) return 0;
+    var same=0;
+    A.forEach(function(t){ if(B.indexOf(t)>=0) same++; });
+    var score = same / Math.max(A.length, B.length);
+    var na=N(a), nb=N(b);
+    if(na===nb) score=1;
+    else if(na.indexOf(nb)>=0 || nb.indexOf(na)>=0) score=Math.max(score,0.88);
+    return score;
+  }
+  function memberByNameSafe(nama){
+    try{
+      if(!nama || typeof MASTER==='undefined' || !Array.isArray(MASTER)) return null;
+      var best=null, bs=0;
+      MASTER.forEach(function(m){
+        var s=nameScore(nama,m.nama);
+        if(s>bs){ bs=s; best=m; }
+      });
+      return bs>=0.58 ? best : null;
+    }catch(e){ return null; }
+  }
+  function mcRangeCovers(r,d){
+    try{
+      if(typeof daysRange === 'function'){
+        var days = daysRange(r.dari||r.tarikh, r.hingga||r.tarikh);
+        if(days && days.indexOf(+d)>=0) return true;
+      }
+      if(+r.d===+d) return true;
+      var raw = String(r.dari||r.tarikh||'');
+      var m = raw.match(/(\d{1,2})[\/\-.](\d{1,2})/);
+      return !!(m && +m[1]===+d && (!m[2] || +m[2]===4));
+    }catch(e){ return false; }
+  }
+  var _oldGetMC = (typeof getMC === 'function') ? getMC : null;
+  window.getMC = getMC = function(bil,d){
+    var bilN=+bil, dN=+d;
+    try{
+      // Existing cell reference remains valid only if it belongs to same owner.
+      var c = (typeof D!=='undefined' && D[bilN] && D[bilN][dN]) ? D[bilN][dN] : null;
+      if(c && c._mc){
+        var owner = memberByNameSafe(c._mc.nama) || (typeof memberByBil==='function' ? memberByBil(c._mc.bil) : null);
+        if(owner && +owner.bil===bilN) return c._mc;
+        delete c._mc;
+      }
+      if(typeof MC_DATA !== 'undefined' && Array.isArray(MC_DATA)){
+        for(var i=0;i<MC_DATA.length;i++){
+          var r=MC_DATA[i];
+          if(!mcRangeCovers(r,dN)) continue;
+          var byName = memberByNameSafe(r.nama);
+          var ownerBil = byName ? +byName.bil : +(r.bil||0);
+          if(ownerBil===bilN){
+            if(byName && +r.bil!==ownerBil){
+              r.old_bil = r.bil;
+              r.bil = byName.bil; r.nama = byName.nama; r.jab = byName.jab; r.komp = byName.komp;
+              r._ownerFixed = true;
+            }
+            if(c) c._mc = r;
+            return r;
+          }
+        }
+      }
+    }catch(e){ console.warn('[v5.6.1 getMC]', e); }
+    return _oldGetMC ? _oldGetMC(bil,d) : null;
+  };
+
+  window.fixMCOwnerSafe = function(){
+    var changed=0, dedup=0;
+    try{
+      if(typeof MC_DATA==='undefined' || !Array.isArray(MC_DATA)) return {changed:0,dedup:0};
+      MC_DATA.forEach(function(r){
+        var owner=memberByNameSafe(r.nama);
+        if(owner && +r.bil!==+owner.bil){
+          r.old_bil=r.bil; r.bil=owner.bil; r.nama=owner.nama; r.jab=owner.jab; r.komp=owner.komp; r._ownerFixed=true; changed++;
+        }else if(owner){
+          r.nama=owner.nama; r.jab=owner.jab; r.komp=owner.komp;
+        }
+      });
+      var seen={}, keep=[];
+      MC_DATA.forEach(function(r){
+        var key=[r.bil,r.d||r.dari||r.tarikh||'',r.hingga||'',r.siri||'',r.klinik||''].join('|');
+        if(seen[key]){ dedup++; return; }
+        seen[key]=true; keep.push(r);
+      });
+      MC_DATA.length=0; keep.forEach(function(r){ MC_DATA.push(r); });
+      try{
+        if(typeof D!=='undefined' && typeof MASTER!=='undefined'){
+          MASTER.forEach(function(m){ for(var d=1; d<=31; d++){ if(D[m.bil] && D[m.bil][d]) delete D[m.bil][d]._mc; } });
+          MC_DATA.forEach(function(r){ for(var d=1; d<=31; d++){ if(mcRangeCovers(r,d) && D[r.bil] && D[r.bil][d]) D[r.bil][d]._mc=r; } });
+        }
+      }catch(e){}
+      try{ localStorage.setItem('eakha_mc', JSON.stringify(MC_DATA)); localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      try{ if(typeof renderMCReg==='function') renderMCReg(); }catch(e){}
+      try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+      if(typeof toast==='function') toast('MC Owner selesai: '+changed+' dibetulkan, '+dedup+' duplicate dibuang','ok');
+    }catch(e){
+      console.error('[v5.6.1 fixMCOwnerSafe]', e);
+      if(typeof toast==='function') toast('Ralat Fix MC Owner: '+(e.message||e),'err');
+    }
+    return {changed:changed,dedup:dedup};
+  };
+
+  function addMCButton(){
+    try{
+      if($('btn-mc-owner-safe')) return;
+      var bar = document.querySelector('#topbar div[style*="margin-left:auto"]') || $('topbar');
+      if(!bar) return;
+      var b=document.createElement('button');
+      b.id='btn-mc-owner-safe';
+      b.className='btn btn-sm';
+      b.style.fontSize='7.5px';
+      b.textContent='Fix MC Owner';
+      b.title='Betulkan MC ikut nama Master File tanpa loop login';
+      b.onclick=function(){ window.fixMCOwnerSafe(); };
+      bar.appendChild(b);
+    }catch(e){}
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    addMCButton();
+    setTimeout(addMCButton, 1200);
+    try{ if(typeof loadSess==='function' && loadSess()){ safeBoot(); } }catch(e){}
+  });
+})();
+
 </script>
 </body>
 </html>
