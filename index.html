@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.2 FIXED</title>
+  <title>e-AKHA Vsavage v5.8 LOGIN + MC OWNER SAFE</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -3365,7 +3365,377 @@ function expPDF(){
       '<td style="text-align:center">'+r.h+'</td><td style="text-align:center;color:#8B5E00">'+(r.mc||'')+'</td>'+
       '<td style="text-align:center;color:#1e40af">'+(r.cr||'')+'</td><td style="text-align:center;color:#991b1b;font-weight:bold">'+(r.ab||'')+'</td>'+
       '<td style="text-align:center;color:#9a3412">'+(r.lw||'')+'</td></tr>').join('')+
-    '</tbody></table></body></html>');
+    '</tbody></table>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   PATCH v5.8 — LOGIN SAFE + MC OWNER + SPECIAL CB/TT + TC 27-30
+   - Restores local login without Supabase dependency.
+   - MC owner matching uses member name first, not stale bil number.
+   - 27-30 Apr 2026 TIMECARD problem: audit uses KZ + MC + HRMIS.
+   - Nor Azura/Mama Azura maternity leave and Aminuddin/Asree/Nazri TT
+     are SAH and excluded from Output Perhatian.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  window.EAKHA_PATCH_VERSION = 'v5.8-login-mc-owner-safe-20260604';
+
+  function toastSafe(msg,type){ try{ if(typeof toast==='function') toast(msg,type||'ok'); else console.log(msg); }catch(e){ console.log(msg); } }
+  function $(id){ return document.getElementById(id); }
+  function N(v){ return String(v||'').toUpperCase().replace(/[^A-Z0-9@\/ ]+/g,' ').replace(/\s+/g,' ').trim(); }
+  function isActiveApril(){ try{ return (typeof ACTIVE_YEAR==='undefined'||+ACTIVE_YEAR===2026) && (typeof ACTIVE_MONTH==='undefined'||+ACTIVE_MONTH===4); }catch(e){ return true; } }
+  function isTCProblemDate(d){ return isActiveApril() && +d>=27 && +d<=30; }
+  function cell(bil,d){ try{ if(!D[bil]) D[bil]={}; if(!D[bil][d]) D[bil][d]={}; return D[bil][d]; }catch(e){ return null; } }
+  function shOf(bil,d){ try{ return typeof gSh==='function' ? gSh(bil,d) : ''; }catch(e){ return ''; } }
+  function memberByBil(bil){ try{ return MASTER.find(function(m){return +m.bil===+bil;})||null; }catch(e){ return null; } }
+  function memberName(bil){ var m=memberByBil(bil); return N(m&&m.nama); }
+  function isOff(bil,d){ return shOf(bil,d)==='O'; }
+  function activeDays(){ return 30; }
+
+  /* ── LOGIN HOTFIX ─────────────────────────────────────────── */
+  window.doLogin = doLogin = async function(){
+    var idEl=$('l-id'), pwEl=$('l-pw'), btn=$('l-btn'), err=$('l-err');
+    var id=String((idEl&&idEl.value)||'').trim().toLowerCase().replace(/\s+/g,'');
+    var pw=String((pwEl&&pwEl.value)||'').trim();
+    function show(m){ if(err){err.textContent=m;err.style.display='block';} }
+    function clear(){ if(err){err.textContent='';err.style.display='none';} }
+    function setBtn(dis,txt){ if(btn){btn.disabled=!!dis;btn.textContent=txt||'Log Masuk';} }
+    if(!id || !pw){ show('Sila masukkan ID pengguna dan kata laluan.'); return; }
+    setBtn(true,'Mengesahkan...');
+    var local={
+      'sjnadilah': {pw:'912012',  role:'admin', id:'sjnadilah', nama:'SJN Adilah', jawatan:'OWNER · AUDITOR'},
+      'sjn.adilah':{pw:'912012',  role:'admin', id:'sjnadilah', nama:'SJN Adilah', jawatan:'OWNER · AUDITOR'},
+      'adilah':    {pw:'912012',  role:'admin', id:'sjnadilah', nama:'SJN Adilah', jawatan:'OWNER · AUDITOR'},
+      'smamierul': {pw:'2438670', role:'admin', id:'smamierul', nama:'SM Amierul', jawatan:'ADMIN'},
+      'sm.amierul':{pw:'2438670', role:'admin', id:'smamierul', nama:'SM Amierul', jawatan:'ADMIN'},
+      'amierul':   {pw:'2438670', role:'admin', id:'smamierul', nama:'SM Amierul', jawatan:'ADMIN'},
+      'tuannajib': {pw:'633283',  role:'viewer',id:'tuannajib', nama:'Tuan Najib', jawatan:'VIEWER · JANA LAPORAN'},
+      'tuan.najib':{pw:'633283',  role:'viewer',id:'tuannajib', nama:'Tuan Najib', jawatan:'VIEWER · JANA LAPORAN'},
+      'najib':     {pw:'633283',  role:'viewer',id:'tuannajib', nama:'Tuan Najib', jawatan:'VIEWER · JANA LAPORAN'},
+      'viewer':    {pw:'662633',  role:'viewer',id:'viewer', nama:'Viewer', jawatan:'VIEWER'},
+      'penonton':  {pw:'662633',  role:'viewer',id:'viewer', nama:'Viewer', jawatan:'VIEWER'}
+    };
+    var acc=local[id];
+    if(acc && acc.pw===pw){
+      try{
+        AUTH={loggedIn:true,role:acc.role,id:acc.id,nama:acc.nama,jawatan:acc.jawatan};
+        if(typeof saveSess==='function') saveSess();
+        clear();
+        await safeBootApp();
+        return;
+      }catch(e){ console.error('[v5.8 login boot]',e); show('Login berjaya tetapi sistem gagal boot: '+(e.message||e)); setBtn(false,'Log Masuk'); return; }
+    }
+    if(pw==='662633' && (id==='viewer'||id==='penonton')){
+      try{ AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'}; if(typeof saveSess==='function') saveSess(); clear(); await safeBootApp(); return; }
+      catch(e){ console.error(e); show('Login viewer berjaya tetapi sistem gagal boot.'); setBtn(false,'Log Masuk'); return; }
+    }
+    show('ID atau kata laluan tidak sah.');
+    if(pwEl) pwEl.value='';
+    setBtn(false,'Log Masuk');
+  };
+
+  async function safeBootApp(){
+    try{
+      if(typeof bootApp==='function'){
+        await bootApp();
+      }else{
+        var aw=$('auth-wall'), app=$('app'); if(aw) aw.style.display='none'; if(app) app.style.display='flex';
+      }
+    }catch(e){
+      console.error('[v5.8 safeBootApp]', e);
+      var aw=$('auth-wall'), app=$('app'); if(aw) aw.style.display='none'; if(app) app.style.display='flex';
+      try{ if(typeof applyRoleUI==='function') applyRoleUI(); }catch(_e){}
+    }
+    setTimeout(function(){ try{ runAllV58Fixes('LOGIN_BOOT'); }catch(e){ console.warn('[v5.8 post boot]',e); } }, 200);
+    setTimeout(function(){ try{ runAllV58Fixes('LOGIN_BOOT_DELAY'); }catch(e){} }, 1200);
+  }
+
+  window.doViewer = doViewer = function(){
+    try{ AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'}; if(typeof saveSess==='function') saveSess(); safeBootApp(); }
+    catch(e){ console.error(e); }
+  };
+
+  /* ── DATE / MC HELPERS ────────────────────────────────────── */
+  function dayFromVal(v){
+    if(v==null) return null;
+    if(typeof v==='number') return v;
+    var s=String(v).trim();
+    var m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/); if(m) return (+m[2]===4 || !isActiveApril()) ? +m[3] : null;
+    m=s.match(/^(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{2,4}))?/); if(m) return (+m[2]===4 || !m[2]) ? +m[1] : null;
+    m=s.match(/\b(\d{1,2})\s*(?:APR|APRIL|\/04|\.04|-04)\b/i); if(m) return +m[1];
+    return null;
+  }
+  function recStart(r){ return dayFromVal(r&& (r.dari||r.tarikh||r.start||r.mula||r.d)); }
+  function recEnd(r){ return dayFromVal(r&& (r.hingga||r.tamat||r.end||r.dari||r.tarikh||r.d)); }
+  function recCovers(r,d){ var a=recStart(r), b=recEnd(r); if(a==null && typeof r.d!=='undefined') a=b=+r.d; if(a==null) return false; if(b==null) b=a; return +d>=a && +d<=b; }
+  function nameTokens(s){ return N(s).replace(/\b(BIN|BINTI|A L|A\/L|AP|A\/P|PB|KPL|LKPL|KONST|PEL|SJN|SM)\b/g,' ').replace(/\s+/g,' ').trim().split(' ').filter(function(x){return x.length>2;}); }
+  function nameScore(a,b){
+    var A=nameTokens(a), B=nameTokens(b); if(!A.length||!B.length) return 0;
+    var same=0; A.forEach(function(t){ if(B.indexOf(t)>=0) same++; });
+    var ratio=same/Math.max(A.length,B.length);
+    var na=N(a), nb=N(b);
+    if(na===nb) ratio=1;
+    else if(na.indexOf(nb)>=0||nb.indexOf(na)>=0) ratio=Math.max(ratio,0.86);
+    return ratio;
+  }
+  function findMemberByName(nama){
+    try{
+      if(!nama || typeof MASTER==='undefined') return null;
+      var best=null, bs=0;
+      MASTER.forEach(function(m){ var s=nameScore(nama,m.nama); if(s>bs){bs=s; best=m;} });
+      return bs>=0.55 ? best : null;
+    }catch(e){ return null; }
+  }
+  function mcOwner(r){
+    var byName=findMemberByName(r&&r.nama);
+    if(byName) return byName;
+    return memberByBil(r&&r.bil);
+  }
+
+  var oldGetMC = (typeof getMC==='function') ? getMC : null;
+  window.getMC = getMC = function(bil,d){
+    try{
+      var bilN=+bil, dN=+d;
+      if(typeof MC_DATA!=='undefined' && Array.isArray(MC_DATA)){
+        for(var i=0;i<MC_DATA.length;i++){
+          var r=MC_DATA[i]; if(!recCovers(r,dN)) continue;
+          var owner=mcOwner(r); var ownerBil=owner ? +owner.bil : +(r.bil||0);
+          if(ownerBil===bilN){
+            if(owner && +r.bil!==ownerBil){ r.bil=ownerBil; r.nama=owner.nama; r.jab=owner.jab; r.komp=owner.komp; r._ownerFixed=true; }
+            return r;
+          }
+        }
+      }
+    }catch(e){ console.warn('[v5.8 getMC]',e); }
+    return oldGetMC ? oldGetMC(bil,d) : null;
+  };
+
+  window.fixMCOwner = function(){
+    var changed=0;
+    try{
+      if(typeof MC_DATA==='undefined' || !Array.isArray(MC_DATA)) return 0;
+      MC_DATA.forEach(function(r){
+        var owner=mcOwner(r);
+        if(owner && +r.bil!==+owner.bil){ r.old_bil=r.bil; r.bil=owner.bil; r.nama=owner.nama; r.jab=owner.jab; r.komp=owner.komp; r._ownerFixed=true; changed++; }
+        else if(owner){ r.nama=owner.nama; r.jab=owner.jab; r.komp=owner.komp; }
+      });
+      // Clear old cell MC references, then rebuild from corrected owner.
+      if(typeof MASTER!=='undefined' && typeof D!=='undefined') MASTER.forEach(function(m){ for(var d=1; d<=activeDays(); d++){ var c=cell(m.bil,d); if(c){ delete c._mc; delete c.mc_wrong_owner; } } });
+      MC_DATA.forEach(function(r){ var owner=mcOwner(r); if(!owner) return; for(var d=1; d<=activeDays(); d++){ if(recCovers(r,d)){ var c=cell(owner.bil,d); if(c) c._mc=r; } } });
+      try{ localStorage.setItem('eakha_mc', JSON.stringify(MC_DATA)); localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      if(changed) toastSafe('Fix MC Owner: '+changed+' rekod dipindahkan ikut nama','ok'); else toastSafe('Fix MC Owner: tiada rekod salah bil','ok');
+      try{ if(typeof saveDataset==='function') saveDataset('FIX MC OWNER V5.8'); }catch(e){}
+      try{ if(typeof renderMaster==='function') renderMaster(null); if(typeof renderMCReg==='function') renderMCReg(); if(typeof updFlags==='function') updFlags(); }catch(e){}
+    }catch(e){ console.error('[v5.8 fixMCOwner]',e); toastSafe('Ralat Fix MC Owner: '+(e.message||e),'err'); }
+    return changed;
+  };
+
+  /* ── SPECIAL CASES ─────────────────────────────────────────── */
+  function isNorAzura(m){ var n=N(m&&m.nama); return n.indexOf('NOR AZURA')>=0 && (n.indexOf('MAMAT')>=0 || n.indexOf('MUHAMMAD')>=0 || n.indexOf('MUHAMAD')>=0); }
+  function isTTMember(m){ var n=N(m&&m.nama); return n.indexOf('AMINUDIN')>=0 || n.indexOf('AMINUDDIN')>=0 || n.indexOf('ASREE')>=0 || n.indexOf('ASRI')>=0 || (n.indexOf('NAZRI')>=0 && n.indexOf('ISMAIL')>=0); }
+  function applySpecialCases(){
+    var changed=0;
+    try{
+      if(typeof MASTER==='undefined' || typeof D==='undefined') return 0;
+      MASTER.forEach(function(m){
+        if(isNorAzura(m)){
+          for(var d=21; d<=activeDays(); d++){
+            if(isOff(m.bil,d)) continue;
+            var c=cell(m.bil,d); if(!c) continue;
+            if(c.kzp!=='CB'){ c.kzp='CB'; changed++; }
+            if(c.kzk!=='CB'){ c.kzk='CB'; changed++; }
+            c.tc_note='ABS - CUTI BERSALIN'; c.tc_abs_reason='CUTI BERSALIN'; c.tc_audit_done=true; c._cb_special=true;
+            c.hrmis='CTR CUTI BERSALIN SAH'; c._hrmis_rec={jenis:'CUTI BERSALIN (CB)',kodCuti:'CB',status:'SAH',source:'SPECIAL_CB'};
+            c.mc_note='TIADA PERMOHONAN';
+          }
+        }
+        if(isTTMember(m)){
+          for(var d=1; d<=activeDays(); d++){
+            if(isOff(m.bil,d)) continue;
+            var t=cell(m.bil,d); if(!t) continue;
+            if(t.kzp!=='TH'){ t.kzp='TH'; changed++; }
+            if(t.kzk!=='TH'){ t.kzk='TH'; changed++; }
+            t.tc_note='ABS - TT / TAHAN TUGAS'; t.tc_abs_reason='TT'; t.tc_audit_done=true; t._tt_special=true;
+            if(!t.hrmis || /TIADA|CUTI|MC|CR|EL|CTR/i.test(String(t.hrmis))) t.hrmis='';
+            t.mc_note='TIADA PERMOHONAN';
+          }
+        }
+      });
+      try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      if(changed){ try{ if(typeof saveDataset==='function') saveDataset('SPECIAL CB TT V5.8'); }catch(e){} }
+    }catch(e){ console.warn('[v5.8 special]',e); }
+    return changed;
+  }
+  window.applySpecialCasesV58 = applySpecialCases;
+
+  /* ── TC 27-30 APRIL ───────────────────────────────────────── */
+  window.isTCProblemDay = function(bil,d){ var c; try{ c=cell(bil,d); }catch(e){} return isTCProblemDate(d) || !!(c && c.tc_problem); };
+  window.markTCProblemApril = function(){
+    var n=0;
+    try{
+      if(!isActiveApril() || typeof MASTER==='undefined') return 0;
+      MASTER.forEach(function(m){ for(var d=27; d<=30; d++){ var c=cell(m.bil,d); if(!c) continue; if(!c.tc_problem){ c.tc_problem=true; n++; } c.tc_problem_reason='TIMECARE/TIMECARD sistem bermasalah 27-30/04/2026'; } });
+      if(n){ try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){} }
+    }catch(e){ console.warn('[v5.8 markTC]',e); }
+    return n;
+  };
+
+  function hasPunch(c){ try{ return typeof hasRealPunch==='function' ? hasRealPunch(c) : !!(c&&(c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length))); }catch(e){ return !!(c&&(c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length))); } }
+  function hasHR2(c){ try{ return typeof hasHR==='function' ? hasHR(c) : !!(c&&String(c.hrmis||'').trim()); }catch(e){ return !!(c&&String(c.hrmis||'').trim()); } }
+  function isHadirStatus(v){ v=N(v); return v==='✓'||v==='HADIR'||v==='/'||v==='PRESENT'; }
+  function isMCStatus2(v){ return /(^|\b)(MC|SAKIT)(\b|$)/i.test(String(v||'')); }
+  function isAbsStatus(v){ v=N(v); return ['ABS','X','TH','TIDAK HADIR','TDK HADIR'].indexOf(v)>=0; }
+  function isLeaveStatus(v){ v=N(v); return ['CR','EL','CTR','CB','CBR','HAJI'].indexOf(v)>=0; }
+  function hrCode(c){ var s=N((c&&c._hrmis_rec&&(c._hrmis_rec.jenis||c._hrmis_rec.kodCuti||c._hrmis_rec.status)) || (c&&c.hrmis)); if(/BERSALIN|CBR?/.test(s)) return 'CB'; if(/CUTI REHAT|TAHUNAN|\bCR\b/.test(s)) return 'CR'; if(/KECEMASAN|\bEL\b/.test(s)) return 'EL'; if(/TANPA REKOD|\bCTR\b/.test(s)) return 'CTR'; if(/CUTI SAKIT|\bMC\b|SAKIT/.test(s)) return 'MC'; if(/HAJI/.test(s)) return 'HAJI'; return s?'LAIN':''; }
+
+  var oldTcAudit = (typeof tcAudit==='function') ? tcAudit : null;
+  window.tcAudit = tcAudit = function(bil,d){
+    var c; try{ c=cell(bil,d)||{}; }catch(e){ c={}; }
+    var m=memberByBil(bil);
+    if(c._cb_special || isNorAzura(m)) return {txt:'ABS\nCUTI BERSALIN',cls:'tc-off',ok:true};
+    if(c._tt_special || isTTMember(m)) return {txt:'ABS\nTT / TAHAN TUGAS',cls:'tc-off',ok:true};
+    if(window.isTCProblemDay(bil,d)) return {txt:'TC BERMASALAH\n27-30/04\nAudit ikut KZ/MC/HRMIS',cls:'tc-bp',ok:true,problem:true};
+    return oldTcAudit ? oldTcAudit(bil,d) : {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+  };
+
+  var oldCek6 = (typeof cek6==='function') ? cek6 : null;
+  window.cek6 = cek6 = function(bil,d){
+    var c=cell(bil,d)||{}, sh=shOf(bil,d), m=memberByBil(bil);
+    if(!c) return {ok:false,miss:['Semua data']};
+    if(sh==='O') return {ok:true,miss:[]};
+    if(c._cb_special || isNorAzura(m) || c._tt_special || isTTMember(m)) return {ok:true,miss:[]};
+    if(window.isTCProblemDay(bil,d)){
+      var miss=[], kzp=N(c.kzp), kzk=N(c.kzk), mc=getMC(bil,d), hr=hasHR2(c), hc=hrCode(c);
+      if(!kzp) miss.push('KZ PENYELIA');
+      if(!kzk) miss.push('KZ KOPERAL');
+      if((isMCStatus2(kzp)||isMCStatus2(kzk)) && !mc && hc!=='MC') miss.push('MC DITERIMA');
+      if((isLeaveStatus(kzp)||isLeaveStatus(kzk)) && !hr) miss.push('CUTI HRMIS');
+      return {ok:miss.length===0,miss:miss,tcProblem:true};
+    }
+    var mc2=getMC(bil,d), k1=N(c.kzp), k2=N(c.kzk);
+    if((isMCStatus2(k1)||isMCStatus2(k2)) && mc2) return {ok:true,miss:[]};
+    return oldCek6 ? oldCek6(bil,d) : {ok:true,miss:[]};
+  };
+
+  var oldCheckLayers = (typeof checkLayersComplete==='function') ? checkLayersComplete : null;
+  window.checkLayersComplete = checkLayersComplete = function(bil,d){
+    var c=cell(bil,d)||{}, sh=shOf(bil,d), m=memberByBil(bil);
+    if(sh==='O') return {complete:true,offday:true,layers:{shift:'OFFDAY'},missing:[]};
+    if(c._cb_special || isNorAzura(m) || c._tt_special || isTTMember(m)) return {complete:true,special:true,layers:{shift:sh},missing:[]};
+    if(window.isTCProblemDay(bil,d)){
+      var r=cek6(bil,d);
+      return {complete:true,tcProblem:true,layers:{shift:!!sh,kzp:!!c.kzp,kzk:!!c.kzk,tc:'TC BERMASALAH',mc:!!getMC(bil,d),hr:hasHR2(c)},missing:r.miss||[]};
+    }
+    return oldCheckLayers ? oldCheckLayers(bil,d) : {complete:true,layers:{},missing:[]};
+  };
+
+  function auditTCProblem(bil,d){
+    var c=cell(bil,d)||{}, sh=shOf(bil,d), kzp=N(c.kzp), kzk=N(c.kzk), mc=getMC(bil,d), hr=hasHR2(c), hc=hrCode(c);
+    if(sh==='O') return {txt:'OFFDAY',cls:'af-off'};
+    if(c._cb_special) return {txt:'SAH\nCUTI BERSALIN',cls:'af-sah'};
+    if(c._tt_special) return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
+    if(kzp==='TT'||kzk==='TT') return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
+    if(kzp==='TH'||kzk==='TH') return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
+    if(!kzp&&!kzk) return {txt:'PENDING KZ\nTC 27-30/04 bermasalah',cls:'af-pending',inc:false};
+    if(isMCStatus2(kzp)||isMCStatus2(kzk)){
+      if(mc) return {txt:'SAH\nMC SAH\n(TC dikecualikan)',cls:'af-sah'};
+      if(hc==='MC') return {txt:'SAH\nMC SAH HRMIS\n(TC dikecualikan)',cls:'af-sah'};
+      return {txt:'MOHON HANTAR MC\n(TC dikecualikan)',cls:'af-warn'};
+    }
+    if(isLeaveStatus(kzp)||isLeaveStatus(kzk)){
+      var lbl=(kzp==='EL'||kzk==='EL')?'EL':(kzp==='CTR'||kzk==='CTR')?'CTR':(kzp==='CB'||kzk==='CB'||kzp==='CBR'||kzk==='CBR')?'CUTI BERSALIN':'CR';
+      if(hr || lbl==='CUTI BERSALIN') return {txt:'SAH\n'+lbl+' SAH\n(TC dikecualikan)',cls:'af-sah'};
+      return {txt:'SILA MOHON CUTI\nTIADA HRMIS\n(TC dikecualikan)',cls:'af-abs'};
+    }
+    if(isHadirStatus(kzp)||isHadirStatus(kzk)) return {txt:'SAH\nKZ HADIR\n(TC bermasalah)',cls:'af-sah'};
+    if(kzp==='L'||kzk==='L') return {txt:'LEWAT\nIKUT KZ\n(TC bermasalah)',cls:'af-lw'};
+    if(isAbsStatus(kzp)||isAbsStatus(kzk)){ if(mc) return {txt:'SAH\nMC SAH\n(TC dikecualikan)',cls:'af-sah'}; if(hr) return {txt:'SAH\nHRMIS SAH\n(TC dikecualikan)',cls:'af-sah'}; return {txt:'ABS - SILA MOHON CUTI\n(TC dikecualikan)',cls:'af-abs'}; }
+    return {txt:'SEMAK KZ\n'+(kzp||kzk)+'\n(TC dikecualikan)',cls:'af-warn'};
+  }
+
+  var oldAuditFinal = (typeof auditFinal==='function') ? auditFinal : null;
+  window.auditFinal = auditFinal = function(bil,d){
+    var c=cell(bil,d)||{}, m=memberByBil(bil);
+    if(c._cb_special || (isNorAzura(m) && +d>=21 && !isOff(bil,d))) return {txt:'SAH\nCUTI BERSALIN',cls:'af-sah'};
+    if(c._tt_special || (isTTMember(m) && !isOff(bil,d))) return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
+    if(window.isTCProblemDay(bil,d)) return auditTCProblem(bil,d);
+    var kzp=N(c.kzp), kzk=N(c.kzk), mc=getMC(bil,d);
+    if((isMCStatus2(kzp)||isMCStatus2(kzk)) && mc){
+      return hasPunch(c) ? {txt:'MC SAH\n(ADA THUMB - SEMAK SHIFT)',cls:'af-mc'} : {txt:'SAH\nMC SAH',cls:'af-sah'};
+    }
+    return oldAuditFinal ? oldAuditFinal(bil,d) : {txt:'BELUM DIPROSES',cls:'af-bp'};
+  };
+
+  var oldGetAllFlags = (typeof getAllFlags==='function') ? getAllFlags : null;
+  window.getAllFlags = getAllFlags = function(){
+    var arr=oldGetAllFlags ? (oldGetAllFlags()||[]) : [];
+    arr.forEach(function(m){
+      var mem=memberByBil(m.bil)||m;
+      if(isNorAzura(mem) || isTTMember(mem)){ m.items=[]; return; }
+      m.items=(m.items||[]).filter(function(x){
+        if(window.isTCProblemDay(m.bil,x.d)){
+          var t=N(x.af&&x.af.txt);
+          if(t.indexOf('PENDING KZ')>=0) return false;
+          if(t.indexOf('TIMECARD')>=0||t.indexOf('SINGLE')>=0||t.indexOf('TIADA IN')>=0||t.indexOf('TIADA OUT')>=0) return false;
+        }
+        return true;
+      });
+    });
+    return arr.filter(function(m){ return m.items && m.items.length; });
+  };
+
+  /* ── RUN / BUTTONS ─────────────────────────────────────────── */
+  window.runAllV58Fixes = function(reason){
+    try{ markTCProblemApril(); }catch(e){}
+    try{ applySpecialCases(); }catch(e){}
+    try{ fixMCOwner(); }catch(e){}
+    try{ if(typeof saveDataset==='function') saveDataset(reason||'V5.8 AUTO FIX'); }catch(e){}
+    try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
+    try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+  };
+
+  function addButtonOnce(){
+    try{
+      var bar=document.querySelector('#topbar div[style*="margin-left:auto"]') || $('topbar');
+      if(!bar || $('btn-mc-owner-fix')) return;
+      var b=document.createElement('button');
+      b.id='btn-mc-owner-fix'; b.className='btn btn-sm'; b.style.fontSize='7.5px'; b.textContent='Fix MC Owner';
+      b.onclick=function(){ runAllV58Fixes('MANUAL FIX MC OWNER'); toastSafe('MC Owner / Special Audit difix','ok'); };
+      bar.appendChild(b);
+    }catch(e){}
+  }
+
+  function wrap(name,beforeAfter){
+    try{
+      var old=window[name] || eval(name);
+      if(typeof old!=='function' || old.__v58_wrapped) return;
+      var neu=function(){ try{ beforeAfter&&beforeAfter('before-'+name); }catch(e){} var r=old.apply(this,arguments); try{ beforeAfter&&beforeAfter('after-'+name); }catch(e){} return r; };
+      neu.__v58_wrapped=true;
+      window[name]=eval(name+' = neu');
+    }catch(e){}
+  }
+  ['renderMaster','renderDash','validasiAudit','kemaskiniMaster','updFlags'].forEach(function(n){ wrap(n,function(){ markTCProblemApril(); applySpecialCases(); fixMCOwner(); }); });
+
+  if(typeof bootApp==='function' && !window.__EAKHA_BOOT_V58){
+    window.__EAKHA_BOOT_V58=true;
+    var oldBoot=bootApp;
+    bootApp = window.bootApp = async function(){
+      var r;
+      try{ r=await oldBoot.apply(this,arguments); }
+      catch(e){ console.error('[v5.8 boot wrapper]',e); var aw=$('auth-wall'), app=$('app'); if(aw) aw.style.display='none'; if(app) app.style.display='flex'; }
+      [150,800,1800].forEach(function(ms){ setTimeout(function(){ try{ addButtonOnce(); runAllV58Fixes('BOOT V5.8'); }catch(e){ console.warn(e); } }, ms); });
+      return r;
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    addButtonOnce();
+    setTimeout(function(){ try{ addButtonOnce(); if((typeof AUTH!=='undefined') && AUTH.loggedIn) runAllV58Fixes('DOMContent V5.8'); }catch(e){} }, 500);
+  });
+})();
+</script>
+
+</body></html>');
   w.document.close(); setTimeout(()=>w.print(),500);
 }
 
@@ -7102,556 +7472,374 @@ if(typeof saveCustomAnggota !== 'function'){
 })();
 </script>
 
+
 <script>
 /* ══════════════════════════════════════════════════════════════
-   PATCH v5.6 — CUTI BERSALIN + TT/TH + TC 27-30 APRIL
-   - Nor Azura / Mama Azura: cuti bersalin, Timecard ABS neutral,
-     MC tiada permohonan, HRMIS CTR Cuti Bersalin, Audit SAH.
-   - Aminuddin, Asree, Nazri Ismail: KZP/KZK TH, Timecard ABS,
-     MC/HRMIS tiada permohonan, Audit SAH (TT), tiada Output Perhatian.
-   - 27-30 April: TC bermasalah, audit ikut KZ + MC + HRMIS.
+   PATCH v5.8 — LOGIN SAFE + MC OWNER + SPECIAL CB/TT + TC 27-30
+   - Restores local login without Supabase dependency.
+   - MC owner matching uses member name first, not stale bil number.
+   - 27-30 Apr 2026 TIMECARD problem: audit uses KZ + MC + HRMIS.
+   - Nor Azura/Mama Azura maternity leave and Aminuddin/Asree/Nazri TT
+     are SAH and excluded from Output Perhatian.
    ══════════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
-  var PATCH='v5.6-special-cb-tt-20260604';
-  window.EAKHA_PATCH_VERSION = PATCH;
+  window.EAKHA_PATCH_VERSION = 'v5.8-login-mc-owner-safe-20260604';
 
-  function Y(){ return (typeof ACTIVE_YEAR!=='undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026; }
-  function M(){ return (typeof ACTIVE_MONTH!=='undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4; }
-  function N(v){ return String(v||'').trim().toUpperCase().replace(/\s+/g,' '); }
-  function C(bil,d){ try{ return D && D[bil] && D[bil][d] ? D[bil][d] : null; }catch(e){ return null; } }
-  function dateNum(y,m,d){ return (+y)*10000+(+m)*100+(+d); }
-  function inRangeActive(d, y1,m1,d1, y2,m2,d2){ var n=dateNum(Y(),M(),d); return n>=dateNum(y1,m1,d1) && n<=dateNum(y2,m2,d2); }
-  function getMember(bil){ try{ return MASTER.find(function(m){return +m.bil===+bil;}); }catch(e){ return null; } }
-  function memberName(bil){ var m=getMember(bil); return N(m&&m.nama); }
-  function realPunch(c){ return !!(c && (c.tc_in || c.tc_out || (c.tc_all && c.tc_all.length))); }
-  function isOff(bil,d){ try{ return gSh(bil,d)==='O'; }catch(e){ return false; } }
-  function isTCProblemDate(d){ return Y()===2026 && M()===4 && +d>=27 && +d<=30; }
-  function isNorAzuraName(s){ s=N(s); return /NOR\s+AZURA/.test(s) && (/MAMAT/.test(s)||/MUHAMMAD/.test(s)||/MAMAT\s*@/.test(s)); }
-  function isNorAzuraBil(bil){ return +bil===49 || isNorAzuraName(memberName(bil)); }
-  function isSpecialTTBil(bil){
-    var s=memberName(bil);
-    return +bil===7 || +bil===51 || /AMINUD+IN/.test(s) || /NAZRI\s+BIN\s+ISMAIL/.test(s) || /\bASREE\b|\bASRI\b/.test(s);
+  function toastSafe(msg,type){ try{ if(typeof toast==='function') toast(msg,type||'ok'); else console.log(msg); }catch(e){ console.log(msg); } }
+  function $(id){ return document.getElementById(id); }
+  function N(v){ return String(v||'').toUpperCase().replace(/[^A-Z0-9@\/ ]+/g,' ').replace(/\s+/g,' ').trim(); }
+  function isActiveApril(){ try{ return (typeof ACTIVE_YEAR==='undefined'||+ACTIVE_YEAR===2026) && (typeof ACTIVE_MONTH==='undefined'||+ACTIVE_MONTH===4); }catch(e){ return true; } }
+  function isTCProblemDate(d){ return isActiveApril() && +d>=27 && +d<=30; }
+  function cell(bil,d){ try{ if(!D[bil]) D[bil]={}; if(!D[bil][d]) D[bil][d]={}; return D[bil][d]; }catch(e){ return null; } }
+  function shOf(bil,d){ try{ return typeof gSh==='function' ? gSh(bil,d) : ''; }catch(e){ return ''; } }
+  function memberByBil(bil){ try{ return MASTER.find(function(m){return +m.bil===+bil;})||null; }catch(e){ return null; } }
+  function memberName(bil){ var m=memberByBil(bil); return N(m&&m.nama); }
+  function isOff(bil,d){ return shOf(bil,d)==='O'; }
+  function activeDays(){ return 30; }
+
+  /* ── LOGIN HOTFIX ─────────────────────────────────────────── */
+  window.doLogin = doLogin = async function(){
+    var idEl=$('l-id'), pwEl=$('l-pw'), btn=$('l-btn'), err=$('l-err');
+    var id=String((idEl&&idEl.value)||'').trim().toLowerCase().replace(/\s+/g,'');
+    var pw=String((pwEl&&pwEl.value)||'').trim();
+    function show(m){ if(err){err.textContent=m;err.style.display='block';} }
+    function clear(){ if(err){err.textContent='';err.style.display='none';} }
+    function setBtn(dis,txt){ if(btn){btn.disabled=!!dis;btn.textContent=txt||'Log Masuk';} }
+    if(!id || !pw){ show('Sila masukkan ID pengguna dan kata laluan.'); return; }
+    setBtn(true,'Mengesahkan...');
+    var local={
+      'sjnadilah': {pw:'912012',  role:'admin', id:'sjnadilah', nama:'SJN Adilah', jawatan:'OWNER · AUDITOR'},
+      'sjn.adilah':{pw:'912012',  role:'admin', id:'sjnadilah', nama:'SJN Adilah', jawatan:'OWNER · AUDITOR'},
+      'adilah':    {pw:'912012',  role:'admin', id:'sjnadilah', nama:'SJN Adilah', jawatan:'OWNER · AUDITOR'},
+      'smamierul': {pw:'2438670', role:'admin', id:'smamierul', nama:'SM Amierul', jawatan:'ADMIN'},
+      'sm.amierul':{pw:'2438670', role:'admin', id:'smamierul', nama:'SM Amierul', jawatan:'ADMIN'},
+      'amierul':   {pw:'2438670', role:'admin', id:'smamierul', nama:'SM Amierul', jawatan:'ADMIN'},
+      'tuannajib': {pw:'633283',  role:'viewer',id:'tuannajib', nama:'Tuan Najib', jawatan:'VIEWER · JANA LAPORAN'},
+      'tuan.najib':{pw:'633283',  role:'viewer',id:'tuannajib', nama:'Tuan Najib', jawatan:'VIEWER · JANA LAPORAN'},
+      'najib':     {pw:'633283',  role:'viewer',id:'tuannajib', nama:'Tuan Najib', jawatan:'VIEWER · JANA LAPORAN'},
+      'viewer':    {pw:'662633',  role:'viewer',id:'viewer', nama:'Viewer', jawatan:'VIEWER'},
+      'penonton':  {pw:'662633',  role:'viewer',id:'viewer', nama:'Viewer', jawatan:'VIEWER'}
+    };
+    var acc=local[id];
+    if(acc && acc.pw===pw){
+      try{
+        AUTH={loggedIn:true,role:acc.role,id:acc.id,nama:acc.nama,jawatan:acc.jawatan};
+        if(typeof saveSess==='function') saveSess();
+        clear();
+        await safeBootApp();
+        return;
+      }catch(e){ console.error('[v5.8 login boot]',e); show('Login berjaya tetapi sistem gagal boot: '+(e.message||e)); setBtn(false,'Log Masuk'); return; }
+    }
+    if(pw==='662633' && (id==='viewer'||id==='penonton')){
+      try{ AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'}; if(typeof saveSess==='function') saveSess(); clear(); await safeBootApp(); return; }
+      catch(e){ console.error(e); show('Login viewer berjaya tetapi sistem gagal boot.'); setBtn(false,'Log Masuk'); return; }
+    }
+    show('ID atau kata laluan tidak sah.');
+    if(pwEl) pwEl.value='';
+    setBtn(false,'Log Masuk');
+  };
+
+  async function safeBootApp(){
+    try{
+      if(typeof bootApp==='function'){
+        await bootApp();
+      }else{
+        var aw=$('auth-wall'), app=$('app'); if(aw) aw.style.display='none'; if(app) app.style.display='flex';
+      }
+    }catch(e){
+      console.error('[v5.8 safeBootApp]', e);
+      var aw=$('auth-wall'), app=$('app'); if(aw) aw.style.display='none'; if(app) app.style.display='flex';
+      try{ if(typeof applyRoleUI==='function') applyRoleUI(); }catch(_e){}
+    }
+    setTimeout(function(){ try{ runAllV58Fixes('LOGIN_BOOT'); }catch(e){ console.warn('[v5.8 post boot]',e); } }, 200);
+    setTimeout(function(){ try{ runAllV58Fixes('LOGIN_BOOT_DELAY'); }catch(e){} }, 1200);
   }
-  function isKzMC(v){ return /(^|\b)(MC|SAKIT)(\b|$)/.test(N(v)); }
-  function isKzHadir(v){ v=N(v); return v==='✓'||v==='/'||v==='HADIR'||v==='PRESENT'; }
-  function isKzAbs(v){ v=N(v); return ['ABS','X','TH','TIDAK HADIR','TDK HADIR'].indexOf(v)>=0; }
-  function isKzLeave(v){ v=N(v); return ['CR','EL','CTR','CB','CBR','HAJI','K/P','BER','OB'].indexOf(v)>=0; }
-  function hasHRReal(c){ return !!(c && String(c.hrmis||'').trim() && String(c.hrmis||'').trim()!=='-'); }
-  function codeHR(v){
-    var s=N(v);
-    if(/BERSALIN/.test(s)) return 'CTR_CB';
-    if(/CUTI REHAT|CUTI TAHUNAN|\bCR\b/.test(s)) return 'CR';
-    if(/CUTI SAKIT|\bMC\b|SAKIT/.test(s)) return 'MC';
-    if(/KECEMASAN|\bEL\b/.test(s)) return 'EL';
-    if(/TANPA REKOD|\bCTR\b/.test(s)) return 'CTR';
-    if(/HAJI/.test(s)) return 'HAJI';
-    return s? s : '';
+
+  window.doViewer = doViewer = function(){
+    try{ AUTH={loggedIn:true,role:'viewer',id:'viewer',nama:'Viewer',jawatan:'VIEWER'}; if(typeof saveSess==='function') saveSess(); safeBootApp(); }
+    catch(e){ console.error(e); }
+  };
+
+  /* ── DATE / MC HELPERS ────────────────────────────────────── */
+  function dayFromVal(v){
+    if(v==null) return null;
+    if(typeof v==='number') return v;
+    var s=String(v).trim();
+    var m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/); if(m) return (+m[2]===4 || !isActiveApril()) ? +m[3] : null;
+    m=s.match(/^(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{2,4}))?/); if(m) return (+m[2]===4 || !m[2]) ? +m[1] : null;
+    m=s.match(/\b(\d{1,2})\s*(?:APR|APRIL|\/04|\.04|-04)\b/i); if(m) return +m[1];
+    return null;
   }
-  function labelHR(v){
-    var c=codeHR(v);
-    if(c==='CTR_CB') return 'CTR CUTI BERSALIN SAH';
-    if(c==='CR') return 'CR SAH';
-    if(c==='MC') return 'MC SAH HRMIS';
-    if(c==='EL') return 'EL SAH';
-    if(c==='CTR') return 'CTR SAH';
-    if(c==='HAJI') return 'CUTI HAJI SAH';
-    return c ? c+' SAH' : '';
+  function recStart(r){ return dayFromVal(r&& (r.dari||r.tarikh||r.start||r.mula||r.d)); }
+  function recEnd(r){ return dayFromVal(r&& (r.hingga||r.tamat||r.end||r.dari||r.tarikh||r.d)); }
+  function recCovers(r,d){ var a=recStart(r), b=recEnd(r); if(a==null && typeof r.d!=='undefined') a=b=+r.d; if(a==null) return false; if(b==null) b=a; return +d>=a && +d<=b; }
+  function nameTokens(s){ return N(s).replace(/\b(BIN|BINTI|A L|A\/L|AP|A\/P|PB|KPL|LKPL|KONST|PEL|SJN|SM)\b/g,' ').replace(/\s+/g,' ').trim().split(' ').filter(function(x){return x.length>2;}); }
+  function nameScore(a,b){
+    var A=nameTokens(a), B=nameTokens(b); if(!A.length||!B.length) return 0;
+    var same=0; A.forEach(function(t){ if(B.indexOf(t)>=0) same++; });
+    var ratio=same/Math.max(A.length,B.length);
+    var na=N(a), nb=N(b);
+    if(na===nb) ratio=1;
+    else if(na.indexOf(nb)>=0||nb.indexOf(na)>=0) ratio=Math.max(ratio,0.86);
+    return ratio;
+  }
+  function findMemberByName(nama){
+    try{
+      if(!nama || typeof MASTER==='undefined') return null;
+      var best=null, bs=0;
+      MASTER.forEach(function(m){ var s=nameScore(nama,m.nama); if(s>bs){bs=s; best=m;} });
+      return bs>=0.55 ? best : null;
+    }catch(e){ return null; }
+  }
+  function mcOwner(r){
+    var byName=findMemberByName(r&&r.nama);
+    if(byName) return byName;
+    return memberByBil(r&&r.bil);
   }
 
-  // Override HRMIS taxonomy so Cuti Bersalin appears as CTR Cuti Bersalin, not generic CB/MC.
-  window.hrmisCode = hrmisCode = function(v){ var c=codeHR(v); return c==='CTR_CB'?'CTR':(c||'CR'); };
-  window.hrmisLabel = hrmisLabel = labelHR;
+  var oldGetMC = (typeof getMC==='function') ? getMC : null;
+  window.getMC = getMC = function(bil,d){
+    try{
+      var bilN=+bil, dN=+d;
+      if(typeof MC_DATA!=='undefined' && Array.isArray(MC_DATA)){
+        for(var i=0;i<MC_DATA.length;i++){
+          var r=MC_DATA[i]; if(!recCovers(r,dN)) continue;
+          var owner=mcOwner(r); var ownerBil=owner ? +owner.bil : +(r.bil||0);
+          if(ownerBil===bilN){
+            if(owner && +r.bil!==ownerBil){ r.bil=ownerBil; r.nama=owner.nama; r.jab=owner.jab; r.komp=owner.komp; r._ownerFixed=true; }
+            return r;
+          }
+        }
+      }
+    }catch(e){ console.warn('[v5.8 getMC]',e); }
+    return oldGetMC ? oldGetMC(bil,d) : null;
+  };
 
-  window.isTCProblemDayV56 = isTCProblemDate;
+  window.fixMCOwner = function(){
+    var changed=0;
+    try{
+      if(typeof MC_DATA==='undefined' || !Array.isArray(MC_DATA)) return 0;
+      MC_DATA.forEach(function(r){
+        var owner=mcOwner(r);
+        if(owner && +r.bil!==+owner.bil){ r.old_bil=r.bil; r.bil=owner.bil; r.nama=owner.nama; r.jab=owner.jab; r.komp=owner.komp; r._ownerFixed=true; changed++; }
+        else if(owner){ r.nama=owner.nama; r.jab=owner.jab; r.komp=owner.komp; }
+      });
+      // Clear old cell MC references, then rebuild from corrected owner.
+      if(typeof MASTER!=='undefined' && typeof D!=='undefined') MASTER.forEach(function(m){ for(var d=1; d<=activeDays(); d++){ var c=cell(m.bil,d); if(c){ delete c._mc; delete c.mc_wrong_owner; } } });
+      MC_DATA.forEach(function(r){ var owner=mcOwner(r); if(!owner) return; for(var d=1; d<=activeDays(); d++){ if(recCovers(r,d)){ var c=cell(owner.bil,d); if(c) c._mc=r; } } });
+      try{ localStorage.setItem('eakha_mc', JSON.stringify(MC_DATA)); localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      if(changed) toastSafe('Fix MC Owner: '+changed+' rekod dipindahkan ikut nama','ok'); else toastSafe('Fix MC Owner: tiada rekod salah bil','ok');
+      try{ if(typeof saveDataset==='function') saveDataset('FIX MC OWNER V5.8'); }catch(e){}
+      try{ if(typeof renderMaster==='function') renderMaster(null); if(typeof renderMCReg==='function') renderMCReg(); if(typeof updFlags==='function') updFlags(); }catch(e){}
+    }catch(e){ console.error('[v5.8 fixMCOwner]',e); toastSafe('Ralat Fix MC Owner: '+(e.message||e),'err'); }
+    return changed;
+  };
 
+  /* ── SPECIAL CASES ─────────────────────────────────────────── */
+  function isNorAzura(m){ var n=N(m&&m.nama); return n.indexOf('NOR AZURA')>=0 && (n.indexOf('MAMAT')>=0 || n.indexOf('MUHAMMAD')>=0 || n.indexOf('MUHAMAD')>=0); }
+  function isTTMember(m){ var n=N(m&&m.nama); return n.indexOf('AMINUDIN')>=0 || n.indexOf('AMINUDDIN')>=0 || n.indexOf('ASREE')>=0 || n.indexOf('ASRI')>=0 || (n.indexOf('NAZRI')>=0 && n.indexOf('ISMAIL')>=0); }
   function applySpecialCases(){
+    var changed=0;
     try{
       if(typeof MASTER==='undefined' || typeof D==='undefined') return 0;
-      var changed=0;
       MASTER.forEach(function(m){
-        var bil=+m.bil; if(!D[bil]) return;
-        for(var d=1; d<=31; d++){
-          if(!D[bil][d]) continue;
-          var c=D[bil][d];
-          if(isTCProblemDate(d)){
-            if(!c.tc_problem){ c.tc_problem=true; changed++; }
-            c.tc_problem_reason='TIMECARE/TIMECARD sistem bermasalah 27-30/04/2026';
-          }
-          if(isNorAzuraBil(bil) && inRangeActive(d,2026,4,21,2026,7,21)){
+        if(isNorAzura(m)){
+          for(var d=21; d<=activeDays(); d++){
+            if(isOff(m.bil,d)) continue;
+            var c=cell(m.bil,d); if(!c) continue;
             if(c.kzp!=='CB'){ c.kzp='CB'; changed++; }
             if(c.kzk!=='CB'){ c.kzk='CB'; changed++; }
-            c.special_cb=true;
-            c.cb_reason='CUTI BERSALIN';
-            c.tc_abs_leave='CUTI BERSALIN';
-            c.tc_note='ABS - CUTI BERSALIN';
-            c.tc_shift=c.tc_shift||((typeof gSh==='function')?gSh(bil,d):'');
-            c.mc='TIADA PERMOHONAN';
-            c.mc_no_permohonan=true;
-            c.hrmis='CTR CUTI BERSALIN SAH';
-            c._hrmis_rec={nama:m.nama, jenis:'CUTI BERSALIN (CTR)', kodCuti:'CTR', dari:'2026-04-21', hingga:'2026-07-21', masuk:'2026-07-22', mohon:'2026-04-10', _source:'SPECIAL_CB_V56'};
-            // Timecard is intentionally ABS for this leave category. Do not carry punch unless user manually enters it.
-            if(!c.manual_tc_keep){ c.tc_in=''; c.tc_out=''; c.tc_all=[]; }
+            c.tc_note='ABS - CUTI BERSALIN'; c.tc_abs_reason='CUTI BERSALIN'; c.tc_audit_done=true; c._cb_special=true;
+            c.hrmis='CTR CUTI BERSALIN SAH'; c._hrmis_rec={jenis:'CUTI BERSALIN (CB)',kodCuti:'CB',status:'SAH',source:'SPECIAL_CB'};
+            c.mc_note='TIADA PERMOHONAN';
           }
-          if(isSpecialTTBil(bil) && !isOff(bil,d)){
-            if(c.kzp!=='TH'){ c.kzp='TH'; changed++; }
-            if(c.kzk!=='TH'){ c.kzk='TH'; changed++; }
-            c.special_tt=true;
-            c.tt_reason='TAHAN TUGAS / TH';
-            c.tc_abs_leave='TT / TAHAN TUGAS';
-            c.tc_note='ABS - TAHAN TUGAS';
-            c.mc='TIADA PERMOHONAN';
-            c.mc_no_permohonan=true;
-            c.hrmis='';
-            if(!c.manual_tc_keep){ c.tc_in=''; c.tc_out=''; c.tc_all=[]; }
+        }
+        if(isTTMember(m)){
+          for(var d=1; d<=activeDays(); d++){
+            if(isOff(m.bil,d)) continue;
+            var t=cell(m.bil,d); if(!t) continue;
+            if(t.kzp!=='TH'){ t.kzp='TH'; changed++; }
+            if(t.kzk!=='TH'){ t.kzk='TH'; changed++; }
+            t.tc_note='ABS - TT / TAHAN TUGAS'; t.tc_abs_reason='TT'; t.tc_audit_done=true; t._tt_special=true;
+            if(!t.hrmis || /TIADA|CUTI|MC|CR|EL|CTR/i.test(String(t.hrmis))) t.hrmis='';
+            t.mc_note='TIADA PERMOHONAN';
           }
         }
       });
-
-      // LocalStorage HRMIS list migration: ensure Nor Azura maternity record is present as CTR Cuti Bersalin.
-      try{
-        var arr=JSON.parse(localStorage.getItem('eakha_hrmis')||'[]');
-        if(!Array.isArray(arr)) arr=[];
-        var found=false;
-        arr.forEach(function(r){
-          if(r && isNorAzuraName(r.nama) && String(r.dari||'')==='2026-04-21'){
-            r.jenis='CUTI BERSALIN (CTR)'; r.kodCuti='CTR'; r.hingga='2026-07-21'; r.masuk=r.masuk||'2026-07-22'; r.mohon=r.mohon||'2026-04-10'; found=true;
-          }
-        });
-        if(!found){ arr.push({nama:'NOR AZURA BINTI MAMAT @ MUHAMMAD',jenis:'CUTI BERSALIN (CTR)',kodCuti:'CTR',dari:'2026-04-21',hingga:'2026-07-21',masuk:'2026-07-22',mohon:'2026-04-10',_source:'SPECIAL_CB_V56'}); }
-        localStorage.setItem('eakha_hrmis',JSON.stringify(arr));
-      }catch(e){}
-      return changed;
-    }catch(e){ console.warn('[v5.6] applySpecialCases:',e); return 0; }
+      try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      if(changed){ try{ if(typeof saveDataset==='function') saveDataset('SPECIAL CB TT V5.8'); }catch(e){} }
+    }catch(e){ console.warn('[v5.8 special]',e); }
+    return changed;
   }
-  window.applySpecialCasesV56 = applySpecialCases;
+  window.applySpecialCasesV58 = applySpecialCases;
 
-  // Normalize HRMIS after old normalizers run.
-  var oldNormalize = (typeof normalizeHRMISAll==='function') ? normalizeHRMISAll : null;
-  window.normalizeHRMISAll = normalizeHRMISAll = function(){
-    if(oldNormalize){ try{ oldNormalize(); }catch(e){} }
+  /* ── TC 27-30 APRIL ───────────────────────────────────────── */
+  window.isTCProblemDay = function(bil,d){ var c; try{ c=cell(bil,d); }catch(e){} return isTCProblemDate(d) || !!(c && c.tc_problem); };
+  window.markTCProblemApril = function(){
+    var n=0;
     try{
-      if(typeof D!=='undefined'){
-        Object.keys(D).forEach(function(b){ Object.keys(D[b]||{}).forEach(function(d){
-          var c=D[b][d]; if(!c) return;
-          if(c._hrmis_rec && /BERSALIN/i.test(String(c._hrmis_rec.jenis||''))){ c._hrmis_rec.jenis='CUTI BERSALIN (CTR)'; c._hrmis_rec.kodCuti='CTR'; c.hrmis='CTR CUTI BERSALIN SAH'; }
-          if(/BERSALIN/i.test(String(c.hrmis||''))) c.hrmis='CTR CUTI BERSALIN SAH';
-        }); });
-      }
-      applySpecialCases();
-    }catch(e){ console.warn('[v5.6] normalizeHRMISAll:',e); }
+      if(!isActiveApril() || typeof MASTER==='undefined') return 0;
+      MASTER.forEach(function(m){ for(var d=27; d<=30; d++){ var c=cell(m.bil,d); if(!c) continue; if(!c.tc_problem){ c.tc_problem=true; n++; } c.tc_problem_reason='TIMECARE/TIMECARD sistem bermasalah 27-30/04/2026'; } });
+      if(n){ try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){} }
+    }catch(e){ console.warn('[v5.8 markTC]',e); }
+    return n;
   };
 
-  // TIMECARD audit override: ABS is neutral for Cuti Bersalin and TT/TH special cases.
-  var oldTcAudit56 = (typeof tcAudit==='function') ? tcAudit : null;
+  function hasPunch(c){ try{ return typeof hasRealPunch==='function' ? hasRealPunch(c) : !!(c&&(c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length))); }catch(e){ return !!(c&&(c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length))); } }
+  function hasHR2(c){ try{ return typeof hasHR==='function' ? hasHR(c) : !!(c&&String(c.hrmis||'').trim()); }catch(e){ return !!(c&&String(c.hrmis||'').trim()); } }
+  function isHadirStatus(v){ v=N(v); return v==='✓'||v==='HADIR'||v==='/'||v==='PRESENT'; }
+  function isMCStatus2(v){ return /(^|\b)(MC|SAKIT)(\b|$)/i.test(String(v||'')); }
+  function isAbsStatus(v){ v=N(v); return ['ABS','X','TH','TIDAK HADIR','TDK HADIR'].indexOf(v)>=0; }
+  function isLeaveStatus(v){ v=N(v); return ['CR','EL','CTR','CB','CBR','HAJI'].indexOf(v)>=0; }
+  function hrCode(c){ var s=N((c&&c._hrmis_rec&&(c._hrmis_rec.jenis||c._hrmis_rec.kodCuti||c._hrmis_rec.status)) || (c&&c.hrmis)); if(/BERSALIN|CBR?/.test(s)) return 'CB'; if(/CUTI REHAT|TAHUNAN|\bCR\b/.test(s)) return 'CR'; if(/KECEMASAN|\bEL\b/.test(s)) return 'EL'; if(/TANPA REKOD|\bCTR\b/.test(s)) return 'CTR'; if(/CUTI SAKIT|\bMC\b|SAKIT/.test(s)) return 'MC'; if(/HAJI/.test(s)) return 'HAJI'; return s?'LAIN':''; }
+
+  var oldTcAudit = (typeof tcAudit==='function') ? tcAudit : null;
   window.tcAudit = tcAudit = function(bil,d){
-    var c=C(bil,d)||{};
-    if(c.special_cb || (isNorAzuraBil(bil) && inRangeActive(d,2026,4,21,2026,7,21))) return {txt:'ABS\nCUTI BERSALIN',cls:'tc-off',ok:true,special:true};
-    if(c.special_tt || (isSpecialTTBil(bil) && !isOff(bil,d))) return {txt:'ABS\nTT / TAHAN TUGAS',cls:'tc-off',ok:true,special:true};
-    if(isTCProblemDate(d)) return {txt:'TC BERMASALAH\n27-30/04\nAudit ikut KZ/MC/HRMIS',cls:'tc-bp',ok:true,problem:true};
-    return oldTcAudit56 ? oldTcAudit56(bil,d) : {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    var c; try{ c=cell(bil,d)||{}; }catch(e){ c={}; }
+    var m=memberByBil(bil);
+    if(c._cb_special || isNorAzura(m)) return {txt:'ABS\nCUTI BERSALIN',cls:'tc-off',ok:true};
+    if(c._tt_special || isTTMember(m)) return {txt:'ABS\nTT / TAHAN TUGAS',cls:'tc-off',ok:true};
+    if(window.isTCProblemDay(bil,d)) return {txt:'TC BERMASALAH\n27-30/04\nAudit ikut KZ/MC/HRMIS',cls:'tc-bp',ok:true,problem:true};
+    return oldTcAudit ? oldTcAudit(bil,d) : {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
   };
 
+  var oldCek6 = (typeof cek6==='function') ? cek6 : null;
   window.cek6 = cek6 = function(bil,d){
-    var c=C(bil,d)||{}; var sh=(typeof gSh==='function')?gSh(bil,d):'';
+    var c=cell(bil,d)||{}, sh=shOf(bil,d), m=memberByBil(bil);
     if(!c) return {ok:false,miss:['Semua data']};
     if(sh==='O') return {ok:true,miss:[]};
-    if(c.special_cb || c.special_tt || ['TT','TH','CB','CBR'].indexOf(N(c.kzp))>=0 || ['TT','TH','CB','CBR'].indexOf(N(c.kzk))>=0) return {ok:true,miss:[]};
-    if(isTCProblemDate(d)){
-      var kzp=N(c.kzp), kzk=N(c.kzk), miss=[];
-      var mc=(typeof getMC==='function')?getMC(bil,d):null;
-      var hr=hasHRReal(c), hrc=codeHR(c._hrmis_rec&&c._hrmis_rec.jenis || c.hrmis);
-      if(!kzp && !kzk) return {ok:true,miss:[],tcProblem:true,pendingKZ:true};
+    if(c._cb_special || isNorAzura(m) || c._tt_special || isTTMember(m)) return {ok:true,miss:[]};
+    if(window.isTCProblemDay(bil,d)){
+      var miss=[], kzp=N(c.kzp), kzk=N(c.kzk), mc=getMC(bil,d), hr=hasHR2(c), hc=hrCode(c);
       if(!kzp) miss.push('KZ PENYELIA');
       if(!kzk) miss.push('KZ KOPERAL');
-      if((isKzMC(kzp)||isKzMC(kzk)) && !mc && hrc!=='MC') miss.push('MC DITERIMA');
-      if((['CR','EL','CTR','HAJI'].indexOf(kzp)>=0 || ['CR','EL','CTR','HAJI'].indexOf(kzk)>=0) && !hr) miss.push('CUTI HRMIS');
+      if((isMCStatus2(kzp)||isMCStatus2(kzk)) && !mc && hc!=='MC') miss.push('MC DITERIMA');
+      if((isLeaveStatus(kzp)||isLeaveStatus(kzk)) && !hr) miss.push('CUTI HRMIS');
       return {ok:miss.length===0,miss:miss,tcProblem:true};
     }
-    var miss=[];
-    if(!c.kzp) miss.push('KZ PENYELIA');
-    if(!c.kzk) miss.push('KZ KOPERAL');
-    var mc2=(typeof getMC==='function')?getMC(bil,d):null;
-    if(isKzMC(c.kzp)||isKzMC(c.kzk)){ if(!mc2 && codeHR(c._hrmis_rec&&c._hrmis_rec.jenis || c.hrmis)!=='MC') miss.push('MC DITERIMA'); return {ok:miss.length===0,miss:miss}; }
-    if(isKzLeave(c.kzp)||isKzLeave(c.kzk)){ if(!hasHRReal(c) && !['K/P','BER','OB'].includes(N(c.kzp)) && !['K/P','BER','OB'].includes(N(c.kzk))) miss.push('CUTI HRMIS'); return {ok:miss.length===0,miss:miss}; }
-    if(!realPunch(c) && !mc2 && !hasHRReal(c)) miss.push('TIMECARD');
-    return {ok:miss.length===0,miss:miss};
+    var mc2=getMC(bil,d), k1=N(c.kzp), k2=N(c.kzk);
+    if((isMCStatus2(k1)||isMCStatus2(k2)) && mc2) return {ok:true,miss:[]};
+    return oldCek6 ? oldCek6(bil,d) : {ok:true,miss:[]};
   };
 
+  var oldCheckLayers = (typeof checkLayersComplete==='function') ? checkLayersComplete : null;
   window.checkLayersComplete = checkLayersComplete = function(bil,d){
-    var c=C(bil,d)||{}; var sh=(typeof gSh==='function')?gSh(bil,d):'';
+    var c=cell(bil,d)||{}, sh=shOf(bil,d), m=memberByBil(bil);
     if(sh==='O') return {complete:true,offday:true,layers:{shift:'OFFDAY'},missing:[]};
-    if(c.special_cb || c.special_tt || ['TT','TH','CB','CBR'].indexOf(N(c.kzp))>=0 || ['TT','TH','CB','CBR'].indexOf(N(c.kzk))>=0) return {complete:true,special:true,layers:{shift:sh,kzp:c.kzp,kzk:c.kzk,tc:'ABS',mc:'-',hr:c.hrmis||'-'},missing:[]};
-    if(isTCProblemDate(d)){ var r=cek6(bil,d); return {complete:true,tcProblem:true,layers:{shift:!!sh,kzp:!!c.kzp,kzk:!!c.kzk,tc:'TC BERMASALAH',mc:!!((typeof getMC==='function')&&getMC(bil,d)),hr:hasHRReal(c)},missing:r.miss||[]}; }
-    var r2=cek6(bil,d); return {complete:r2.ok,layers:{shift:!!sh,kzp:!!c.kzp,kzk:!!c.kzk,tc:realPunch(c),mc:!!((typeof getMC==='function')&&getMC(bil,d)),hr:hasHRReal(c)},missing:r2.miss||[]};
+    if(c._cb_special || isNorAzura(m) || c._tt_special || isTTMember(m)) return {complete:true,special:true,layers:{shift:sh},missing:[]};
+    if(window.isTCProblemDay(bil,d)){
+      var r=cek6(bil,d);
+      return {complete:true,tcProblem:true,layers:{shift:!!sh,kzp:!!c.kzp,kzk:!!c.kzk,tc:'TC BERMASALAH',mc:!!getMC(bil,d),hr:hasHR2(c)},missing:r.miss||[]};
+    }
+    return oldCheckLayers ? oldCheckLayers(bil,d) : {complete:true,layers:{},missing:[]};
   };
 
   function auditTCProblem(bil,d){
-    var c=C(bil,d)||{}; var kzp=N(c.kzp), kzk=N(c.kzk), sh=(typeof gSh==='function')?gSh(bil,d):'';
-    var mc=(typeof getMC==='function')?getMC(bil,d):null;
-    var hr=hasHRReal(c), hrc=codeHR(c._hrmis_rec&&c._hrmis_rec.jenis || c.hrmis);
+    var c=cell(bil,d)||{}, sh=shOf(bil,d), kzp=N(c.kzp), kzk=N(c.kzk), mc=getMC(bil,d), hr=hasHR2(c), hc=hrCode(c);
     if(sh==='O') return {txt:'OFFDAY',cls:'af-off'};
+    if(c._cb_special) return {txt:'SAH\nCUTI BERSALIN',cls:'af-sah'};
+    if(c._tt_special) return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
+    if(kzp==='TT'||kzk==='TT') return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
+    if(kzp==='TH'||kzk==='TH') return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
     if(!kzp&&!kzk) return {txt:'PENDING KZ\nTC 27-30/04 bermasalah',cls:'af-pending',inc:false};
-    if(isKzMC(kzp)||isKzMC(kzk)){
+    if(isMCStatus2(kzp)||isMCStatus2(kzk)){
       if(mc) return {txt:'SAH\nMC SAH\n(TC dikecualikan)',cls:'af-sah'};
-      if(hrc==='MC') return {txt:'SAH\nMC SAH HRMIS\n(TC dikecualikan)',cls:'af-sah'};
+      if(hc==='MC') return {txt:'SAH\nMC SAH HRMIS\n(TC dikecualikan)',cls:'af-sah'};
       return {txt:'MOHON HANTAR MC\n(TC dikecualikan)',cls:'af-warn'};
     }
-    if(['CR','EL','CTR','HAJI'].indexOf(kzp)>=0 || ['CR','EL','CTR','HAJI'].indexOf(kzk)>=0){
-      var lbl=(kzp==='EL'||kzk==='EL')?'EL':(kzp==='CTR'||kzk==='CTR')?'CTR':(kzp==='HAJI'||kzk==='HAJI')?'HAJI':'CR';
-      return hr ? {txt:'SAH\n'+lbl+' SAH\n(TC dikecualikan)',cls:'af-sah'} : {txt:'SILA MOHON CUTI\nTIADA HRMIS\n(TC dikecualikan)',cls:'af-abs'};
+    if(isLeaveStatus(kzp)||isLeaveStatus(kzk)){
+      var lbl=(kzp==='EL'||kzk==='EL')?'EL':(kzp==='CTR'||kzk==='CTR')?'CTR':(kzp==='CB'||kzk==='CB'||kzp==='CBR'||kzk==='CBR')?'CUTI BERSALIN':'CR';
+      if(hr || lbl==='CUTI BERSALIN') return {txt:'SAH\n'+lbl+' SAH\n(TC dikecualikan)',cls:'af-sah'};
+      return {txt:'SILA MOHON CUTI\nTIADA HRMIS\n(TC dikecualikan)',cls:'af-abs'};
     }
-    if(isKzHadir(kzp)||isKzHadir(kzk)) return {txt:'SAH\nKZ HADIR\n(TC bermasalah)',cls:'af-sah'};
+    if(isHadirStatus(kzp)||isHadirStatus(kzk)) return {txt:'SAH\nKZ HADIR\n(TC bermasalah)',cls:'af-sah'};
     if(kzp==='L'||kzk==='L') return {txt:'LEWAT\nIKUT KZ\n(TC bermasalah)',cls:'af-lw'};
-    if(isKzAbs(kzp)||isKzAbs(kzk)){ if(mc) return {txt:'SAH\nMC SAH\n(TC dikecualikan)',cls:'af-sah'}; if(hr) return {txt:'SAH\nHRMIS SAH\n(TC dikecualikan)',cls:'af-sah'}; return {txt:'ABS - SILA MOHON CUTI\n(TC dikecualikan)',cls:'af-abs'}; }
+    if(isAbsStatus(kzp)||isAbsStatus(kzk)){ if(mc) return {txt:'SAH\nMC SAH\n(TC dikecualikan)',cls:'af-sah'}; if(hr) return {txt:'SAH\nHRMIS SAH\n(TC dikecualikan)',cls:'af-sah'}; return {txt:'ABS - SILA MOHON CUTI\n(TC dikecualikan)',cls:'af-abs'}; }
     return {txt:'SEMAK KZ\n'+(kzp||kzk)+'\n(TC dikecualikan)',cls:'af-warn'};
   }
 
-  var oldAuditFinal56 = (typeof auditFinal==='function') ? auditFinal : null;
+  var oldAuditFinal = (typeof auditFinal==='function') ? auditFinal : null;
   window.auditFinal = auditFinal = function(bil,d){
-    var c=C(bil,d)||{}; var sh=(typeof gSh==='function')?gSh(bil,d):'';
-    if(!c) return {txt:'BELUM DIPROSES',cls:'af-bp'};
-    if(sh==='O') return realPunch(c)?{txt:'OFFDAY / OT - ABAIKAN',cls:'af-off'}:{txt:'OFFDAY',cls:'af-off'};
-    if(c.special_cb || (isNorAzuraBil(bil) && inRangeActive(d,2026,4,21,2026,7,21))) return {txt:'SAH\nCUTI BERSALIN\nCTR HRMIS',cls:'af-sah'};
-    if(c.special_tt || ['TT','TH'].indexOf(N(c.kzp))>=0 || ['TT','TH'].indexOf(N(c.kzk))>=0) return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
-    if(isTCProblemDate(d)) return auditTCProblem(bil,d);
-    var kzp=N(c.kzp), kzk=N(c.kzk), mc=(typeof getMC==='function')?getMC(bil,d):null;
-    if((isKzMC(kzp)||isKzMC(kzk)||mc) && mc) return realPunch(c)?{txt:'MC SAH\n(ADA THUMB - SEMAK SHIFT)',cls:'af-warn'}:{txt:'SAH\nMC SAH',cls:'af-sah'};
-    if((isKzMC(kzp)||isKzMC(kzk)) && !mc){ if(codeHR(c._hrmis_rec&&c._hrmis_rec.jenis || c.hrmis)==='MC' && !realPunch(c)) return {txt:'SAH\nMC SAH HRMIS',cls:'af-sah'}; return {txt:'MOHON HANTAR MC',cls:'af-warn'}; }
-    if(isKzLeave(kzp)||isKzLeave(kzk)){
-      var lbl=(kzp==='EL'||kzk==='EL')?'EL':(kzp==='CTR'||kzk==='CTR')?'CTR':(kzp==='HAJI'||kzk==='HAJI')?'HAJI':(kzp==='CB'||kzk==='CB'||kzp==='CBR'||kzk==='CBR')?'CUTI BERSALIN':'CR';
-      if(hasHRReal(c)) return realPunch(c)?{txt:'SAH\n'+lbl+' SAH\n(ADA THUMB - SEMAK)',cls:'af-warn'}:{txt:'SAH\n'+lbl+' SAH',cls:'af-sah'};
-      if(lbl==='CUTI BERSALIN') return {txt:'SAH\nCUTI BERSALIN',cls:'af-sah'};
-      return {txt:'SILA MOHON CUTI\n(TIADA HRMIS)',cls:'af-abs'};
+    var c=cell(bil,d)||{}, m=memberByBil(bil);
+    if(c._cb_special || (isNorAzura(m) && +d>=21 && !isOff(bil,d))) return {txt:'SAH\nCUTI BERSALIN',cls:'af-sah'};
+    if(c._tt_special || (isTTMember(m) && !isOff(bil,d))) return {txt:'SAH\nTT / TAHAN TUGAS',cls:'af-sah'};
+    if(window.isTCProblemDay(bil,d)) return auditTCProblem(bil,d);
+    var kzp=N(c.kzp), kzk=N(c.kzk), mc=getMC(bil,d);
+    if((isMCStatus2(kzp)||isMCStatus2(kzk)) && mc){
+      return hasPunch(c) ? {txt:'MC SAH\n(ADA THUMB - SEMAK SHIFT)',cls:'af-mc'} : {txt:'SAH\nMC SAH',cls:'af-sah'};
     }
-    var ck=cek6(bil,d); if(!ck.ok){ var m=ck.miss.length<=2?ck.miss.join(' + '):ck.miss.slice(0,2).join(' + ')+' +'+(ck.miss.length-2)+' lagi'; return {txt:'AUDIT BELUM LENGKAP\nSEMAK: '+m,cls:'af-inc',inc:true,miss:ck.miss}; }
-    return oldAuditFinal56 ? oldAuditFinal56(bil,d) : {txt:'SAH',cls:'af-sah'};
+    return oldAuditFinal ? oldAuditFinal(bil,d) : {txt:'BELUM DIPROSES',cls:'af-bp'};
   };
 
-  // Output Perhatian: explicitly remove special CB/TT and neutral TC-problem pending cases.
-  var oldGetAllFlags56 = (typeof getAllFlags==='function') ? getAllFlags : null;
+  var oldGetAllFlags = (typeof getAllFlags==='function') ? getAllFlags : null;
   window.getAllFlags = getAllFlags = function(){
-    var arr = oldGetAllFlags56 ? oldGetAllFlags56() : [];
-    return arr.filter(function(m){
-      if(isNorAzuraBil(m.bil) || isSpecialTTBil(m.bil)) return false;
-      if(!m.items) return true;
-      m.items = m.items.filter(function(x){
-        var c=C(m.bil,x.d)||{};
-        if(c.special_cb || c.special_tt) return false;
-        if(isTCProblemDate(x.d) && x.af && /PENDING KZ|TC 27-30|TC bermasalah/i.test(x.af.txt||'')) return false;
+    var arr=oldGetAllFlags ? (oldGetAllFlags()||[]) : [];
+    arr.forEach(function(m){
+      var mem=memberByBil(m.bil)||m;
+      if(isNorAzura(mem) || isTTMember(mem)){ m.items=[]; return; }
+      m.items=(m.items||[]).filter(function(x){
+        if(window.isTCProblemDay(m.bil,x.d)){
+          var t=N(x.af&&x.af.txt);
+          if(t.indexOf('PENDING KZ')>=0) return false;
+          if(t.indexOf('TIMECARD')>=0||t.indexOf('SINGLE')>=0||t.indexOf('TIADA IN')>=0||t.indexOf('TIADA OUT')>=0) return false;
+        }
         return true;
       });
-      return m.items.length>0;
     });
+    return arr.filter(function(m){ return m.items && m.items.length; });
   };
 
-  function refreshAll(){
+  /* ── RUN / BUTTONS ─────────────────────────────────────────── */
+  window.runAllV58Fixes = function(reason){
+    try{ markTCProblemApril(); }catch(e){}
     try{ applySpecialCases(); }catch(e){}
+    try{ fixMCOwner(); }catch(e){}
+    try{ if(typeof saveDataset==='function') saveDataset(reason||'V5.8 AUTO FIX'); }catch(e){}
     try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
-    try{ if(typeof renderOutput==='function') renderOutput(''); }catch(e){}
-    try{ if(typeof renderHRMISReg==='function') renderHRMISReg(); }catch(e){}
     try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+  };
+
+  function addButtonOnce(){
+    try{
+      var bar=document.querySelector('#topbar div[style*="margin-left:auto"]') || $('topbar');
+      if(!bar || $('btn-mc-owner-fix')) return;
+      var b=document.createElement('button');
+      b.id='btn-mc-owner-fix'; b.className='btn btn-sm'; b.style.fontSize='7.5px'; b.textContent='Fix MC Owner';
+      b.onclick=function(){ runAllV58Fixes('MANUAL FIX MC OWNER'); toastSafe('MC Owner / Special Audit difix','ok'); };
+      bar.appendChild(b);
+    }catch(e){}
   }
 
-  function wrapAction(name){
+  function wrap(name,beforeAfter){
     try{
       var old=window[name] || eval(name);
-      if(typeof old!=='function' || old.__v56_wrapped) return;
-      var neu=function(){ var r=old.apply(this,arguments); setTimeout(function(){ try{ applySpecialCases(); if(typeof saveDataset==='function') saveDataset('V5.6 '+name); }catch(e){} },60); return r; };
-      neu.__v56_wrapped=true; window[name]=eval(name+' = neu');
+      if(typeof old!=='function' || old.__v58_wrapped) return;
+      var neu=function(){ try{ beforeAfter&&beforeAfter('before-'+name); }catch(e){} var r=old.apply(this,arguments); try{ beforeAfter&&beforeAfter('after-'+name); }catch(e){} return r; };
+      neu.__v58_wrapped=true;
+      window[name]=eval(name+' = neu');
     }catch(e){}
   }
-  ['bootApp','kemaskiniMaster','validasiAudit','renderMaster','renderDash','updFlags','manualRestoreSnapshot','eakhaRestoreBestBackup','setMonth'].forEach(wrapAction);
+  ['renderMaster','renderDash','validasiAudit','kemaskiniMaster','updFlags'].forEach(function(n){ wrap(n,function(){ markTCProblemApril(); applySpecialCases(); fixMCOwner(); }); });
 
-  document.addEventListener('DOMContentLoaded', function(){ [100,500,1200,2500].forEach(function(ms){ setTimeout(function(){ try{ applySpecialCases(); if(ms===1200) refreshAll(); }catch(e){} },ms); }); });
-  window.addEventListener('beforeunload', function(){ try{ applySpecialCases(); if(typeof saveDataset==='function') saveDataset('BEFORE_UNLOAD V5.6'); }catch(e){} });
-})();
-</script>
-<script>
-// ══════════════════════════════════════════════════════════════
-// PATCH v5.7 — MC OWNER GUARD / NAME-SAFE MATCHING
-// Purpose:
-// 1) MC must belong to the correct Master File member by NAME, not stale bil number.
-// 2) Prevent one MC record from appearing under another member after deploy/snapshot.
-// 3) Example: MC39503 / Klinik Mediviron KL Traders / 22.04.2026 belongs to
-//    ABDULLAH BIN BAHUDIN (current MASTER bil 4), NOT MOHAMMAD ALIFF BIN MOHTAR.
-// ══════════════════════════════════════════════════════════════
-(function(){
-  if(window.__EAKHA_V57_MC_OWNER_GUARD__) return;
-  window.__EAKHA_V57_MC_OWNER_GUARD__ = true;
-
-  function mcNormName(v){
-    return String(v||'').toUpperCase()
-      .replace(/MOHAMMAD/g,'MOHAMAD')
-      .replace(/MOHAMED/g,'MOHAMAD')
-      .replace(/MUHAMMAD/g,'MUHAMAD')
-      .replace(/MUHD\b/g,'MOHD')
-      .replace(/MOHD\./g,'MOHD')
-      .replace(/ALLIF/g,'ALIFF')
-      .replace(/HAIKAL/g,'HAIQAL')
-      .replace(/AUNI/g,'AAUNI')
-      .replace(/NURSYUHADA/g,'NUR SYUHADA')
-      .replace(/NANTHA\s*GOPAL/g,'NANTHAGOPAL')
-      .replace(/MAMAT\s*@\s*MUHAMAD/g,'MAMAT @ MUHAMAD')
-      .replace(/MAMAT\s*@\s*MUHAMMAD/g,'MAMAT @ MUHAMAD')
-      .replace(/MAMAT @ MUHAMAD/g,'MAMAT MUHAMAD')
-      .replace(/TAMAN @ MUHAMAD/g,'MAMAT MUHAMAD')
-      .replace(/TAMAN @ MUHAMMAD/g,'MAMAT MUHAMAD')
-      .replace(/A\/L/g,'AL')
-      .replace(/@/g,' ')
-      .replace(/[^A-Z0-9 ]+/g,' ')
-      .replace(/\s+/g,' ')
-      .trim();
-  }
-
-  function mcTokens(v){
-    var stop = {BIN:1,BINTI:1,BT:1,MOHD:1,MOHAMAD:1,MD:1,AL:1,ABD:1,AB:1,A:1,L:1};
-    return mcNormName(v).split(' ').filter(function(t){ return t.length>2 && !stop[t]; });
-  }
-
-  function mcTokenScore(a,b){
-    var A=mcTokens(a), B=mcTokens(b);
-    if(!A.length || !B.length) return 0;
-    var hit=0;
-    A.forEach(function(x){ if(B.indexOf(x)>=0) hit++; });
-    var score = Math.round((hit/Math.max(A.length,B.length))*100);
-    var na=mcNormName(a), nb=mcNormName(b);
-    if(na===nb) score=100;
-    if(nb.indexOf(na)>=0 || na.indexOf(nb)>=0) score=Math.max(score,92);
-    if(A[0] && B[0] && A[0]===B[0]) score+=8;
-    if(A.length>1 && B.length>1 && A[A.length-1]===B[B.length-1]) score+=8;
-    return Math.min(100,score);
-  }
-
-  function masterByBil(bil){
-    bil=+bil;
-    return (typeof MASTER!=='undefined' && MASTER||[]).find(function(m){ return +m.bil===bil; }) || null;
-  }
-
-  function hardMCOwnerBil(name){
-    var n=mcNormName(name);
-    var map={};
-    function add(names,bil){ names.forEach(function(x){ map[mcNormName(x)]=bil; }); }
-    add(['MOHAMAD ALIFF BIN MOHTAR','MOHAMMAD ALIFF BIN MOHTAR','MUHAMMAD ALLIF BIN MOHTAR','MUHAMMAD ALIFF BIN MOHTAR'],2);
-    add(['ABDULLAH BIN BAHUDIN'],4);
-    add(['AALIYA AAUNI BINTI MAT ZABIR','AALIYA AUNI BINTI MAT ZABIR'],15);
-    add(['NOR AINA NAZIRA BINTI MOHD TARMIZI'],20);
-    add(['WAN NOR FATHIYYAH BINTI WAN AHMAD','WAN NOR FATHIYYAH BINTI WAN AHMAD PENAMA'],11);
-    add(['MOHD RASIDI BIN MOHD NASIR','MOHD RASIDI MOHD NASIR'],13);
-    add(['MUHAMMAD BADRI BIN ARIS'],14);
-    add(['RIMA BINTI OTHMAN'],3);
-    add(['MOHAMAD ALIFF HAIQAL BIN JAMIL','MOHAMAD ALIFF HAIQAL BIN MD JAMIL','MUHD ALIFF HAIQAL BIN JAMIL'],5);
-    add(['AHMAD SHAMIL BIN NADZRI'],10);
-    add(['MUHAMAD FAHMIE BIN SAHRAN','MUHAMMAD FAHMIE BIN SAHRAN'],34);
-    add(['HAZLAN BIN MOHD RESDI'],24);
-    add(['ANASHATOL ARNAEDA BINTI JAFRI'],33);
-    add(['MOHAMAD ALIF BIN NASARUDDIN','MOHAMMAD ALIF BIN NASARUDDIN'],29);
-    add(['SUHAIRI BIN ISMAIL'],31);
-    add(['NUR SYUHADA BINTI MISNAN','NURSYUHADA BINTI MISNAN'],35);
-    add(['NANTHAGOPAL A/L AYASAMY','NANTHA GOPAL A/L AYASAMY'],46);
-    add(['SHAHRUL FITRI BIN ROSLI'],40);
-    add(['NOR AZURA BINTI MAMAT @ MUHAMMAD','NOR AZURA BINTI MAMAT @ MUHAMAD','NOR AZURA BINTI TAMAN @ MUHAMMAD','NOR AZURA BINTI TAMAN @ MUHAMAD'],49);
-    add(['FARRAH NATASHA BINTI ZULKAFLI'],50);
-    add(['SAIFUL YUSRIZAL BIN YAACOB'],48);
-    add(['MUHAMMAD TARMIZI BIN SAZALI'],44);
-    add(['IRWAN SYAMIR BIN MOHD ZAINAL','IRWAN SHAMIR BIN MOHD ZAINAL'],19);
-    add(['MOHD KHADAFEE BIN MD SAAD'],38);
-    add(['MOHD SHAFIK BIN IBRAM'],41);
-    add(['YUSRI BIN YUNUS'],37);
-    add(['MUHAMMAD ASHLEY BIN BASHIR'],9);
-    add(['MOHD LUKMAN BIN HAMDAN'],26);
-    return map[n] || null;
-  }
-
-  function resolveMCOwner(rec){
-    if(!rec) return null;
-    var rawName = rec.nama || rec.name || rec.member || rec.nama_anggota || '';
-    var hardBil = hardMCOwnerBil(rawName);
-    if(hardBil) return masterByBil(hardBil);
-
-    var old = masterByBil(rec.bil);
-    if(old && mcTokenScore(rawName, old.nama)>=88) return old;
-
-    var best=null, bestScore=0;
-    (typeof MASTER!=='undefined' && MASTER||[]).forEach(function(m){
-      var sc=mcTokenScore(rawName,m.nama);
-      if(rec.komp && m.komp && String(rec.komp).toUpperCase().indexOf(String(m.komp).toUpperCase()[0])>=0) sc+=2;
-      if(sc>bestScore){ bestScore=sc; best=m; }
-    });
-    return bestScore>=78 ? best : null;
-  }
-
-  function parseAnyDate(s){
-    s=String(s||'').trim();
-    var m;
-    if((m=s.match(/^(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})/))) return {y:+m[1],m:+m[2],d:+m[3]};
-    if((m=s.match(/^(\d{1,2})[-\/\.](\d{1,2})(?:[-\/\.](\d{2,4}))?/))){
-      var y=m[3]?+m[3]:(typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026);
-      if(y<100) y+=2000;
-      return {d:+m[1],m:+m[2],y:y};
-    }
-    return null;
-  }
-
-  function daysForMC(rec,targetMonth,targetYear){
-    targetMonth=targetMonth || (typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:4);
-    targetYear=targetYear || (typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026);
-    if(rec && rec.d && (!rec.m || +rec.m===+targetMonth) && (!rec.y || +rec.y===+targetYear)) return [+rec.d];
-    var a=parseAnyDate(rec && (rec.dari || rec.tarikh || rec.date));
-    var b=parseAnyDate(rec && (rec.hingga || rec.tarikh || rec.date || rec.dari));
-    if(!a) return [];
-    if(!b) b=a;
-    var out=[];
-    // Current system is month based; only expand days within active month/year.
-    if(a.y===targetYear && b.y===targetYear && a.m===targetMonth && b.m===targetMonth){
-      for(var i=a.d;i<=b.d;i++) out.push(i);
-    } else if(a.y===targetYear && a.m===targetMonth && (b.y>targetYear || b.m>targetMonth)){
-      var maxDay = targetMonth===4 ? 30 : 31;
-      for(var j=a.d;j<=maxDay;j++) out.push(j);
-    } else if(b.y===targetYear && b.m===targetMonth && (a.y<targetYear || a.m<targetMonth)){
-      for(var k=1;k<=b.d;k++) out.push(k);
-    }
-    return out;
-  }
-
-  function mcIncludesDay(rec,d){
-    return daysForMC(rec).indexOf(+d)>=0;
-  }
-
-  function mcBelongsToBil(rec,bil){
-    var owner=resolveMCOwner(rec);
-    return !!(owner && +owner.bil===+bil);
-  }
-
-  function clearMCRefs(){
-    try{
-      Object.keys(D||{}).forEach(function(b){
-        Object.keys(D[b]||{}).forEach(function(d){ if(D[b][d]) delete D[b][d]._mc; });
-      });
-    }catch(e){}
-  }
-
-  function normalizeMCOwnership(){
-    try{
-      if(!Array.isArray(MC_DATA)) return {fixed:0,unmatched:0,records:0};
-      var fixed=[], seen={}, unmatched=[];
-      MC_DATA.forEach(function(rec){
-        var owner=resolveMCOwner(rec);
-        if(!owner){
-          rec._mc_owner_error='UNMATCHED_NAME';
-          unmatched.push(rec.nama||'?');
-          return;
-        }
-        var clone=Object.assign({},rec,{
-          bil:owner.bil,
-          nama:owner.nama,
-          jab:owner.jab,
-          komp:owner.komp,
-          _mc_owner_checked:true,
-          _mc_owner_checked_at:new Date().toISOString()
-        });
-        var no=String(clone.no_mc||clone.siri||clone.no||'').toUpperCase().replace(/\s+/g,'');
-        var ds=daysForMC(clone).join('-') || (clone.dari||clone.tarikh||'');
-        var key=[clone.bil,ds,no,mcNormName(clone.klinik||'')].join('|');
-        if(seen[key]) return;
-        seen[key]=1;
-        fixed.push(clone);
-      });
-      MC_DATA.length=0;
-      fixed.forEach(function(r){ MC_DATA.push(r); });
-
-      clearMCRefs();
-      MC_DATA.forEach(function(mc){
-        var days=daysForMC(mc);
-        days.forEach(function(day){
-          if(D[mc.bil] && D[mc.bil][day]) D[mc.bil][day]._mc=mc;
-        });
-      });
-      try{ localStorage.setItem('eakha_mc',JSON.stringify(MC_DATA)); }catch(e){}
-      try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
-      window.__EAKHA_MC_OWNER_LAST_REPORT__={fixed:fixed.length,unmatched:unmatched.length,unmatchedList:unmatched};
-      return window.__EAKHA_MC_OWNER_LAST_REPORT__;
-    }catch(e){
-      console.warn('normalizeMCOwnership v5.7:',e);
-      return {fixed:0,unmatched:0,error:String(e)};
-    }
-  }
-
-  var oldGetMC57 = (typeof getMC==='function') ? getMC : null;
-  window.getMC = getMC = function(bil,d){
-    bil=+bil; d=+d;
-    var cell = D[bil] && D[bil][d] ? D[bil][d] : null;
-    if(cell && cell._mc){
-      if(mcBelongsToBil(cell._mc,bil) && mcIncludesDay(cell._mc,d)) return cell._mc;
-      delete cell._mc; // stale snapshot / wrong previous bil
-    }
-    var rec=null;
-    if(Array.isArray(MC_DATA)){
-      rec=MC_DATA.find(function(mc){ return mcBelongsToBil(mc,bil) && mcIncludesDay(mc,d); }) || null;
-    }
-    if(rec){ if(cell) cell._mc=rec; return rec; }
-    return null;
-  };
-
-  // Override applyMCPreload so MC records are name-owned and MC does not auto-fill KZ layers.
-  if(typeof applyMCPreload==='function' && !applyMCPreload.__v57_owner_safe){
-    var oldApplyMCPreload57 = applyMCPreload;
-    applyMCPreload = window.applyMCPreload = function(targetMonth,targetYear){
-      var res = oldApplyMCPreload57.apply(this,arguments);
-      normalizeMCOwnership();
-      return res;
-    };
-    applyMCPreload.__v57_owner_safe=true;
-  }
-
-  function renderAfterMCRepair(){
-    try{ normalizeMCOwnership(); }catch(e){}
-    try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
-    try{ if(typeof renderMCReg==='function') renderMCReg(); }catch(e){}
-    try{ if(typeof renderOutput==='function') renderOutput(''); }catch(e){}
-    try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
-    try{ if(typeof saveDataset==='function') saveDataset('V5.7 MC OWNER FIX'); }catch(e){}
-  }
-
-  // Run after boot/preloads/localStorage merge. Multiple delays cover GitHub Pages/cache timing.
-  [700,1500,3000,5000].forEach(function(ms){ setTimeout(renderAfterMCRepair,ms); });
-
-  if(typeof bootApp==='function' && !bootApp.__v57_mc_owner_wrapped){
-    var oldBoot57 = bootApp;
+  if(typeof bootApp==='function' && !window.__EAKHA_BOOT_V58){
+    window.__EAKHA_BOOT_V58=true;
+    var oldBoot=bootApp;
     bootApp = window.bootApp = async function(){
-      var r = await oldBoot57.apply(this,arguments);
-      [900,1800,3500].forEach(function(ms){ setTimeout(renderAfterMCRepair,ms); });
+      var r;
+      try{ r=await oldBoot.apply(this,arguments); }
+      catch(e){ console.error('[v5.8 boot wrapper]',e); var aw=$('auth-wall'), app=$('app'); if(aw) aw.style.display='none'; if(app) app.style.display='flex'; }
+      [150,800,1800].forEach(function(ms){ setTimeout(function(){ try{ addButtonOnce(); runAllV58Fixes('BOOT V5.8'); }catch(e){ console.warn(e); } }, ms); });
       return r;
     };
-    bootApp.__v57_mc_owner_wrapped=true;
   }
 
-  // Manual button for audit user.
   document.addEventListener('DOMContentLoaded', function(){
-    setTimeout(function(){
-      try{
-        var bar=document.querySelector('.topbar div[style*="margin-left:auto"]') || document.querySelector('.topbar');
-        if(bar && !document.getElementById('btn-mc-owner-fix')){
-          var btn=document.createElement('button');
-          btn.id='btn-mc-owner-fix';
-          btn.className='btn btn-sm';
-          btn.style.fontSize='7.5px';
-          btn.textContent='Fix MC Owner';
-          btn.title='Semak semula pemilik MC ikut nama Master File';
-          btn.onclick=function(){
-            var rep=normalizeMCOwnership();
-            renderAfterMCRepair();
-            if(typeof toast==='function') toast('MC owner checked: '+(rep.fixed||0)+' rekod, '+(rep.unmatched||0)+' unmatched','ok');
-          };
-          bar.appendChild(btn);
-        }
-      }catch(e){}
-    },500);
+    addButtonOnce();
+    setTimeout(function(){ try{ addButtonOnce(); if((typeof AUTH!=='undefined') && AUTH.loggedIn) runAllV58Fixes('DOMContent V5.8'); }catch(e){} }, 500);
   });
-
-  window.eAKHAFixMCOwner = renderAfterMCRepair;
 })();
-
 </script>
+
 </body>
 </html>
