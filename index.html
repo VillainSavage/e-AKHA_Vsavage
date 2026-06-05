@@ -295,7 +295,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span id="role-badge" style="font-size:7px;color:rgba(255,255,255,.4)"></span>
         <button class="btn btn-sm" style="font-size:7.5px" onclick="autoFillFromKZ()" title="Auto-fill KZP&#8594;KZK, MC&#8594;HRMIS">&#9889; Auto-Fill</button>
         <button class="btn btn-sm" style="font-size:7.5px;color:#fca5a5" onclick="generateTeguranReport()">&#9888; Teguran</button>
-        <button class="btn btn-gold btn-sm" onclick="expPDF()" id="btn-pdf">PDF</button>
+        <button class="btn btn-gold btn-sm" onclick="expPDF()" id="btn-pdf" title="Snapshot semua jabatan A3">PDF</button>
+        <button class="btn btn-sm" onclick="snapshotJab()" title="Pilih jabatan untuk snapshot A3 landscape" style="background:#1d4ed8;color:#fff">⚙ Snapshot</button>
         <button class="btn btn-sm" onclick="expCSV()">CSV</button>
       </div>
     </div>
@@ -3408,6 +3409,152 @@ function expPDF(){
       '<td style="text-align:center;color:#9a3412">'+(r.lw||'')+'</td></tr>').join('')+
     '</tbody></table></body></html>');
   w.document.close(); setTimeout(()=>w.print(),500);
+}
+
+function expPDF(){ snapshotGrid('all'); }
+
+function snapshotJab(){
+  var menu=document.createElement('div');
+  menu.id='snap-menu';
+  menu.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1e293b;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:16px;z-index:9999;min-width:240px;box-shadow:0 10px 40px rgba(0,0,0,.5)';
+  var btns=[['Semua Jabatan (IKTAR+MHKL+RT)','all'],['IKTAR sahaja','IKTAR'],['MHKL sahaja','MHKL'],['RT sahaja','RT']];
+  var inner='<div style="font-size:9px;font-weight:700;color:#f0b429;margin-bottom:10px">📄 Snapshot A3 Landscape — Pilih:</div>';
+  btns.forEach(function(b){
+    inner+='<button style="display:block;width:100%;text-align:left;background:rgba(255,255,255,.07);border:none;color:#e2e8f0;padding:8px 10px;border-radius:5px;margin-bottom:5px;cursor:pointer;font-size:8px" class="snap-opt" data-jab="'+b[1]+'">'+b[0]+'</button>';
+  });
+  inner+='<button id="snap-cancel" style="display:block;width:100%;text-align:center;background:none;border:1px solid rgba(255,255,255,.2);color:#94a3b8;padding:5px;border-radius:5px;cursor:pointer;font-size:8px;margin-top:4px">Batal</button>';
+  menu.innerHTML=inner;
+  document.body.appendChild(menu);
+  menu.querySelectorAll('.snap-opt').forEach(function(el){
+    el.onclick=function(){ var jab=el.getAttribute('data-jab'); menu.remove(); snapshotGrid(jab); };
+  });
+  document.getElementById('snap-cancel').onclick=function(){ menu.remove(); };
+}
+
+function snapshotGrid(jabFilter){
+  var HARI=['','Ahd','Isn','Sel','Rab','Kha','Jum','Sab'];
+  function dow(d){ return ((d+2)%7)+1; }
+  function shBg(sh){ return sh==='S'?'#e8f5e9':sh==='P'?'#f3e8fd':sh==='M'?'#e3f0ff':'#f5f5f5'; }
+  function shTxt(sh){ return sh==='S'?'PG 0700-1500':sh==='P'?'PT 1500-2300':sh==='M'?'MLM 2300-0700':sh==='O'?'OFFDAY':sh||'—'; }
+  function kzBg(v){ if(!v||v==='OF') return '#f5f5f5'; if(v==='✓'||v==='HADIR') return '#d1fae5'; if(v==='ABS'||v==='X') return '#fee2e2'; if(v==='L') return '#fef3c7'; if(v==='MC') return '#fff3cd'; if(v==='CR'||v==='EL'||v==='CTR') return '#dbeafe'; return '#fce7f3'; }
+  function kzLbl(v){ if(!v||v==='OF') return '—'; if(v==='✓') return '✓ HADIR'; return v; }
+  function afBg(af){ if(!af||af.inc) return '#fafafa'; var c=af.cls||''; if(c==='af-sah') return '#d1fae5'; if(c==='af-mc') return '#fef3c7'; if(c==='af-cr') return '#dbeafe'; if(c==='af-lw') return '#ffedd5'; if(c==='af-abs') return '#fee2e2'; return '#f5f5f5'; }
+  function afTxt(af){ if(!af) return '—'; var t=(af.txt||'—').split('\n')[0]; return t.length>14?t.substr(0,13)+'…':t; }
+  function tcTxt(m,d){ var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:{}; if(!c.tc_in&&!c.tc_out) return '—'; return (c.tc_in||'?')+' · '+(c.tc_out||'SEMAK'); }
+
+  var jabs=jabFilter==='all'?['IKTAR','MHKL','RT']:[jabFilter];
+  var DAYS=[]; for(var d=1;d<=30;d++) DAYS.push(d);
+
+  var css='*{box-sizing:border-box;margin:0;padding:0}';
+  css+='body{font-family:Arial,sans-serif;font-size:6px;background:#fff;color:#111;print-color-adjust:exact;-webkit-print-color-adjust:exact}';
+  css+='@page{size:A3 landscape;margin:6mm}';
+  css+='@media print{.no-print{display:none}.page{page-break-after:always}.page:last-child{page-break-after:avoid}}';
+  css+='.page{padding:2mm}.hdr{font-size:9px;font-weight:700;color:#0F2D5A;margin-bottom:1mm}.sub{font-size:5.5px;color:#666;margin-bottom:2mm}';
+  css+='table{border-collapse:collapse;width:100%;table-layout:fixed}';
+  css+='th,td{border:0.4px solid #bbb;padding:1px;overflow:hidden;vertical-align:middle;text-align:center;word-break:break-word}';
+  css+='.cn{width:44px;text-align:left;font-size:5px;font-weight:700;vertical-align:middle;padding:1px 2px}';
+  css+='.cl{width:24px;font-size:4.5px;color:#555;font-style:italic}';
+  css+='.cd{width:22px;font-size:5px}';
+  css+='.th0{background:#0F2D5A;color:#fff;font-size:5.5px}';
+  css+='.th1{background:#1a3f7a;color:#aac}';
+  css+='.rS{font-weight:700;font-size:5px}';
+  css+='.rK{font-weight:600;font-size:5px}';
+  css+='.rT{font-size:4.5px;color:#333}';
+  css+='.rM{font-size:4.5px;color:#92400e}';
+  css+='.rA{font-weight:700;font-size:5px}';
+  css+='.blk{border-bottom:1.5px solid #0F2D5A}';
+  css+='.sblk{margin-bottom:3mm}';
+
+  var body='';
+  jabs.forEach(function(jab){
+    ['ALPHA','BRAVO','CHARLIE','DELTA'].forEach(function(komp){
+      var ms=MASTER.filter(function(m){return m.jab===jab&&m.komp===komp&&!m.pindah;});
+      if(!ms.length) return;
+
+      var pg='<div class="page"><div class="hdr">e-AKHA Vsavage · Master File Kehadiran · April 2026</div>';
+      pg+='<div class="sub">'+jab+' · Kompeni '+komp+' · '+ms.length+' anggota · Penyelia: SJN Adilah · Jana: '+new Date().toLocaleString('ms-MY')+'</div>';
+
+      // Table
+      pg+='<table><thead>';
+      // Row 1: headers
+      pg+='<tr><th class="cn th0">Nama Anggota</th><th class="cl th0">Lapisan</th>';
+      DAYS.forEach(function(d){ pg+='<th class="cd th0">'+d+'</th>'; });
+      pg+='</tr>';
+      // Row 2: day names
+      pg+='<tr><th class="cn th1">Bil · Nama</th><th class="cl th1">7 Lapisan</th>';
+      DAYS.forEach(function(d){
+        var dw=dow(d); var isMggu=(dw===1||dw===7);
+        pg+='<th class="cd th1" style="'+(isMggu?'color:#f0b429':'')+'">'+(HARI[dw]||'')+'</th>';
+      });
+      pg+='</tr></thead><tbody>';
+
+      ms.forEach(function(m,mi){
+        var rb=mi%2?'#fafafa':'#fff';
+        var nd=DAYS.map(function(d){
+          var sh=gSh(m.bil,d), c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:{};
+          return {sh:sh,c:c,tc:tcAudit(m.bil,d),af:auditFinal(m.bil,d),mc:getMC(m.bil,d)};
+        });
+        var NR=6; // 6 rows per anggota
+        var nameTd='<td class="cn blk" rowspan="'+NR+'" style="background:'+rb+';border-left:2px solid #0F2D5A"><b>'+m.bil+'.</b><br>'+m.nama.split(' ').slice(0,3).join(' ')+'</td>';
+
+        // Row 1: Shift
+        pg+='<tr><td class="cn blk" rowspan="'+NR+'" style="display:none"></td>';
+        pg+=nameTd;
+        pg+='<td class="cl" style="background:#e0f2fe">Shift</td>';
+        nd.forEach(function(x){ pg+='<td class="cd rS" style="background:'+shBg(x.sh)+'">'+shTxt(x.sh).split(' ')[0]+(x.sh!=='O'?'<br>'+shTxt(x.sh).split(' ').slice(1).join(' '):'')+'</td>'; });
+        pg+='</tr>';
+
+        // Row 2: KZP
+        pg+='<tr><td class="cl" style="background:#dcfce7">KZ Penyelia</td>';
+        nd.forEach(function(x){ var v=x.c.kzp||(x.sh==='O'?'OF':''); pg+='<td class="cd rK" style="background:'+kzBg(v)+'">'+kzLbl(v)+'</td>'; });
+        pg+='</tr>';
+
+        // Row 3: KZK
+        pg+='<tr><td class="cl" style="background:#dcfce7">KZ Koperal</td>';
+        nd.forEach(function(x){ var v=x.c.kzk||(x.sh==='O'?'OF':''); pg+='<td class="cd rK" style="background:'+kzBg(v)+'">'+kzLbl(v)+'</td>'; });
+        pg+='</tr>';
+
+        // Row 4: TC
+        pg+='<tr><td class="cl" style="background:#ede9fe">Timecard</td>';
+        nd.forEach(function(x){
+          var t=x.sh==='O'?'—':tcTxt(m,DAYS[nd.indexOf(x)]);
+          var bg=x.tc.cls==='tc-lw'?'#ffedd5':x.tc.cls==='tc-warn'?'#fffbeb':'#fff';
+          var flag=(x.tc.txt||'').split('\n').find(function(l){return l&&l!=='-'&&!l.startsWith('SHIFT')&&!l.startsWith('✓')&&!l.startsWith('OT');});
+          pg+='<td class="cd rT" style="background:'+bg+'">'+t+(flag?'<br><span style="color:#b45309;font-size:4px">'+flag.substr(0,12)+'</span>':'')+'</td>';
+        });
+        pg+='</tr>';
+
+        // Row 5: MC
+        pg+='<tr><td class="cl" style="background:#fef9c3">MC</td>';
+        nd.forEach(function(x){
+          if(x.sh==='O'){ pg+='<td class="cd" style="background:#f5f5f5;font-size:4px">OF</td>'; return; }
+          var v=x.mc?(x.mc.mc_type||'MC')+'<br>'+(x.mc.klinik||'').substr(0,14):'—';
+          pg+='<td class="cd rM">'+v+'</td>';
+        });
+        pg+='</tr>';
+
+        // Row 6: Audit Final
+        pg+='<tr class="blk"><td class="cl" style="background:#fee2e2">Audit Final</td>';
+        nd.forEach(function(x){ pg+='<td class="cd rA" style="background:'+afBg(x.af)+'">'+afTxt(x.af)+'</td>'; });
+        pg+='</tr>';
+      });
+
+      // Summary
+      var sh=0,smc=0,sab=0,slw=0;
+      ms.forEach(function(m){ for(var d=1;d<=30;d++){ var af=auditFinal(m.bil,d); if(af.inc) continue; if(af.cls==='af-sah')sh++; else if(af.cls==='af-mc')smc++; else if(af.cls==='af-abs')sab++; if((af.txt||'').includes('LEWAT'))slw++; }});
+      pg+='</tbody></table>';
+      pg+='<div style="margin-top:2mm;font-size:5.5px;color:#555;text-align:right">'+jab+' · '+komp+' — Hadir: <b>'+sh+'</b> · MC: <b>'+smc+'</b> · Absen: <b>'+sab+'</b> · Lewat: <b>'+slw+'</b></div>';
+      pg+='</div>'; // .page
+
+      body+=pg;
+    });
+  });
+
+  var full='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Master File April 2026</title><style>'+css+'</style></head><body>'+body+'</body></html>';
+  var w=window.open('','_blank');
+  w.document.write(full);
+  w.document.close();
+  setTimeout(function(){ w.focus(); w.print(); },900);
 }
 
 // ── SUPABASE ─────────────────────────────────────────────────────
