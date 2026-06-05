@@ -297,9 +297,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn btn-sm" style="font-size:7.5px;color:#fca5a5" onclick="generateTeguranReport()">&#9888; Teguran</button>
         <button class="btn btn-gold btn-sm" onclick="expPDF()" id="btn-pdf">PDF</button>
         <button class="btn btn-sm" onclick="expCSV()">CSV</button>
-        <button class="btn btn-gold btn-sm" onclick="eakhaBossOpenPrint()" title="Buka snapshot layout Master File untuk Save as PDF / Print">Snapshot Bos</button>
-        <button class="btn btn-sm" onclick="eakhaBossDownloadDOC()" title="Muat turun format Word/DOC dengan layout seperti Master File">Word Layout</button>
-        <button class="btn btn-sm" onclick="eakhaBossDownloadXLS()" title="Muat turun format Excel/XLS dengan layout seperti Master File">Excel Layout</button>
       </div>
     </div>
 
@@ -943,132 +940,111 @@ function normK(v){
 
 // ── TIMECARD AUDIT ────────────────────────────────────────────────
 function tcAudit(bil,d){
-  const c=D[bil]?.[d]; const sh=gSh(bil,d);
-  if(!c) return {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
-  if(sh==='O'){
-    return hasThumb(c)
-      ?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}
-      :{txt:'OFFDAY',cls:'tc-off',ok:true};
-  }
-  if(c.kzp==='TT'||c.kzk==='TT') return {txt:'TAHAN TUGAS',cls:'tc-off',ok:true};
-  if(c.kzp==='TH'||c.kzk==='TH') return {txt:'TIDAK HADIR',cls:'tc-off',ok:true};
-  if(!hasThumb(c)){
-    const cutiK=isCuti(c.kzp)||isCuti(c.kzk);
-    const hasKZdata=!!(c.kzp||c.kzk);
-    if(!hasKZdata) return {txt:'—',cls:'tc-bp',ok:false}; // No KZ data yet, don't flag
-    return cutiK
-      ?{txt:'TIADA PUNCH\n(CUTI '+( c.kzp||c.kzk)+')',cls:'tc-off',ok:true}
-      :{txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
-  }
-  // Has punch
-  const inM=toMins(c.tc_in), outM=toMins(c.tc_out);
-  const shSt=sh==='S'?420:sh==='P'?900:1380;
-  const shEn=sh==='S'?900:sh==='P'?1380:420;
-  let lines=[], cls='tc-ok', ok=true;
+  const c=D[bil]?.[d]; if(!c) return {txt:'-',cls:'tc-ok',ok:true};
+  const sh=gSh(bil,d); if(sh==='O') return {txt:'OFFDAY',cls:'tc-bp',ok:true};
+  if(c.tc_problem) return {txt:'TC BERMASALAH\n(Rujuk KZ Penyelia)',cls:'tc-warn',ok:true};
 
-  var inAwalSah=false; // flag: IN dalam tetingkap 1 jam awal shift malam
+  // Waktu mula dan tamat shift
+  const shSt=sh==='S'?420:sh==='P'?900:sh==='M'?1380:420; // PG=07:00 PT=15:00 M=23:00
+  const shEn=sh==='S'?900:sh==='P'?1380:sh==='M'?420:900; // PG=15:00 PT=23:00 M=07:00
+  const isMalam=sh==='M';
+
+  function toM(t){ if(!t) return null; const[hh,mm]=t.split(':').map(Number); return hh*60+mm; }
+  function fmtMin(m){ return m>=60?Math.floor(m/60)+'j'+(m%60?''+m%60+'min':''):m+'min'; }
+  // Jarak lintas tengah malam
+  function dist(m,tgt){ const d1=Math.abs(m-tgt); return Math.min(d1,Math.abs(m+1440-tgt),Math.abs(m-1440-tgt)); }
+
+  const inM=toM(c.tc_in), outM=toM(c.tc_out);
+  let lines=[], cls='tc-ok', ok=true;
+  var inAwalSah=false;
+
+  // ── TIMECARD IN ─────────────────────────────────────────────
   if(c.tc_in){
-    let late=0, early=0;
-    if(sh==='M'){
-      // SHIFT MALAM — shSt=2300 (1380 min)
-      // Tetingkap masuk:  1 jam awal = 2200-2259 (1320-1379) → SAH
-      // Terlalu awal     : sebelum 2200 (<1320) → TIDAK SAH (kecuali OT)
-      // Dalam masa       : 2300-2305 (1380-1385) → SAH
-      // Lewat            : selepas 2305 (>1385) → LEWAT
-      // Cross-midnight IN: 0000-0059 (<60) → SAH (shift masih berjalan)
-      var inAwal1j=(inM>=1320&&inM<1380);  // 2200-2259: 1 jam awal SAJA
-      var inTerlaluAwal=(inM>=60&&inM<1320); // sebelum 2200 (bukan midnight) → TIDAK SAH
-      var inMidnight=(inM>=0&&inM<120);      // 0000-0159: masih dalam shift
-      var inShiftNormal=(inM>=1380&&inM<=1385); // 2300-2305: tepat masa
-      var inLewat=(inM>1385&&inM<1440);         // selepas 2305: lewat
-      if(inAwal1j){
-        // ✓ 1 jam awal — SAH
+    const early = dist(inM, shSt) > 720 ? 0 : (inM < shSt || (isMalam&&inM>=1320) ? dist(inM,shSt) : 0);
+    const late  = (!isMalam) ? Math.max(0, inM-shSt) :
+                  (inM>=1380 ? inM-1380 : (inM<120 ? 0 : 1440-inM+shSt-1440));
+
+    if(isMalam){
+      // Shift malam: IN sah 2200-2359 (1 jam awal) atau 0000-0005 (cross)
+      const inMm=inM%1440;
+      const in1jam = (inMm>=1320&&inMm<1380); // 2200-2259: 1 jam awal SAH
+      const inTepat = (inMm>=1380)||((inMm>=0&&inMm<6)); // 2300+ atau 0000-0005
+      const inLewat = (inMm>=6&&inMm<120)&&!inTepat; // 0006-0159
+      const inLuarM = (inMm>=120&&inMm<1320); // 0200-2159: luar tetingkap
+
+      if(in1jam){ inAwalSah=true; lines.push('\u2713 IN AWAL SAH'); lines.push('IN '+c.tc_in+' (dalam 1 jam)'); }
+      else if(inTepat){ lines.push('\u2713 IN '+c.tc_in); }
+      else if(inLewat){ const l=inMm<=120?inMm:1440-inMm+shSt-1380; lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+l+'min)'); cls='tc-lw'; ok=false; }
+      else if(inLuarM&&!c.ot){ lines.push('\u26A0 IN AWAL (luar tetingkap)'); lines.push('IN '+c.tc_in); cls='tc-warn'; ok=false; }
+      else { lines.push('\u2713 IN '+c.tc_in); }
+    } else {
+      // PG/PT: 1 jam awal SAH, >1 jam = flag, >6 min lewat = LEWAT
+      const earlyMins = (inM < shSt) ? shSt-inM : 0;
+      const lateMins  = (inM > shSt) ? inM-shSt  : 0;
+      if(!c.ot&&earlyMins>60){
+        lines.push('\u26A0 IN AWAL (luar tetingkap)'); lines.push('IN '+c.tc_in+' ('+fmtMin(earlyMins)+' awal)');
+        cls='tc-warn'; ok=false;
+      } else if(earlyMins>0&&earlyMins<=60){
         inAwalSah=true;
-        lines.push('\u2713 IN AWAL SAH');
-        lines.push('IN '+c.tc_in+' (dalam tetingkap 1 jam)');
-        // ok = true (tidak perlu tukar)
-      } else if(inTerlaluAwal&&!c.ot){
-        // > 1 jam awal tanpa OT — TIDAK SAH
-        var minAwal=1320-inM;
-        lines.push('\u26A0 IN TERLALU AWAL');
-        lines.push('IN '+c.tc_in+' ('+minAwal+'min sebelum tetingkap)');
-        cls='tc-lw'; ok=false;
-      } else if(inShiftNormal||inMidnight){
-        lines.push('\u2713 IN '+c.tc_in);
-      } else if(inLewat&&!c.ot){
-        late=inM-1380;
-        lines.push('LEWAT');
-        lines.push('IN '+c.tc_in+' (+'+late+'min)');
-        cls='tc-lw'; ok=false;
+        lines.push('\u2713 IN AWAL SAH'); lines.push('IN '+c.tc_in+' ('+fmtMin(earlyMins)+' awal)');
+      } else if(!c.ot&&lateMins>6){
+        lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+lateMins+'min)'); cls='tc-lw'; ok=false;
       } else {
         lines.push('\u2713 IN '+c.tc_in);
       }
-    } else { late=inM-shSt; early=shSt-inM;
-      if(!c.ot&&early>60&&early<=120){
-        // 1-2 jam awal — IN AWAL, flagkan sahaja
-        lines.push('IN AWAL'); lines.push('IN '+c.tc_in+' ('+fmtMin(early)+' awal)');
-        cls='tc-warn'; // ok=true, tidak flag sebagai kesalahan — beri amaran sahaja
-      } else if(!c.ot&&early>120){
-        // >2 jam awal — di luar tetingkap, kemungkinan OT sebelumnya
-        lines.push('\u26A0 IN AWAL (luar tetingkap)'); lines.push('IN '+c.tc_in+' ('+fmtMin(early)+' awal)');
-        cls='tc-warn'; ok=false;
-      } else if(!c.ot&&late>6){ lines.push('LEWAT'); lines.push('IN '+c.tc_in+' (+'+late+'min)'); cls='tc-lw'; ok=false; }
-      else lines.push('\u2713 IN '+c.tc_in);
     }
-  } else if(c.tc_out){ lines.push('\u26A0 TIADA IN'); lines.push('(OUT: '+c.tc_out+')'); cls='tc-warn'; ok=false; }
+  } else if(c.tc_out){
+    lines.push('\u26A0 TIADA IN'); lines.push('(OUT: '+c.tc_out+')'); cls='tc-warn'; ok=false;
+  }
 
+  // ── TIMECARD OUT ─────────────────────────────────────────────
   if(c.tc_out){
-    if(sh==='M'){
-      var outSah=(outM>=360&&outM<=480); // 06:00-08:00 (±1 jam dari 07:00)
-      var outAwal=(outM>0&&outM<360); // sebelum 06:00 = out terlalu awal
-      if(outSah) lines.push('\u2713 OUT '+c.tc_out+' (ESOK - SAH)');
-      else if(outAwal){ lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (sebelum 0630)'); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
-      else lines.push('\u2713 OUT '+c.tc_out+' (ESOK)');
+    if(isMalam){
+      // M shift ends 07:00: SAH=06:00-09:00, AWAL=<06:00, LEWAT>09:00(ok=true)
+      const outMm=outM%1440;
+      const outAwal=(outMm>0&&outMm<360);      // sebelum 06:00
+      const outSah=(outMm>=360&&outMm<=540);   // 06:00-09:00 SAH
+      if(outAwal){ lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (sebelum 06:00)'); if(cls==='tc-ok')cls='tc-lw'; ok=false; }
+      else if(outSah) lines.push('\u2713 OUT '+c.tc_out+' (ESOK - SAH)');
+      else lines.push('\u2713 OUT '+c.tc_out+' (ESOK)'); // >09:00 = OT, SAH
     } else {
-      let earlyOut=0, lateOut=0;
-      if(sh==='S'||sh==='P'){
-        earlyOut = outM < shEn ? shEn-outM : 0;
-        lateOut  = outM > shEn ? outM-shEn : 0;
-      }
-      if(!c.ot&&earlyOut>60){
-        // Keluar awal sebelum shift tamat
-        lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (-'+fmtMin(earlyOut)+')');
+      // PG/PT: OUT sebelum tamat = OUT AWAL (flag), selepas tamat SAH, >2jam = LEWAT
+      const earlyOut = (outM<shEn) ? shEn-outM : 0;
+      const lateOut  = (outM>shEn) ? outM-shEn : 0;
+      if(!c.ot&&earlyOut>0){
+        // Keluar sebelum shift tamat = OUT AWAL
+        lines.push('\u26A0 OUT AWAL'); lines.push('OUT '+c.tc_out+' (-'+fmtMin(earlyOut)+' awal)');
         if(cls==='tc-ok'){cls='tc-lw';ok=false;}
-      } else if(!c.ot&&lateOut>120){
-        // Keluar >2 jam selepas shift tamat tanpa OT — luar tetingkap
-        lines.push('\u26A0 OUT LEWAT (luar tetingkap)');
-        lines.push('OUT '+c.tc_out+' (+'+fmtMin(lateOut)+' selepas shift tamat)');
+      } else if(!c.ot&&lateOut>60){
+        // >1 jam selepas shift tamat tanpa OT = luar tetingkap
+        lines.push('\u26A0 OUT LEWAT (luar tetingkap)'); lines.push('OUT '+c.tc_out+' (+'+fmtMin(lateOut)+' selepas tamat)');
         if(cls==='tc-ok'){cls='tc-warn';ok=false;}
       } else {
         lines.push((c.tc_in?'\u2713 ':'')+' OUT '+c.tc_out);
       }
     }
-  } else if(c.tc_in&&sh==='M'){
-    // Shift malam tiada OUT = cross-midnight, NORMAL
-    // Jika IN AWAL SAH → papar SEMAK ESOK sahaja (jangan duplicate)
-    if(!inAwalSah){ lines.push('SEMAK ESOK'); if(cls==='tc-ok') cls='tc-warn'; }
-    else { lines.push('SEMAK ESOK'); cls='tc-warn'; } // IN AWAL + tiada OUT = SEMAK ESOK
-  } else if(c.tc_in&&sh!=='M'){
-    lines.push('\u26A0 TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;}
-  }
-  // Single punch check - HANYA untuk bukan shift malam
-  if((c.tc_in&&!c.tc_out)||(c.tc_out&&!c.tc_in)){
-    if(sh==='M'&&!c.tc_in&&c.tc_out){
-      lines.push('SINGLE PUNCH (OUT SAHAJA)'); cls='tc-warn'; ok=false;
-    } else if(sh!=='M'){
-      lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false;
+  } else if(c.tc_in){
+    // Tiada OUT
+    if(isMalam){
+      if(!inAwalSah) lines.push('SEMAK ESOK');
+      else lines.push('SEMAK ESOK');
+      if(cls==='tc-ok') cls='tc-warn';
+    } else {
+      lines.push('\u26A0 TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;}
     }
-    // Shift malam single IN: handled above (SEMAK ESOK), skip here
   }
-  // Tunjuk OT jika dikesan
-  if(c.tc_ot&&c.tc_ot_in){
-    lines.push('OT: IN '+c.tc_ot_in+(c.tc_ot_out?' · OUT '+c.tc_ot_out:''));
+
+  // Single punch
+  if((c.tc_in&&!c.tc_out)||(c.tc_out&&!c.tc_in)){
+    if(isMalam&&!c.tc_in&&c.tc_out){ lines.push('SINGLE PUNCH (OUT SAHAJA)'); cls='tc-warn'; ok=false; }
+    else if(!isMalam&&c.tc_in&&!c.tc_out){ lines.push('SINGLE PUNCH'); cls='tc-warn'; ok=false; }
   }
+
+  // OT info
+  if(c.tc_ot&&c.tc_ot_in) lines.push('OT: IN '+c.tc_ot_in+(c.tc_ot_out?' \u00b7 OUT '+c.tc_ot_out:''));
+
   return {txt:lines.join('\n'),cls,ok};
 }
-
-// ── CEK 6 DATA UTAMA ─────────────────────────────────────────────
-// Audit Final sah HANYA jika semua 6 lapisan ada data
 function cek6(bil,d){
   const c=D[bil]?.[d]; const sh=gSh(bil,d);
   if(!c) return {ok:false,miss:['Semua data']};
@@ -3418,97 +3394,6 @@ function expPDF(){
   w.document.close(); setTimeout(()=>w.print(),500);
 }
 
-
-// ── BOSS SNAPSHOT EXPORT (LIVE MASTER LAYOUT) ─────────────────────
-function eakhaBossSafeText(v){ return String(v==null?'':v).replace(/[<>]/g,function(c){return c==='<'?'&lt;':'&gt;';}); }
-function eakhaBossMonthLabel(){
-  var m = (typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:(+localStorage.getItem('eakha_active_month')||4));
-  var y = (typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:(+localStorage.getItem('eakha_active_year')||2026));
-  try{ return monthName(m)+' '+y; }catch(e){ var mn=['','Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember']; return (mn[m]||('Bulan '+m))+' '+y; }
-}
-function eakhaBossFileBase(){
-  var m = (typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:(+localStorage.getItem('eakha_active_month')||4));
-  var y = (typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:(+localStorage.getItem('eakha_active_year')||2026));
-  return 'eAKHA_Master_File_'+y+'_'+String(m).padStart(2,'0')+'_Layout_Bos';
-}
-function eakhaBossEnsureMaster(){
-  try{
-    var q=document.getElementById('m-search'); if(q) q.value='';
-    if(typeof renderMaster==='function') renderMaster(null);
-  }catch(e){ console.warn('[Boss Snapshot] render master:',e); }
-  return document.getElementById('master-grid');
-}
-function eakhaBossBuildHTML(kind){
-  var grid=eakhaBossEnsureMaster();
-  if(!grid || !grid.innerHTML.trim()){
-    try{ toast('Master File belum dipaparkan / data belum dimuat','warn'); }catch(e){}
-    return '';
-  }
-  var styles='';
-  try{ styles=Array.from(document.querySelectorAll('style')).map(function(x){return x.innerHTML;}).join('\n'); }catch(e){}
-  var month=eakhaBossMonthLabel();
-  var user=(document.getElementById('user-topbar')||{}).textContent||'';
-  var count=(document.getElementById('master-count')||{}).textContent||'';
-  var info=(document.getElementById('master-info')||{}).textContent||'';
-  var generated=new Date().toLocaleString('ms-MY');
-  var note = kind==='xls' ? 'Format Excel/XLS — layout 7 lapisan seperti paparan live.' : 'Snapshot rasmi — layout 7 lapisan seperti paparan live website.';
-  var extraCss = `
-    html,body{height:auto!important;overflow:auto!important;background:#ffffff!important;color:#111!important;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;}
-    .boss-page{padding:10px;background:#fff;color:#111;}
-    .boss-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;border-bottom:2px solid #0f1f3d;padding-bottom:7px;}
-    .boss-title{font-size:13px;font-weight:800;color:#0f1f3d;line-height:1.2;}
-    .boss-sub{font-size:8px;color:#334155;margin-top:3px;line-height:1.35;}
-    .boss-meta{font-size:7.5px;color:#334155;text-align:right;line-height:1.35;min-width:180px;}
-    .boss-actions{position:sticky;top:0;z-index:999;background:#fff;border-bottom:1px solid #ddd;padding:8px;display:flex;gap:6px;}
-    .boss-actions button{font-size:11px;padding:5px 10px;border:1px solid #999;background:#f8fafc;border-radius:4px;cursor:pointer;}
-    .boss-master .mg-wrap,.boss-master{overflow:visible!important;width:max-content!important;max-width:none!important;}
-    .boss-master .mg,.boss-master .grid{border-collapse:collapse!important;width:auto!important;min-width:max-content!important;font-size:6.1px!important;line-height:1.12!important;}
-    .boss-master .gh,.boss-master .gh-nm,.boss-master .gh-lyr,.boss-master .ntd,.boss-master .ltd{position:static!important;left:auto!important;top:auto!important;z-index:auto!important;}
-    .boss-master .gh-nm{min-width:125px!important;max-width:125px!important;}
-    .boss-master .gh-lyr{min-width:72px!important;max-width:72px!important;}
-    .boss-master .ntd{min-width:125px!important;max-width:125px!important;}
-    .boss-master .ltd{min-width:72px!important;max-width:72px!important;}
-    .boss-master .dc,.boss-master .gh-d{min-width:54px!important;max-width:54px!important;padding:2px!important;font-size:5.8px!important;}
-    .boss-master .nn{font-size:6.5px!important;}
-    .boss-master .nb{font-size:7px!important;}
-    .boss-master .nm{font-size:5.6px!important;}
-    .boss-master .dc-pre{white-space:pre-line!important;line-height:1.15!important;}
-    .boss-foot{font-size:7px;color:#475569;margin-top:8px;border-top:1px solid #cbd5e1;padding-top:5px;}
-    @media print{
-      @page{size:A3 landscape;margin:5mm;}
-      body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;zoom:.68;}
-      .boss-actions{display:none!important;}
-      .boss-page{padding:0!important;}
-    }
-  `;
-  return '<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>'+eakhaBossSafeText('Master File '+month)+'</title><style>'+styles+'\n'+extraCss+'</style></head><body>'+
-    (kind==='print'?'<div class="boss-actions"><button onclick="window.print()">Print / Save PDF</button><button onclick="window.close()">Tutup</button></div>':'')+
-    '<div class="boss-page"><div class="boss-head"><div><div class="boss-title">MASTER FILE AUDIT KEHADIRAN e-AKHA VSAVAGE</div><div class="boss-sub">Hospital Kuala Lumpur · KPL · Bulan Audit: <b>'+eakhaBossSafeText(month)+'</b><br>'+eakhaBossSafeText(note)+'</div></div><div class="boss-meta">Dijana: '+eakhaBossSafeText(generated)+'<br>'+eakhaBossSafeText(user)+'<br>'+eakhaBossSafeText(count)+' '+eakhaBossSafeText(info)+'</div></div>'+
-    '<div class="boss-master"><div class="mg-wrap">'+grid.innerHTML+'</div></div><div class="boss-foot">Dokumen ini dijana terus daripada paparan Master File live. Semak bulan audit sebelum serahan kepada pegawai penyelia.</div></div></body></html>';
-}
-function eakhaBossOpenPrint(){
-  var html=eakhaBossBuildHTML('print'); if(!html) return;
-  var w=window.open('','_blank');
-  if(!w){ try{ toast('Pop-up disekat. Benarkan pop-up untuk export snapshot.','warn'); }catch(e){} return; }
-  w.document.open(); w.document.write(html); w.document.close();
-  setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} },700);
-}
-function eakhaBossDownloadBlob(html, mime, filename){
-  var blob=new Blob(['\ufeff'+html],{type:mime+';charset=utf-8'});
-  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},1000);
-}
-function eakhaBossDownloadDOC(){
-  var html=eakhaBossBuildHTML('doc'); if(!html) return;
-  eakhaBossDownloadBlob(html,'application/msword',eakhaBossFileBase()+'.doc');
-  try{ toast('Word Layout dimuat turun ✓','ok'); }catch(e){}
-}
-function eakhaBossDownloadXLS(){
-  var html=eakhaBossBuildHTML('xls'); if(!html) return;
-  eakhaBossDownloadBlob(html,'application/vnd.ms-excel',eakhaBossFileBase()+'.xls');
-  try{ toast('Excel Layout dimuat turun ✓','ok'); }catch(e){}
-}
-
 // ── SUPABASE ─────────────────────────────────────────────────────
 let supa=null, SUPA_OK=false;
 
@@ -5087,7 +4972,14 @@ function validasiAudit(){
             ? validInPts.reduce(function(a,b){return distFV(a.mins%1440,shSt)<=distFV(b.mins%1440,shSt)?a:b;})
             : null; // tiada IN sah dalam tetingkap
           // Pilih OUT: terdekat dengan shift end (boleh cross-day)
-          var outCandidates=pts.filter(function(p){return p.t!==bIn.t||p.nextDay;});
+          var outCandidates=pts.filter(function(p){
+            if(p.t===bIn.t&&!p.nextDay) return false;
+            var bInM=bIn.mins%1440, pM=p.mins%1440;
+            // Semua shift: exclude same-day punch yang berlaku SEBELUM bIn
+            // (OT sebelum shift — punch ini milik sesi OT berbeza, bukan OUT hakiki)
+            if(!p.nextDay&&pM<bInM&&pM>60) return false;
+            return true;
+          });
           var bOut=null;
           if(outCandidates.length){
             bOut=outCandidates.reduce(function(a,b){
