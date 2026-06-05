@@ -857,17 +857,33 @@ function daysRange(dari,hingga){
 }
 function getMC(bil,d){
   var bilN=+bil, dN=+d;
-  // Method 1: direct D[] reference (fastest — set by applyMCPreload)
-  if(D[bilN]&&D[bilN][dN]&&D[bilN][dN]._mc) return D[bilN][dN]._mc;
-  // Method 2: pre-expanded mc.d field
-  var r=MC_DATA.find(function(mc){ return +mc.bil===bilN && +mc.d===dN && (mc.bulanLabel==='Bulan Ini'||mc.m===4); });
-  if(r){ if(D[bilN]&&D[bilN][dN]) D[bilN][dN]._mc=r; return r; }
-  // Method 3: date range (dot/slash/dash format all supported via fixed parseDM)
-  r=MC_DATA.find(function(mc){
+  var master=MASTER.find(function(m){return m.bil===bilN;});
+  if(!master) return null;
+  var masterNama=(master.nama||'').toUpperCase().trim().replace(/\s+/g,' ');
+  
+  // Verify MC record belongs to THIS anggota (nama match)
+  function verify(mc){
+    if(!mc) return false;
     if(+mc.bil!==bilN) return false;
+    // Cross-check nama — prevent MC belonging to other anggota
+    var mcNama=(mc.nama||'').toUpperCase().trim().replace(/\s+/g,' ');
+    if(!mcNama) return true; // no nama stored, trust bil
+    // Exact or first+last word match
+    if(mcNama===masterNama) return true;
+    var wa=masterNama.split(' '), wb=mcNama.split(' ');
+    return wa.length>=2&&wb.length>=2&&wa[0]===wb[0]&&wa[wa.length-1]===wb[wb.length-1];
+  }
+  
+  // Method 1: direct D[] reference
+  if(D[bilN]&&D[bilN][dN]&&D[bilN][dN]._mc&&verify(D[bilN][dN]._mc)) return D[bilN][dN]._mc;
+  // Method 2: pre-expanded mc.d field
+  var r=MC_DATA.find(function(mc){ return verify(mc)&&+mc.d===dN&&(mc.bulanLabel==='Bulan Ini'||mc.m===4); });
+  if(r){ if(D[bilN]&&D[bilN][dN]) D[bilN][dN]._mc=r; return r; }
+  // Method 3: date range
+  r=MC_DATA.find(function(mc){
+    if(!verify(mc)) return false;
     if(mc.m&&mc.m!==4) return false;
-    var days=daysRange(mc.dari||mc.tarikh, mc.hingga||mc.tarikh);
-    return days.includes(dN);
+    return daysRange(mc.dari||mc.tarikh, mc.hingga||mc.tarikh).includes(dN);
   });
   if(r&&D[bilN]&&D[bilN][dN]) D[bilN][dN]._mc=r;
   return r||null;
