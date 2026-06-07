@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.7 MONTH MASTER SAFE</title>
+  <title>e-AKHA Vsavage v5.8.1 MONTH SAFE TAB SYNC DATE ROUTING</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -293,7 +293,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span id="db-badge" data-db="d-db" style="font-size:7.5px;padding:2px 7px;border-radius:4px;background:rgba(5,150,105,.2);color:#34d399;font-weight:700">&#x25CF; Supabase</span>
         <span id="user-topbar" style="font-size:8px;color:rgba(255,255,255,.4)"></span>
         <span id="role-badge" style="font-size:7px;color:rgba(255,255,255,.4)"></span>
-        <button class="btn btn-sm" style="font-size:7.5px" onclick="autoFillFromKZ()" title="Auto-fill KZP&#8594;KZK, MC&#8594;HRMIS">&#9889; Auto-Fill</button>
         <button class="btn btn-sm" style="font-size:7.5px;color:#fca5a5" onclick="generateTeguranReport()">&#9888; Teguran</button>
         <button class="btn btn-gold btn-sm" onclick="expPDF()" id="btn-pdf" title="Snapshot semua jabatan A3">PDF</button>
         <button class="btn btn-sm" onclick="snapshotJab()" title="Pilih jabatan untuk snapshot A3 landscape" style="background:#1d4ed8;color:#fff">⚙ Snapshot</button>
@@ -560,7 +559,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
                 <button class="btn btn-gold" id="btn-proc" onclick="procAll()" title="Step 1: Baca semua dokumen, simpan ke 6 tab lapisan">&#x1F4E5; 1. BACA &amp; SIMPAN KE TAB LAPISAN</button>
                 <button class="btn btn-bl" id="btn-update-master" onclick="kemaskiniMaster()" title="Step 2: Kemaskini data dari 6 tab ke Master File">&#x1F4CB; 2. KEMASKINI DATA MASTERFILE</button>
-                <button class="btn" onclick="resetSystemData()" title="Padam semua & muat semula data pre-load" style="background:rgba(120,53,15,.3);border-color:rgba(251,146,60,.4)">&#x1F504; Reset & Reload Preload</button>
+                <button class="btn" onclick="resetSystemData()" title="Reset data bulan aktif sahaja. Bulan lain tidak disentuh." style="background:rgba(120,53,15,.3);border-color:rgba(251,146,60,.4)">&#x1F504; Reset Bulan Aktif Kosong</button>
                 <button class="btn btn-gn" id="btn-validate" onclick="validasiAudit()" title="Step 3: Bandingkan 6 lapisan, kira Audit Final">&#x2713; 3. VALIDASI / PERBANDINGAN AUDIT</button>
                 <button class="btn btn-sm" id="btn-recompare" onclick="recompareAll()" style="font-size:7.5px">Bandingkan Semula</button>
                 <button class="btn btn-sm" onclick="resetUp()">Reset</button>
@@ -722,7 +721,7 @@ const SHT = {P:'1500-2300',S:'0700-1500',M:'2300-0700',O:'Rehat'};
 const SHS = {P:'PT',S:'PG',M:'M',O:'OF'};
 const DOW = ['Ahd','Isn','Sel','Rab','Kha','Jum','Sab'];
 // April 2026: 1 Apr = Wed (DOW=3)
-function dow(d){ return (3+d-1)%7; }
+
 
 // ── MASTER LISTING 52 ANGGOTA ────────────────────────────────────
 const MASTER = [
@@ -891,7 +890,7 @@ function getMC(bil,d){
 }
 function hasThumb(c){ return !!(c&&(c.tc_in||c.tc_out)); }
 function toMins(t){ if(!t) return null; const[h,m]=t.split(':').map(Number); return h*60+m; }
-function fmtMin(m){ return m>=60?Math.floor(m/60)+'j '+(m%60)+'min':m+'min'; }
+
 function isCuti(v){ return ['MC','CR','EL','CTR','CB','CBR','K/P'].includes(v); }
 function isAbs(v){  return ['ABS','X','LL'].includes(v); }
 function hasHR(c){ return !!(c&&((c.hrmis&&c.hrmis.trim())||c._hrmis_rec)); }
@@ -1669,82 +1668,11 @@ function renderDash(){
 // ══════════════════════════════════════════════════════════════
 // STAGING PAGE RENDERERS
 // ══════════════════════════════════════════════════════════════
-function renderKZPStaging(){
-  var q=(document.getElementById('kzp-q')?.value||'').toLowerCase();
-  var rows=[];
-  MASTER.forEach(function(m){
-    for(var d=1;d<=daysInActiveMonth();d++){
-      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
-      if(!c||!c.kzp) continue;
-      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
-      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,d:d,kzp:c.kzp,jam:c.kzp_jam||'',pengganti:c.pengganti_nama||''});
-    }
-  });
-  var cnt=document.getElementById('kzp-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
-  var el=document.getElementById('kzp-staging-table'); if(!el) return;
-  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\u23F0</div>Tiada data KZ Penyelia lagi.<br>Upload dokumen KZ Penyelia atau guna data pre-load.</div>'; return; }
-  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Komp</th><th style="padding:5px">Hari</th><th style="padding:5px">Status</th><th style="padding:5px">Jam/Ganti</th></tr></thead><tbody>';
-  rows.forEach(function(r){
-    var extra=r.jam?'<span style="color:#fbbf24">Lewat '+r.jam+'</span>':r.pengganti?'<span style="color:#93c5fd">ganti: '+r.pengganti+'</span>':'';
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center;font-size:7px">'+r.komp+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center"><span class="'+kzCls(r.kzp)+'" style="padding:1px 6px;border-radius:3px;font-weight:700">'+r.kzp+'</span></td><td style="padding:4px;text-align:center">'+extra+'</td></tr>';
-  });
-  html+='</tbody></table>';
-  el.innerHTML=html;
-}
 
-function renderKZKStaging(){
-  var q=(document.getElementById('kzk-q')?.value||'').toLowerCase();
-  var rows=[];
-  MASTER.forEach(function(m){
-    for(var d=1;d<=daysInActiveMonth();d++){
-      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
-      if(!c||!c.kzk) continue;
-      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
-      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,d:d,kzk:c.kzk,pos:c.kzk_pos||'',ot:c.ot});
-    }
-  });
-  var cnt=document.getElementById('kzk-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
-  var el=document.getElementById('kzk-staging-table'); if(!el) return;
-  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\uD83D\uDCAC</div>Tiada data KZ Koperal lagi.<br>Upload WhatsApp ZIP atau guna data pre-load.</div>'; return; }
-  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Hari</th><th style="padding:5px">Status</th><th style="padding:5px">Pos/OT</th></tr></thead><tbody>';
-  rows.forEach(function(r){
-    var extra=(r.pos?r.pos:'')+(r.ot?' <span style="color:#fde047">OT</span>':'');
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center"><span class="'+kzCls(r.kzk)+'" style="padding:1px 6px;border-radius:3px;font-weight:700">'+r.kzk+'</span></td><td style="padding:4px;text-align:center;font-size:7px">'+extra+'</td></tr>';
-  });
-  html+='</tbody></table>';
-  el.innerHTML=html;
-}
 
-function renderTCStaging(){
-  var q=(document.getElementById('tc-q')?.value||'').toLowerCase();
-  var rows=[];
-  MASTER.forEach(function(m){
-    for(var d=1;d<=daysInActiveMonth();d++){
-      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
-      if(!c) continue;
-      var hasPunch=c.tc_all&&c.tc_all.length;
-      var isAbs=c.tc_note&&c.tc_note.indexOf('ABS')===0;
-      var isProb=c.tc_problem;
-      if(!hasPunch&&!isAbs&&!isProb) continue;
-      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
-      var sh=gSh(m.bil,d);
-      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,d:d,sh:sh,
-                 punches:hasPunch?c.tc_all.join(' \u00b7 '):'',
-                 prob:isProb,abs:isAbs});
-    }
-  });
-  var cnt=document.getElementById('tc-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
-  var el=document.getElementById('tc-staging-table'); if(!el) return;
-  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\u23F1</div>Tiada data TIMECARD lagi.</div>'; return; }
-  var shLbl={S:'PG',P:'PT',M:'M',O:'OFF'};
-  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Hari</th><th style="padding:5px">Shift</th><th style="padding:5px;text-align:left">Punch</th></tr></thead><tbody>';
-  rows.forEach(function(r){
-    var punchDisp=r.prob?'<span style="color:#fbbf24">\u26A0 TC BERMASALAH</span>':r.abs?'<span style="color:#fca5a5">ABS - tiada thumb</span>':r.punches;
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center;color:#94a3b8">'+(shLbl[r.sh]||r.sh)+'</td><td style="padding:4px 8px;color:#cbd5e1">'+punchDisp+'</td></tr>';
-  });
-  html+='</tbody></table>';
-  el.innerHTML=html;
-}
+
+
+
 
 // MC tinggi detector (untuk teguran)
 function exportMCCsv(){
@@ -3390,26 +3318,7 @@ function expCSV(){
   dlCSV(rows,'eAKHA_Vsavage_April_2026.csv');
 }
 
-function expPDF(){
-  if(!reqAdmin()){ toast('Hanya pentadbir boleh jana PDF','warn'); return; }
-  const rows=MASTER.map(m=>{
-    let h=0,mc=0,cr=0,ab=0,lw=0;
-    for(let d=1;d<=30;d++){ const af=auditFinal(m.bil,d); if(!af.inc){ if(af.cls==='af-sah')h++; else if(af.cls==='af-mc')mc++; else if(af.cls==='af-cr')cr++; else if(af.cls==='af-abs')ab++; } if(af.txt.includes('LEWAT'))lw++; }
-    return {m,h,mc,cr,ab,lw};
-  });
-  const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>e-AKHA Vsavage Laporan April 2026</title>'+
-    '<style>body{font-family:Arial,sans-serif;font-size:9px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:3px 5px}th{background:#0F2D5A;color:#fff}h1{font-size:13px;color:#0F2D5A}</style></head><body>'+
-    '<h1>e-AKHA Vsavage - Laporan Audit Kehadiran April 2026</h1>'+
-    '<p style="font-size:8px;color:#666">KPL HKL \xb7 MHKL \xb7 IKTAR \xb7 RT \xb7 '+new Date().toLocaleString('ms-MY')+'</p>'+
-    '<table><thead><tr><th>Bil</th><th>Nama Anggota</th><th>Jabatan</th><th>Kompeni</th><th>Hadir</th><th>MC</th><th>CR</th><th>ABS</th><th>Lewat</th></tr></thead><tbody>'+
-    rows.map(r=>'<tr><td>'+r.m.bil+'</td><td>'+r.m.nama+'</td><td>'+r.m.jab+'</td><td>'+r.m.komp+'</td>'+
-      '<td style="text-align:center">'+r.h+'</td><td style="text-align:center;color:#8B5E00">'+(r.mc||'')+'</td>'+
-      '<td style="text-align:center;color:#1e40af">'+(r.cr||'')+'</td><td style="text-align:center;color:#991b1b;font-weight:bold">'+(r.ab||'')+'</td>'+
-      '<td style="text-align:center;color:#9a3412">'+(r.lw||'')+'</td></tr>').join('')+
-    '</tbody></table></body></html>');
-  w.document.close(); setTimeout(()=>w.print(),500);
-}
+
 
 function expPDF(){ snapshotGrid('all'); }
 
@@ -7901,5 +7810,899 @@ if(typeof saveCustomAnggota !== 'function'){
 })();
 
 </script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.8 — FINAL MONTH SAFE + PER TAB SYNC PATCH
+   Tujuan: data lama/preload tidak ganggu bulan akan datang.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var PATCH='v5.8-MONTH-SAFE-PER-TAB-SYNC';
+  window.EAKHA_MASTER_PATCH_VERSION = PATCH;
+
+  function pad(n){ return String(+n).padStart(2,'0'); }
+  function yNow(){ return (typeof ACTIVE_YEAR!=='undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026; }
+  function mNow(){ return (typeof ACTIVE_MONTH!=='undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4; }
+  function dim(y,m){ return new Date(+y,+m,0).getDate(); }
+  function monthName(m){ return (typeof MONTHS_MS!=='undefined' && MONTHS_MS[+m]) ? MONTHS_MS[+m] : ('Bulan '+m); }
+  function masterKey(y,m){ return 'eakha_master_'+(+y)+'_'+pad(m); }
+  function datasetKey(y,m){ return 'eakha_dataset_'+(+y)+'_'+(+m); }
+  function auditKey(y,m){ return 'eakha_audit_state_'+(+y)+'_'+pad(m); }
+  function hrmisKey(y,m){ return 'eakha_hrmis_'+(+y)+'_'+pad(m); }
+  function mcKey(y,m){ return 'eakha_mc_'+(+y)+'_'+pad(m); }
+  function stagingKey(y,m){ return 'eakha_staging_'+(+y)+'_'+pad(m); }
+  function parseJSON(raw,fb){ try{ var x=JSON.parse(raw||''); return x==null?fb:x; }catch(e){ return fb; } }
+  function clone(x){ try{return JSON.parse(JSON.stringify(x));}catch(e){return x;} }
+  function hasVal(v){ return v!==undefined && v!==null && String(v).trim()!=='' && String(v).trim()!=='-'; }
+  function log(msg,type){ try{ var lb=document.getElementById('log-body'); if(lb && typeof addLog==='function') addLog(lb,msg,type||'info'); }catch(e){} }
+  function cell(){ return {kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',tc_note:'',tc_problem:false,ot:false,hrmis:'',pengganti:false,note:''}; }
+
+  window.daysInActiveMonth = function(){ return dim(yNow(),mNow()); };
+  window.getMasterMonthKey = function(){ return masterKey(yNow(),mNow()); };
+  window.getDatasetKey = function(){ return datasetKey(yNow(),mNow()); };
+  if(typeof gShift==='function') window.gSh = gSh = function(bil,d){ return gShift(bil,yNow(),mNow(),d); };
+  window.dow = dow = function(d){ return new Date(yNow(),mNow()-1,+d).getDay(); };
+
+  // HRMIS is leave evidence, not MC hardcopy.
+  window.hrmisCode = function(v){
+    var s=String(v||'').toUpperCase();
+    if(/CUTI\s*REHAT|CUTI\s*TAHUNAN|\bCR\b|REHAT/.test(s)) return 'CR';
+    if(/KECEMASAN|EMERGENCY|\bEL\b/.test(s)) return 'EL';
+    if(/TANPA\s*REKOD|\bCTR\b/.test(s)) return 'CTR';
+    if(/BERSALIN|\bCBR?\b/.test(s)) return 'CB';
+    if(/CUTI\s*SAKIT|\bMC\b|SAKIT/.test(s)) return 'CS';
+    if(/KURSUS|PROGRAM|K\/P/.test(s)) return 'K/P';
+    return s.trim()?s.trim():'CR';
+  };
+  window.hrmisLabel = function(v){
+    var c=hrmisCode(v);
+    if(c==='CR') return 'CR SAH';
+    if(c==='EL') return 'EL SAH';
+    if(c==='CTR') return 'CTR SAH';
+    if(c==='CB') return 'CB SAH';
+    if(c==='CS') return 'CUTI SAKIT HRMIS';
+    if(c==='K/P') return 'K/P SAH';
+    return c+' SAH';
+  };
+  window.hasHR = hasHR = function(c){ return !!(c && String(c.hrmis||'').trim() && String(c.hrmis||'').trim()!=='-' && !(String(c.hrmis).toUpperCase()==='MC SAH'&&!c._hrmis_rec)); };
+  window.isCuti = isCuti = function(v){ return ['CR','EL','CTR','CB','CBR','K/P','CS'].indexOf(String(v||'').toUpperCase())>=0; };
+
+  function parseDate(v){
+    var s=String(v||'').trim(); if(!s) return null; var p;
+    if(/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/.test(s)){ p=s.split(/[-\/]/); return new Date(+p[0],+p[1]-1,+p[2]); }
+    if(/^\d{1,2}[\.\/\-]\d{1,2}([\.\/\-]\d{2,4})?$/.test(s)){ p=s.split(/[\.\/\-]/); var yy=p[2]?+p[2]:yNow(); if(yy<100) yy+=2000; return new Date(yy,+p[1]-1,+p[0]); }
+    var d=new Date(s); return isNaN(d.getTime())?null:d;
+  }
+  function overlapsMonth(rec,y,m){
+    var a=parseDate(rec&&(rec.dari||rec.tarikh||rec.date)), b=parseDate(rec&&(rec.hingga||rec.dari||rec.tarikh||rec.date));
+    if(!a||!b) return false; if(b<a){var t=a;a=b;b=t;}
+    var s=new Date(+y,+m-1,1), e=new Date(+y,+m,0,23,59,59);
+    return a<=e && b>=s;
+  }
+  function activeDaysInRange(dari,hingga){
+    var a=parseDate(dari), b=parseDate(hingga||dari); if(!a||!b) return [];
+    if(b<a){ var t=a;a=b;b=t; }
+    var out=[], cur=new Date(a.getFullYear(),a.getMonth(),a.getDate()), guard=0;
+    while(cur<=b && guard<370){
+      if(cur.getFullYear()===yNow() && cur.getMonth()+1===mNow()) out.push(cur.getDate());
+      cur.setDate(cur.getDate()+1); guard++;
+    }
+    return out;
+  }
+  function normName(s){
+    return String(s||'').toUpperCase()
+      .replace(/\b(BIN|BINTI|BT|A\/L|AL|AP|KP|KPL|SM|SJN|TUAN|PUAN)\b/g,' ')
+      .replace(/MOHAMMAD|MOHAMED|MUHAMMAD/g,'MOHAMAD').replace(/MUHD\.?/g,'MOHD')
+      .replace(/HAIKAL/g,'HAIQAL').replace(/[^A-Z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+  }
+  function matchMember(name,bil){
+    if(typeof MASTER==='undefined') return {status:'NO_MATCH'};
+    if(bil){
+      var byBil=MASTER.find(function(m){return +m.bil===+bil;});
+      if(byBil){
+        if(!name || normName(name).length<3) return {status:'MATCHED',member:byBil,score:100};
+        var nm=normName(name), mn=normName(byBil.nama);
+        if(mn===nm || mn.indexOf(nm)>=0 || nm.indexOf(mn)>=0) return {status:'MATCHED',member:byBil,score:100};
+        var toks=nm.split(' ').filter(function(x){return x.length>3;});
+        var hit=0; toks.forEach(function(t){ if(mn.indexOf(t)>=0) hit++; });
+        if(hit>=2 || hit>=Math.min(2,toks.length)) return {status:'MATCHED',member:byBil,score:90};
+        return {status:'LOW_CONFIDENCE',member:byBil,score:60};
+      }
+    }
+    var n=normName(name); if(!n) return {status:'NO_MATCH'};
+    var exact=MASTER.filter(function(m){return normName(m.nama)===n;});
+    if(exact.length===1) return {status:'MATCHED',member:exact[0],score:100};
+    if(exact.length>1) return {status:'MULTIPLE_MATCH',candidates:exact,score:95};
+    var toks=n.split(' ').filter(function(x){return x.length>3;});
+    var scored=[];
+    MASTER.forEach(function(m){
+      var mn=normName(m.nama), sc=0;
+      toks.forEach(function(t){ if(mn.indexOf(t)>=0) sc+=20; });
+      if(toks[0] && mn.indexOf(toks[0])>=0) sc+=10;
+      if(typeof nameScore==='function'){ try{ sc=Math.max(sc,nameScore(name,m)); }catch(e){} }
+      if(sc>0) scored.push({m:m,sc:sc});
+    });
+    scored.sort(function(a,b){return b.sc-a.sc;});
+    if(!scored.length || scored[0].sc<72) return {status:'NO_MATCH',score:scored[0]?scored[0].sc:0};
+    if(scored[1] && scored[0].sc-scored[1].sc<8) return {status:'MULTIPLE_MATCH',member:scored[0].m,candidates:scored.slice(0,3).map(function(x){return x.m;}),score:scored[0].sc};
+    return {status:'MATCHED',member:scored[0].m,score:scored[0].sc};
+  }
+
+  function resetBlankMaster(y,m){
+    if(typeof D==='undefined' || typeof MASTER==='undefined') return;
+    Object.keys(D).forEach(function(k){ delete D[k]; });
+    MASTER.filter(function(mm){return !mm.pindah;}).forEach(function(mm){
+      D[mm.bil]={};
+      for(var d=1; d<=dim(y,m); d++) D[mm.bil][d]=cell();
+    });
+    // Status tetap yang tidak boleh auto tick hadir.
+    try{
+      for(var dd=1; dd<=dim(y,m); dd++){
+        if(D[7] && D[7][dd] && gSh(7,dd)!=='O'){ D[7][dd].kzp='TH'; D[7][dd].kzk='TH'; }
+        if(D[51] && D[51][dd] && gSh(51,dd)!=='O'){ D[51][dd].kzp='TT'; D[51][dd].kzk='TT'; }
+      }
+    }catch(e){}
+  }
+  function dataCellScore(c){
+    if(!c || typeof c!=='object') return 0;
+    var n=0;
+    ['kzp','kzk','tc_in','tc_out','tc_note','tc_shift','hrmis','note','pengganti_nama','kzp_jam','kzk_pos'].forEach(function(k){ if(hasVal(c[k])) n++; });
+    if(c.tc_all && c.tc_all.length) n+=Math.min(c.tc_all.length,8);
+    if(c._mc) n+=3; if(c._hrmis_rec) n+=3; if(c.tc_problem) n++; if(c.ot||c.tc_ot) n++;
+    return n;
+  }
+  function packD(){
+    var out={};
+    try{ Object.keys(D||{}).forEach(function(b){ Object.keys(D[b]||{}).forEach(function(d){ var c=D[b][d]; if(dataCellScore(c)>0){ if(!out[b]) out[b]={}; out[b][d]=clone(c); } }); }); }catch(e){}
+    return out;
+  }
+  function unpackD(packed){
+    if(!packed || typeof packed!=='object') return;
+    Object.keys(packed).forEach(function(b){ if(!D[b]) D[b]={}; Object.keys(packed[b]||{}).forEach(function(d){ if(!D[b][d]) D[b][d]=cell(); Object.assign(D[b][d], packed[b][d]); }); });
+  }
+  function filterActive(arr){ return (Array.isArray(arr)?arr:[]).filter(function(r){ return overlapsMonth(r,yNow(),mNow()); }); }
+  function readHRMISMonth(){
+    var hk=hrmisKey(yNow(),mNow());
+    var byMonth=parseJSON(localStorage.getItem(hk),null);
+    if(Array.isArray(byMonth)) return filterActive(byMonth);
+    return filterActive(parseJSON(localStorage.getItem('eakha_hrmis'),[]));
+  }
+
+  function pruneUnsafeStorage(){
+    try{
+      var del=[];
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i)||'';
+        if(k==='eakha_guard_last_good_data'||k==='eakha_guard_last_good_dataset'||k==='eakha_boot_predeploy_backup'||k==='eakha_data') del.push(k);
+        if(/^eakha_dataset_backup_|^eakha_boot_backup_|^eakha_tmp_/.test(k)) del.push(k);
+      }
+      del.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+    }catch(e){}
+  }
+  function safeSet(k,v){
+    try{ localStorage.setItem(k,v); return true; }
+    catch(e){ pruneUnsafeStorage(); try{ localStorage.setItem(k,v); return true; }catch(e2){ console.warn('[v5.8] storage failed',k,e2); try{ toast('Storan penuh: snapshot tidak disimpan sepenuhnya','warn'); }catch(_e){} return false; } }
+  }
+
+  window.saveDataset = saveDataset = function(reason){
+    var y=yNow(), m=mNow();
+    try{
+      var hr=readHRMISMonth();
+      var mc=filterActive(typeof MC_DATA!=='undefined'?MC_DATA:[]);
+      var st=(typeof STAGING!=='undefined')?clone(STAGING):{};
+      var payload={patch:PATCH,version:'v5.8',tahun:y,bulan:m,monthLabel:monthName(m)+' '+y,reason:reason||'SAVE',savedAt:new Date().toISOString(),savedBy:(typeof AUTH!=='undefined'&&AUTH&&AUTH.id)||'system',D_PACKED:packD(),AUDIT_STATE:(typeof AUDIT_STATE!=='undefined')?clone(AUDIT_STATE):{},MC_DATA:mc,HRMIS_DATA:hr,STAGING:st,BAKI_CUTI:(typeof BAKI_CUTI!=='undefined')?clone(BAKI_CUTI):{}};
+      safeSet(masterKey(y,m),JSON.stringify(payload));
+      safeSet(datasetKey(y,m),JSON.stringify(payload));
+      safeSet(auditKey(y,m),JSON.stringify(payload.AUDIT_STATE||{}));
+      safeSet(hrmisKey(y,m),JSON.stringify(hr));
+      safeSet(mcKey(y,m),JSON.stringify(mc));
+      safeSet(stagingKey(y,m),JSON.stringify(st));
+      localStorage.setItem('eakha_active_year',String(y));
+      localStorage.setItem('eakha_active_month',String(m));
+      localStorage.setItem('eakha_last_dataset_key',datasetKey(y,m));
+      try{ localStorage.removeItem('eakha_data'); }catch(e){}
+      return true;
+    }catch(e){ console.warn('[v5.8] saveDataset',e); return false; }
+  };
+
+  function applyPayload(payload,y,m){
+    resetBlankMaster(y,m);
+    payload=payload||{};
+    if(payload.D_PACKED) unpackD(payload.D_PACKED);
+    else if(payload.D) unpackD(payload.D);
+    try{ AUDIT_STATE = payload.AUDIT_STATE || parseJSON(localStorage.getItem(auditKey(y,m)),{}); }catch(e){}
+    try{ MC_DATA = Array.isArray(payload.MC_DATA) ? filterActive(payload.MC_DATA) : filterActive(parseJSON(localStorage.getItem(mcKey(y,m)),[])); }catch(e){}
+    try{ var hr = Array.isArray(payload.HRMIS_DATA) ? filterActive(payload.HRMIS_DATA) : filterActive(parseJSON(localStorage.getItem(hrmisKey(y,m)),[])); safeSet('eakha_hrmis',JSON.stringify(hr)); safeSet(hrmisKey(y,m),JSON.stringify(hr)); }catch(e){}
+    try{ if(typeof STAGING!=='undefined'){ var s=payload.STAGING || parseJSON(localStorage.getItem(stagingKey(y,m)),{kzp:[],kzk:[],tc:[],mc:[],hr:[]}); STAGING=s||{kzp:[],kzk:[],tc:[],mc:[],hr:[]}; } }catch(e){}
+    try{ if(typeof eakhaSyncHRMISStoreToMaster==='function') eakhaSyncHRMISStoreToMaster('LOAD MONTH'); }catch(e){}
+    try{ syncMCToMaster(false); }catch(e){}
+  }
+  window.loadMonthStrict = function(y,m){
+    y=+y||yNow(); m=+m||mNow();
+    var payload=parseJSON(localStorage.getItem(masterKey(y,m)),null) || parseJSON(localStorage.getItem(datasetKey(y,m)),null);
+    if(payload){ applyPayload(payload,y,m); return true; }
+    applyPayload({MC_DATA:[],HRMIS_DATA:[],STAGING:{kzp:[],kzk:[],tc:[],mc:[],hr:[]},AUDIT_STATE:{}},y,m);
+    return false;
+  };
+  window.loadDataset = loadDataset = function(){ return window.loadMonthStrict(yNow(),mNow()); };
+
+  window.setMonth = setMonth = function(elOrMonth){
+    var newM = (typeof elOrMonth==='number') ? +elOrMonth : +(elOrMonth&&elOrMonth.dataset?elOrMonth.dataset.bulan:mNow());
+    if(!newM || newM<1 || newM>12) return;
+    try{ saveDataset('TINGGAL BULAN '+monthName(mNow())); }catch(e){}
+    ACTIVE_MONTH = newM;
+    localStorage.setItem('eakha_active_year',String(yNow()));
+    localStorage.setItem('eakha_active_month',String(newM));
+    try{ document.querySelectorAll('.month-item').forEach(function(el){ el.classList.toggle('on',+el.dataset.bulan===newM); }); }catch(e){}
+    try{ var b=document.getElementById('active-month-badge'); if(b) b.textContent=monthName(newM)+' '+yNow(); }catch(e){}
+    var existed=loadMonthStrict(yNow(),newM);
+    renderAllSafe();
+    try{ toast(monthName(newM)+' '+yNow()+' dibuka · '+(existed?'snapshot bulan ini dipulihkan':'dataset baru kosong'),'ok'); }catch(e){}
+  };
+
+  window.resetSystemData = resetSystemData = function(){
+    if(!confirm('Reset bulan aktif sahaja: '+monthName(mNow())+' '+yNow()+'. Bulan lain TIDAK disentuh. Teruskan?')) return;
+    resetBlankMaster(yNow(),mNow());
+    try{ AUDIT_STATE={}; }catch(e){}
+    try{ MC_DATA=[]; }catch(e){}
+    try{ if(typeof STAGING!=='undefined') STAGING={kzp:[],kzk:[],tc:[],mc:[],hr:[]}; }catch(e){}
+    ['master','dataset','audit','hrmis','mc','staging'].forEach(function(t){
+      var k=t==='master'?masterKey(yNow(),mNow()):t==='dataset'?datasetKey(yNow(),mNow()):t==='audit'?auditKey(yNow(),mNow()):t==='hrmis'?hrmisKey(yNow(),mNow()):t==='mc'?mcKey(yNow(),mNow()):stagingKey(yNow(),mNow());
+      try{ localStorage.removeItem(k); }catch(e){}
+    });
+    try{ localStorage.setItem('eakha_hrmis','[]'); localStorage.removeItem('eakha_data'); }catch(e){}
+    saveDataset('RESET BULAN AKTIF KOSONG');
+    renderAllSafe();
+    try{ toast('Bulan aktif direset kosong sahaja ✓','ok'); }catch(e){}
+  };
+  window.manualRestoreSnapshot = function(){ var ok=loadMonthStrict(yNow(),mNow()); renderAllSafe(); try{ toast(ok?'Snapshot bulan aktif dipulihkan ✓':'Tiada snapshot bulan aktif','ok'); }catch(e){} };
+
+  // Disable Auto-Fill completely.
+  window.autoFillFromKZ = autoFillFromKZ = function(){ try{ toast('Auto-Fill telah dibuang. Guna Kemaskini ikut tab / Kemaskini Semua Lapisan.','warn'); }catch(e){} return false; };
+  function hideAutoFillButtons(){
+    try{ document.querySelectorAll('button').forEach(function(btn){ var oc=btn.getAttribute('onclick')||''; if(oc.indexOf('autoFillFromKZ')>=0 || /Auto-?Fill/i.test(btn.textContent||'')) btn.remove(); }); }catch(e){}
+    try{ document.querySelectorAll('button').forEach(function(btn){ if((btn.textContent||'').indexOf('Reset & Reload Preload')>=0){ btn.innerHTML='&#x1F504; Reset Bulan Aktif Kosong'; btn.title='Padam data bulan aktif sahaja. Bulan lain tidak disentuh.'; } }); }catch(e){}
+  }
+
+  function toM(t){ if(!t) return null; var p=String(t).match(/(\d{1,2})[:.](\d{2})/); if(!p) return null; return (+p[1])*60+(+p[2]); }
+  function fmt(m){ m=((m%1440)+1440)%1440; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+  function winFor(sh,dayOffset){
+    var base=(dayOffset||0)*1440;
+    if(sh==='S') return {inA:base+360,inB:base+425,outA:base+900,outB:base+960,st:base+420,en:base+900};
+    if(sh==='P') return {inA:base+840,inB:base+905,outA:base+1380,outB:base+1440,st:base+900,en:base+1380};
+    if(sh==='M') return {inA:base+1320,inB:base+1385,outA:base+1440+420,outB:base+1440+480,st:base+1380,en:base+1440+420};
+    return null;
+  }
+  function getPunchObjs(bil,d){
+    var arr=[];
+    function add(day,offset){
+      var c=D[bil]&&D[bil][day]; if(!c || !c.tc_all) return;
+      (c.tc_all||[]).forEach(function(t,idx){ var m=toM(t); if(m==null) return; arr.push({key:day+'|'+idx+'|'+t,t:t,day:day,idx:idx,abs:offset*1440+m}); });
+    }
+    add(d-1,-1); add(d,0); add(d+1,1);
+    return arr;
+  }
+  function pickBest(points,a,b,target,used){
+    var cand=points.filter(function(p){ return !used[p.key] && p.abs>=a && p.abs<=b; });
+    if(!cand.length) return null;
+    cand.sort(function(x,y){ return Math.abs(x.abs-target)-Math.abs(y.abs-target); });
+    return cand[0];
+  }
+  window.pairTimecardForMember = function(bil){
+    var used={}, max=daysInActiveMonth();
+    // Clear old selected IN/OUT generated by audit but keep raw tc_all.
+    for(var d0=1; d0<=max; d0++){ var c0=D[bil]&&D[bil][d0]; if(c0 && c0.tc_all && c0.tc_all.length){ c0.tc_in=''; c0.tc_out=''; c0.tc_out_nextday=false; c0.tc_extra=[]; } }
+    function assign(d,sh){
+      var c=D[bil]&&D[bil][d]; if(!c || !(c.tc_all&&c.tc_all.length)) return;
+      if(sh==='O'){ c.tc_extra=(c.tc_all||[]).slice(); c.tc_audit_done=true; return; }
+      var w=winFor(sh,0), pts=getPunchObjs(bil,d);
+      var pin=pickBest(pts,w.inA,w.inB,w.st,used);
+      if(pin){ used[pin.key]=true; c.tc_in=pin.t; }
+      var pout=pickBest(pts,w.outA,w.outB,w.en,used);
+      if(pout){ used[pout.key]=true; c.tc_out=pout.t; c.tc_out_nextday=pout.day>d; }
+      c.tc_shift=sh; c.tc_audit_done=true;
+      var extras=[];
+      (c.tc_all||[]).forEach(function(t,idx){ var k=d+'|'+idx+'|'+t; if(!used[k]) extras.push(t); });
+      c.tc_extra=extras;
+    }
+    // PASS 1: shift malam dahulu. OUT 0700-0800 esok reserved sebelum cari IN hari esok.
+    for(var d=1; d<=max; d++){ if(gSh(bil,d)==='M') assign(d,'M'); }
+    // PASS 2: PG/PT selepas punch malam digunakan.
+    for(var d2=1; d2<=max; d2++){ var sh=gSh(bil,d2); if(sh==='S'||sh==='P'||sh==='O') assign(d2,sh); }
+  };
+  window.pairAllTimecardsV58 = function(){ try{ MASTER.filter(function(m){return !m.pindah;}).forEach(function(m){ pairTimecardForMember(m.bil); }); }catch(e){ console.warn('[v5.8] pair TC',e); } };
+
+  window.tcAudit = tcAudit = function(bil,d){
+    var c=D[bil]&&D[bil][d]; if(!c) return {txt:'-',cls:'tc-ok',ok:true};
+    var sh=gSh(bil,d); if(sh==='O') return {txt:(c.tc_all&&c.tc_all.length)?'OFFDAY / OT':'OFFDAY',cls:'tc-bp',ok:true};
+    if(c.tc_problem) return {txt:'TC BERMASALAH\n(Rujuk KZ Penyelia)',cls:'tc-warn',ok:true};
+    var w=winFor(sh,0), lines=[], ok=true, cls='tc-ok';
+    var im=toM(c.tc_in), om=toM(c.tc_out); if(c.tc_out_nextday && om!=null) om+=1440;
+    if(c.tc_in){
+      if(im<w.inA){ lines.push('OT/EXTRA - BUKAN IN HAKIKI'); lines.push('IN '+c.tc_in+' (>1 jam awal)'); cls='tc-warn'; ok=false; }
+      else if(im>w.inB){ lines.push('LEWAT'); lines.push('IN '+c.tc_in); cls='tc-lw'; ok=false; }
+      else lines.push('✓ IN '+c.tc_in);
+    } else { lines.push('⚠ TIADA IN'); cls='tc-warn'; ok=false; }
+    if(c.tc_out){
+      if(om<w.outA){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out); cls='tc-lw'; ok=false; }
+      else if(om>w.outB){ lines.push('OT/EXTRA selepas OUT'); lines.push('OUT '+c.tc_out); if(cls==='tc-ok') cls='tc-warn'; }
+      else lines.push('✓ OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':''));
+    } else { lines.push(sh==='M'?'SEMAK OUT ESOK':'⚠ TIADA OUT'); if(cls==='tc-ok') cls='tc-warn'; if(sh!=='M') ok=false; }
+    if((c.tc_in&&!c.tc_out)||(!c.tc_in&&c.tc_out)){ lines.push('SINGLE PUNCH'); if(cls==='tc-ok') cls='tc-warn'; ok=false; }
+    if(c.tc_extra&&c.tc_extra.length) lines.push('Extra/OT: '+c.tc_extra.join(' · '));
+    return {txt:lines.join('\n'),cls:cls,ok:ok};
+  };
+
+  function syncMCToMaster(showToast){
+    var arr=filterActive(typeof MC_DATA!=='undefined'?MC_DATA:[]), stats={records:arr.length,applied:0,unmatched:0,ambiguous:0};
+    // clear only MC cells from previous MC sync for active month
+    Object.keys(D||{}).forEach(function(b){ Object.keys(D[b]||{}).forEach(function(d){ var c=D[b][d]; if(c && c._mc_from_store){ delete c._mc; delete c._mc_from_store; } }); });
+    arr.forEach(function(rec){
+      var name=rec.nama||rec.pemilik||rec.patient||rec.owner||'';
+      var mt=matchMember(name,rec.bil);
+      if(mt.status!=='MATCHED'){ if(mt.status==='MULTIPLE_MATCH') stats.ambiguous++; else stats.unmatched++; rec.matchStatus=mt.status; return; }
+      rec.matchStatus='MATCHED'; rec.bil=mt.member.bil; rec.jab=rec.jab||mt.member.jab; rec.komp=rec.komp||mt.member.komp; rec.nama=rec.nama||mt.member.nama;
+      activeDaysInRange(rec.dari||rec.tarikh,rec.hingga||rec.dari||rec.tarikh).forEach(function(day){
+        if(!D[mt.member.bil]) D[mt.member.bil]={}; if(!D[mt.member.bil][day]) D[mt.member.bil][day]=cell();
+        D[mt.member.bil][day]._mc=rec; D[mt.member.bil][day]._mc_from_store=true; stats.applied++;
+        if(typeof AUDIT_STATE!=='undefined'){ if(!AUDIT_STATE[mt.member.bil]) AUDIT_STATE[mt.member.bil]={}; AUDIT_STATE[mt.member.bil][day]={status:'belum_validasi',ts:new Date().toISOString()}; }
+      });
+    });
+    try{ safeSet(mcKey(yNow(),mNow()),JSON.stringify(arr)); MC_DATA=arr; }catch(e){}
+    if(showToast!==false) try{ toast('MC → Master: '+stats.applied+' hari, '+stats.unmatched+' tidak padan','ok'); }catch(e){}
+    return stats;
+  }
+  window.syncMCToMaster = syncMCToMaster;
+
+  window.getMC = getMC = function(bil,d){
+    var c=D[bil]&&D[bil][d]; if(c && c._mc) return c._mc;
+    var arr=filterActive(typeof MC_DATA!=='undefined'?MC_DATA:[]);
+    for(var i=0;i<arr.length;i++){
+      var r=arr[i], mt=matchMember(r.nama||r.pemilik||'',r.bil);
+      if(mt.status==='MATCHED' && +mt.member.bil===+bil && activeDaysInRange(r.dari||r.tarikh,r.hingga||r.dari||r.tarikh).indexOf(+d)>=0) return r;
+    }
+    return null;
+  };
+
+  window.eakhaSyncHRMISStoreToMaster = function(reason){
+    var arr=readHRMISMonth(), stats={store:arr.length,activeRecords:0,activeDays:0,applied:0,unmatched:[],multiple:[],skippedOtherMonth:0};
+    Object.keys(D||{}).forEach(function(b){ Object.keys(D[b]||{}).forEach(function(d){ var c=D[b][d]; if(c && (c._hrmis_from_store||c._hrmis_rec)){ c.hrmis=''; delete c._hrmis_rec; delete c._hrmis_from_store; } }); });
+    arr.forEach(function(rec){
+      var status=String(rec.status||rec.kelulusan||rec.keputusan||rec.sah||'LULUS').toUpperCase();
+      if(status && !/LULUS|SAH|APPROVED|1\/1|DILULUSKAN/.test(status) && /TOLAK|BATAL|REJECT/.test(status)) return;
+      var days=activeDaysInRange(rec.dari||rec.tarikh,rec.hingga||rec.dari||rec.tarikh); if(!days.length){ stats.skippedOtherMonth++; return; }
+      var mt=matchMember(rec.nama||rec.pemohon||rec.owner||rec.namaPemohon||'',rec.bil);
+      if(mt.status!=='MATCHED'){ if(mt.status==='MULTIPLE_MATCH') stats.multiple.push(rec.nama||rec.pemohon||'?'); else stats.unmatched.push(rec.nama||rec.pemohon||'?'); rec.matchStatus=mt.status; return; }
+      rec.matchStatus='MATCHED'; rec.bil=mt.member.bil; rec.jab=rec.jab||mt.member.jab; rec.komp=rec.komp||mt.member.komp; rec.nama=rec.nama||mt.member.nama;
+      stats.activeRecords++;
+      days.forEach(function(day){
+        if(!D[mt.member.bil]) D[mt.member.bil]={}; if(!D[mt.member.bil][day]) D[mt.member.bil][day]=cell();
+        D[mt.member.bil][day].hrmis=hrmisLabel(rec.jenis||rec.kodCuti||rec.cuti||'CR');
+        D[mt.member.bil][day]._hrmis_rec=rec; D[mt.member.bil][day]._hrmis_from_store=true;
+        if(typeof AUDIT_STATE!=='undefined'){ if(!AUDIT_STATE[mt.member.bil]) AUDIT_STATE[mt.member.bil]={}; AUDIT_STATE[mt.member.bil][day]={status:'belum_validasi',ts:new Date().toISOString()}; }
+        stats.activeDays++; stats.applied++;
+      });
+    });
+    safeSet('eakha_hrmis',JSON.stringify(arr)); safeSet(hrmisKey(yNow(),mNow()),JSON.stringify(arr));
+    try{ window.EAKHA_LAST_HRMIS_SYNC=Object.assign({reason:reason||'SYNC',ts:new Date().toISOString()},stats); }catch(e){}
+    return stats;
+  };
+
+  window.syncLayerToMaster = function(type){
+    if(typeof reqAdmin==='function' && !reqAdmin()) return;
+    type=String(type||'').toLowerCase(); var n=0, st=null;
+    if(type==='kzp'||type==='kzk'){
+      try{ if(typeof sahTerima==='function') sahTerima(type); }catch(e){ console.warn(e); }
+      n=(STAGING&&STAGING[type])?STAGING[type].length:0;
+    } else if(type==='tc'){
+      try{ if(typeof sahTerima==='function') sahTerima('tc'); }catch(e){}
+      pairAllTimecardsV58();
+    } else if(type==='mc'){
+      st=syncMCToMaster(false); n=st.applied; log('MC Diterima masuk Master: '+st.applied+' hari; tidak padan '+st.unmatched,'ok');
+    } else if(type==='hr'||type==='hrmis'){
+      st=eakhaSyncHRMISStoreToMaster('BUTTON HRMIS'); n=st.applied; log('HRMIS dibaca: '+st.store+' rekod; masuk Master: '+st.applied+' hari; tidak padan '+st.unmatched.length,'ok');
+    } else if(type==='all'){
+      ['kzp','kzk','tc'].forEach(function(t){ try{ if(typeof sahTerima==='function') sahTerima(t); }catch(e){} });
+      syncMCToMaster(false); eakhaSyncHRMISStoreToMaster('BUTTON ALL'); pairAllTimecardsV58();
+    }
+    try{ saveDataset('SYNC TAB '+type.toUpperCase()); }catch(e){}
+    renderAllSafe();
+    try{ toast((type==='all'?'Semua lapisan':type.toUpperCase())+' dikemaskini ke Master ✓','ok'); }catch(e){}
+    return n;
+  };
+
+  var oldKemaskini = (typeof kemaskiniMaster==='function') ? kemaskiniMaster : null;
+  window.kemaskiniMaster = kemaskiniMaster = function(){
+    if(typeof reqAdmin==='function' && !reqAdmin()) return;
+    try{ var lw=document.getElementById('log-wrap'); if(lw) lw.style.display='block'; var lb=document.getElementById('log-body'); if(lb) lb.innerHTML=''; }catch(e){}
+    log('Kemaskini semua lapisan untuk '+monthName(mNow())+' '+yNow()+'...','info');
+    // Do not reset Master here; sync only available staging/register into layer 1-6.
+    var mc=syncMCToMaster(false), hr=eakhaSyncHRMISStoreToMaster('KEMASKINI SEMUA LAPISAN');
+    try{ pairAllTimecardsV58(); }catch(e){}
+    try{ if(typeof AUDIT_STATE!=='undefined') MASTER.forEach(function(m){ for(var d=1; d<=daysInActiveMonth(); d++){ if(!AUDIT_STATE[m.bil]) AUDIT_STATE[m.bil]={}; AUDIT_STATE[m.bil][d]={status:'belum_validasi',ts:new Date().toISOString()}; } }); }catch(e){}
+    log('MC Diterima masuk Master: '+mc.applied+' hari','ok');
+    log('HRMIS dibaca: '+hr.store+' rekod; masuk Master: '+hr.applied+' hari','ok');
+    log('TIMECARD dipair ikut shift window + shift malam cross-day','ok');
+    log('Audit Final diset BELUM VALIDASI. Tekan Validasi untuk lapisan ke-7.','warn');
+    saveDataset('KEMASKINI SEMUA LAPISAN'); renderAllSafe();
+    try{ toast('6 lapisan dikemaskini. Seterusnya tekan Validasi.','ok'); }catch(e){}
+  };
+
+  window.validasiAudit = validasiAudit = function(){
+    if(typeof reqAdmin==='function' && !reqAdmin()) return;
+    try{ var lw=document.getElementById('log-wrap'); if(lw) lw.style.display='block'; var lb=document.getElementById('log-body'); if(lb) lb.innerHTML=''; }catch(e){}
+    log('Validasi audit bermula: pair IN/OUT, check lengkap, kira Audit Final.','info');
+    try{ pairAllTimecardsV58(); }catch(e){ log('Ralat pair timecard: '+e.message,'err'); }
+    try{ eakhaSyncHRMISStoreToMaster('VALIDASI'); syncMCToMaster(false); }catch(e){}
+    var stats={sah:0,flagged:0,incomplete:0,offday:0,special:0,total:0};
+    try{
+      MASTER.filter(function(m){return !m.pindah;}).forEach(function(mem){
+        if(!AUDIT_STATE[mem.bil]) AUDIT_STATE[mem.bil]={};
+        for(var d=1; d<=daysInActiveMonth(); d++){
+          var sh=gSh(mem.bil,d), c=D[mem.bil]&&D[mem.bil][d]?D[mem.bil][d]:{};
+          var af=auditFinal(mem.bil,d);
+          var st='flagged';
+          if(sh==='O'){ st='offday'; stats.offday++; }
+          else if(c.kzp==='TT'||c.kzk==='TT'||c.kzp==='TH'||c.kzk==='TH'){ st='special'; stats.special++; }
+          else if(af.inc || af.cls==='af-inc'){ st='incomplete'; stats.incomplete++; }
+          else if(['af-sah','af-mc','af-cr','af-tt','af-th','af-off'].indexOf(af.cls)>=0){ st='sah'; stats.sah++; }
+          else { stats.flagged++; }
+          AUDIT_STATE[mem.bil][d]={status:st,audit:af.txt,cls:af.cls,ts:new Date().toISOString(),missing:af.miss||[]};
+          stats.total++;
+        }
+      });
+    }catch(e){ log('Ralat validasi: '+e.message,'err'); }
+    safeSet(auditKey(yNow(),mNow()),JSON.stringify(AUDIT_STATE||{}));
+    saveDataset('VALIDASI AUDIT'); renderAllSafe(); try{ if(typeof renderOutput==='function') renderOutput(); }catch(e){}
+    log('SAH: '+stats.sah+' rekod','ok'); log('FLAGGED: '+stats.flagged+' rekod','warn'); log('AUDIT BELUM LENGKAP: '+stats.incomplete+' rekod','warn');
+    try{ toast('Validasi selesai: '+stats.sah+' sah, '+stats.flagged+' flagged, '+stats.incomplete+' belum lengkap','ok'); }catch(e){}
+  };
+
+  function tabButtonHtml(type,label){
+    return '<div class="notif n-info v58-sync-panel" style="margin-bottom:8px;align-items:center;justify-content:space-between">'+
+      '<div><b>'+label+'</b><br><span style="font-size:7.5px;opacity:.75">Semak data tab ini, kemudian masukkan lapisan berkaitan sahaja ke Master File bulan aktif.</span></div>'+
+      '<button class="btn btn-gold btn-sm" onclick="syncLayerToMaster(\''+type+'\')">+ Kemaskini '+label+' ke Master</button></div>';
+  }
+  function injectPanel(id,type,label){ var el=document.getElementById(id); if(el && !el.querySelector('.v58-sync-panel')) el.insertAdjacentHTML('afterbegin',tabButtonHtml(type,label)); }
+  function injectPanels(){
+    injectPanel('page-kzp-staging','kzp','KZ Penyelia');
+    injectPanel('page-kzk-staging','kzk','KZ Koperal');
+    injectPanel('page-tc-staging','tc','Timecard');
+    injectPanel('page-mc-reg','mc','MC Diterima');
+    injectPanel('page-hrmis-reg','hr','Cuti HRMIS');
+    try{ var mf=document.getElementById('page-master'); if(mf && !mf.querySelector('#v58-master-panel')) mf.insertAdjacentHTML('afterbegin','<div id="v58-master-panel" class="notif n-warn" style="margin-bottom:8px;align-items:center;justify-content:space-between"><div><b>Flow baru:</b> Sync tab satu-satu / Kemaskini Semua Lapisan, kemudian Validasi lapisan ke-7.</div><div style="display:flex;gap:5px"><button class="btn btn-bl btn-sm" onclick="syncLayerToMaster(\'all\')">Kemaskini Semua Lapisan</button><button class="btn btn-gn btn-sm" onclick="validasiAudit()">Validasi / Perbandingan</button></div></div>'); }catch(e){}
+  }
+
+  var oldRenderKZP = (typeof renderKZPStaging==='function') ? renderKZPStaging : null;
+  window.renderKZPStaging = renderKZPStaging = function(){ if(oldRenderKZP) oldRenderKZP(); injectPanels(); };
+  var oldRenderKZK = (typeof renderKZKStaging==='function') ? renderKZKStaging : null;
+  window.renderKZKStaging = renderKZKStaging = function(){ if(oldRenderKZK) oldRenderKZK(); injectPanels(); };
+  var oldRenderTC = (typeof renderTCStaging==='function') ? renderTCStaging : null;
+  window.renderTCStaging = renderTCStaging = function(){ if(oldRenderTC) oldRenderTC(); injectPanels(); };
+  var oldRenderMC = (typeof renderMCReg==='function') ? renderMCReg : null;
+  window.renderMCReg = renderMCReg = function(){
+    var orig; try{ orig=MC_DATA; MC_DATA=filterActive(MC_DATA); }catch(e){}
+    try{ if(oldRenderMC) oldRenderMC(); }catch(e){ console.warn('[v5.8] renderMC',e); }
+    try{ if(orig) MC_DATA=orig; }catch(e){}
+    injectPanels();
+  };
+  var oldRenderHR = (typeof renderHRMISReg==='function') ? renderHRMISReg : null;
+  window.renderHRMISReg = renderHRMISReg = function(){
+    try{ var hr=readHRMISMonth(); safeSet('eakha_hrmis',JSON.stringify(hr)); }catch(e){}
+    try{ if(oldRenderHR) oldRenderHR(); }catch(e){ console.warn('[v5.8] renderHR',e); }
+    injectPanels();
+  };
+
+  function renderAllSafe(){
+    hideAutoFillButtons(); injectPanels();
+    try{ if(typeof renderDash==='function') renderDash(); }catch(e){}
+    try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
+    try{ if(typeof renderMCReg==='function') renderMCReg(); }catch(e){}
+    try{ if(typeof renderHRMISReg==='function') renderHRMISReg(); }catch(e){}
+    try{ if(typeof renderBaki==='function') renderBaki(); }catch(e){}
+    try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+    try{ var mi=document.getElementById('master-info'); if(mi) mi.textContent='Dataset: '+masterKey(yNow(),mNow())+' · '+daysInActiveMonth()+' hari'; }catch(e){}
+  }
+  window.renderAllSafe = renderAllSafe;
+
+  var oldBoot = (typeof bootApp==='function') ? bootApp : null;
+  if(oldBoot && !oldBoot.__v58){
+    window.bootApp = bootApp = async function(){
+      var stored=+localStorage.getItem('eakha_active_month')||4; if(stored<1||stored>12) stored=4; ACTIVE_MONTH=stored;
+      var r=await oldBoot.apply(this,arguments);
+      [200,1200,3000,5200].forEach(function(ms){ setTimeout(function(){ try{ ACTIVE_MONTH=stored; loadMonthStrict(yNow(),stored); renderAllSafe(); if(ms===5200) saveDataset('BOOT V5.8 FINAL'); }catch(e){ console.warn('[v5.8] boot restore',e); } },ms); });
+      return r;
+    }; window.bootApp.__v58=true;
+  }
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ hideAutoFillButtons(); injectPanels(); loadMonthStrict(yNow(),mNow()); renderAllSafe(); }catch(e){ console.warn('[v5.8] DOM boot',e); } },1600); });
+  window.addEventListener('beforeunload',function(){ try{ saveDataset('BEFORE UNLOAD V5.8'); }catch(e){} });
+
+  try{ console.log('[e-AKHA '+PATCH+'] ready. Active key '+masterKey(yNow(),mNow())); }catch(e){}
+})();
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.8.1 — DOCUMENT DATE MONTH ROUTING
+   MC/HRMIS lewat hantar mesti masuk Master ikut tarikh MC/cuti,
+   bukan ikut bulan upload/received/active month semasa.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var PATCH='v5.8.1-DOCUMENT-DATE-MONTH-ROUTING';
+  window.EAKHA_MONTH_ROUTING_PATCH_VERSION = PATCH;
+
+  function pad(n){ return String(+n).padStart(2,'0'); }
+  function yNow(){ return (typeof ACTIVE_YEAR!=='undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026; }
+  function mNow(){ return (typeof ACTIVE_MONTH!=='undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4; }
+  function monthName(m){ return (typeof MONTHS_MS!=='undefined' && MONTHS_MS[+m]) ? MONTHS_MS[+m] : ('Bulan '+m); }
+  function mcKey(y,m){ return 'eakha_mc_'+(+y)+'_'+pad(m); }
+  function hrmisKey(y,m){ return 'eakha_hrmis_'+(+y)+'_'+pad(m); }
+  function parseJSON(raw,fb){ try{ var x=JSON.parse(raw||''); return x==null?fb:x; }catch(e){ return fb; } }
+  function safeSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ try{ console.warn('[v5.8.1] storage failed',k,e); }catch(_e){} return false; } }
+  function clone(x){ try{return JSON.parse(JSON.stringify(x));}catch(e){return x;} }
+  function norm(s){ return String(s||'').toUpperCase().replace(/\b(BIN|BINTI|BT|A\/L|AL|AP|KP|KPL|SM|SJN|TUAN|PUAN)\b/g,' ').replace(/MOHAMMAD|MOHAMED|MUHAMMAD/g,'MOHAMAD').replace(/MUHD\.?/g,'MOHD').replace(/HAIKAL/g,'HAIQAL').replace(/[^A-Z0-9\s]/g,' ').replace(/\s+/g,' ').trim(); }
+  function iso(d){ return d ? (d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())) : ''; }
+
+  function parseDate(v){
+    if(v instanceof Date && !isNaN(v.getTime())) return new Date(v.getFullYear(),v.getMonth(),v.getDate());
+    if(Array.isArray(v)) return parseDate(v[0]);
+    var s=String(v||'').trim(); if(!s) return null; var p;
+    if(/^\d{8}$/.test(s)){ return new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8)); }
+    if(/^\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2}$/.test(s)){ p=s.split(/[-\/.]/); return new Date(+p[0],+p[1]-1,+p[2]); }
+    if(/^\d{1,2}[-\/.]\d{1,2}([-\/.]\d{2,4})?$/.test(s)){ p=s.split(/[-\/.]/); var yy=p[2]?+p[2]:yNow(); if(yy<100) yy+=2000; return new Date(yy,+p[1]-1,+p[0]); }
+    var d=new Date(s); return isNaN(d.getTime())?null:new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  }
+
+  function firstDateFromFields(rec,fields){
+    for(var i=0;i<fields.length;i++){
+      var v=rec && rec[fields[i]];
+      if(Array.isArray(v) && v.length) v=v[0];
+      var d=parseDate(v); if(d) return d;
+    }
+    return null;
+  }
+  function dateListFromText(s){
+    s=String(s||'');
+    var re=/(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}|\d{8})/g;
+    var out=[], m;
+    while((m=re.exec(s))!==null){ var d=parseDate(m[1]); if(d) out.push(d); }
+    return out;
+  }
+  function getRange(rec){
+    rec=rec||{};
+    if(Array.isArray(rec.dates) && rec.dates.length){
+      var ds=rec.dates.map(parseDate).filter(Boolean).sort(function(a,b){return a-b;});
+      if(ds.length) return {a:ds[0],b:ds[ds.length-1]};
+    }
+    var startFields=['dari','mula','tarikh_mula','tarikhMula','start','startDate','dateStart','from','tarikh','date','mc_date','cutiDari','tarikhCuti'];
+    var endFields=['hingga','tamat','tarikh_akhir','tarikhAkhir','end','endDate','dateEnd','to','sehingga','sampai','hinggaTarikh','tarikhTamat'];
+    var a=firstDateFromFields(rec,startFields), b=firstDateFromFields(rec,endFields);
+    if(!a){
+      var h=+(rec.hari||rec.day||0), mo=+(rec.bulan||rec.month||0), yy=+(rec.tahun||rec.year||0);
+      if(h && mo && yy) a=new Date(yy,mo-1,h);
+    }
+    if(!a){
+      var candidates=[rec.tempoh,rec.period,rec.range,rec.tarikhCuti,rec.catatanTarikh].map(function(x){return String(x||'');}).join(' ');
+      var dl=dateListFromText(candidates);
+      if(dl.length){ a=dl[0]; b=dl[dl.length-1]; }
+    }
+    if(!a) return null;
+    if(!b) b=a;
+    if(b<a){ var t=a; a=b; b=t; }
+    return {a:a,b:b};
+  }
+  function monthsInRange(a,b){
+    var out=[], cur=new Date(a.getFullYear(),a.getMonth(),1), guard=0;
+    var end=new Date(b.getFullYear(),b.getMonth(),1);
+    while(cur<=end && guard<60){ out.push({y:cur.getFullYear(),m:cur.getMonth()+1}); cur.setMonth(cur.getMonth()+1); guard++; }
+    return out;
+  }
+  function overlaps(rec,y,m){
+    var r=getRange(rec); if(!r) return false;
+    var s=new Date(+y,+m-1,1), e=new Date(+y,+m,0,23,59,59);
+    return r.a<=e && r.b>=s;
+  }
+  function recId(rec,type){
+    rec=rec||{}; var r=getRange(rec)||{};
+    var name=norm(rec.nama||rec.pemohon||rec.owner||rec.pemilik||rec.patient||rec.namaPemohon||rec.pesakit||'');
+    var typ=norm(rec.jenis||rec.kodCuti||rec.cuti||rec.leaveType||rec.klinik||rec.clinic||type||'');
+    var src=norm(rec.sumber_dokumen||rec.source||rec.fileName||rec.filename||rec._source||'');
+    return (type||'REC')+'|'+name+'|'+iso(r.a)+'|'+iso(r.b)+'|'+typ+'|'+src;
+  }
+  function mergeUnique(base, add, type){
+    var out=[], seen={};
+    function push(r){ if(!r || typeof r!=='object') return; var id=recId(r,type); if(seen[id]) return; seen[id]=1; out.push(r); }
+    (Array.isArray(base)?base:[]).forEach(push); (Array.isArray(add)?add:[]).forEach(push);
+    return out;
+  }
+  function readStore(key){ return parseJSON(localStorage.getItem(key),[]); }
+  function writeMonthStore(type,y,m,records){
+    var key=(type==='mc')?mcKey(y,m):hrmisKey(y,m);
+    var old=readStore(key);
+    var merged=mergeUnique(old,records,type).filter(function(r){ return overlaps(r,y,m) || (r && r._routeWarning==='NO_DATE'); });
+    safeSet(key,JSON.stringify(merged));
+    return merged.length;
+  }
+  function routeList(type,records,reason){
+    var stats={type:type,total:0,routedActive:0,routedOtherMonth:0,splitRange:0,noDate:0,months:{}};
+    (Array.isArray(records)?records:[]).forEach(function(raw){
+      if(!raw || typeof raw!=='object') return; stats.total++;
+      var rec=clone(raw), r=getRange(rec);
+      if(!r){
+        stats.noDate++;
+        rec._routeWarning='NO_DATE'; rec._receivedYear=rec._receivedYear||yNow(); rec._receivedMonth=rec._receivedMonth||mNow(); rec._routePatch=PATCH;
+        writeMonthStore(type,yNow(),mNow(),[rec]); return;
+      }
+      var months=monthsInRange(r.a,r.b); if(months.length>1) stats.splitRange++;
+      rec._docStart=iso(r.a); rec._docEnd=iso(r.b); rec._receivedYear=rec._receivedYear||yNow(); rec._receivedMonth=rec._receivedMonth||mNow(); rec._routedFromActiveMonth=monthName(mNow())+' '+yNow(); rec._routePatch=PATCH; rec._routeReason=reason||'AUTO';
+      months.forEach(function(mm){
+        writeMonthStore(type,mm.y,mm.m,[rec]);
+        var mk=mm.y+'-'+pad(mm.m); stats.months[mk]=(stats.months[mk]||0)+1;
+        if(+mm.y===yNow() && +mm.m===mNow()) stats.routedActive++; else stats.routedOtherMonth++;
+      });
+    });
+    return stats;
+  }
+  function filterMonth(arr,y,m){ return (Array.isArray(arr)?arr:[]).filter(function(r){ return overlaps(r,y,m) || (r && r._routeWarning==='NO_DATE'); }); }
+
+  window.routeDocumentsToCorrectMonth = function(reason){
+    var y=yNow(), m=mNow();
+    var mcCandidates=[];
+    try{ if(typeof MC_DATA!=='undefined' && Array.isArray(MC_DATA)) mcCandidates=mergeUnique(mcCandidates,MC_DATA,'mc'); }catch(e){}
+    mcCandidates=mergeUnique(mcCandidates,readStore(mcKey(y,m)),'mc');
+    mcCandidates=mergeUnique(mcCandidates,readStore('eakha_mc'),'mc');
+
+    var hrCandidates=[];
+    try{ if(typeof HRMIS_DATA!=='undefined' && Array.isArray(HRMIS_DATA)) hrCandidates=mergeUnique(hrCandidates,HRMIS_DATA,'hr'); }catch(e){}
+    hrCandidates=mergeUnique(hrCandidates,readStore('eakha_hrmis'),'hr');
+    hrCandidates=mergeUnique(hrCandidates,readStore(hrmisKey(y,m)),'hr');
+
+    var smc=routeList('mc',mcCandidates,reason), shr=routeList('hr',hrCandidates,reason);
+
+    // After routing, expose only active-month records to current working memory so months do not bleed into each other.
+    try{ if(typeof MC_DATA!=='undefined') MC_DATA=filterMonth(readStore(mcKey(y,m)),y,m); }catch(e){}
+    try{ safeSet('eakha_hrmis',JSON.stringify(filterMonth(readStore(hrmisKey(y,m)),y,m))); }catch(e){}
+
+    try{
+      var logObj={patch:PATCH,reason:reason||'AUTO',ts:new Date().toISOString(),mc:smc,hrmis:shr};
+      window.EAKHA_LAST_MONTH_ROUTING=logObj;
+      var old=parseJSON(localStorage.getItem('eakha_cross_month_route_log'),[]); old.push(logObj); if(old.length>80) old=old.slice(old.length-80); safeSet('eakha_cross_month_route_log',JSON.stringify(old));
+      console.log('[e-AKHA '+PATCH+']',logObj);
+    }catch(e){}
+    return {mc:smc,hrmis:shr};
+  };
+
+  function syncCurrentAfterRoute(reason){
+    routeDocumentsToCorrectMonth(reason||'SYNC');
+    try{ if(typeof syncMCToMaster==='function') syncMCToMaster(false); }catch(e){}
+    try{ if(typeof eakhaSyncHRMISStoreToMaster==='function') eakhaSyncHRMISStoreToMaster(reason||'SYNC'); }catch(e){}
+  }
+
+  var oldSave=(typeof saveDataset==='function')?saveDataset:null;
+  if(oldSave && !oldSave.__v581){
+    window.saveDataset=saveDataset=function(reason){
+      try{ routeDocumentsToCorrectMonth('BEFORE SAVE '+(reason||'')); }catch(e){ console.warn('[v5.8.1] route before save',e); }
+      return oldSave.apply(this,arguments);
+    };
+    window.saveDataset.__v581=true;
+  }
+
+  var oldLoad=(typeof loadMonthStrict==='function')?loadMonthStrict:null;
+  if(oldLoad && !oldLoad.__v581){
+    window.loadMonthStrict=loadMonthStrict=function(y,m){
+      var r=oldLoad.apply(this,arguments);
+      try{ syncCurrentAfterRoute('LOAD MONTH '+(+y||yNow())+'-'+pad(+m||mNow())); }catch(e){ console.warn('[v5.8.1] load route',e); }
+      return r;
+    };
+    window.loadMonthStrict.__v581=true;
+  }
+
+  var oldSyncMC=(typeof syncMCToMaster==='function')?syncMCToMaster:null;
+  if(oldSyncMC && !oldSyncMC.__v581){
+    window.syncMCToMaster=syncMCToMaster=function(showToast){
+      try{ routeDocumentsToCorrectMonth('MC SYNC'); }catch(e){}
+      return oldSyncMC.apply(this,arguments);
+    };
+    window.syncMCToMaster.__v581=true;
+  }
+
+  var oldSyncHR=(typeof eakhaSyncHRMISStoreToMaster==='function')?eakhaSyncHRMISStoreToMaster:null;
+  if(oldSyncHR && !oldSyncHR.__v581){
+    window.eakhaSyncHRMISStoreToMaster=eakhaSyncHRMISStoreToMaster=function(reason){
+      try{ routeDocumentsToCorrectMonth('HRMIS SYNC '+(reason||'')); }catch(e){}
+      return oldSyncHR.apply(this,arguments);
+    };
+    window.eakhaSyncHRMISStoreToMaster.__v581=true;
+  }
+
+  var oldSetMonth=(typeof setMonth==='function')?setMonth:null;
+  if(oldSetMonth && !oldSetMonth.__v581){
+    window.setMonth=setMonth=function(elOrMonth){
+      try{ routeDocumentsToCorrectMonth('BEFORE SWITCH MONTH'); }catch(e){}
+      return oldSetMonth.apply(this,arguments);
+    };
+    window.setMonth.__v581=true;
+  }
+
+  function routeNotice(){
+    var html='<div id="v581-route-notice" class="notif n-info" style="margin-bottom:8px"><div><b>Rule bulan dokumen:</b> MC/HRMIS akan masuk Master File ikut tarikh MC/cuti sebenar. Jika dokumen dihantar lewat untuk bulan sebelumnya, sistem simpan ke dataset bulan tersebut. Jika tarikh melangkau dua bulan, sistem pecahkan ikut bulan.</div></div>';
+    ['page-mc-reg','page-hrmis-reg','page-master'].forEach(function(id){ try{ var el=document.getElementById(id); if(el && !el.querySelector('#v581-route-notice')) el.insertAdjacentHTML('afterbegin',html); }catch(e){} });
+  }
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ routeDocumentsToCorrectMonth('DOM READY'); routeNotice(); if(typeof renderAllSafe==='function') renderAllSafe(); }catch(e){ console.warn('[v5.8.1] boot',e); } },2200); });
+
+  try{ console.log('[e-AKHA '+PATCH+'] ready: MC/HRMIS routed by document leave date, not upload month.'); }catch(e){}
+})();
+</script>
+
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.8.2 — FLOW SAFE CHECKED PATCH
+   Fix selepas semakan: syntax, date-route sync, timecard lewat,
+   snapshot/PDF/CSV ikut bulan aktif.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+  var PATCH='v5.8.2-FLOW-SAFE-CHECKED';
+  window.EAKHA_FLOW_SAFE_PATCH_VERSION = PATCH;
+
+  function pad(n){ return String(+n).padStart(2,'0'); }
+  function yNow(){ return (typeof ACTIVE_YEAR!=='undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026; }
+  function mNow(){ return (typeof ACTIVE_MONTH!=='undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4; }
+  function dim(y,m){ return new Date(+y,+m,0).getDate(); }
+  function daysNow(){ return (typeof daysInActiveMonth==='function') ? daysInActiveMonth() : dim(yNow(),mNow()); }
+  function monthName(m){ return (typeof MONTHS_MS!=='undefined' && MONTHS_MS[+m]) ? MONTHS_MS[+m] : ('Bulan '+m); }
+  function mcKey(y,m){ return 'eakha_mc_'+(+y)+'_'+pad(m); }
+  function hrmisKey(y,m){ return 'eakha_hrmis_'+(+y)+'_'+pad(m); }
+  function auditKey(y,m){ return 'eakha_audit_state_'+(+y)+'_'+pad(m); }
+  function safeJSON(x,fb){ try{ var v=JSON.parse(x||''); return v==null?fb:v; }catch(e){ return fb; } }
+  function safeSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ try{ console.warn('['+PATCH+'] storage failed',k,e); }catch(_e){} return false; } }
+  function clone(x){ try{return JSON.parse(JSON.stringify(x));}catch(e){return x;} }
+  function cell(){ return {kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',tc_note:'',tc_problem:false,ot:false,hrmis:'',pengganti:false,note:''}; }
+  function norm(s){ return String(s||'').toUpperCase()
+    .replace(/\b(BIN|BINTI|BT|A\/L|AL|AP|KP|KPL|SM|SJN|TUAN|PUAN)\b/g,' ')
+    .replace(/MOHAMMAD|MOHAMED|MUHAMMAD/g,'MOHAMAD').replace(/MUHD\.?/g,'MOHD')
+    .replace(/HAIKAL/g,'HAIQAL').replace(/[^A-Z0-9\s]/g,' ').replace(/\s+/g,' ').trim(); }
+  function iso(d){ return d ? d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()) : ''; }
+  function parseDate(v){
+    if(v instanceof Date && !isNaN(v.getTime())) return new Date(v.getFullYear(),v.getMonth(),v.getDate());
+    var s=String(v||'').trim(); if(!s) return null;
+    var p,m;
+    if(/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/.test(s)){ p=s.split(/[-\/]/); return new Date(+p[0],+p[1]-1,+p[2]); }
+    m=s.match(/\b(\d{1,2})[\.\/-](\d{1,2})(?:[\.\/-](\d{2,4}))?\b/);
+    if(m){ var dd=+m[1], mo=+m[2], yy=m[3]?+m[3]:yNow(); if(yy<100) yy+=2000; if(mo>12 && dd<=12){ var t=dd; dd=mo; mo=t; } return new Date(yy,mo-1,dd); }
+    var d=new Date(s); return isNaN(d.getTime())?null:new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  }
+  function datesFromText(txt){
+    var out=[], s=String(txt||''), re=/\b(\d{1,2})[\.\/-](\d{1,2})(?:[\.\/-](\d{2,4}))?\b/g, m;
+    while((m=re.exec(s))){ var dd=+m[1], mo=+m[2], yy=m[3]?+m[3]:yNow(); if(yy<100) yy+=2000; if(mo>12 && dd<=12){ var t=dd; dd=mo; mo=t; } if(dd>=1&&dd<=31&&mo>=1&&mo<=12) out.push(new Date(yy,mo-1,dd)); }
+    out.sort(function(a,b){return a-b;}); return out;
+  }
+  function firstDate(rec,fields){
+    rec=rec||{};
+    for(var i=0;i<fields.length;i++){ var d=parseDate(rec[fields[i]]); if(d) return d; }
+    return null;
+  }
+  function docRange(rec){
+    rec=rec||{};
+    if(Array.isArray(rec.dates) && rec.dates.length){ var ds=rec.dates.map(parseDate).filter(Boolean).sort(function(a,b){return a-b;}); if(ds.length) return {a:ds[0],b:ds[ds.length-1]}; }
+    var startFields=['_docStart','dari','mula','tarikh_mula','tarikhMula','start','startDate','dateStart','from','tarikh','date','mc_date','cutiDari','tarikhCuti','tarikh_cuti'];
+    var endFields=['_docEnd','hingga','tamat','tarikh_akhir','tarikhAkhir','end','endDate','dateEnd','to','sehingga','sampai','hinggaTarikh','tarikhTamat'];
+    var a=firstDate(rec,startFields), b=firstDate(rec,endFields);
+    if(!a){ var h=+(rec.hari||rec.day||0), mo=+(rec.bulan||rec.month||0), yy=+(rec.tahun||rec.year||0); if(h&&mo&&yy) a=new Date(yy,mo-1,h); }
+    if(!a){ var txt=[rec.tempoh,rec.period,rec.range,rec.tarikhCuti,rec.catatanTarikh,rec.text,rec.sourceText].map(function(x){return String(x||'');}).join(' '); var ds=datesFromText(txt); if(ds.length){ a=ds[0]; b=ds[ds.length-1]; } }
+    if(!a) return null; if(!b) b=a; if(b<a){ var t=a; a=b; b=t; } return {a:a,b:b};
+  }
+  function overlapsActive(rec){ var r=docRange(rec); if(!r) return false; var s=new Date(yNow(),mNow()-1,1), e=new Date(yNow(),mNow(),0,23,59,59); return r.a<=e && r.b>=s; }
+  function daysFromRec(rec){
+    var r=docRange(rec); if(!r) return [];
+    var out=[], cur=new Date(r.a.getFullYear(),r.a.getMonth(),r.a.getDate()), guard=0;
+    while(cur<=r.b && guard<370){ if(cur.getFullYear()===yNow() && cur.getMonth()+1===mNow()) out.push(cur.getDate()); cur.setDate(cur.getDate()+1); guard++; }
+    return out;
+  }
+  function recId(rec,type){ rec=rec||{}; var r=docRange(rec)||{}; return [type,norm(rec.nama||rec.pemohon||rec.owner||rec.pemilik||rec.patient||rec.namaPemohon||rec.pesakit||''),iso(r.a),iso(r.b),norm(rec.jenis||rec.kodCuti||rec.cuti||rec.leaveType||''),norm(rec.sumber_dokumen||rec.source||rec.fileName||rec.filename||'')].join('|'); }
+  function mergeUnique(a,b,type){ var out=[], seen={}; function push(r){ if(!r||typeof r!=='object') return; var id=recId(r,type); if(seen[id]) return; seen[id]=1; out.push(r); } (Array.isArray(a)?a:[]).forEach(push); (Array.isArray(b)?b:[]).forEach(push); return out; }
+  function matchMember(name,bil){
+    if(typeof MASTER==='undefined') return {status:'NO_MATCH'};
+    if(bil){ var byBil=MASTER.find(function(m){return +m.bil===+bil;}); if(byBil){ if(!name || norm(name).length<3) return {status:'MATCHED',member:byBil,score:100}; var nn=norm(name), mn=norm(byBil.nama); if(nn===mn || mn.indexOf(nn)>=0 || nn.indexOf(mn)>=0) return {status:'MATCHED',member:byBil,score:100}; var toks=nn.split(' ').filter(function(t){return t.length>3;}); var hit=0; toks.forEach(function(t){ if(mn.indexOf(t)>=0) hit++; }); return hit>=2?{status:'MATCHED',member:byBil,score:90}:{status:'LOW_CONFIDENCE',member:byBil,score:60}; } }
+    var n=norm(name); if(!n) return {status:'NO_MATCH',score:0};
+    var exact=MASTER.filter(function(m){return norm(m.nama)===n;}); if(exact.length===1) return {status:'MATCHED',member:exact[0],score:100}; if(exact.length>1) return {status:'MULTIPLE_MATCH',candidates:exact,score:95};
+    var toks=n.split(' ').filter(function(t){return t.length>3;}), scored=[];
+    MASTER.forEach(function(m){ var mn=norm(m.nama), sc=0; toks.forEach(function(t){ if(mn.indexOf(t)>=0) sc+=20; }); if(toks[0]&&mn.indexOf(toks[0])>=0) sc+=10; if(typeof nameScore==='function'){ try{ sc=Math.max(sc,nameScore(name,m)); }catch(e){} } if(sc>0) scored.push({m:m,sc:sc}); });
+    scored.sort(function(a,b){return b.sc-a.sc;}); if(!scored.length || scored[0].sc<72) return {status:'NO_MATCH',score:scored[0]?scored[0].sc:0}; if(scored[1] && scored[0].sc-scored[1].sc<8) return {status:'MULTIPLE_MATCH',member:scored[0].m,candidates:scored.slice(0,3).map(function(x){return x.m;}),score:scored[0].sc}; return {status:'MATCHED',member:scored[0].m,score:scored[0].sc};
+  }
+  function hrLabel(v){ if(typeof hrmisLabel==='function') return hrmisLabel(v); var s=String(v||'CR').toUpperCase(); if(/SAKIT|\bMC\b/.test(s)) return 'CUTI SAKIT HRMIS'; if(/EL|KECEMASAN/.test(s)) return 'EL SAH'; if(/CTR|TANPA/.test(s)) return 'CTR SAH'; if(/CB|BERSALIN/.test(s)) return 'CB SAH'; return 'CR SAH'; }
+  function readMonthRecords(type){
+    var key=(type==='mc')?mcKey(yNow(),mNow()):hrmisKey(yNow(),mNow());
+    var arr=safeJSON(localStorage.getItem(key),[]);
+    if(type==='mc'){ try{ arr=mergeUnique(arr,(typeof MC_DATA!=='undefined'?MC_DATA:[]),'mc'); }catch(e){} arr=mergeUnique(arr,safeJSON(localStorage.getItem('eakha_mc'),[]),'mc'); }
+    else { try{ arr=mergeUnique(arr,(typeof HRMIS_DATA!=='undefined'?HRMIS_DATA:[]),'hr'); }catch(e){} arr=mergeUnique(arr,safeJSON(localStorage.getItem('eakha_hrmis'),[]),'hr'); }
+    return arr.filter(function(r){ return overlapsActive(r) || (r && r._routeWarning==='NO_DATE'); });
+  }
+
+  window.syncMCToMaster = function(showToast){
+    try{ if(typeof routeDocumentsToCorrectMonth==='function') routeDocumentsToCorrectMonth('MC SYNC '+PATCH); }catch(e){}
+    var arr=readMonthRecords('mc'), stats={records:arr.length,applied:0,unmatched:0,ambiguous:0,noDate:0};
+    try{ Object.keys(D||{}).forEach(function(b){ Object.keys(D[b]||{}).forEach(function(d){ var c=D[b][d]; if(c && c._mc_from_store){ delete c._mc; delete c._mc_from_store; } }); }); }catch(e){}
+    arr.forEach(function(rec){
+      var days=daysFromRec(rec); if(!days.length){ stats.noDate++; rec.matchStatus=rec.matchStatus||'NO_DATE'; return; }
+      var mt=matchMember(rec.nama||rec.pemilik||rec.patient||rec.owner||rec.pesakit||'',rec.bil);
+      if(mt.status!=='MATCHED'){ rec.matchStatus=mt.status; if(mt.status==='MULTIPLE_MATCH') stats.ambiguous++; else stats.unmatched++; return; }
+      rec.matchStatus='MATCHED'; rec.bil=mt.member.bil; rec.jab=rec.jab||mt.member.jab; rec.komp=rec.komp||mt.member.komp; rec.nama=rec.nama||mt.member.nama;
+      days.forEach(function(day){ if(!D[mt.member.bil]) D[mt.member.bil]={}; if(!D[mt.member.bil][day]) D[mt.member.bil][day]=cell(); D[mt.member.bil][day]._mc=rec; D[mt.member.bil][day]._mc_from_store=true; stats.applied++; try{ if(typeof AUDIT_STATE!=='undefined'){ if(!AUDIT_STATE[mt.member.bil]) AUDIT_STATE[mt.member.bil]={}; AUDIT_STATE[mt.member.bil][day]={status:'belum_validasi',ts:new Date().toISOString()}; } }catch(e){} });
+    });
+    try{ MC_DATA=arr; safeSet(mcKey(yNow(),mNow()),JSON.stringify(arr)); }catch(e){}
+    if(showToast!==false) try{ toast('MC → Master: '+stats.applied+' hari, '+stats.unmatched+' tidak padan','ok'); }catch(e){}
+    return stats;
+  };
+  window.getMC = function(bil,d){ var c=D[bil]&&D[bil][d]; if(c && c._mc) return c._mc; var arr=readMonthRecords('mc'); for(var i=0;i<arr.length;i++){ var mt=matchMember(arr[i].nama||arr[i].pemilik||'',arr[i].bil); if(mt.status==='MATCHED' && +mt.member.bil===+bil && daysFromRec(arr[i]).indexOf(+d)>=0) return arr[i]; } return null; };
+  try{ getMC=window.getMC; syncMCToMaster=window.syncMCToMaster; }catch(e){}
+
+  window.eakhaSyncHRMISStoreToMaster = function(reason){
+    try{ if(typeof routeDocumentsToCorrectMonth==='function') routeDocumentsToCorrectMonth('HRMIS SYNC '+(reason||'')+' '+PATCH); }catch(e){}
+    var arr=readMonthRecords('hr'), stats={store:arr.length,activeRecords:0,activeDays:0,applied:0,unmatched:[],multiple:[],noDate:0,skippedOtherMonth:0};
+    try{ Object.keys(D||{}).forEach(function(b){ Object.keys(D[b]||{}).forEach(function(d){ var c=D[b][d]; if(c && (c._hrmis_from_store||c._hrmis_rec)){ c.hrmis=''; delete c._hrmis_rec; delete c._hrmis_from_store; } }); }); }catch(e){}
+    arr.forEach(function(rec){
+      var status=String(rec.status||rec.kelulusan||rec.keputusan||rec.sah||'LULUS').toUpperCase();
+      if(/TOLAK|BATAL|REJECT/.test(status) && !/LULUS|SAH|APPROVED|1\/1|DILULUSKAN/.test(status)) return;
+      var days=daysFromRec(rec); if(!days.length){ stats.noDate++; rec.matchStatus=rec.matchStatus||'NO_DATE'; return; }
+      var mt=matchMember(rec.nama||rec.pemohon||rec.owner||rec.namaPemohon||rec.pesakit||'',rec.bil);
+      if(mt.status!=='MATCHED'){ rec.matchStatus=mt.status; if(mt.status==='MULTIPLE_MATCH') stats.multiple.push(rec.nama||rec.pemohon||'?'); else stats.unmatched.push(rec.nama||rec.pemohon||'?'); return; }
+      rec.matchStatus='MATCHED'; rec.bil=mt.member.bil; rec.jab=rec.jab||mt.member.jab; rec.komp=rec.komp||mt.member.komp; rec.nama=rec.nama||mt.member.nama; stats.activeRecords++;
+      days.forEach(function(day){ if(!D[mt.member.bil]) D[mt.member.bil]={}; if(!D[mt.member.bil][day]) D[mt.member.bil][day]=cell(); D[mt.member.bil][day].hrmis=hrLabel(rec.jenis||rec.kodCuti||rec.cuti||rec.leaveType||'CR'); D[mt.member.bil][day]._hrmis_rec=rec; D[mt.member.bil][day]._hrmis_from_store=true; stats.activeDays++; stats.applied++; try{ if(typeof AUDIT_STATE!=='undefined'){ if(!AUDIT_STATE[mt.member.bil]) AUDIT_STATE[mt.member.bil]={}; AUDIT_STATE[mt.member.bil][day]={status:'belum_validasi',ts:new Date().toISOString()}; } }catch(e){} });
+    });
+    safeSet('eakha_hrmis',JSON.stringify(arr)); safeSet(hrmisKey(yNow(),mNow()),JSON.stringify(arr)); try{ window.EAKHA_LAST_HRMIS_SYNC=Object.assign({reason:reason||'SYNC',ts:new Date().toISOString(),patch:PATCH},stats); }catch(e){}
+    return stats;
+  };
+
+  function toM(t){ if(!t) return null; var p=String(t).match(/(\d{1,2})[:.](\d{2})/); if(!p) return null; return (+p[1])*60+(+p[2]); }
+  function winFor(sh,dayOffset){ var base=(dayOffset||0)*1440; if(sh==='S') return {inA:base+360,inB:base+425,lateB:base+540,outA:base+900,outB:base+960,st:base+420,en:base+900}; if(sh==='P') return {inA:base+840,inB:base+905,lateB:base+1020,outA:base+1380,outB:base+1440,st:base+900,en:base+1380}; if(sh==='M') return {inA:base+1320,inB:base+1385,lateB:base+1500,outA:base+1860,outB:base+1920,st:base+1380,en:base+1860}; return null; }
+  function getPunchObjs(bil,d){ var arr=[]; function add(day,offset){ var c=D[bil]&&D[bil][day]; if(!c||!c.tc_all) return; (c.tc_all||[]).forEach(function(t,idx){ var m=toM(t); if(m==null) return; arr.push({key:day+'|'+idx+'|'+t,t:t,day:day,idx:idx,abs:offset*1440+m}); }); } add(d-1,-1); add(d,0); add(d+1,1); return arr; }
+  function pick(points,a,b,target,used){ var cand=points.filter(function(p){return !used[p.key]&&p.abs>=a&&p.abs<=b;}); if(!cand.length) return null; cand.sort(function(x,y){return Math.abs(x.abs-target)-Math.abs(y.abs-target);}); return cand[0]; }
+  window.pairTimecardForMember = function(bil){
+    var used={}, max=daysNow();
+    for(var d0=1; d0<=max; d0++){ var c0=D[bil]&&D[bil][d0]; if(c0 && c0.tc_all && c0.tc_all.length){ c0.tc_in=''; c0.tc_out=''; c0.tc_in_nextday=false; c0.tc_out_nextday=false; c0.tc_late_in=false; c0.tc_extra=[]; } }
+    function assign(d,sh){ var c=D[bil]&&D[bil][d]; if(!c) return; if(sh==='O'){ c.tc_extra=(c.tc_all||[]).slice(); c.tc_audit_done=true; c.tc_shift='O'; return; } var w=winFor(sh,0); if(!w) return; var pts=getPunchObjs(bil,d); var pin=pick(pts,w.inA,w.inB,w.st,used), late=false; if(!pin){ pin=pick(pts,w.inB+1,w.lateB,w.st,used); late=!!pin; } if(pin){ used[pin.key]=true; c.tc_in=pin.t; c.tc_in_nextday=pin.day>d; c.tc_late_in=late; } var pout=pick(pts,w.outA,w.outB,w.en,used); if(pout){ used[pout.key]=true; c.tc_out=pout.t; c.tc_out_nextday=pout.day>d; } c.tc_shift=sh; c.tc_audit_done=true; var extras=[]; (c.tc_all||[]).forEach(function(t,idx){ var k=d+'|'+idx+'|'+t; if(!used[k]) extras.push(t); }); c.tc_extra=extras; }
+    for(var d=1; d<=max; d++){ if(typeof gSh==='function' && gSh(bil,d)==='M') assign(d,'M'); }
+    for(var d2=1; d2<=max; d2++){ var sh=(typeof gSh==='function')?gSh(bil,d2):''; if(sh==='S'||sh==='P'||sh==='O') assign(d2,sh); }
+  };
+  window.pairAllTimecardsV58 = function(){ try{ MASTER.filter(function(m){return !m.pindah;}).forEach(function(m){ window.pairTimecardForMember(m.bil); }); }catch(e){ console.warn('['+PATCH+'] pair TC',e); } };
+  window.tcAudit = function(bil,d){
+    var c=D[bil]&&D[bil][d]; if(!c) return {txt:'-',cls:'tc-ok',ok:true}; var sh=(typeof gSh==='function')?gSh(bil,d):''; if(sh==='O') return {txt:(c.tc_all&&c.tc_all.length)?'OFFDAY / OT':'OFFDAY',cls:'tc-bp',ok:true}; if(c.tc_problem) return {txt:'TC BERMASALAH\n(Rujuk KZ Penyelia)',cls:'tc-warn',ok:true}; var w=winFor(sh,0), lines=[], ok=true, cls='tc-ok'; if(!w) return {txt:'SEMAK SHIFT',cls:'tc-warn',ok:false}; var im=toM(c.tc_in), om=toM(c.tc_out); if(c.tc_in_nextday && im!=null) im+=1440; if(c.tc_out_nextday && om!=null) om+=1440;
+    if(c.tc_in){ if(im<w.inA){ lines.push('OT/EXTRA - BUKAN IN HAKIKI'); lines.push('IN '+c.tc_in+' (>1 jam awal)'); cls='tc-warn'; ok=false; } else if(c.tc_late_in || im>w.inB){ lines.push('LEWAT'); lines.push('IN '+c.tc_in+(c.tc_in_nextday?' (ESOK)':'')); cls='tc-lw'; ok=false; } else lines.push('✓ IN '+c.tc_in); } else { lines.push('⚠ TIADA IN'); cls='tc-warn'; ok=false; }
+    if(c.tc_out){ if(om<w.outA){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out); cls='tc-lw'; ok=false; } else if(om>w.outB){ lines.push('OT/EXTRA selepas OUT'); lines.push('OUT '+c.tc_out); if(cls==='tc-ok') cls='tc-warn'; } else lines.push('✓ OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'')); } else { lines.push(sh==='M'?'SEMAK OUT ESOK':'⚠ TIADA OUT'); if(cls==='tc-ok') cls='tc-warn'; if(sh!=='M') ok=false; }
+    if((c.tc_in&&!c.tc_out)||(!c.tc_in&&c.tc_out)){ lines.push('SINGLE PUNCH'); if(cls==='tc-ok') cls='tc-warn'; ok=false; } if(c.tc_extra&&c.tc_extra.length) lines.push('Extra/OT: '+c.tc_extra.join(' · ')); return {txt:lines.join('\n'),cls:cls,ok:ok};
+  };
+  try{ tcAudit=window.tcAudit; pairTimecardForMember=window.pairTimecardForMember; pairAllTimecardsV58=window.pairAllTimecardsV58; }catch(e){}
+
+  window.expCSV = function(){
+    var max=daysNow(), rows=[['Bil','Nama Anggota','Jabatan','Kompeni']];
+    for(var d=1; d<=max; d++){ rows[0].push(d+'/'+pad(mNow())+' Shift',d+'/'+pad(mNow())+' KZP',d+'/'+pad(mNow())+' KZK',d+'/'+pad(mNow())+' TC',d+'/'+pad(mNow())+' MC',d+'/'+pad(mNow())+' HRMIS',d+'/'+pad(mNow())+' AUDIT'); }
+    (MASTER||[]).forEach(function(m){ var r=[m.bil,m.nama,m.jab,m.komp]; for(var d=1; d<=max; d++){ var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:{}; var af=(typeof auditFinal==='function')?auditFinal(m.bil,d):{txt:''}; r.push((typeof gSh==='function'?gSh(m.bil,d):''),c.kzp||'',c.kzk||'',(typeof tcAudit==='function'?tcAudit(m.bil,d).txt:''),(typeof getMC==='function'&&getMC(m.bil,d)?'MC':''),c.hrmis||'',af.txt||''); } rows.push(r); });
+    var fn='eAKHA_Vsavage_'+monthName(mNow()).replace(/\s+/g,'_')+'_'+yNow()+'.csv'; if(typeof dlCSV==='function') dlCSV(rows,fn); else console.table(rows);
+  };
+  window.snapshotGrid = function(jabFilter){
+    var max=daysNow(), DAYS=[]; for(var d=1; d<=max; d++) DAYS.push(d);
+    function shBg(sh){ return sh==='S'?'#e8f5e9':sh==='P'?'#f3e8fd':sh==='M'?'#e3f0ff':'#f5f5f5'; }
+    function shTxt(sh){ return sh==='S'?'PG 0700-1500':sh==='P'?'PT 1500-2300':sh==='M'?'MLM 2300-0700':sh==='O'?'OFFDAY':sh||'—'; }
+    function kzBg(v){ if(!v||v==='OF') return '#f5f5f5'; if(v==='✓'||v==='HADIR') return '#d1fae5'; if(v==='ABS'||v==='X') return '#fee2e2'; if(v==='L') return '#fef3c7'; if(v==='MC') return '#fff3cd'; if(v==='CR'||v==='EL'||v==='CTR') return '#dbeafe'; return '#fce7f3'; }
+    function kzLbl(v){ if(!v||v==='OF') return '—'; if(v==='✓') return '✓ HADIR'; return v; }
+    function afBg(af){ if(!af||af.inc) return '#fafafa'; var c=af.cls||''; if(c==='af-sah') return '#d1fae5'; if(c==='af-mc') return '#fef3c7'; if(c==='af-cr') return '#dbeafe'; if(c==='af-lw') return '#ffedd5'; if(c==='af-abs') return '#fee2e2'; return '#f5f5f5'; }
+    function afTxt(af){ if(!af) return '—'; var t=(af.txt||'—').split('\n')[0]; return t.length>14?t.substr(0,13)+'…':t; }
+    function tcTxt(m,d){ var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:{}; if(!c.tc_in&&!c.tc_out) return '—'; return (c.tc_in||'?')+' · '+(c.tc_out||'SEMAK'); }
+    var css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:6px;background:#fff;color:#111;print-color-adjust:exact;-webkit-print-color-adjust:exact}@page{size:A3 landscape;margin:6mm}@media print{.no-print{display:none}.page{page-break-after:always}.page:last-child{page-break-after:avoid}}.page{padding:2mm}.hdr{font-size:9px;font-weight:700;color:#0F2D5A;margin-bottom:1mm}.sub{font-size:5.5px;color:#666;margin-bottom:2mm}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:0.4px solid #bbb;padding:1px;overflow:hidden;vertical-align:middle;text-align:center;word-break:break-word}.cn{width:44px;text-align:left;font-size:5px;font-weight:700;vertical-align:middle;padding:1px 2px}.cl{width:24px;font-size:4.5px;color:#555;font-style:italic}.cd{width:22px;font-size:5px}.th0{background:#0F2D5A;color:#fff;font-size:5.5px}.th1{background:#1a3f7a;color:#aac}.rS{font-weight:700;font-size:5px}.rK{font-weight:600;font-size:5px}.rT{font-size:4.5px}.rM{font-weight:700;font-size:5px}.rH{font-weight:700;font-size:5px}.rA{font-weight:700;font-size:5px}.tag{font-size:5px;color:#666}';
+    var jabs=jabFilter==='all'?['IKTAR','MHKL','RT']:[jabFilter], body='';
+    jabs.forEach(function(jab){ ['ALPHA','BRAVO','CHARLIE','DELTA'].forEach(function(komp){ var ms=(MASTER||[]).filter(function(m){return m.jab===jab && m.komp===komp && !m.pindah;}); if(!ms.length) return; var pg='<div class="page"><div class="hdr">e-AKHA Vsavage · Master File Kehadiran · '+monthName(mNow())+' '+yNow()+'</div><div class="sub">'+jab+' · '+komp+' · Snapshot A3 · '+new Date().toLocaleString('ms-MY')+'</div><table><thead><tr><th class="th0 cn">Nama</th><th class="th0 cl">Lapisan</th>'; DAYS.forEach(function(d){ pg+='<th class="th0 cd">'+d+'/'+pad(mNow())+'</th>'; }); pg+='</tr></thead><tbody>'; ms.forEach(function(m){ var layers=['SHIFT','KZP','KZK','TC','MC','HRMIS','AUDIT']; layers.forEach(function(layer,idx){ pg+='<tr>'; if(idx===0) pg+='<td class="cn" rowspan="7">'+m.bil+'. '+m.nama+'<br><span class="tag">'+m.jab+' · '+m.komp+'</span></td>'; pg+='<td class="cl">'+layer+'</td>'; DAYS.forEach(function(d){ var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:{}, sh=(typeof gSh==='function'?gSh(m.bil,d):''), val='—', bg='#fff'; if(layer==='SHIFT'){val=shTxt(sh);bg=shBg(sh);} else if(layer==='KZP'){val=kzLbl(c.kzp);bg=kzBg(c.kzp);} else if(layer==='KZK'){val=kzLbl(c.kzk);bg=kzBg(c.kzk);} else if(layer==='TC'){val=tcTxt(m,d);bg='#f8fafc';} else if(layer==='MC'){val=(typeof getMC==='function'&&getMC(m.bil,d))?'MC':'—';bg=val==='MC'?'#fff3cd':'#fff';} else if(layer==='HRMIS'){val=c.hrmis||'—';bg=c.hrmis?'#dbeafe':'#fff';} else {var af=(typeof auditFinal==='function')?auditFinal(m.bil,d):{txt:'—'};val=afTxt(af);bg=afBg(af);} pg+='<td class="cd" style="background:'+bg+'">'+val+'</td>'; }); pg+='</tr>'; }); }); var sh=0,smc=0,sab=0,slw=0; ms.forEach(function(m){ for(var d=1; d<=max; d++){ var af=(typeof auditFinal==='function')?auditFinal(m.bil,d):{inc:true}; if(af.inc) continue; if(af.cls==='af-sah') sh++; else if(af.cls==='af-mc') smc++; else if(af.cls==='af-abs') sab++; if((af.txt||'').indexOf('LEWAT')>=0) slw++; }}); pg+='</tbody></table><div style="margin-top:2mm;font-size:5.5px;color:#555;text-align:right">'+jab+' · '+komp+' — Hadir: <b>'+sh+'</b> · MC: <b>'+smc+'</b> · Absen: <b>'+sab+'</b> · Lewat: <b>'+slw+'</b></div></div>'; body+=pg; }); });
+    var title='Master File '+monthName(mNow())+' '+yNow(); var full='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+title+'</title><style>'+css+'</style></head><body>'+body+'</body></html>'; var w=window.open('','_blank'); w.document.write(full); w.document.close(); setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} },900);
+  };
+  window.expPDF = function(){ window.snapshotGrid('all'); };
+  try{ expCSV=window.expCSV; snapshotGrid=window.snapshotGrid; expPDF=window.expPDF; }catch(e){}
+
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ if(typeof routeDocumentsToCorrectMonth==='function') routeDocumentsToCorrectMonth('BOOT '+PATCH); if(typeof pairAllTimecardsV58==='function') pairAllTimecardsV58(); if(typeof renderAllSafe==='function') renderAllSafe(); }catch(e){ console.warn('['+PATCH+'] boot',e); } },2600); });
+  try{ console.log('[e-AKHA '+PATCH+'] ready: syntax fixed, robust MC/HRMIS sync, TC late-IN, active-month snapshot.'); }catch(e){}
+})();
+</script>
+
 </body>
 </html>
