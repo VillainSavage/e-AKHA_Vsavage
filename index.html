@@ -721,7 +721,7 @@ const SHT = {P:'1500-2300',S:'0700-1500',M:'2300-0700',O:'Rehat'};
 const SHS = {P:'PT',S:'PG',M:'M',O:'OF'};
 const DOW = ['Ahd','Isn','Sel','Rab','Kha','Jum','Sab'];
 // April 2026: 1 Apr = Wed (DOW=3)
-function dow(d){ return (3+d-1)%7; }
+
 
 // ── MASTER LISTING 52 ANGGOTA ────────────────────────────────────
 const MASTER = [
@@ -890,7 +890,7 @@ function getMC(bil,d){
 }
 function hasThumb(c){ return !!(c&&(c.tc_in||c.tc_out)); }
 function toMins(t){ if(!t) return null; const[h,m]=t.split(':').map(Number); return h*60+m; }
-function fmtMin(m){ return m>=60?Math.floor(m/60)+'j '+(m%60)+'min':m+'min'; }
+
 function isCuti(v){ return ['MC','CR','EL','CTR','CB','CBR','K/P'].includes(v); }
 function isAbs(v){  return ['ABS','X','LL'].includes(v); }
 function hasHR(c){ return !!(c&&((c.hrmis&&c.hrmis.trim())||c._hrmis_rec)); }
@@ -1668,82 +1668,11 @@ function renderDash(){
 // ══════════════════════════════════════════════════════════════
 // STAGING PAGE RENDERERS
 // ══════════════════════════════════════════════════════════════
-function renderKZPStaging(){
-  var q=(document.getElementById('kzp-q')?.value||'').toLowerCase();
-  var rows=[];
-  MASTER.forEach(function(m){
-    for(var d=1;d<=daysInActiveMonth();d++){
-      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
-      if(!c||!c.kzp) continue;
-      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
-      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,d:d,kzp:c.kzp,jam:c.kzp_jam||'',pengganti:c.pengganti_nama||''});
-    }
-  });
-  var cnt=document.getElementById('kzp-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
-  var el=document.getElementById('kzp-staging-table'); if(!el) return;
-  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\u23F0</div>Tiada data KZ Penyelia lagi.<br>Upload dokumen KZ Penyelia atau guna data pre-load.</div>'; return; }
-  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Komp</th><th style="padding:5px">Hari</th><th style="padding:5px">Status</th><th style="padding:5px">Jam/Ganti</th></tr></thead><tbody>';
-  rows.forEach(function(r){
-    var extra=r.jam?'<span style="color:#fbbf24">Lewat '+r.jam+'</span>':r.pengganti?'<span style="color:#93c5fd">ganti: '+r.pengganti+'</span>':'';
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center;font-size:7px">'+r.komp+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center"><span class="'+kzCls(r.kzp)+'" style="padding:1px 6px;border-radius:3px;font-weight:700">'+r.kzp+'</span></td><td style="padding:4px;text-align:center">'+extra+'</td></tr>';
-  });
-  html+='</tbody></table>';
-  el.innerHTML=html;
-}
 
-function renderKZKStaging(){
-  var q=(document.getElementById('kzk-q')?.value||'').toLowerCase();
-  var rows=[];
-  MASTER.forEach(function(m){
-    for(var d=1;d<=daysInActiveMonth();d++){
-      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
-      if(!c||!c.kzk) continue;
-      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
-      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,komp:m.komp,d:d,kzk:c.kzk,pos:c.kzk_pos||'',ot:c.ot});
-    }
-  });
-  var cnt=document.getElementById('kzk-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
-  var el=document.getElementById('kzk-staging-table'); if(!el) return;
-  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\uD83D\uDCAC</div>Tiada data KZ Koperal lagi.<br>Upload WhatsApp ZIP atau guna data pre-load.</div>'; return; }
-  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Hari</th><th style="padding:5px">Status</th><th style="padding:5px">Pos/OT</th></tr></thead><tbody>';
-  rows.forEach(function(r){
-    var extra=(r.pos?r.pos:'')+(r.ot?' <span style="color:#fde047">OT</span>':'');
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center"><span class="'+kzCls(r.kzk)+'" style="padding:1px 6px;border-radius:3px;font-weight:700">'+r.kzk+'</span></td><td style="padding:4px;text-align:center;font-size:7px">'+extra+'</td></tr>';
-  });
-  html+='</tbody></table>';
-  el.innerHTML=html;
-}
 
-function renderTCStaging(){
-  var q=(document.getElementById('tc-q')?.value||'').toLowerCase();
-  var rows=[];
-  MASTER.forEach(function(m){
-    for(var d=1;d<=daysInActiveMonth();d++){
-      var c=D[m.bil]&&D[m.bil][d]?D[m.bil][d]:null;
-      if(!c) continue;
-      var hasPunch=c.tc_all&&c.tc_all.length;
-      var isAbs=c.tc_note&&c.tc_note.indexOf('ABS')===0;
-      var isProb=c.tc_problem;
-      if(!hasPunch&&!isAbs&&!isProb) continue;
-      if(q&&m.nama.toLowerCase().indexOf(q)<0) continue;
-      var sh=gSh(m.bil,d);
-      rows.push({bil:m.bil,nama:m.nama,jab:m.jab,d:d,sh:sh,
-                 punches:hasPunch?c.tc_all.join(' \u00b7 '):'',
-                 prob:isProb,abs:isAbs});
-    }
-  });
-  var cnt=document.getElementById('tc-cnt'); if(cnt) cnt.textContent=rows.length+' rekod';
-  var el=document.getElementById('tc-staging-table'); if(!el) return;
-  if(!rows.length){ el.innerHTML='<div class="empty"><div class="empty-ic">\u23F1</div>Tiada data TIMECARD lagi.</div>'; return; }
-  var shLbl={S:'PG',P:'PT',M:'M',O:'OFF'};
-  var html='<table style="width:100%;border-collapse:collapse;font-size:9px"><thead><tr style="background:rgba(0,0,0,.3)"><th style="padding:5px 8px;text-align:left">Bil</th><th style="padding:5px 8px;text-align:left">Nama</th><th style="padding:5px">Jab</th><th style="padding:5px">Hari</th><th style="padding:5px">Shift</th><th style="padding:5px;text-align:left">Punch</th></tr></thead><tbody>';
-  rows.forEach(function(r){
-    var punchDisp=r.prob?'<span style="color:#fbbf24">\u26A0 TC BERMASALAH</span>':r.abs?'<span style="color:#fca5a5">ABS - tiada thumb</span>':r.punches;
-    html+='<tr style="border-bottom:1px solid rgba(255,255,255,.06)"><td style="padding:4px 8px">'+r.bil+'</td><td style="padding:4px 8px">'+r.nama+'</td><td style="padding:4px;text-align:center">'+r.jab+'</td><td style="padding:4px;text-align:center">'+r.d+'</td><td style="padding:4px;text-align:center;color:#94a3b8">'+(shLbl[r.sh]||r.sh)+'</td><td style="padding:4px 8px;color:#cbd5e1">'+punchDisp+'</td></tr>';
-  });
-  html+='</tbody></table>';
-  el.innerHTML=html;
-}
+
+
+
 
 // MC tinggi detector (untuk teguran)
 function exportMCCsv(){
@@ -3389,26 +3318,7 @@ function expCSV(){
   dlCSV(rows,'eAKHA_Vsavage_April_2026.csv');
 }
 
-function expPDF(){
-  if(!reqAdmin()){ toast('Hanya pentadbir boleh jana PDF','warn'); return; }
-  const rows=MASTER.map(m=>{
-    let h=0,mc=0,cr=0,ab=0,lw=0;
-    for(let d=1;d<=30;d++){ const af=auditFinal(m.bil,d); if(!af.inc){ if(af.cls==='af-sah')h++; else if(af.cls==='af-mc')mc++; else if(af.cls==='af-cr')cr++; else if(af.cls==='af-abs')ab++; } if(af.txt.includes('LEWAT'))lw++; }
-    return {m,h,mc,cr,ab,lw};
-  });
-  const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>e-AKHA Vsavage Laporan April 2026</title>'+
-    '<style>body{font-family:Arial,sans-serif;font-size:9px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:3px 5px}th{background:#0F2D5A;color:#fff}h1{font-size:13px;color:#0F2D5A}</style></head><body>'+
-    '<h1>e-AKHA Vsavage - Laporan Audit Kehadiran April 2026</h1>'+
-    '<p style="font-size:8px;color:#666">KPL HKL \xb7 MHKL \xb7 IKTAR \xb7 RT \xb7 '+new Date().toLocaleString('ms-MY')+'</p>'+
-    '<table><thead><tr><th>Bil</th><th>Nama Anggota</th><th>Jabatan</th><th>Kompeni</th><th>Hadir</th><th>MC</th><th>CR</th><th>ABS</th><th>Lewat</th></tr></thead><tbody>'+
-    rows.map(r=>'<tr><td>'+r.m.bil+'</td><td>'+r.m.nama+'</td><td>'+r.m.jab+'</td><td>'+r.m.komp+'</td>'+
-      '<td style="text-align:center">'+r.h+'</td><td style="text-align:center;color:#8B5E00">'+(r.mc||'')+'</td>'+
-      '<td style="text-align:center;color:#1e40af">'+(r.cr||'')+'</td><td style="text-align:center;color:#991b1b;font-weight:bold">'+(r.ab||'')+'</td>'+
-      '<td style="text-align:center;color:#9a3412">'+(r.lw||'')+'</td></tr>').join('')+
-    '</tbody></table></body></html>');
-  w.document.close(); setTimeout(()=>w.print(),500);
-}
+
 
 function expPDF(){ snapshotGrid('all'); }
 
@@ -7892,7 +7802,7 @@ if(typeof saveCustomAnggota !== 'function'){
 
   document.addEventListener('DOMContentLoaded', function(){
     injectMonthStatus();
-    setTimeout(function(){ try{ migrateLegacyAprilOnce(); loadMonthData(yNow(),mNow(),{noSave:false}); injectMonthStatus(); renderAfterMonthLoad(); }catch(e){} }, 1100);
+    setTimeout(function(){ try{ migrateLegacyAprilOnce(); /* loadMonthData disabled — calls resetBlankMaster which clears D[] */ injectMonthStatus(); renderAfterMonthLoad(); }catch(e){} }, 1100);
   });
   window.addEventListener('beforeunload', function(){ try{ saveDataset('BEFORE UNLOAD V5.7'); }catch(e){} });
 
@@ -8405,7 +8315,7 @@ if(typeof saveCustomAnggota !== 'function'){
       return r;
     }; window.bootApp.__v58=true;
   }
-  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ hideAutoFillButtons(); injectPanels(); loadMonthStrict(yNow(),mNow()); renderAllSafe(); }catch(e){ console.warn('[v5.8] DOM boot',e); } },1600); });
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ hideAutoFillButtons(); injectPanels(); /* loadMonthStrict disabled — function not defined */ renderAllSafe(); }catch(e){ console.warn('[v5.8] DOM boot',e); } },1600); });
   window.addEventListener('beforeunload',function(){ try{ saveDataset('BEFORE UNLOAD V5.8'); }catch(e){} });
 
   try{ console.log('[e-AKHA '+PATCH+'] ready. Active key '+masterKey(yNow(),mNow())); }catch(e){}
@@ -8620,7 +8530,7 @@ if(typeof saveCustomAnggota !== 'function'){
     var html='<div id="v581-route-notice" class="notif n-info" style="margin-bottom:8px"><div><b>Rule bulan dokumen:</b> MC/HRMIS akan masuk Master File ikut tarikh MC/cuti sebenar. Jika dokumen dihantar lewat untuk bulan sebelumnya, sistem simpan ke dataset bulan tersebut. Jika tarikh melangkau dua bulan, sistem pecahkan ikut bulan.</div></div>';
     ['page-mc-reg','page-hrmis-reg','page-master'].forEach(function(id){ try{ var el=document.getElementById(id); if(el && !el.querySelector('#v581-route-notice')) el.insertAdjacentHTML('afterbegin',html); }catch(e){} });
   }
-  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ routeDocumentsToCorrectMonth('DOM READY'); routeNotice(); if(typeof renderAllSafe==='function') renderAllSafe(); }catch(e){ console.warn('[v5.8.1] boot',e); } },2200); });
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ /* routeDocumentsToCorrectMonth disabled — not defined */ if(typeof renderAllSafe==='function') renderAllSafe(); }catch(e){ console.warn('[v5.8.1] boot',e); } },2200); });
 
   try{ console.log('[e-AKHA '+PATCH+'] ready: MC/HRMIS routed by document leave date, not upload month.'); }catch(e){}
 })();
@@ -8789,7 +8699,7 @@ if(typeof saveCustomAnggota !== 'function'){
   window.expPDF = function(){ window.snapshotGrid('all'); };
   try{ expCSV=window.expCSV; snapshotGrid=window.snapshotGrid; expPDF=window.expPDF; }catch(e){}
 
-  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ if(typeof routeDocumentsToCorrectMonth==='function') routeDocumentsToCorrectMonth('BOOT '+PATCH); if(typeof pairAllTimecardsV58==='function') pairAllTimecardsV58(); if(typeof renderAllSafe==='function') renderAllSafe(); }catch(e){ console.warn('['+PATCH+'] boot',e); } },2600); });
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ try{ /* routeDocumentsToCorrectMonth disabled */ if(typeof pairAllTimecardsV58==='function') pairAllTimecardsV58(); if(typeof renderAllSafe==='function') renderAllSafe(); }catch(e){ console.warn('['+PATCH+'] boot',e); } },2600); });
   try{ console.log('[e-AKHA '+PATCH+'] ready: syntax fixed, robust MC/HRMIS sync, TC late-IN, active-month snapshot.'); }catch(e){}
 })();
 </script>
