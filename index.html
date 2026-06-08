@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.7 MONTH MASTER SAFE</title>
+  <title>e-AKHA Vsavage v5.9.1 KZ SNAPSHOT FULL MIX</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -3366,7 +3366,142 @@ function expPDF(){
       '<td style="text-align:center">'+r.h+'</td><td style="text-align:center;color:#8B5E00">'+(r.mc||'')+'</td>'+
       '<td style="text-align:center;color:#1e40af">'+(r.cr||'')+'</td><td style="text-align:center;color:#991b1b;font-weight:bold">'+(r.ab||'')+'</td>'+
       '<td style="text-align:center;color:#9a3412">'+(r.lw||'')+'</td></tr>').join('')+
-    '</tbody></table></body></html>');
+    '</tbody></table><!--
+  e-AKHA Vsavage PATCH v5.9.1 FULL MIX
+  MODUL: KZ Penyelia/Koperal Excel + staging + sync Master File + Snapshot Bos A3 + OFFDAY kecil
+  DIGABUNGKAN KE DALAM HTML v5.7 MONTH MASTER SAFE
+  Nota: Tidak ubah login, role, Supabase key, MC, HRMIS, Timecard dan data bulan sedia ada.
+-->
+<script>
+(function(){
+'use strict';
+var PATCH='v5.9.1-KZ-EXCEL-SNAPSHOT-BOS-FULL-MIX-SAFE';
+window.EAKHA_V591_PATCH=PATCH;
+var MAIN_JABS=['MHKL','IKTAR','RT'];
+var TH_NAMES=['ASREE','ASRI','AMINUDIN','AMINUDDIN','NAZRI ISMAIL','MOHD NAZRI ISMAIL','MOHAMAD NAZRI ISMAIL'];
+function q(s,r){return (r||document).querySelector(s)}
+function qa(s,r){return Array.from((r||document).querySelectorAll(s))}
+function pad(n){return String(+n).padStart(2,'0')}
+function monthName(m){var a=['','Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember']; return a[+m]||('Bulan '+m)}
+function activeMonth(){try{return +(typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH?ACTIVE_MONTH:(localStorage.getItem('eakha_active_month')||4))}catch(e){return 4}}
+function activeYear(){try{return +(typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR?ACTIVE_YEAR:2026)}catch(e){return 2026}}
+function daysInMonth(y,m){return new Date(y,m,0).getDate()}
+function toast2(msg,type){try{ if(typeof toast==='function') return toast(msg,type||'ok'); }catch(e){} alert(msg)}
+function esc(s){return String(s==null?'':s).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]})}
+function normName(s){return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\b(LKPL|KOST|KONST|KPL|SM|SJN|PB|TUAN|PN|CIK|EN|ENCIK|SARJAN|KOPERAL|PEL)\b/g,' ').replace(/\([^)]*\)/g,' ').replace(/[^A-Z0-9 @/]/g,' ').replace(/\bBIN\b|\bBINTI\b|\bBT\b/g,' ').replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHD').replace(/\bHAIKAL\b/g,'HAIQAL').replace(/\s+/g,' ').trim()}
+function isTHName(name){var n=normName(name); return TH_NAMES.some(function(x){var t=normName(x); return n===t || n.indexOf(t)>-1 || t.indexOf(n)>-1})}
+function cleanStatus(v,name){
+  var s=String(v||'').toUpperCase().trim();
+  if(isTHName(name) || /\b(TH|TT)\b|TAHAN\s*TUGAS/.test(s)) return 'TH';
+  if(!s) return '';
+  if(/[✓✔√]/.test(s)||/\b(HADIR|BERTUGAS|POS|R1|R2)\b/.test(s)) return '✓';
+  if(/\b(OFFDAY|OFF|OD|REST)\b/.test(s)) return 'OFF';
+  if(/\b(MC|CUTI\s*SAKIT)\b/.test(s)) return 'MC';
+  if(/\b(EL|EMERGENCY)\b/.test(s)) return 'EL';
+  if(/\b(CR|CUTI\s*REHAT)\b/.test(s)) return 'CR';
+  if(/\b(CTR|CUTI\s*TANPA\s*REKOD)\b/.test(s)) return 'CTR';
+  if(/\b(OT|LEBIH\s*MASA)\b/.test(s)) return 'OT';
+  if(/^X$|PANGKAH|TIDAK\s*HADIR|ABS/.test(s)) return 'X';
+  return s;
+}
+function cellClass(status){var s=cleanStatus(status); if(s==='✓')return 'kz-ok'; if(s==='MC')return 'kz-mc'; if(s==='EL')return 'kz-el'; if(s==='CR')return 'kz-cr'; if(s==='CTR')return 'kz-ctr'; if(s==='OT')return 'kz-tt'; if(s==='TH')return 'kz-th'; if(s==='OFF')return 'kz-off v59-offday'; if(s==='X')return 'kz-abs'; return 'kz-empty'}
+function masterList(){try{return (typeof MASTER!=='undefined'&&Array.isArray(MASTER)?MASTER:[]).filter(function(m){return MAIN_JABS.includes(String(m.jab||m.jabatan||'').toUpperCase()) && !m.pindah})}catch(e){return []}}
+function ensureD(bil,d){try{ if(typeof D==='undefined') return {}; if(!D[bil]) D[bil]={}; if(!D[bil][d]) D[bil][d]={}; return D[bil][d]; }catch(e){return {}}}
+function nameHitScore(shortName, fullName){
+  var nn=normName(shortName), mn=normName(fullName); if(!nn||!mn) return 0;
+  if(mn===nn) return 100;
+  if(mn.indexOf(nn)>-1 || nn.indexOf(mn)>-1) return 90;
+  var parts=nn.split(' ').filter(function(p){return p.length>1 && !['MOHD','MOHAMAD','A/L','A/P'].includes(p)});
+  if(!parts.length) return 0;
+  var hit=parts.filter(function(p){return mn.indexOf(p)>-1}).length;
+  return Math.round(hit/parts.length*78);
+}
+function findMemberByName(name,jab,komp){
+  var nn=normName(name), jj=String(jab||'').toUpperCase().trim(), kk=String(komp||'').toUpperCase().trim(); if(!nn) return null;
+  var candidates=masterList().map(function(m){var score=nameHitScore(nn,m.nama||m.name); if(jj && String(m.jab||m.jabatan||'').toUpperCase()===jj)score+=10; if(kk && String(m.komp||m.kompeni||'').toUpperCase()===kk)score+=8; return {m:m,score:score};}).filter(function(x){return x.score>=88}).sort(function(a,b){return b.score-a.score});
+  if(!candidates.length) return null; if(candidates.length>1 && candidates[0].score===candidates[1].score) return null; return candidates[0].m;
+}
+function storeKey(type){return 'eakha_'+type+'_staging_'+activeYear()+'_'+pad(activeMonth())}
+function getStaging(type){try{return JSON.parse(localStorage.getItem(storeKey(type))||'[]')}catch(e){return []}}
+function setStaging(type,arr){localStorage.setItem(storeKey(type),JSON.stringify(arr||[]))}
+function parseExcelDateHeader(h){
+  if(h==null||h==='') return null;
+  if(Object.prototype.toString.call(h)==='[object Date]'&&!isNaN(h)){var dm=h.getMonth()+1; return dm===activeMonth()?h.getDate():null;}
+  var s=String(h).trim(); if(!s) return null;
+  var iso=s.match(/\b(20\d{2})[-\/\.](\d{1,2})[-\/\.](\d{1,2})\b/); if(iso){var m1=+iso[2], d1=+iso[3]; return (m1===activeMonth()&&d1>=1&&d1<=31)?d1:null;}
+  var dmy=s.match(/\b(\d{1,2})[-\/\.](\d{1,2})(?:[-\/\.](\d{2,4}))?\b/); if(dmy){var d2=+dmy[1], m2=+dmy[2]; return (m2===activeMonth()&&d2>=1&&d2<=31)?d2:null;}
+  if(/^\d{1,2}$/.test(s)){var d=+s; return d>=1&&d<=31?d:null;}
+  var word=s.match(/\b(?:HARI|DAY)?\s*([1-9]|[12][0-9]|3[01])\b/i); return word?+word[1]:null;
+}
+function importKZExcel(type,file){
+  if(!file) return;
+  if(!window.XLSX){toast2('Library XLSX belum load. Pastikan internet tersedia semasa buka sistem.','err'); return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true}); var out=[], issues=[];
+      wb.SheetNames.forEach(function(sn){
+        var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:false}); if(!rows.length) return;
+        var hdrIdx=0; for(var i=0;i<Math.min(rows.length,18);i++){var txt=rows[i].join(' ').toUpperCase(); if(/NAMA|ANGGOTA|JABATAN|KOMPENI|\b1\b/.test(txt)){hdrIdx=i;break;}}
+        var hdr=rows[hdrIdx].map(function(x){return String(x||'').trim()});
+        var nameIdx=hdr.findIndex(function(x){return /NAMA|ANGGOTA/.test(x.toUpperCase())}); if(nameIdx<0) nameIdx=0;
+        var jabIdx=hdr.findIndex(function(x){return /JABATAN|JAB\.?/.test(x.toUpperCase())});
+        var kompIdx=hdr.findIndex(function(x){return /KOMP|KOMPENI|COMPANY/.test(x.toUpperCase())});
+        var dayCols=[]; hdr.forEach(function(h,i){var d=parseExcelDateHeader(h); if(d) dayCols.push({i:i,d:d})});
+        if(!dayCols.length){ for(var c=0;c<hdr.length;c++){ if(c!==nameIdx&&c!==jabIdx&&c!==kompIdx && c>nameIdx){ var dd=c-nameIdx; if(dd>=1&&dd<=daysInMonth(activeYear(),activeMonth())) dayCols.push({i:c,d:dd}); } } }
+        rows.slice(hdrIdx+1).forEach(function(r){
+          var rawName=r[nameIdx]; if(!rawName) return; var rawJab=jabIdx>=0?r[jabIdx]:''; var rawKomp=kompIdx>=0?r[kompIdx]:'';
+          var jab=String(rawJab||'').toUpperCase().trim(); if(jab && !MAIN_JABS.includes(jab)) return;
+          var mem=findMemberByName(rawName,rawJab,rawKomp);
+          dayCols.forEach(function(dc){var stat=cleanStatus(r[dc.i],rawName); if(!stat) return; var rec={type:type,month:activeMonth(),year:activeYear(),sheet:sn,day:dc.d,nama_asal:String(rawName),jabatan_asal:String(rawJab||''),kompeni_asal:String(rawKomp||''),status_asal:String(r[dc.i]||''),status:stat,source:file.name,matched:!!mem,bil:mem?mem.bil:null,nama_rasmi:mem?mem.nama:'',jabatan:mem?mem.jab:'',kompeni:mem?mem.komp:'',catatan:mem?'PADANAN SAH':'SEMAK PADANAN - nama tidak wujud/tidak yakin'}; (mem?out:issues).push(rec);});
+        });
+      });
+      var all=getStaging(type).concat(out,issues); setStaging(type,all); renderKZPanel(); renderKZPage(type); toast2((type==='kzp'?'KZ Penyelia':'KZ Koperal')+' Excel siap dibaca: '+out.length+' sah, '+issues.length+' semak.','ok');
+    }catch(err){console.error(err);toast2('Gagal baca Excel: '+err.message,'err')}
+  };
+  reader.readAsArrayBuffer(file);
+}
+function forceTHMaster(){
+  try{
+    masterList().forEach(function(m){ if(!isTHName(m.nama)) return; for(var d=1; d<=daysInMonth(activeYear(),activeMonth()); d++){ var sh=(typeof gSh==='function'?gSh(m.bil,d):''); if(sh==='O') continue; var c=ensureD(m.bil,d); c.kzp='TH'; c.kzk='TH'; }});
+  }catch(e){console.warn('[v5.9] force TH:',e)}
+}
+function syncKZToMaster(type){var arr=getStaging(type), field=type==='kzp'?'kzp':'kzk', ok=0, skip=0; arr.forEach(function(r){ if(!r.matched||!r.bil){skip++;return;} var c=ensureD(r.bil,r.day); c[field]=cleanStatus(r.status,r.nama_rasmi||r.nama_asal); c[field+'_src']=r.source; ok++; }); forceTHMaster(); try{ if(typeof saveDataset==='function') saveDataset('SYNC '+type.toUpperCase()+' V5.9.1'); if(typeof renderAllSafe==='function') renderAllSafe(); else if(typeof renderMaster==='function') renderMaster(); if(typeof renderKZPStaging==='function') renderKZPStaging(); if(typeof renderKZKStaging==='function') renderKZKStaging(); }catch(e){} toast2('Kemaskini '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' ke Master: '+ok+' masuk, '+skip+' semak.','ok')}
+function stagingTable(type,arr){var rows=arr.slice(-250).reverse().map(function(r){return '<tr><td>'+esc(r.day+'/'+pad(r.month)+'/'+r.year)+'</td><td>'+esc(r.jabatan||r.jabatan_asal)+'</td><td>'+esc(r.kompeni||r.kompeni_asal)+'</td><td>'+esc(r.nama_rasmi||r.nama_asal)+'</td><td><b class="'+cellClass(r.status)+'" style="padding:2px 7px;border-radius:4px">'+esc(r.status)+'</b></td><td>'+esc(r.source)+'</td><td>'+esc(r.catatan)+'</td></tr>'}).join(''); return '<div style="margin-top:8px"><b style="font-size:9px;color:#f0b429">'+(type==='kzp'?'KZ PENYELIA':'KZ KOPERAL')+'</b><div style="max-height:230px;overflow:auto;margin-top:5px"><table class="tbl"><thead><tr><th>Tarikh</th><th>Jabatan</th><th>Kompeni</th><th>Nama</th><th>Status</th><th>Source</th><th>Catatan</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7" class="empty">Belum ada data.</td></tr>')+'</tbody></table></div></div>'}
+function renderKZPanel(){
+  var host=q('#v59-kz-panel'); if(!host) return; var kzp=getStaging('kzp'), kzk=getStaging('kzk');
+  host.innerHTML='<div class="panel"><div class="ph"><div class="ph-title">Import KZ Penyelia / KZ Koperal Excel — Bulan Aktif: '+monthName(activeMonth())+' '+activeYear()+'</div></div><div class="pb"><div class="notif n-info"><div><b>Rule:</b> Data masuk staging dahulu, fokus MHKL/IKTAR/RT sahaja, nama mesti wujud dalam roster rasmi. ASREE, AMINUDIN/AMINUDDIN dan NAZRI ISMAIL dipaksa TH dan tidak ditick.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-bl">Upload KZ Penyelia Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV591ImportKZ(\'kzp\',this.files[0])"></label><button class="btn btn-gn" onclick="window.eakhaV591SyncKZ(\'kzp\')">Kemaskini KZ Penyelia ke Master</button><button class="btn btn-rd" onclick="if(confirm(\'Reset KZ Penyelia bulan ini?\')){localStorage.removeItem(\''+storeKey('kzp')+'\');window.eakhaV591RenderKZ();}">Reset KZ Penyelia</button><label class="btn btn-bl">Upload KZ Koperal Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV591ImportKZ(\'kzk\',this.files[0])"></label><button class="btn btn-gn" onclick="window.eakhaV591SyncKZ(\'kzk\')">Kemaskini KZ Koperal ke Master</button><button class="btn btn-rd" onclick="if(confirm(\'Reset KZ Koperal bulan ini?\')){localStorage.removeItem(\''+storeKey('kzk')+'\');window.eakhaV591RenderKZ();}">Reset KZ Koperal</button></div>'+stagingTable('kzp',kzp)+stagingTable('kzk',kzk)+'</div></div>';
+}
+function renderKZPage(type){
+  var host=q('#v59-'+type+'-page-panel'); if(!host) return; var arr=getStaging(type);
+  host.innerHTML='<div class="panel"><div class="ph"><div class="ph-title">'+(type==='kzp'?'KZ Penyelia Excel Staging':'KZ Koperal Excel Staging')+' — '+monthName(activeMonth())+' '+activeYear()+'</div></div><div class="pb"><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-bl">Upload Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV591ImportKZ(\''+type+'\',this.files[0])"></label><button class="btn btn-gn" onclick="window.eakhaV591SyncKZ(\''+type+'\')">Kemaskini ke Master File</button><button class="btn btn-rd" onclick="if(confirm(\'Reset data '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' bulan ini?\')){localStorage.removeItem(\''+storeKey(type)+'\');window.eakhaV591RenderKZ();}">Reset Bulan Ini</button></div>'+stagingTable(type,arr)+'</div></div>';
+}
+function injectKZPanel(){
+  var page=q('#page-master'); if(page&&!q('#v59-kz-panel')){var div=document.createElement('div'); div.id='v59-kz-panel'; page.insertBefore(div,page.firstChild);}
+  var p1=q('#page-kzp-staging'); if(p1&&!q('#v59-kzp-page-panel')){var d1=document.createElement('div'); d1.id='v59-kzp-page-panel'; p1.insertBefore(d1,p1.firstChild);}
+  var p2=q('#page-kzk-staging'); if(p2&&!q('#v59-kzk-page-panel')){var d2=document.createElement('div'); d2.id='v59-kzk-page-panel'; p2.insertBefore(d2,p2.firstChild);}
+  renderKZPanel(); renderKZPage('kzp'); renderKZPage('kzk');
+}
+function currentCell(m,d,layer){try{var c=(typeof D!=='undefined'&&D[m.bil]&&D[m.bil][d])?D[m.bil][d]:{}; if(layer==='SHIFT'){var sh=typeof gSh==='function'?gSh(m.bil,d):''; var label=(typeof SHL!=='undefined'&&SHL[sh])||sh||''; return label==='OFFDAY'?'OFF':label} if(layer==='KZP')return cleanStatus(c.kzp||'',m.nama); if(layer==='KZK')return cleanStatus(c.kzk||'',m.nama); if(layer==='TC'){return c.tc_in&&c.tc_out?(c.tc_in+'/'+c.tc_out):(c.tc||'')} if(layer==='MC'){var mc=(typeof getMC==='function')?getMC(m.bil,d):null; return mc?('MC '+(mc.hari||'')):''} if(layer==='HRMIS')return c.hrmis||''; if(layer==='AUDIT'){var af=(typeof auditFinal==='function')?auditFinal(m.bil,d):null; var t=af?(af.txt||''):''; return t==='OFFDAY'?'OFF':t.replace(/\n/g,' ')} }catch(e){} return ''}
+function snapshotBos(jab){
+  forceTHMaster();
+  var y=activeYear(), m=activeMonth(), days=daysInMonth(y,m), rows=masterList().filter(function(x){return !jab||jab==='SEMUA'||String(x.jab||'').toUpperCase()===jab});
+  var layers=[['SHIFT','SHIFT JADUAL'],['KZP','KZ PENYELIA'],['KZK','KZ KOPERAL'],['TC','TIMECARE'],['MC','MC DITERIMA'],['HRMIS','CUTI HRMIS'],['AUDIT','AUDIT FINAL']];
+  var html='<!doctype html><html><head><meta charset="utf-8"><title>Snapshot Bos '+monthName(m)+' '+y+'</title><style>@page{size:A3 landscape;margin:6mm}body{font-family:Arial,sans-serif;color:#000;background:#fff;font-size:6px}h1{font-size:13px;margin:0;color:#0F2D5A}.meta{font-size:7px;margin:3px 0 7px;color:#333}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #555;padding:1px 1.5px;text-align:center;vertical-align:middle;word-break:break-word}th{background:#0F2D5A;color:#fff;font-weight:bold}.nama{width:118px;text-align:left;font-weight:bold;font-size:5.7px}.lap{width:55px;text-align:left;font-weight:bold;font-size:5.5px}.day{width:20px;font-size:5.4px}.off{font-size:4.6px!important;line-height:1!important}.mc{background:#fed7aa}.cr{background:#bfdbfe}.el{background:#ddd6fe}.ok{background:#bbf7d0}.th{background:#fecaca}.x{background:#fecaca}.aud{font-weight:bold}</style></head><body onload="setTimeout(function(){window.print()},700)"><h1>e-AKHA VSAVAGE - SNAPSHOT BOS</h1><div class="meta">Bulan Audit: '+monthName(m)+' '+y+' | Jabatan: '+(jab||'SEMUA')+' | Tarikh Jana: '+new Date().toLocaleString('ms-MY')+'</div><table><thead><tr><th style="width:18px">Bil</th><th class="nama">Nama Anggota</th><th style="width:35px">Jabatan</th><th style="width:38px">Kompeni</th><th class="lap">Lapisan Data</th>';
+  for(var d=1;d<=days;d++) html+='<th class="day">'+d+'</th>'; html+='</tr></thead><tbody>';
+  rows.forEach(function(r){layers.forEach(function(L,idx){html+='<tr>'; if(idx===0){html+='<td rowspan="7">'+esc(r.bil)+'</td><td rowspan="7" class="nama">'+esc(r.nama)+'</td><td rowspan="7">'+esc(r.jab)+'</td><td rowspan="7">'+esc(r.komp)+'</td>'} html+='<td class="lap">'+L[1]+'</td>'; for(var d=1;d<=days;d++){var val=currentCell(r,d,L[0]); var cls=''; if(/\bOFF/.test(val))cls='off'; else if(/MC/.test(val))cls='mc'; else if(/CR|HRMIS/.test(val))cls='cr'; else if(/EL/.test(val))cls='el'; else if(/✓|SAH/.test(val))cls='ok'; else if(/TH|TT/.test(val))cls='th'; else if(/^X|ABS/.test(val))cls='x'; if(L[0]==='AUDIT')cls+=' aud'; html+='<td class="'+cls+'">'+esc(val)+'</td>'} html+='</tr>'})}); html+='</tbody></table></body></html>';
+  var w=window.open('','_blank'); if(!w){toast2('Popup disekat. Benarkan popup untuk Snapshot Bos.','warn'); return;} w.document.open(); w.document.write(html); w.document.close();
+}
+function injectSnapshotButtons(){var page=q('#page-master')||q('.content'); if(!page||q('#v59-snapshot-panel'))return; var div=document.createElement('div'); div.id='v59-snapshot-panel'; div.className='panel'; div.innerHTML='<div class="ph"><div class="ph-title">Snapshot Bos / Export A3</div></div><div class="pb"><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold" onclick="window.eakhaV591SnapshotBos(\'SEMUA\')">Snapshot Bos Semua Jabatan</button><button class="btn btn-bl" onclick="window.eakhaV591SnapshotBos(\'IKTAR\')">Snapshot Bos IKTAR</button><button class="btn btn-bl" onclick="window.eakhaV591SnapshotBos(\'MHKL\')">Snapshot Bos MHKL</button><button class="btn btn-bl" onclick="window.eakhaV591SnapshotBos(\'RT\')">Snapshot Bos RT</button></div><div class="notif n-warn" style="margin-top:8px">Snapshot hanya untuk print/PDF. Tidak overwrite Master File. OFFDAY dipaparkan kecil sebagai OFF.</div></div>'; page.insertBefore(div, page.children[1]||page.firstChild);}
+function injectStyle(){if(q('#v59-style'))return; var st=document.createElement('style'); st.id='v59-style'; st.textContent='.v59-offday,.kz-off,.af-off,.tc-off,.sh-o{font-size:5px!important;line-height:1!important;padding:0.5px 1px!important;letter-spacing:-.2px!important}.dc{word-break:break-word}.kz-th{font-weight:800!important}.v59-mini-note{font-size:7px;color:rgba(255,255,255,.4)}@media print{.v59-offday,.kz-off,.af-off,.tc-off,.sh-o{font-size:4.6px!important;line-height:1!important}}'; document.head.appendChild(st)}
+function boot(){injectStyle(); forceTHMaster(); injectKZPanel(); injectSnapshotButtons();}
+window.eakhaV591ImportKZ=importKZExcel; window.eakhaV591SyncKZ=syncKZToMaster; window.eakhaV591RenderKZ=function(){renderKZPanel();renderKZPage('kzp');renderKZPage('kzk')}; window.eakhaV591SnapshotBos=snapshotBos; window.eakhaV591ForceTH=forceTHMaster;
+document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,1200); setTimeout(boot,3000); setTimeout(boot,5200)}); window.addEventListener('hashchange',function(){setTimeout(boot,500)}); setInterval(function(){if(q('#page-master')||q('#page-kzp-staging')||q('#page-kzk-staging'))boot()},5000);
+try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+</body></html>');
   w.document.close(); setTimeout(()=>w.print(),500);
 }
 
