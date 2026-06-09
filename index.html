@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.7 MONTH MASTER SAFE</title>
+  <title>e-AKHA Vsavage v5.10.5 HRMIS BACKUP + KZ SOURCE SPLIT</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -215,7 +215,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input class="finp2" id="l-id" type="text" placeholder="ID Pengguna" style="width:100%;margin-bottom:8px">
     <input class="finp2" id="l-pw" type="password" placeholder="Kata Laluan" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-gold" id="l-btn" style="width:100%;justify-content:center;font-size:10px;padding:9px" onclick="doLogin()">Log Masuk</button>
-    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.6.2 HRMIS MASTER FIXED · 2026</div>
+    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.10.5 HRMIS BACKUP + KZ SOURCE SPLIT · 2026</div>
   </div>
 </div>
 
@@ -3366,7 +3366,154 @@ function expPDF(){
       '<td style="text-align:center">'+r.h+'</td><td style="text-align:center;color:#8B5E00">'+(r.mc||'')+'</td>'+
       '<td style="text-align:center;color:#1e40af">'+(r.cr||'')+'</td><td style="text-align:center;color:#991b1b;font-weight:bold">'+(r.ab||'')+'</td>'+
       '<td style="text-align:center;color:#9a3412">'+(r.lw||'')+'</td></tr>').join('')+
-    '</tbody></table></body></html>');
+    '</tbody></table><script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage PATCH v5.10.2
+   EXACT EXCEL READER UNTUK FAIL KZ YANG DISEDIAKAN
+   - Baca sheet 03_APR_2026_STATUSONLY / 02_APR_2026_MATRIX
+   - Baca 03_MEI_2026_STATUSONLY / 02_MEI_2026_MATRIX ikut bulan aktif
+   - Auto detect workbook KZ Koperal WhatsApp yang dibuat oleh ChatGPT
+   - Jika workbook gabungan, sheet PENYELIA/KZP masuk KZP, KOPERAL/KZK/WHATSAPP masuk KZK
+══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.2-EXACT-KZ-EXCEL-READER';
+window.EAKHA_KZ_EXCEL_READER_VERSION=PATCH;
+var MAIN_JABS=['IKTAR','MHKL','RT'];
+var TH_NAMES=['ASREE','ASRI','AMINUDIN','AMINUDDIN','NAZRI ISMAIL','MOHD NAZRI ISMAIL','MOHAMAD NAZRI ISMAIL','NAZRI BIN ISMAIL'];
+function qs(s,r){return (r||document).querySelector(s)}
+function qsa(s,r){return Array.from((r||document).querySelectorAll(s))}
+function pad(n){return String(+n).padStart(2,'0')}
+function yNow(){return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}
+function mNow(){return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}
+function dim(y,m){return new Date(+y,+m,0).getDate()}
+function monthName(m){return (typeof MONTHS_MS!=='undefined'&&MONTHS_MS[+m])?MONTHS_MS[+m]:('Bulan '+m)}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast2(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function canon(v){return String(v||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\b(LKPL|L\/KPL|KPL|KOST|KONST|PEL|PB|SM|SJN|SARJAN|KOPERAL|TUAN|ENCIK|PN|CIK)\b/g,' ').replace(/\([^)]*\)/g,' ').replace(/[^A-Z0-9@\/ ]+/g,' ').replace(/\bBIN\b|\bBINTI\b|\bBT\b/g,' ').replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHAMAD').replace(/\bMOHD\b/g,'MOHAMAD').replace(/\bALLIF\b/g,'ALIFF').replace(/\bHAIKAL\b/g,'HAIQAL').replace(/\s+/g,' ').trim()}
+function isTHName(n){var c=canon(n);return TH_NAMES.some(function(x){var t=canon(x);return c===t||c.indexOf(t)>=0||t.indexOf(c)>=0})}
+function normJab(v){var s=String(v||'').toUpperCase(); if(s.indexOf('IKTAR')>=0)return'IKTAR'; if(s.indexOf('MHKL')>=0)return'MHKL'; if(/\bRT\b|RADIOTERAPI|RADIOTHERAPY|RADIO/.test(s))return'RT'; return ''}
+function normKomp(v){var s=String(v||'').toUpperCase(); if(/ALPHA/.test(s))return'ALPHA'; if(/BRAVO/.test(s))return'BRAVO'; if(/CHARLIE/.test(s))return'CHARLIE'; if(/DELTA/.test(s))return'DELTA'; return ''}
+function normStatus(v,rawName){var s=String(v||'').toUpperCase().trim(); if(!s)return''; if(isTHName(rawName))return'TH'; if(/\bTH\b|TAHAN\s*TUGAS|TUGAS\s*KHAS/.test(s))return'TH'; if(/\bMC\b|CUTI\s*SAKIT|SAKIT/.test(s))return'MC'; if(/\bEL\b|EMERGENCY/.test(s))return'EL'; if(/\bCR\b|CUTI\s*REHAT/.test(s))return'CR'; if(/\bCTR\b|CUTI\s*TANPA\s*REKOD/.test(s))return'CTR'; if(/\bOT\b|LEBIH\s*MASA/.test(s))return'OT'; if(/\bABS\b|TIDAK\s*HADIR|PANGKAH|^X$/.test(s))return'ABS'; if(/^L\b|LEWAT/.test(s))return'L'; if(/OF|OFF|OFFDAY/.test(s))return'OF'; if(/[✓√✔]/.test(s)||/HADIR|BERTUGAS|POS|R1|R2/.test(s))return'✓'; return s.length<=10?s:'✓'}
+function members(){try{return (MASTER||[]).filter(function(m){return !m.pindah&&MAIN_JABS.indexOf(String(m.jab||'').toUpperCase())>=0})}catch(e){return []}}
+function matchMember(raw,jab,komp){var cn=canon(raw); if(!cn)return null; var pool=members().filter(function(m){var jj=String(m.jab||'').toUpperCase(),kk=String(m.komp||'').toUpperCase();return (!jab||jj===jab||String(jab).indexOf(jj)>=0)&&(!komp||kk===komp||String(komp).indexOf(kk)>=0)}); if(!pool.length)pool=members(); var exact=pool.find(function(m){return canon(m.nama)===cn}); if(exact)return exact; var best=null,bscore=0; pool.forEach(function(m){var mn=canon(m.nama),score=0;if(mn.indexOf(cn)>=0||cn.indexOf(mn)>=0)score=92; var toks=cn.split(' ').filter(function(t){return t.length>2&&['BIN','BINTI','MOHAMAD'].indexOf(t)<0}); if(toks.length){var hit=0;toks.forEach(function(t){if(mn.indexOf(t)>=0)hit++});score=Math.max(score,Math.round(hit/toks.length*88));} if(jab&&String(m.jab).toUpperCase()===jab)score+=6; if(komp&&String(m.komp).toUpperCase()===komp)score+=4; if(score>bscore){bscore=score;best=m}}); return (best&&bscore>=75)?best:null}
+function loadSt(){try{return JSON.parse(localStorage.getItem('eakha_kz_v510')||'{}')||{}}catch(e){return {}}}
+function saveSt(s){s.kzp=s.kzp||[];s.kzk=s.kzk||[];s.semak=s.semak||[];try{localStorage.setItem('eakha_kz_v510',JSON.stringify(s))}catch(e){}}
+function monthCode(m){return ['','JAN','FEB','MAC','APR','MEI','JUN','JUL','OGOS','SEP','OKT','NOV','DIS'][+m]||String(m)}
+function sheetText(sn){return String(sn||'').toUpperCase().replace(/\s+/g,'_')}
+function workbookHint(sheetNames){var all=sheetNames.map(sheetText).join('|'); if(/DETAIL_SAH|WHATSAPP|KOPERAL|\bKZK\b|KPL/.test(all))return'kzk'; if(/PENYELIA|\bKZP\b|PENYOKONG/.test(all))return'kzp'; return ''}
+function sheetType(sn,forced,hint){var s=sheetText(sn); if(forced&&forced!=='auto')return forced; if(/PENYELIA|\bKZP\b|PENYOKONG/.test(s))return'kzp'; if(/KOPERAL|\bKZK\b|WHATSAPP|DETAIL_SAH|KPL/.test(s))return'kzk'; if(/STATUSONLY|MATRIX/.test(s))return hint||''; return ''}
+function isActiveMonthSheet(sn){var s=sheetText(sn),code=monthCode(mNow()),yy=String(yNow()); return s.indexOf(code)>=0&&s.indexOf(yy)>=0}
+function chooseSheets(wb,forced){var names=wb.SheetNames||[],hint=workbookHint(names),out={kzp:[],kzk:[]}; ['kzp','kzk'].forEach(function(tp){var eligible=names.filter(function(sn){return sheetType(sn,forced,hint)===tp}); var active=eligible.filter(isActiveMonthSheet); var status=active.filter(function(sn){return /STATUSONLY/i.test(sn)}); var matrix=active.filter(function(sn){return /MATRIX/i.test(sn)}); var detail=eligible.filter(function(sn){return /DETAIL_SAH|DETAIL/i.test(sn)}); if(status.length)out[tp]=status; else if(matrix.length)out[tp]=matrix; else if(detail.length)out[tp]=detail; else out[tp]=eligible; }); if(forced==='kzp')out.kzk=[]; if(forced==='kzk')out.kzp=[]; return out}
+function findHeader(rows){var best=0,bscore=-1; for(var i=0;i<Math.min(rows.length,30);i++){var r=rows[i]||[],txt=r.map(function(x){return String(x||'').toUpperCase()}).join('|'),score=0; if(/NAMA/.test(txt))score+=10; if(/JABATAN/.test(txt))score+=5; if(/KOMP/.test(txt))score+=5; if(/TARIKH/.test(txt))score+=3; for(var c=0;c<r.length;c++){if(/^\d{1,2}$/.test(String(r[c]||'').trim()))score++} if(score>bscore){best=i;bscore=score}} return best}
+function colIndex(head,patterns){for(var i=0;i<head.length;i++){var s=String(head[i]||'').toUpperCase(); for(var p=0;p<patterns.length;p++){if(patterns[p].test(s))return i}} return -1}
+function parseMatrix(rows,type,fileName,sheetName,store){var y=yNow(),m=mNow(),max=dim(y,m),hi=findHeader(rows),head=rows[hi]||[]; var nameCol=colIndex(head,[/NAMA\s*RASMI/,/NAMA\s*ANGGOTA/,/^NAMA$/,/NAMA/]); var jabCol=colIndex(head,[/JABATAN\s*FOKUS/,/^JABATAN$/, /UNIT\/JABATAN/,/JABATAN/]); var kompCol=colIndex(head,[/KOMPENI/,/KOMP/]); var dayCols=[]; head.forEach(function(h,i){var s=String(h||'').trim(),mm=s.match(/^(\d{1,2})(\b|\s|\/|\-)/); if(mm){var d=+mm[1]; if(d>=1&&d<=max)dayCols.push({i:i,d:d})}}); if(nameCol<0||!dayCols.length){store.semak.push({kind:type,sheet:sheetName,rawName:'-',reason:'Format sheet bukan matrix/status harian yang boleh dibaca',bulan:m,tahun:y}); return 0}
+ var count=0; for(var r=hi+1;r<rows.length;r++){var row=rows[r]||[],raw=String(row[nameCol]||'').trim(); if(!raw||/NAMA|JUMLAH|PADANAN|RULE/i.test(raw))continue; var jab=normJab(row[jabCol]||''),komp=normKomp(row[kompCol]||''); var mem=matchMember(raw,jab,komp); if(!mem){store.semak.push({kind:type,sheet:sheetName,rawName:raw,reason:'Nama tidak jumpa dalam Master File 52 / perlu semak roster',bulan:m,tahun:y}); continue} dayCols.forEach(function(dc){var asal=row[dc.i],st=normStatus(asal,raw||mem.nama); if(!st)return; if(isTHName(mem.nama))st='TH'; store[type].push({year:y,month:m,day:dc.d,bil:+mem.bil,nama_rasmi:mem.nama,jabatan:mem.jab,kompeni:mem.komp,status:st,status_asal:String(asal||''),source:fileName,sheet:sheetName,catatan:'Dibaca daripada '+sheetName}); count++})} return count}
+function parseDetail(rows,type,fileName,sheetName,store){var y=yNow(),m=mNow(),hi=findHeader(rows),head=rows[hi]||[]; var nameCol=colIndex(head,[/NAMA\s*RASMI/,/NAMA\s*RAW/,/NAMA/]); var tarCol=colIndex(head,[/TARIKH\s*LAPORAN/,/^TARIKH/]); var stCol=colIndex(head,[/STATUS\s*AUDIT\s*KEMAS/,/^STATUS/]); var jabCol=colIndex(head,[/JABATAN\s*FOKUS/,/JABATAN/]); var kompCol=colIndex(head,[/KOMPENI/]); if(nameCol<0||tarCol<0||stCol<0)return 0; var count=0; for(var r=hi+1;r<rows.length;r++){var row=rows[r]||[],raw=String(row[nameCol]||'').trim(),tar=String(row[tarCol]||'').trim(); if(!raw||!tar)continue; var mt=tar.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/); if(!mt)continue; var d=+mt[1],mo=+mt[2],yy=+mt[3]; if(yy<100)yy+=2000; if(mo!==m||yy!==y)continue; var jab=normJab(row[jabCol]||''),komp=normKomp(row[kompCol]||''); var mem=matchMember(raw,jab,komp); if(!mem){store.semak.push({kind:type,sheet:sheetName,rawName:raw,reason:'Detail: nama tidak padan Master',bulan:m,tahun:y});continue} var st=normStatus(row[stCol],raw||mem.nama); if(!st)continue; if(isTHName(mem.nama))st='TH'; store[type].push({year:y,month:m,day:d,bil:+mem.bil,nama_rasmi:mem.nama,jabatan:mem.jab,kompeni:mem.komp,status:st,status_asal:String(row[stCol]||''),source:fileName,sheet:sheetName,catatan:'Detail WhatsApp'}); count++} return count}
+function dedupRecords(arr){var pri={'TH':9,'MC':8,'EL':7,'CR':7,'CTR':7,'ABS':6,'L':5,'OT':4,'✓':3,'OF':1}; var map={}; (arr||[]).forEach(function(r){var k=[r.year,r.month,r.day,r.bil,r.sheet,r.source].join('|'),old=map[k]; if(!old||(pri[r.status]||0)>(pri[old.status]||0))map[k]=r}); return Object.keys(map).map(function(k){return map[k]})}
+function importWorkbook(type,file){if(!file)return; if(typeof XLSX==='undefined'){toast2('Library Excel belum loaded. Refresh semula.','err');return} var reader=new FileReader(); reader.onload=function(e){try{var wb=XLSX.read(e.target.result,{type:'array'}),plan=chooseSheets(wb,type),store=loadSt(),added=0,used=[]; store.kzp=(store.kzp||[]).filter(function(r){return !(r.source===file.name&&+r.year===yNow()&&+r.month===mNow())}); store.kzk=(store.kzk||[]).filter(function(r){return !(r.source===file.name&&+r.year===yNow()&&+r.month===mNow())}); store.semak=store.semak||[]; ['kzp','kzk'].forEach(function(tp){(plan[tp]||[]).forEach(function(sn){var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:false}); var n=/DETAIL/i.test(sn)?parseDetail(rows,tp,file.name,sn,store):parseMatrix(rows,tp,file.name,sn,store); if(n){added+=n;used.push(sn+'→'+tp.toUpperCase()+'('+n+')')}})}); store.kzp=dedupRecords(store.kzp||[]); store.kzk=dedupRecords(store.kzk||[]); saveSt(store); try{renderKZPanels()}catch(e){} toast2('Excel dibaca: '+added+' rekod staging. '+(used.length?'Sheet: '+used.join(', '):'Tiada sheet bulan aktif dikesan.'),added?'ok':'warn')}catch(err){console.error(err);toast2('Ralat baca Excel: '+err.message,'err')}}; reader.readAsArrayBuffer(file)}
+function syncKZ(type){var store=loadSt(),arr=(store[type]||[]).filter(function(r){return +r.year===yNow()&&+r.month===mNow()}),n=0; if(typeof D==='undefined'){toast2('Master belum ready','err');return} arr.forEach(function(r){if(!D[r.bil])D[r.bil]={}; if(!D[r.bil][r.day])D[r.bil][r.day]={kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''}; var key=type==='kzp'?'kzp':'kzk',st=isTHName(r.nama_rasmi)?'TH':r.status; D[r.bil][r.day][key]=st; n++}); try{localStorage.setItem('eakha_data',JSON.stringify(D)); if(typeof saveDataset==='function')saveDataset('SYNC EXACT EXCEL '+type.toUpperCase())}catch(e){} try{if(typeof renderMaster==='function')renderMaster(null); if(typeof updFlags==='function')updFlags(); renderKZPanels()}catch(e){} toast2((type==='kzp'?'KZ Penyelia':'KZ Koperal')+' dikemaskini ke Master: '+n+' sel','ok')}
+function resetKZ(type){if(!confirm('Reset staging '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' bulan aktif?'))return; var s=loadSt(); s[type]=(s[type]||[]).filter(function(r){return !(+r.year===yNow()&&+r.month===mNow())}); saveSt(s); renderKZPanels(); toast2('Staging bulan aktif dikosongkan','ok')}
+function table(type){var s=loadSt(),arr=(s[type]||[]).filter(function(r){return +r.year===yNow()&&+r.month===mNow()}); var rows=arr.slice().reverse().slice(0,500).map(function(r){return'<tr><td>'+r.day+'/'+pad(r.month)+'/'+r.year+'</td><td>'+esc(r.jabatan)+'</td><td>'+esc(r.kompeni)+'</td><td>'+esc(r.nama_rasmi)+'</td><td><b>'+esc(r.status)+'</b><br><span style="font-size:7px;color:rgba(255,255,255,.35)">'+esc(r.status_asal||'')+'</span></td><td>'+esc(r.source)+'</td><td>'+esc(r.sheet)+'</td><td>'+esc(r.catatan||'')+'</td></tr>'}).join(''); return'<div style="font-size:8px;color:rgba(255,255,255,.45);margin:8px 0">'+arr.length+' rekod staging bulan aktif. Fail yang dibuat ChatGPT akan baca sheet <b>03_'+monthCode(mNow())+'_'+yNow()+'_STATUSONLY</b> atau <b>02_'+monthCode(mNow())+'_'+yNow()+'_MATRIX</b>.</div><div style="max-height:285px;overflow:auto"><table class="tbl"><thead><tr><th>Tarikh</th><th>Jabatan</th><th>Kompeni</th><th>Nama Rasmi</th><th>Status</th><th>File</th><th>Sheet</th><th>Catatan</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8" class="empty">Belum ada data Excel untuk bulan aktif.</td></tr>')+'</tbody></table></div>'}
+function semak(){var s=loadSt(),arr=(s.semak||[]).filter(function(r){return !r.bulan||+r.bulan===mNow()}); if(!arr.length)return'<div class="empty">Tiada isu padanan.</div>'; return'<div style="max-height:190px;overflow:auto"><table class="tbl"><thead><tr><th>Jenis</th><th>Sheet</th><th>Nama Asal</th><th>Sebab</th></tr></thead><tbody>'+arr.slice().reverse().slice(0,150).map(function(r){return'<tr><td>'+esc((r.kind||'').toUpperCase())+'</td><td>'+esc(r.sheet||'')+'</td><td>'+esc(r.rawName||'')+'</td><td style="color:#fbbf24">'+esc(r.reason||'')+'</td></tr>'}).join('')+'</tbody></table></div>'}
+function renderKZPanels(){[['kzp','page-kzp-staging','KZ Penyelia Excel'],['kzk','page-kzk-staging','KZ Koperal Excel']].forEach(function(x){var type=x[0],page=qs('#'+x[1]); if(!page)return; var box=qs('.e510-kzbox',page)||qs('.e5102-kzbox',page); if(!box){box=document.createElement('div');box.className='panel e5102-kzbox';page.insertBefore(box,page.firstChild)} box.className='panel e5102-kzbox'; box.innerHTML='<div class="ph"><div class="ph-title">'+x[2]+' — Bulan Aktif: '+monthName(mNow())+' '+yNow()+' <span style="font-size:7px;color:#34d399">('+PATCH+')</span></div></div><div class="pb"><div class="notif n-info"><div><b>Flow:</b> Upload Excel yang akak dapat daripada ChatGPT → staging → semak → Kemaskini ke Master File. Sistem baca sheet bulan aktif sahaja dan fokus IKTAR/MHKL/RT. ASREE/AMINUDIN/NAZRI ISMAIL = TH, bukan tick.</div></div><div class="notif n-warn"><div><b>Nama sheet diterima:</b> KZP/PENYELIA untuk KZ Penyelia, KZK/KOPERAL/WHATSAPP untuk KZ Koperal, atau sheet matrix/statusonly seperti <b>03_'+monthCode(mNow())+'_'+yNow()+'_STATUSONLY</b>. Jika fail gabungan ada dua sheet, sistem akan asingkan automatik.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn btn-bl">Upload '+x[2]+'<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV510ImportKZ(\''+type+'\',this.files[0]);this.value=\'\'"></label><label class="btn btn-gold">Upload Excel Gabungan KZ<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV510ImportKZ(\'auto\',this.files[0]);this.value=\'\'"></label><button class="btn btn-gn" onclick="window.eakhaV510SyncKZ(\''+type+'\')">Kemaskini ke Master File</button><button class="btn btn-rd" onclick="window.eakhaV510ResetKZ(\''+type+'\')">Reset Bulan Ini</button></div>'+table(type)+'<div class="panel" style="margin-top:8px"><div class="ph"><span class="ph-title">Semak Padanan / Nama tidak masuk Master</span></div><div class="pb">'+semak()+'</div></div></div>'})}
+window.eakhaV510ImportKZ=importWorkbook; window.eakhaV510SyncKZ=syncKZ; window.eakhaV510ResetKZ=resetKZ; window.eakhaV510RenderKZPanels=renderKZPanels;
+window.eakhaV591ImportKZ=importWorkbook; window.eakhaV591SyncKZ=syncKZ; window.eakhaV591RenderKZ=renderKZPanels;
+function boot(){try{renderKZPanels()}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){[500,1200,2500,4500].forEach(function(ms){setTimeout(boot,ms)})});
+var oldNav=window.nav;if(typeof oldNav==='function'&&!oldNav.__e5102){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(boot,120);return r};window.nav.__e5102=true}
+var oldSet=window.setMonth;if(typeof oldSet==='function'&&!oldSet.__e5102){window.setMonth=function(){var r=oldSet.apply(this,arguments);setTimeout(boot,200);return r};window.setMonth.__e5102=true}
+try{console.log('[e-AKHA '+PATCH+'] ready')}catch(e){}
+})();
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage PATCH v5.10.5 — HRMIS BACKUP BASE + KZ SOURCE SPLIT FIX
+   Base wajib: v5.10.3 KZ HRMIS BACKUP FIXED
+   - Kekalkan HRMIS CR sync + Backup JSON dari v5.10.3
+   - Betulkan aturan KZ sebenar:
+     KZ_JUN_2025 = roster/nama rujukan sahaja
+     KZ Penyelia = Excel hasil PDF/gambar scan yang sudah dikemas
+     KZ Koperal = Excel WhatsApp/KPL/Koperal yang ChatGPT susun
+   - Upload tab khusus menentukan source. Gabungan hanya baca sheet jelas KZ_PENYELIA/KZ_KOPERAL.
+══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.5-HRMIS-BACKUP-KZ-SOURCE-SPLIT';
+window.EAKHA_VERSION_KZ_SOURCE_SPLIT=PATCH;
+var MAIN_JABS=['IKTAR','MHKL','RT'];
+var TH_NAMES=['ASREE','MUHAMMAD ASREE','MOHD ASREE','AMINUDIN','AMINUDDIN','MOHD AMINUDIN','MOHD AMINUDDIN','NAZRI ISMAIL','MOHD NAZRI ISMAIL','MOHD NAZRI BIN ISMAIL','MOHAMAD NAZRI ISMAIL'];
+function qs(s,r){return (r||document).querySelector(s)}
+function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function pad(n){return String(+n).padStart(2,'0')}
+function activeY(){return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}
+function activeM(){return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}
+function daysInMonth(){return new Date(activeY(),activeM(),0).getDate()}
+function monthNm(m){try{return MONTHS_MS&&MONTHS_MS[+m]?MONTHS_MS[+m]:'Bulan '+m}catch(e){return 'Bulan '+m}}
+function toast2(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function canon(v){return String(v||'').toUpperCase()
+  .replace(/\b(LKPL|KPL|KONST|KOST|KOP|PEL|PPB|PB|SM|SJN|DSP|TUAN|PUAN|ENCIK|CIK)\b/g,' ')
+  .replace(/\([^)]*\)/g,' ')
+  .replace(/[^A-Z0-9@\/ ]+/g,' ')
+  .replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHAMAD').replace(/\bMOHD\b/g,'MOHAMAD')
+  .replace(/\bALLIF\b/g,'ALIFF').replace(/\bHAIKAL\b/g,'HAIQAL')
+  .replace(/\s+/g,' ').trim()}
+function isTHName(n){var c=canon(n);return TH_NAMES.some(function(x){return c.indexOf(canon(x))>=0})}
+function normJab(v){var s=String(v||'').toUpperCase();if(s.indexOf('IKTAR')>=0)return'IKTAR';if(s.indexOf('MHKL')>=0||s.indexOf('MADANI')>=0)return'MHKL';if(/\bRT\b|RADIO/.test(s))return'RT';return''}
+function normKomp(v){var s=String(v||'').toUpperCase();if(s.indexOf('ALPHA')>=0)return'ALPHA';if(s.indexOf('BRAVO')>=0)return'BRAVO';if(s.indexOf('CHARLIE')>=0)return'CHARLIE';if(s.indexOf('DELTA')>=0)return'DELTA';return''}
+function roster(){try{return (MASTER||[]).filter(function(m){return MAIN_JABS.indexOf(m.jab)>=0})}catch(e){return[]}}
+function scoreName(a,b){var ca=canon(a),cb=canon(b);if(!ca||!cb)return 0;if(ca===cb)return 100;var bad={'BIN':1,'BINTI':1,'BT':1,'BTE':1,'A/L':1,'AL':1,'ABD':1};var toks=ca.split(' ').filter(function(t){return t.length>2&&!bad[t]});if(!toks.length)return 0;var hit=0;toks.forEach(function(t){if(cb.indexOf(t)>=0)hit++});return Math.round(hit/toks.length*100)}
+function findMember(name,jab,komp,bil){var pool=roster();if(bil){var byBil=pool.find(function(m){return String(m.bil)===String(bil)});if(byBil)return {m:byBil,score:100,by:'bil'}}var c=canon(name);var exact=pool.find(function(m){return canon(m.nama)===c});if(exact)return {m:exact,score:100,by:'exact'};var p=pool.filter(function(m){return (!jab||m.jab===jab)&&(!komp||m.komp===komp)});if(!p.length)p=pool.filter(function(m){return !jab||m.jab===jab});if(!p.length)p=pool;var best=null,sc=0;p.forEach(function(m){var s=scoreName(name,m.nama);if(s>sc){sc=s;best=m}});return best&&sc>=58?{m:best,score:sc,by:'fuzzy'}:null}
+function normStatus(v,name){var raw=String(v==null?'':v).trim();var s=raw.toUpperCase();if(!s||s==='0'||s==='-')return'';if(isTHName(name))return'TH';if(/\bTH\b|TAHAN/.test(s))return'TH';if(/\bTT\b/.test(s))return'TT';if(/\bMC\b|CUTI\s*SAKIT|SAKIT/.test(s))return'MC';if(/\bEL\b|EMERGENCY|KECEMASAN/.test(s))return'EL';if(/\bCR\b|CUTI\s*REHAT/.test(s))return'CR';if(/\bCTR\b|TANPA\s*REKOD/.test(s))return'CTR';if(/\bABS\b|TIDAK\s*HADIR|PANGKAH|^X$/.test(s))return'ABS';if(/^L\b|LEWAT/.test(s))return'L';if(/\bOT\b|LEBIH\s*MASA/.test(s))return'OT';if(/[✓√✔]/.test(s)||/HADIR|BERTUGAS|POS|R1|R2|HAKIKI/.test(s))return'✓';if(s==='OF'||s==='OFF'||s==='OFFDAY')return'OF';return s.length<=10?s:'✓'}
+function combine(a,b){if(!a)return b;if(!b)return a;var p={};String(a).split('/').forEach(function(x){p[x]=1});String(b).split('/').forEach(function(x){p[x]=1});var order=['TH','TT','MC','EL','CR','CTR','ABS','L','OT','✓','OF'];for(var i=0;i<order.length;i++)if(p[order[i]])return order[i];return Object.keys(p).join('/')}
+function stageKey(type){return 'eakha_v5105_kz_'+type+'_'+activeY()+'_'+pad(activeM())}
+function semakKey(){return 'eakha_v5105_kz_semak_'+activeY()+'_'+pad(activeM())}
+function getStage(type){try{return JSON.parse(localStorage.getItem(stageKey(type))||'[]')}catch(e){return[]}}
+function setStage(type,arr){localStorage.setItem(stageKey(type),JSON.stringify(arr||[]))}
+function getSemak(){try{return JSON.parse(localStorage.getItem(semakKey())||'[]')}catch(e){return[]}}
+function setSemak(a){localStorage.setItem(semakKey(),JSON.stringify((a||[]).slice(-900)))}
+function pushSemak(item){var a=getSemak();a.push(item);setSemak(a)}
+function clearSemak(){localStorage.removeItem(semakKey())}
+function hdrMap(row){var m={};(row||[]).forEach(function(h,i){var k=String(h||'').trim().toUpperCase();if(k)m[k]=i});return m}
+function findIdx(hm,names){for(var i=0;i<names.length;i++){if(hm[names[i]]!=null)return hm[names[i]]}return -1}
+function val(row,idx){return idx==null||idx<0||idx>=row.length?'':row[idx]}
+function parseDay(v){var s=String(v||'').trim();var m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m){if(+m[2]===activeM()&&+m[3]===activeY())return +m[1];return 0}if(/^\d{1,2}$/.test(s)){var d=+s;return d>=1&&d<=daysInMonth()?d:0}return 0}
+function isSkipSheet(sn){var s=String(sn||'').toUpperCase();return /README|INFO|ROSTER|MASTER_52|KZ_JUN_2025|RULE|AUDIT|SEMAK_PADANAN|PERBANDINGAN|COMPARE|NAMA/i.test(s)&&!/KZ[_\s-]*(PENYELIA|KOPERAL)/i.test(s)}
+function sourceFromSheet(sn,forceType){var s=String(sn||'').toUpperCase();if(forceType==='kzp')return'kzp';if(forceType==='kzk')return'kzk';if(forceType==='auto'){
+  if(/KZ[_\s-]*PENYELIA|\bPENYELIA\b|\bKZP\b/.test(s))return'kzp';
+  if(/KZ[_\s-]*KOPERAL|\bKOPERAL\b|\bKZK\b|WHATSAPP|\bKPL\b/.test(s))return'kzk';
+  return'';
+}
+return''}
+function addRec(type,rec,fileName,sheetName,bag){if(!rec||!rec.day||!rec.status)return;var jab=normJab(rec.jabatan),komp=normKomp(rec.kompeni);if(jab&&MAIN_JABS.indexOf(jab)<0)return;var found=findMember(rec.nama,jab,komp,rec.bil);if(!found){pushSemak({source:type,sheet:sheetName,nama:rec.nama,status:rec.status,sebab:'Nama tidak padan roster rasmi MHKL/IKTAR/RT',file:fileName});return}var m=found.m;if(MAIN_JABS.indexOf(m.jab)<0)return;var st=isTHName(m.nama+' '+rec.nama)?'TH':rec.status;bag.push({year:activeY(),month:activeM(),day:rec.day,bil:m.bil,jabatan:m.jab,kompeni:m.komp,nama_rasmi:m.nama,nama_asal:rec.nama,status:st,source:fileName,sheet:sheetName,score:found.score,catatan:(type==='kzp'?'KZ PENYELIA':'KZ KOPERAL')+' · '+(rec.catatan||'')})}
+function parseMatrix(rows,type,fileName,sheetName,bag){for(var r=0;r<Math.min(rows.length,12);r++){var row=rows[r]||[];var dayCols=[];row.forEach(function(h,i){var d=parseDay(h);if(d)dayCols.push({day:d,col:i})});if(dayCols.length>=3){var hm=hdrMap(row);var bilIdx=findIdx(hm,['BIL','BIL MASTER','ROSTERID','ID']);var nameIdx=findIdx(hm,['NAMA RASMI','NAMA MASTER','NAMA RASMI KZ ASLI','NAMA ANGGOTA','NAMA']);var jabIdx=findIdx(hm,['JABATAN','JABATAN MASTER','JABATAN FOKUS']);var kompIdx=findIdx(hm,['KOMPENI','KOMPENI MASTER','KOMPENI KZ ASLI']);if(nameIdx<0)nameIdx=3;if(jabIdx<0)jabIdx=1;if(kompIdx<0)kompIdx=2;var added=0;for(var i=r+1;i<rows.length;i++){var rr=rows[i]||[];var nama=String(val(rr,nameIdx)||'').trim();if(!nama)continue;dayCols.forEach(function(dc){var st=normStatus(val(rr,dc.col),nama);if(!st)return;addRec(type,{bil:val(rr,bilIdx),day:dc.day,jabatan:val(rr,jabIdx),kompeni:val(rr,kompIdx),nama:nama,status:st,catatan:'matrix/statusonly'},fileName,sheetName,bag);added++})}return added}}
+return 0}
+function parseDetail(rows,type,fileName,sheetName,bag){var hIdx=-1,hm=null;for(var r=0;r<Math.min(rows.length,15);r++){hm=hdrMap(rows[r]||[]);if(findIdx(hm,['HARI','TARIKH LAPORAN','TARIKH'])>=0&&findIdx(hm,['NAMA MASTER','NAMA RASMI','NAMA RAW WHATSAPP','NAMA ANGGOTA'])>=0){hIdx=r;break}}if(hIdx<0)return 0;var h=rows[hIdx]||[];hm=hdrMap(h);var bilIdx=findIdx(hm,['BIL MASTER','BIL','ROSTERID']);var dayIdx=findIdx(hm,['HARI','TARIKH LAPORAN','TARIKH']);var nameIdx=findIdx(hm,['NAMA MASTER','NAMA RASMI','NAMA RASMI KZ ASLI','NAMA RAW WHATSAPP','NAMA ANGGOTA']);var stIdx=findIdx(hm,['STATUS KZ KOPERAL','STATUS KZ PENYELIA','STATUS','STATUS AUDIT KEMAS','STATUS AUDIT']);var jabIdx=findIdx(hm,['JABATAN MASTER','JABATAN','JABATAN FOKUS','JABATAN WHATSAPP']);var kompIdx=findIdx(hm,['KOMPENI MASTER','KOMPENI','KOMPENI KZ ASLI','KOMPENI WHATSAPP']);if(dayIdx<0||nameIdx<0||stIdx<0)return 0;var added=0;for(var i=hIdx+1;i<rows.length;i++){var rr=rows[i]||[];var day=parseDay(val(rr,dayIdx));var nama=String(val(rr,nameIdx)||'').trim();var st=normStatus(val(rr,stIdx),nama);if(!day||!nama||!st)continue;addRec(type,{bil:val(rr,bilIdx),day:day,jabatan:val(rr,jabIdx),kompeni:val(rr,kompIdx),nama:nama,status:st,catatan:'detail'},fileName,sheetName,bag);added++}return added}
+function mergeStage(oldArr,newArr){var map={};(oldArr||[]).forEach(function(r){map[r.bil+'_'+r.day]=r});(newArr||[]).forEach(function(r){var k=r.bil+'_'+r.day;if(map[k]){map[k].status=combine(map[k].status,r.status);map[k].source=r.source;map[k].sheet=r.sheet;map[k].score=Math.max(map[k].score||0,r.score||0)}else map[k]=r});return Object.keys(map).map(function(k){return map[k]}).sort(function(a,b){return a.bil-b.bil||a.day-b.day})}
+function importWorkbook(forceType,file){if(!file)return;if(typeof XLSX==='undefined'){toast2('Library Excel belum loaded. Refresh semula.','err');return}var reader=new FileReader();reader.onload=function(e){try{var wb=XLSX.read(e.target.result,{type:'array'});var buckets={kzp:[],kzk:[]};var skipped=0;clearSemak();wb.SheetNames.forEach(function(sn){if(isSkipSheet(sn)){skipped++;return}var type=sourceFromSheet(sn,forceType);if(!type){pushSemak({source:'SUMBER',sheet:sn,nama:'',status:'',sebab:'Sheet tidak jelas. Untuk Excel gabungan, rename sheet KZ_PENYELIA / KZ_KOPERAL. Kalau Excel lama, upload melalui tab khusus KZ Penyelia atau KZ Koperal.',file:file.name});skipped++;return}var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:false});var n=0;if(/DETAIL|SAH_3JABATAN/i.test(sn))n=parseDetail(rows,type,file.name,sn,buckets[type]);if(!n)n=parseMatrix(rows,type,file.name,sn,buckets[type]);if(!n)n=parseDetail(rows,type,file.name,sn,buckets[type]);if(!n){pushSemak({source:type,sheet:sn,nama:'',status:'',sebab:'Format sheet bukan MATRIX/STATUSONLY/DETAIL yang boleh dibaca.',file:file.name});skipped++}});['kzp','kzk'].forEach(function(t){if(buckets[t].length)setStage(t,mergeStage(getStage(t),buckets[t]))});renderPanels();toast2('Import KZ selesai: KZP '+buckets.kzp.length+' rekod, KZK '+buckets.kzk.length+' rekod'+(skipped?' · '+skipped+' sheet semak':''),'ok')}catch(err){console.error(err);toast2('Ralat baca Excel KZ: '+err.message,'err')}};reader.readAsArrayBuffer(file)}
+function ensureCell(bil,day){if(typeof D==='undefined')return null;if(!D[bil])D[bil]={};if(!D[bil][day])D[bil][day]={kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''};return D[bil][day]}
+function sync(type){var arr=getStage(type),field=type==='kzp'?'kzp':'kzk',n=0;if(typeof D==='undefined'){toast2('Master D belum ready','err');return}arr.forEach(function(r){var c=ensureCell(r.bil,r.day);if(c){c[field]=isTHName(r.nama_rasmi)?'TH':r.status;c[field+'_src']=r.source;c[field+'_sheet']=r.sheet;n++}});try{localStorage.setItem('eakha_data',JSON.stringify(D));if(typeof saveDataset==='function')saveDataset('SYNC '+type.toUpperCase()+' '+PATCH);if(typeof renderMaster==='function')renderMaster(null);if(typeof updFlags==='function')updFlags()}catch(e){console.warn(e)}toast2((type==='kzp'?'KZ Penyelia':'KZ Koperal')+' → Master: '+n+' sel dikemaskini','ok');renderPanels()}
+function reset(type){if(!confirm('Reset staging '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' bulan ini?'))return;setStage(type,[]);clearSemak();renderPanels();toast2('Staging '+type.toUpperCase()+' bulan aktif direset','ok')}
+function stageTable(type){var arr=getStage(type);var rows=arr.slice(-500).reverse().map(function(r){var cls=r.status==='TH'?'kz-th':r.status==='MC'?'kz-mc':r.status==='CR'?'kz-cr':r.status==='EL'?'kz-el':r.status==='ABS'?'kz-abs':'kz-ok';return'<tr><td>'+esc(r.day+'/'+pad(r.month)+'/'+r.year)+'</td><td>'+esc(r.jabatan)+'</td><td>'+esc(r.kompeni)+'</td><td>'+esc(r.nama_rasmi)+'</td><td><b class="'+cls+'" style="padding:2px 7px;border-radius:4px">'+esc(r.status)+'</b></td><td>'+esc(r.source)+'</td><td>'+esc(r.sheet)+'</td><td>'+esc(r.score)+'</td></tr>'}).join('');return'<div style="font-size:8px;color:rgba(255,255,255,.45);margin:7px 0">'+arr.length+' rekod staging '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' bulan aktif.</div><div style="max-height:280px;overflow:auto"><table class="tbl"><thead><tr><th>Tarikh</th><th>Jabatan</th><th>Kompeni</th><th>Nama Rasmi</th><th>Status</th><th>File</th><th>Sheet</th><th>Score</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8" class="empty">Belum ada data. Upload Excel di tab yang betul.</td></tr>')+'</tbody></table></div>'}
+function semakHtml(){var arr=getSemak();if(!arr.length)return'<div class="empty">Tiada isu sumber/padanan.</div>';return'<div style="max-height:210px;overflow:auto"><table class="tbl"><thead><tr><th>Jenis</th><th>Sheet</th><th>Nama</th><th>Status</th><th>Sebab</th></tr></thead><tbody>'+arr.slice(-250).reverse().map(function(r){return'<tr><td>'+esc(String(r.source||'').toUpperCase())+'</td><td>'+esc(r.sheet||'')+'</td><td>'+esc(r.nama||'')+'</td><td>'+esc(r.status||'')+'</td><td style="color:#fbbf24">'+esc(r.sebab||'')+'</td></tr>'}).join('')+'</tbody></table></div>'}
+function panel(type){var title=type==='kzp'?'KZ Penyelia Excel / PDF Scan yang sudah dikemas':'KZ Koperal Excel WhatsApp KPL';var info=type==='kzp'?'Data KZ Penyelia datang daripada PDF/gambar scan yang sudah akak/ChatGPT kemaskan. KZ_JUN_2025 hanya roster nama rasmi, bukan status April.':'Data KZ Koperal datang daripada WhatsApp chat KPL/Koperal yang ChatGPT susun. Kalau sheet lama tiada label KOPERAL, upload di tab ini tetap dibaca sebagai KZ Koperal.';return'<div class="panel v5105-kz-panel"><div class="ph"><div class="ph-title">'+title+' · Bulan Aktif: '+monthNm(activeM())+' '+activeY()+' <span style="font-size:7px;color:#34d399">('+PATCH+')</span></div></div><div class="pb"><div class="notif n-info"><div><b>Flow betul:</b> '+info+' Data masuk staging dahulu, kemudian tekan Kemaskini ke Master File.</div></div><div class="notif n-warn"><div><b>Rule:</b> Fokus IKTAR/MHKL/RT sahaja. Nama mesti padan roster Master 52. ASREE / AMINUDIN / AMINUDDIN / NAZRI ISMAIL = TH, bukan tick. Tick ✓ hanya hadir.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn btn-bl">Upload '+(type==='kzp'?'KZ Penyelia Excel':'KZ Koperal Excel')+'<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV5105ImportKZ(\''+type+'\',this.files[0]);this.value=\'\'"></label><label class="btn btn-gold">Upload Excel Gabungan KZ<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV5105ImportKZ(\'auto\',this.files[0]);this.value=\'\'"></label><button class="btn btn-gn" onclick="window.eakhaV5105SyncKZ(\''+type+'\')">Kemaskini ke Master File</button><button class="btn btn-rd" onclick="window.eakhaV5105ResetKZ(\''+type+'\')">Reset Staging</button></div><div class="notif n-info" style="margin-top:8px"><b>Excel gabungan:</b> sheet mesti jelas <b>KZ_PENYELIA</b> atau <b>KZ_KOPERAL</b>. Kalau sheet lama tidak jelas, upload di tab khusus sahaja.</div>'+stageTable(type)+'<div class="panel" style="margin-top:8px"><div class="ph"><span class="ph-title">Semak Sumber / Padanan</span></div><div class="pb">'+semakHtml()+'</div></div></div></div>'}
+function renderPanels(){var p1=qs('#page-kzp-staging');if(p1){qsa('.e510-kzbox,.e5102-kzbox,.e5103-kzbox,.v596-kz-import-panel,.v5104-kz-panel,.v5105-kz-panel,.v5105-kz-holder',p1).forEach(function(x){x.remove()});var d=document.createElement('div');d.className='v5105-kz-holder';d.innerHTML=panel('kzp');p1.insertBefore(d,p1.firstChild)}var p2=qs('#page-kzk-staging');if(p2){qsa('.e510-kzbox,.e5102-kzbox,.e5103-kzbox,.v596-kz-import-panel,.v5104-kz-panel,.v5105-kz-panel,.v5105-kz-holder',p2).forEach(function(x){x.remove()});var e=document.createElement('div');e.className='v5105-kz-holder';e.innerHTML=panel('kzk');p2.insertBefore(e,p2.firstChild)}var pm=qs('#page-master');if(pm&&!qs('#v5105-master-kz-panel')){var m=document.createElement('div');m.id='v5105-master-kz-panel';m.className='panel';m.innerHTML='<div class="ph"><div class="ph-title">Import Gabungan KZP + KZK — Source Split</div></div><div class="pb"><div class="notif n-warn"><b>Nota:</b> Upload gabungan hanya diterima jika sheet jelas KZ_PENYELIA / KZ_KOPERAL. KZ_JUN_2025 ialah roster rujukan nama sahaja.</div><div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn btn-gold">Upload Excel Gabungan KZ<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV5105ImportKZ(\'auto\',this.files[0]);this.value=\'\'"></label><button class="btn btn-gn" onclick="window.eakhaV5105SyncKZ(\'kzp\');window.eakhaV5105SyncKZ(\'kzk\')">Kemaskini KZP + KZK ke Master</button></div></div>';pm.insertBefore(m,pm.firstChild)}}
+function hideAutoFill(){qsa('button').forEach(function(b){var oc=b.getAttribute('onclick')||'',tx=(b.textContent||'').toUpperCase();if(oc.indexOf('autoFillFromKZ')>=0||tx.indexOf('AUTO-FILL')>=0){b.style.display='none'}})}
+function boot(){hideAutoFill();renderPanels()}
+window.eakhaV5105ImportKZ=importWorkbook;window.eakhaV5105SyncKZ=sync;window.eakhaV5105ResetKZ=reset;window.eakhaV5105RenderKZ=renderPanels;
+// Aliases supaya butang lama yang mungkin masih tertinggal tetap ikut source split baharu.
+window.eakhaV510ImportKZ=importWorkbook;window.eakhaV510SyncKZ=sync;window.eakhaV510ResetKZ=reset;window.eakhaV510RenderKZPanels=renderPanels;
+var oldNav=window.nav;if(typeof oldNav==='function'&&!oldNav.__v5105){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(boot,180);return r};window.nav.__v5105=true;try{nav=window.nav}catch(e){}}
+var oldRM=window.renderMaster;if(typeof oldRM==='function'&&!oldRM.__v5105){window.renderMaster=function(){var r=oldRM.apply(this,arguments);setTimeout(boot,180);return r};window.renderMaster.__v5105=true;try{renderMaster=window.renderMaster}catch(e){}}
+var oldSM=window.setMonth;if(typeof oldSM==='function'&&!oldSM.__v5105){window.setMonth=function(){var r=oldSM.apply(this,arguments);setTimeout(boot,280);return r};window.setMonth.__v5105=true;try{setMonth=window.setMonth}catch(e){}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[500,1300,2600,5000].forEach(function(ms){setTimeout(boot,ms)})});else{[150,900,2400].forEach(function(ms){setTimeout(boot,ms)})}
+try{console.log('[e-AKHA '+PATCH+'] loaded on v5.10.3 HRMIS backup base')}catch(e){}
+})();
+</script>
+
+</body></html>');
   w.document.close(); setTimeout(()=>w.print(),500);
 }
 
@@ -7682,64 +7829,410 @@ if(typeof saveCustomAnggota !== 'function'){
 })();
 
 </script>
-
-<!-- eAKHA v5.9.6 CLEAN PATCH: KZ Excel + Snapshot Bos Live Layout -->
 <script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage PATCH v5.10.1 CLEAN
+   - MC Diterima tidak hilang selepas Pulih Data Auto / tukar tab / relogin
+   - KZ Penyelia Excel + KZ Koperal Excel masuk staging dahulu, kemudian sync Master
+   - Snapshot Bos clone paparan live Master File, bukan table putih lama
+   - Button Auto-Fill lama disembunyikan sahaja; Pulih Snapshot/Data Auto dikekalkan
+══════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
-var PATCH='v5.9.6-KZ-EXCEL-SNAPSHOT-LIVE-LAYOUT-CLEAN';
-var MAIN_JABS=['MHKL','IKTAR','RT'];
-var TH_NAMES=['ASREE','ASRI','AMINUDIN','AMINUDDIN','NAZRI ISMAIL','MOHD NAZRI ISMAIL','MOHAMAD NAZRI ISMAIL','MUHAMMAD NAZRI ISMAIL'];
-function q(s,r){return (r||document).querySelector(s)}
-function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+var PATCH='v5.10.1-CLEAN-MC-KZ-SNAPSHOT';
+window.EAKHA_CLEAN_PATCH_VERSION=PATCH;
+var MAIN_JABS=['IKTAR','MHKL','RT'];
+var TH_NAMES=['ASREE','ASRI','AMINUDIN','AMINUDDIN','NAZRI ISMAIL','MOHD NAZRI ISMAIL','MOHAMAD NAZRI ISMAIL'];
+function qs(s,r){return (r||document).querySelector(s)}
+function qsa(s,r){return Array.from((r||document).querySelectorAll(s))}
 function pad(n){return String(+n).padStart(2,'0')}
-function toast2(msg,type){try{if(typeof toast==='function')return toast(msg,type||'ok')}catch(e){} try{console.log(msg)}catch(e){}}
-function activeM(){try{return +(typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:(localStorage.getItem('eakha_active_month')||4))}catch(e){return 4}}
-function activeY(){try{return +(typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026)}catch(e){return 2026}}
-function monthNm(m){try{return (typeof monthName==='function'?monthName(m):(typeof MONTHS_MS!=='undefined'?MONTHS_MS[m]:null))||(['','Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'][+m]||m)}catch(e){return m}}
+function yNow(){return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}
+function mNow(){return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}
 function dim(y,m){return new Date(+y,+m,0).getDate()}
-function esc(s){return String(s==null?'':s).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]})}
-function normName(s){return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\b(LKPL|KOST|KPL|SM|SJN|PB|TUAN|PN|CIK|EN|ENCIK|SARJAN|KOPERAL|L\/KPL|KONST)\b/g,' ').replace(/\([^)]*\)/g,' ').replace(/[^A-Z0-9 @]/g,' ').replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHD').replace(/\bHAIKAL\b/g,'HAIQAL').replace(/\s+/g,' ').trim()}
-function isTHName(name){var n=normName(name);return TH_NAMES.some(function(x){var nx=normName(x);return n===nx||n.indexOf(nx)>-1||nx.indexOf(n)>-1})}
-function getMaster(){try{if(typeof MASTER!=='undefined'&&Array.isArray(MASTER))return MASTER}catch(e){} return Array.isArray(window.MASTER)?window.MASTER:[]}
-function getD(){try{if(typeof D!=='undefined')return D}catch(e){} if(!window.D)window.D={};return window.D}
-function cleanStatus(v,name){var s=String(v||'').toUpperCase().trim(); if(isTHName(name)||/\b(TH|TT)\b|TAHAN\s*TUGAS/.test(s))return 'TH'; if(!s)return ''; if(/[✓✔√]/.test(s)||/\b(HADIR|BERTUGAS|POS|R1|R2|BERTUGAS)\b/.test(s))return '✓'; if(/\b(OFFDAY|OFF|OF|OD|REST|REHAT)\b/.test(s))return 'OFF'; if(/\b(MC|CUTI\s*SAKIT|SAKIT)\b/.test(s))return 'MC'; if(/\b(EL|EMERGENCY)\b/.test(s))return 'EL'; if(/\b(CR|CUTI\s*REHAT)\b/.test(s))return 'CR'; if(/\b(CTR|CUTI\s*TANPA\s*REKOD)\b/.test(s))return 'CTR'; if(/\b(OT|LEBIH\s*MASA)\b/.test(s))return 'OT'; if(/^X$|PANGKAH|TIDAK\s*HADIR|\bABS\b/.test(s))return 'X'; if(/^L$|LEWAT/.test(s))return 'L'; return s}
-function kzCls(status){var s=cleanStatus(status); if(s==='✓')return 'kz-ok'; if(s==='MC')return 'kz-mc'; if(s==='EL')return 'kz-el'; if(s==='CR')return 'kz-cr'; if(s==='CTR')return 'kz-ctr'; if(s==='OT')return 'kz-tt'; if(s==='TH')return 'kz-th'; if(s==='OFF')return 'kz-bp v596-off'; if(s==='X')return 'kz-abs'; if(s==='L')return 'kz-l'; return 'kz-empty'}
-function roster(){return getMaster().filter(function(m){return m&&!m.pindah&&MAIN_JABS.indexOf(String(m.jab||m.jabatan||'').toUpperCase())>-1})}
-function findMember(rawName,rawJab,rawKomp){var nn=normName(rawName);if(!nn)return null;var jj=String(rawJab||'').toUpperCase().trim();var kk=String(rawKomp||'').toUpperCase().trim();var candidates=roster().map(function(m){var mn=normName(m.nama||m.name);var score=0;if(mn===nn)score=100;else if(mn.indexOf(nn)>-1||nn.indexOf(mn)>-1)score=88;else{var parts=nn.split(' ').filter(function(p){return p.length>2});var hit=parts.filter(function(p){return mn.indexOf(p)>-1}).length;score=parts.length?Math.round(hit/parts.length*76):0}if(jj&&String(m.jab||m.jabatan||'').toUpperCase()===jj)score+=10;if(kk&&String(m.komp||m.kompeni||'').toUpperCase()===kk)score+=8;if(isTHName(rawName)&&isTHName(m.nama))score=120;return {m:m,score:score}}).filter(function(x){return x.score>=86}).sort(function(a,b){return b.score-a.score});if(!candidates.length)return null;if(candidates.length>1&&candidates[0].score===candidates[1].score)return null;return candidates[0].m}
-function ensureCell(bil,day){var DD=getD();if(!DD[bil])DD[bil]={};if(!DD[bil][day])DD[bil][day]={};return DD[bil][day]}
-function storeKey(type){return 'eakha_v596_'+type+'_staging_'+activeY()+'_'+pad(activeM())}
-function getStage(type){try{return JSON.parse(localStorage.getItem(storeKey(type))||'[]')}catch(e){return []}}
-function setStage(type,arr){localStorage.setItem(storeKey(type),JSON.stringify(arr||[]))}
-function detectSheetType(sheetName,forced,rows){if(forced&&forced!=='auto')return forced;var txt=String(sheetName||'').toUpperCase();try{txt+=' '+rows.slice(0,8).map(function(r){return r.join(' ')}).join(' ').toUpperCase()}catch(e){}if(/KOPERAL|\bKZK\b|WHATSAPP|\bKPL\b/.test(txt))return 'kzk';if(/PENYELIA|\bKZP\b|PENYOKONG|PENYEDIA/.test(txt))return 'kzp';return ''}
-function dayFromHeader(h){var s=String(h||'').trim();var m=s.match(/(?:^|\D)([1-9]|[12][0-9]|3[01])(?:\D|$)/);return m?+m[1]:null}
-function findHeaderIndex(rows){for(var i=0;i<Math.min(rows.length,14);i++){var t=rows[i].join(' ').toUpperCase();if(/NAMA|ANGGOTA|JABATAN|KOMPENI|STATUS|TARIKH|HARI/.test(t))return i}return 0}
-function makeRecord(type,day,rawName,rawJab,rawKomp,rawStatus,source,sheet){var mem=findMember(rawName,rawJab,rawKomp);var status=cleanStatus(rawStatus,rawName);if(mem&&isTHName(mem.nama))status='TH';return {type:type,year:activeY(),month:activeM(),day:+day,nama_asal:String(rawName||''),jabatan_asal:String(rawJab||''),kompeni_asal:String(rawKomp||''),status_asal:String(rawStatus||''),status:status,source:source||'',sheet:sheet||'',matched:!!mem,bil:mem?mem.bil:null,nama_rasmi:mem?mem.nama:'',jabatan:mem?mem.jab:'',kompeni:mem?mem.komp:'',catatan:mem?'PADANAN SAH':'SEMAK PADANAN - nama tiada / tidak yakin'}}
-function parseSheetRows(type,fileName,sheetName,rows){var out=[],issues=[];if(!rows||!rows.length)return {out:out,issues:issues};var hi=findHeaderIndex(rows);var hdr=rows[hi].map(function(x){return String(x||'').trim()});var upper=hdr.map(function(x){return x.toUpperCase()});var nameIdx=upper.findIndex(function(x){return /NAMA|ANGGOTA/.test(x)});if(nameIdx<0)nameIdx=0;var jabIdx=upper.findIndex(function(x){return /JABATAN|JAB/.test(x)});var kompIdx=upper.findIndex(function(x){return /KOMP|KOMPENI|COMPANY/.test(x)});var statusIdx=upper.findIndex(function(x){return /^STATUS$|KETERANGAN|CATATAN/.test(x)});var dayIdx=upper.findIndex(function(x){return /TARIKH|HARI|DATE|DAY/.test(x)});var dayCols=[];hdr.forEach(function(h,i){var d=dayFromHeader(h);if(d&&i!==dayIdx)dayCols.push({i:i,d:d})});rows.slice(hi+1).forEach(function(r){var rawName=r[nameIdx];if(!rawName)return;var rawJab=jabIdx>=0?r[jabIdx]:'';var rawKomp=kompIdx>=0?r[kompIdx]:'';var jab=String(rawJab||'').toUpperCase().trim();if(jab&&MAIN_JABS.indexOf(jab)<0)return;if(dayIdx>=0&&statusIdx>=0){var d=dayFromHeader(r[dayIdx]);var stat=cleanStatus(r[statusIdx],rawName);if(d&&stat){var rec=makeRecord(type,d,rawName,rawJab,rawKomp,r[statusIdx],fileName,sheetName);(rec.matched?out:issues).push(rec)}}else{dayCols.forEach(function(dc){var stat=cleanStatus(r[dc.i],rawName);if(!stat)return;var rec=makeRecord(type,dc.d,rawName,rawJab,rawKomp,r[dc.i],fileName,sheetName);(rec.matched?out:issues).push(rec)})}});return {out:out,issues:issues}}
-function importKZExcel(mode,file){if(!file)return;if(!window.XLSX){toast2('Library Excel/XLSX belum load. Buka sistem dengan internet dan cuba semula.','err');return}var reader=new FileReader();reader.onload=function(e){try{var wb=XLSX.read(e.target.result,{type:'array',cellDates:false});var pack={kzp:[],kzk:[],unknown:[]};wb.SheetNames.forEach(function(sn){var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});var typ=detectSheetType(sn,mode,rows);if(!typ){pack.unknown.push({sheet:sn,reason:'Nama sheet tidak jelas'});return}var parsed=parseSheetRows(typ,file.name,sn,rows);pack[typ]=pack[typ].concat(parsed.out,parsed.issues)});['kzp','kzk'].forEach(function(t){if(pack[t].length)setStage(t,getStage(t).concat(pack[t]))});renderKZPanels();var msg='Excel dibaca: KZ Penyelia '+pack.kzp.length+' rekod, KZ Koperal '+pack.kzk.length+' rekod';if(pack.unknown.length)msg+=' · '+pack.unknown.length+' sheet tidak jelas';toast2(msg,pack.unknown.length?'warn':'ok')}catch(err){console.error(err);toast2('Gagal baca Excel: '+err.message,'err')}};reader.readAsArrayBuffer(file)}
-function syncKZ(type){var arr=getStage(type),field=type==='kzp'?'kzp':'kzk',ok=0,skip=0;arr.forEach(function(r){if(!r.matched||!r.bil||!r.day){skip++;return}var c=ensureCell(r.bil,r.day);c[field]=isTHName(r.nama_rasmi||r.nama_asal)?'TH':r.status;c[field+'_src']=r.source;c[field+'_sheet']=r.sheet;ok++});try{if(typeof saveDataset==='function')saveDataset('SYNC '+type.toUpperCase()+' V596');if(typeof renderMaster==='function')renderMaster(null);if(typeof renderAllSafe==='function')renderAllSafe();if(typeof updFlags==='function')updFlags()}catch(e){}toast2('Kemaskini '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' ke Master: '+ok+' masuk, '+skip+' semak padanan.','ok')}
-function resetKZ(type){if(confirm('Reset staging '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' bulan ini?')){localStorage.removeItem(storeKey(type));renderKZPanels();toast2('Staging direset','ok')}}
-function forceTH(){var DD=getD(),cnt=0;roster().filter(function(m){return isTHName(m.nama)}).forEach(function(m){for(var d=1;d<=dim(activeY(),activeM());d++){var c=ensureCell(m.bil,d);if(c.kzp!=='TH'){c.kzp='TH';cnt++}if(c.kzk!=='TH'){c.kzk='TH';cnt++}}});try{if(typeof saveDataset==='function')saveDataset('FORCE TH V596');if(typeof renderMaster==='function')renderMaster(null)}catch(e){}toast2('TH dikemaskini: '+cnt+' cell.','ok')}
-function rowHtml(r){return '<tr><td>'+esc(r.day+'/'+pad(r.month)+'/'+r.year)+'</td><td>'+esc(r.jabatan||r.jabatan_asal)+'</td><td>'+esc(r.kompeni||r.kompeni_asal)+'</td><td>'+esc(r.nama_rasmi||r.nama_asal)+'</td><td><b class="'+kzCls(r.status)+'" style="padding:2px 7px;border-radius:4px">'+esc(r.status)+'</b></td><td>'+esc(r.source)+'</td><td>'+esc(r.sheet)+'</td><td>'+esc(r.catatan)+'</td></tr>'}
-function stageTable(type){var arr=getStage(type);var rows=arr.slice(-250).reverse().map(rowHtml).join('');return '<div style="font-size:8px;color:rgba(255,255,255,.45);margin:6px 0">'+arr.length+' rekod staging bulan aktif. Rekod tidak padan tidak akan masuk Master sehingga nama disahkan.</div><div style="max-height:260px;overflow:auto"><table class="tbl"><thead><tr><th>Tarikh</th><th>Jabatan</th><th>Kompeni</th><th>Nama</th><th>Status</th><th>Source</th><th>Sheet</th><th>Catatan</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8" class="empty">Belum ada data.</td></tr>')+'</tbody></table></div>'}
-function panelHtml(type){var title=type==='kzp'?'KZ Penyelia Excel':'KZ Koperal Excel';return '<div class="panel v596-kz-import-panel"><div class="ph"><div class="ph-title">Import '+title+' · Bulan Aktif: '+monthNm(activeM())+' '+activeY()+'</div></div><div class="pb"><div class="notif n-info"><div>Upload Excel masuk staging dahulu. Fokus MHKL, IKTAR, RT sahaja. Nama mesti padan roster rasmi. ASREE / AMINUDIN / AMINUDDIN / NAZRI ISMAIL = TH, bukan tick.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn btn-bl">Upload '+title+'<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV596ImportKZ(\''+type+'\',this.files[0]);this.value=\'\'"></label><label class="btn btn-gold">Upload Excel Gabungan KZ<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV596ImportKZ(\'auto\',this.files[0]);this.value=\'\'"></label><button class="btn btn-gn" onclick="window.eakhaV596SyncKZ(\''+type+'\')">Kemaskini ke Master File</button><button class="btn btn-rd" onclick="window.eakhaV596ResetKZ(\''+type+'\')">Reset Staging</button><button class="btn btn-sm" onclick="window.eakhaV596ForceTH()">Paksa TH</button></div><div class="notif n-warn" style="margin-top:8px">Untuk Excel gabungan: nama sheet perlu ada PENYELIA/KZP atau KOPERAL/KZK/WHATSAPP supaya sistem tahu refer yang mana.</div>'+stageTable(type)+'</div></div>'}
-function renderKZPanels(){var p1=q('#v596-kzp-panel');if(p1)p1.innerHTML=panelHtml('kzp');var p2=q('#v596-kzk-panel');if(p2)p2.innerHTML=panelHtml('kzk');var pm=q('#v596-master-kz-panel');if(pm)pm.innerHTML='<div class="panel"><div class="ph"><div class="ph-title">Upload Gabungan KZ Penyelia + KZ Koperal</div></div><div class="pb"><div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn btn-gold">Upload Excel Gabungan KZ<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV596ImportKZ(\'auto\',this.files[0]);this.value=\'\'"></label><button class="btn btn-gn" onclick="window.eakhaV596SyncKZ(\'kzp\');window.eakhaV596SyncKZ(\'kzk\')">Kemaskini KZP + KZK ke Master</button><button class="btn btn-sm" onclick="window.eakhaV596ForceTH()">Pastikan TH</button></div><div style="font-size:8px;color:rgba(255,255,255,.45);margin-top:7px">KZP: '+getStage('kzp').length+' rekod · KZK: '+getStage('kzk').length+' rekod · Sheet gabungan mesti jelas: PENYELIA/KZP dan KOPERAL/KZK/WHATSAPP.</div></div></div>'}
-function injectKZPanels(){var pg1=q('#page-kzp-staging');if(pg1&&!q('#v596-kzp-panel')){var d=document.createElement('div');d.id='v596-kzp-panel';pg1.insertBefore(d,pg1.firstChild)}var pg2=q('#page-kzk-staging');if(pg2&&!q('#v596-kzk-panel')){var e=document.createElement('div');e.id='v596-kzk-panel';pg2.insertBefore(e,pg2.firstChild)}var master=q('#page-master');if(master&&!q('#v596-master-kz-panel')){var m=document.createElement('div');m.id='v596-master-kz-panel';master.insertBefore(m,master.firstChild)}renderKZPanels()}
-function getStyles(){try{return qa('style').map(function(s){return s.textContent||''}).join('\n')}catch(e){return ''}}
-function compactOffday(html){return String(html||'').replace(/OFFDAY\s*\/\s*OT\s*-\s*ABAIKAN/gi,'OFF / OT').replace(/OFFDAY\s*\/\s*OT\s*\n\s*ABAIKAN/gi,'OFF / OT').replace(/OFFDAY/gi,'OFF').replace(/Rehat/gi,'OFF')}
-function buildLiveGrid(rows){var holder=document.createElement('div');holder.id='eakha-snap-hidden-'+Date.now();holder.style.cssText='position:fixed;left:-50000px;top:-50000px;width:1900px;height:1000px;overflow:hidden;opacity:0;pointer-events:none';document.body.appendChild(holder);try{if(typeof renderGrid==='function')renderGrid(rows,holder.id);else if(typeof renderMaster==='function'){renderMaster(null);holder.innerHTML=(q('#master-grid')||{}).innerHTML||''}var h=holder.innerHTML||'';h=h.replace(/\sonclick="[^"]*"/g,'').replace(/\soninput="[^"]*"/g,'').replace(/\sonchange="[^"]*"/g,'');return compactOffday(h)}finally{try{holder.remove()}catch(e){}}}
-function snapshotBos(jab){var target=String(jab||'SEMUA').toUpperCase();var rows=roster().filter(function(x){return !target||target==='SEMUA'||String(x.jab||'').toUpperCase()===target});if(!rows.length){toast2('Tiada data untuk Snapshot Bos '+target,'warn');return}var undo=[];try{roster().filter(function(mm){return isTHName(mm.nama)}).forEach(function(mm){for(var dd=1;dd<=dim(activeY(),activeM());dd++){var cc=ensureCell(mm.bil,dd);undo.push([cc,cc.kzp,cc.kzk]);cc.kzp='TH';cc.kzk='TH';}})}catch(e){}var grid='';try{grid=buildLiveGrid(rows)}finally{undo.forEach(function(x){x[0].kzp=x[1];x[0].kzk=x[2];})}if(!grid){toast2('Snapshot Bos gagal dijana. Master grid kosong.','err');return}var y=activeY(),m=activeM();var css=getStyles()+`\n:root{--navy:#0a1628;--navy2:#0f1f3d;--navy3:#162040;--gold:#c8960a;--gold2:#f0b429;--red:#dc2626;--green:#059669;--blue:#2563eb;}html,body{margin:0!important;padding:0!important;background:#071326!important;color:#fff!important;font-family:Arial,sans-serif!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{height:auto!important;overflow:auto!important}.snap-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-end;background:#071326;color:#fff;border-bottom:1px solid rgba(255,255,255,.15);padding:5px 7px}.snap-title{font-size:11px;font-weight:900;color:#f0b429}.snap-meta{font-size:6.5px;color:rgba(255,255,255,.76);text-align:right;line-height:1.25}.snap-note{font-size:5.8px;color:rgba(255,255,255,.6);margin-top:1px}.snapshot-live{background:#071326!important;color:#fff!important;padding:4px 6px 7px}.snapshot-live *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-shadow:none!important;text-shadow:none!important}.snapshot-live .panel,.snapshot-live .notif,.snapshot-live .empty{display:none!important}.snapshot-live .mg-wrap,.snapshot-live .tscroll{overflow:visible!important;width:100%!important;max-width:100%!important}.snapshot-live div[style*="margin-bottom:14px"]{margin-bottom:6px!important;page-break-inside:auto!important;break-inside:auto!important}.snapshot-live table.grid{border-collapse:collapse!important;table-layout:fixed!important;width:100%!important;min-width:0!important;background:#071326!important;font-size:5.15px!important}.snapshot-live thead{display:table-header-group!important}.snapshot-live tr{page-break-inside:avoid!important;break-inside:avoid!important}.snapshot-live th,.snapshot-live td{border:1px solid rgba(255,255,255,.20)!important;padding:1px 1.2px!important;line-height:1.05!important;vertical-align:middle!important;white-space:normal!important;word-break:normal!important;overflow:hidden!important;text-overflow:clip!important;height:auto!important;min-height:10px!important}.snapshot-live .gh,.snapshot-live .gh-nm,.snapshot-live .gh-lyr,.snapshot-live .ntd,.snapshot-live .ltd{position:static!important;left:auto!important;z-index:auto!important}.snapshot-live .gh-nm,.snapshot-live .ntd{width:84px!important;min-width:84px!important;max-width:84px!important;text-align:left!important;padding:2px 3px!important}.snapshot-live .ltd,.snapshot-live th[style*="left:105px"]{width:52px!important;min-width:52px!important;max-width:52px!important;font-size:4.95px!important;text-align:left!important}.snapshot-live .dc,.snapshot-live .gh:not(.gh-nm),.snapshot-live .gh-d{width:23px!important;min-width:23px!important;max-width:23px!important;font-size:4.75px!important;padding:1px!important}.snapshot-live .dc-pre{white-space:normal!important;line-height:1.02!important}.snapshot-live .nb{font-size:5.3px!important;line-height:1!important}.snapshot-live .nn{font-size:5.6px!important;line-height:1.05!important;white-space:normal!important;max-height:28px!important;overflow:hidden!important}.snapshot-live .nm{font-size:4.5px!important;line-height:1!important;opacity:.72!important}.snapshot-live .sc2,.snapshot-live .gh-sum{width:18px!important;min-width:18px!important;max-width:18px!important;font-size:4.5px!important;padding:1px!important}.snapshot-live .tc-off,.snapshot-live .af-off,.snapshot-live .kz-bp,.snapshot-live .dc-noedit{font-size:4.1px!important;line-height:.95!important;padding:.5px!important;letter-spacing:-.15px!important}.snapshot-live td:empty:after{content:'-';opacity:.22}.snapshot-live [style*="font-size:7.5px"]{font-size:5px!important}.snapshot-live [style*="font-size:7px"]{font-size:4.85px!important}.snapshot-live [style*="font-size:6.5px"]{font-size:4.7px!important}.snapshot-live [style*="font-size:5.5px"]{font-size:4.1px!important}.snapshot-live [style*="font-size:5px"]{font-size:4px!important}@page{size:A3 landscape;margin:4mm}@media print{html,body{background:#071326!important}.snapshot-live{padding:3px 4px}.snap-head{padding:3px 5px}.snapshot-live table.grid{font-size:4.9px!important}.snapshot-live .gh-nm,.snapshot-live .ntd{width:82px!important;min-width:82px!important;max-width:82px!important}.snapshot-live .dc,.snapshot-live .gh:not(.gh-nm),.snapshot-live .gh-d{width:22.5px!important;min-width:22.5px!important;max-width:22.5px!important}.snapshot-live .ltd,.snapshot-live th[style*="left:105px"]{width:50px!important;min-width:50px!important;max-width:50px!important}}`;
-var meta='Bulan Audit: '+monthNm(m)+' '+y+' · Jabatan: '+target+' · Tarikh Jana: '+new Date().toLocaleString('ms-MY');var doc='<!doctype html><html lang="ms"><head><meta charset="utf-8"><title>e-AKHA Snapshot Bos '+esc(target)+'</title><style>'+css+'</style></head><body><div class="snap-head"><div><div class="snap-title">e-AKHA VSAVAGE - SNAPSHOT BOS</div><div class="snap-note">Layout ikut paparan live Master File. OFFDAY diringkaskan kepada OFF.</div></div><div class="snap-meta">'+esc(meta)+'</div></div><div class="snapshot-live">'+grid+'</div><script>window.addEventListener("load",function(){setTimeout(function(){try{window.print()}catch(e){}},700)});<\/script></body></html>';var w=window.open('','_blank');if(!w){toast2('Popup disekat. Benarkan popup untuk Snapshot Bos.','warn');return}w.document.open();w.document.write(doc);w.document.close()}
-function injectSnapshotButtons(){var page=q('#page-master');if(!page)return;var old=q('#v59-snapshot-panel');if(old)old.remove();if(q('#v596-snapshot-panel'))return;var div=document.createElement('div');div.id='v596-snapshot-panel';div.className='panel';div.innerHTML='<div class="ph"><div class="ph-title">Snapshot Bos / Export A3 — Live Layout</div></div><div class="pb"><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold" onclick="window.eakhaV596SnapshotBos(\'SEMUA\')">Snapshot Bos Semua</button><button class="btn btn-bl" onclick="window.eakhaV596SnapshotBos(\'IKTAR\')">Bos IKTAR</button><button class="btn btn-bl" onclick="window.eakhaV596SnapshotBos(\'MHKL\')">Bos MHKL</button><button class="btn btn-bl" onclick="window.eakhaV596SnapshotBos(\'RT\')">Bos RT</button></div><div class="notif n-warn" style="margin-top:8px">Snapshot ini clone paparan live Master File. OFFDAY jadi OFF kecil, ruang nama dikecilkan, dan tidak overwrite data.</div></div>';var ref=q('#v596-master-kz-panel')?q('#v596-master-kz-panel').nextSibling:page.children[1];page.insertBefore(div,ref||page.firstChild)}
-function injectStyle(){if(q('#v596-style'))return;var st=document.createElement('style');st.id='v596-style';st.textContent='.v596-off,.kz-bp,.af-off,.tc-off,.sh-o{font-size:5px!important;line-height:1!important;padding:.5px 1px!important;letter-spacing:-.15px!important}.v596-kz-import-panel .tbl td,.v596-kz-import-panel .tbl th{font-size:7.5px}.kz-th{font-weight:800!important}';document.head.appendChild(st)}
-function hideAutoFill(){qa('button').forEach(function(b){var oc=b.getAttribute('onclick')||'';var tx=(b.textContent||'').toUpperCase();if(oc.indexOf('autoFillFromKZ')>-1||tx.indexOf('AUTO-FILL')>-1){b.style.display='none';b.setAttribute('data-hidden','auto-fill-removed')}})}
-function boot(){injectStyle();hideAutoFill();injectKZPanels();injectSnapshotButtons()}
-window.eakhaV596ImportKZ=importKZExcel;window.eakhaV596SyncKZ=syncKZ;window.eakhaV596ResetKZ=resetKZ;window.eakhaV596RenderKZ=renderKZPanels;window.eakhaV596SnapshotBos=snapshotBos;window.eakhaV596ForceTH=forceTH;window.eakhaV59SnapshotBos=snapshotBos;window.eakhaV594SnapshotBos=snapshotBos;
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,900);setTimeout(boot,2200)});else{boot();setTimeout(boot,900);setTimeout(boot,2200)}
-window.addEventListener('hashchange',function(){setTimeout(boot,400)});setInterval(function(){hideAutoFill();if(q('#page-master')||q('#page-kzp-staging')||q('#page-kzk-staging'))boot()},5000);
-try{console.log('[e-AKHA '+PATCH+'] loaded clean')}catch(e){}
-})();
+function monthName(m){return (typeof MONTHS_MS!=='undefined'&&MONTHS_MS[+m])?MONTHS_MS[+m]:('Bulan '+m)}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast2(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function parseJSON(raw,fb){try{var x=JSON.parse(raw||'');return x==null?fb:x}catch(e){return fb}}
+function clone(o){try{return JSON.parse(JSON.stringify(o))}catch(e){return o}}
+function canon(v){return String(v||'').toUpperCase().replace(/\bLKPL\b|\bKPL\b|\bKOST\b|\bPB\b|\bSM\b|\bSJN\b/g,' ').replace(/\([^)]*\)/g,' ').replace(/[^A-Z0-9@\/ ]+/g,' ').replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHAMAD').replace(/\bMOHD\b/g,'MOHAMAD').replace(/\bALLIF\b/g,'ALIFF').replace(/\s+/g,' ').trim()}
+function isTHName(n){var c=canon(n);return TH_NAMES.some(function(x){return c.indexOf(canon(x))>=0})}
+function members(){try{return (MASTER||[]).filter(function(m){return !m.pindah&&MAIN_JABS.indexOf(m.jab)>=0})}catch(e){return []}}
+function matchMember(raw,jab,komp){var cn=canon(raw); if(!cn)return null; var pool=members().filter(function(m){return (!jab||m.jab===jab||String(jab).toUpperCase().indexOf(m.jab)>=0)&&(!komp||m.komp===komp||String(komp).toUpperCase().indexOf(m.komp)>=0)}); var exact=pool.find(function(m){return canon(m.nama)===cn}); if(exact)return exact; try{if(typeof nameScore==='function'){var best=null,sc=0;pool.forEach(function(m){var s=nameScore(raw,m);if(s>sc){sc=s;best=m}});if(best&&sc>=75)return best}}catch(e){} var toks=cn.split(' ').filter(function(t){return t.length>2&&['BIN','BINTI','BT','AL','A/L'].indexOf(t)<0}); var best2=null,score=0; pool.forEach(function(m){var mn=canon(m.nama),s=0;toks.forEach(function(t){if(mn.indexOf(t)>=0)s++}); if(s>score){score=s;best2=m}}); return score>=2?best2:null}
+function normJab(v){var s=String(v||'').toUpperCase(); if(s.indexOf('IKTAR')>=0)return'IKTAR'; if(s.indexOf('MHKL')>=0)return'MHKL'; if(/\bRT\b|RADIOTHERAPY|RADIO/.test(s))return'RT'; return ''}
+function normKomp(v){var s=String(v||'').toUpperCase(); if(/ALPHA|\bA\b/.test(s))return'ALPHA'; if(/BRAVO|\bB\b/.test(s))return'BRAVO'; if(/CHARLIE|\bC\b/.test(s))return'CHARLIE'; if(/DELTA|\bD\b/.test(s))return'DELTA'; return ''}
+function normStatus(v,rawName){var s=String(v||'').toUpperCase().trim(); if(!s)return''; if(isTHName(rawName))return'TH'; if(/\bTH\b|TAHAN/.test(s))return'TH'; if(/\bMC\b|SAKIT/.test(s))return'MC'; if(/\bEL\b|EMERGENCY/.test(s))return'EL'; if(/\bCR\b|CUTI REHAT/.test(s))return'CR'; if(/\bCTR\b|TANPA REKOD/.test(s))return'CTR'; if(/\bOT\b|LEBIH MASA/.test(s))return'OT'; if(/\bABS\b|TIDAK HADIR|PANGKAH|^X$/.test(s))return'ABS'; if(/^L\b|LEWAT/.test(s))return'L'; if(/[✓√✔]/.test(s)||/HADIR|BERTUGAS|POS|R1|R2/.test(s))return'✓'; if(s==='OF'||s==='OFF'||s==='OFFDAY')return'OF'; return s.length<=8?s:'✓'}
 
+/* ───────────────────────── MC REGISTER SAFE ───────────────────────── */
+function mcKey(y,m){return'eakha_mc_'+(+y)+'_'+pad(m)}
+function parseDate(v){var s=String(v||'').trim();if(!s)return null;var p;if(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)){p=s.split(/[-/]/);return new Date(+p[0],+p[1]-1,+p[2])}if(/^\d{1,2}[\.\-/]\d{1,2}([\.\-/]\d{2,4})?$/.test(s)){p=s.split(/[\.\-/]/);var yy=p[2]?+p[2]:yNow();if(yy<100)yy+=2000;return new Date(yy,+p[1]-1,+p[0])}var d=new Date(s);return isNaN(d.getTime())?null:d}
+function fmtDate(d){return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()}
+function activeDaysForRec(rec,y,m){var a=parseDate(rec&&(rec.dari||rec.tarikh)),b=parseDate(rec&&(rec.hingga||rec.dari||rec.tarikh));if(!a||!b)return[];if(b<a){var t=a;a=b;b=t}var out=[],cur=new Date(a.getFullYear(),a.getMonth(),a.getDate()),g=0;while(cur<=b&&g<370){if(cur.getFullYear()===+y&&(cur.getMonth()+1)===+m)out.push(cur.getDate());cur.setDate(cur.getDate()+1);g++}return out}
+function findMemberMC(nama){return matchMember(nama,'','')}
+function normalizeMCRecord(raw,y,m){if(!raw)return null;var mem=(raw.bil&&typeof MASTER!=='undefined')?(MASTER||[]).find(function(x){return +x.bil===+raw.bil}):null;if(!mem)mem=findMemberMC(raw.nama||raw.name||'');if(!mem||!mem.bil)return null;var days=activeDaysForRec(raw,y,m);if(!days.length&&raw.d&&+raw.m===+m&&+raw.y===+y)days=[+raw.d];if(!days.length)return null;var a=parseDate(raw.dari||raw.tarikh),b=parseDate(raw.hingga||raw.dari||raw.tarikh)||a;return{bil:+mem.bil,nama:mem.nama,jab:mem.jab,komp:mem.komp,tarikh:raw.tarikh||(a?fmtDate(a):pad(days[0])+'/'+pad(m)+'/'+y),dari:raw.dari||raw.tarikh||(a?fmtDate(a):pad(days[0])+'/'+pad(m)+'/'+y),hingga:raw.hingga||raw.dari||raw.tarikh||(b?fmtDate(b):pad(days[days.length-1])+'/'+pad(m)+'/'+y),d:+days[0],m:+m,y:+y,mc_type:raw.mc_type||raw.jenis||'MC',jenis:raw.jenis||'Bulan Ini',klinik:raw.klinik||'',no_mc:raw.no_mc||raw.siri||'',siri:raw.siri||raw.no_mc||'',hari:+raw.hari||days.length||1,source:raw.source||raw._source||'preload',bulanLabel:'Bulan Ini',_days:days}}
+function dedupMC(arr){var out=[],seen={};(arr||[]).forEach(function(r){if(!r)return;var k=[r.bil,r.dari||r.tarikh,r.hingga||'',r.no_mc||r.siri||'',r.klinik||''].join('|');if(!seen[k]){seen[k]=1;out.push(r)}});return out}
+function seedMCPreload(y,m){var out=[];try{if(typeof MC_PRELOAD!=='undefined'&&Array.isArray(MC_PRELOAD)){MC_PRELOAD.forEach(function(r){var nr=normalizeMCRecord(r,y,m);if(nr)out.push(nr)})}}catch(e){}return dedupMC(out)}
+function readStoredMC(y,m){var arr=[];[mcKey(y,m),'eakha_mc'].forEach(function(k){arr=arr.concat(parseJSON(localStorage.getItem(k),[]))});try{if(Array.isArray(MC_DATA))arr=arr.concat(MC_DATA)}catch(e){}return dedupMC(arr.map(function(r){return normalizeMCRecord(r,y,m)}).filter(Boolean))}
+function linkMC(records){try{if(typeof D==='undefined')return;(records||[]).forEach(function(r){(r._days||activeDaysForRec(r,r.y||yNow(),r.m||mNow())).forEach(function(day){if(D[r.bil]&&D[r.bil][day])D[r.bil][day]._mc=r})})}catch(e){}}
+window.eakhaEnsureMCRegister=function(reason,force){var y=yNow(),m=mNow(),key=y+'-'+pad(m);try{if(!force&&window.__EAKHA_MC_CACHE_KEY===key&&Array.isArray(MC_DATA)&&MC_DATA.length){return MC_DATA}}catch(e){}var cur=readStoredMC(y,m);if(+y===2026&&+m===4)cur=dedupMC(cur.concat(seedMCPreload(y,m)));try{MC_DATA=cur}catch(e){}if(cur.length){try{localStorage.setItem(mcKey(y,m),JSON.stringify(cur))}catch(e){}try{localStorage.setItem('eakha_mc',JSON.stringify(cur))}catch(e){}linkMC(cur)}window.__EAKHA_MC_CACHE_KEY=key;return cur};
+window.getMC=getMC=function(bil,d){var records=eakhaEnsureMCRegister('getMC'),bilN=+bil,dN=+d;var r=records.find(function(mc){if(+mc.bil!==bilN)return false;var days=mc._days&&mc._days.length?mc._days:activeDaysForRec(mc,yNow(),mNow());return days.indexOf(dN)>=0});if(r&&typeof D!=='undefined'&&D[bilN]&&D[bilN][dN])D[bilN][dN]._mc=r;return r||null};
+window.getMCTinggi=getMCTinggi=function(){var by={};eakhaEnsureMCRegister('mc-tinggi').forEach(function(r){var k=r.bil||r.nama;if(!by[k])by[k]={bil:r.bil,nama:r.nama,jab:r.jab||'',komp:r.komp||'',count:0,days:0,records:[]};by[k].count++;by[k].days+=(+r.hari||1);by[k].records.push(r)});return Object.keys(by).map(function(k){return by[k]}).sort(function(a,b){return b.days-a.days})};
+window.renderMCReg=renderMCReg=function(){var records=eakhaEnsureMCRegister('renderMCReg',true);var jabF=(qs('#mc-jab-f')||{}).value||'',kompF=(qs('#mc-komp-f')||{}).value||'',q=String((qs('#mc-q')||{}).value||'').toLowerCase();var filtered=records.filter(function(r){return(!jabF||r.jab===jabF)&&(!kompF||r.komp===kompF)&&(!q||String(r.nama).toLowerCase().indexOf(q)>=0||String(r.klinik||'').toLowerCase().indexOf(q)>=0||String(r.no_mc||r.siri||'').toLowerCase().indexOf(q)>=0)});var el=qs('#mc-reg-table'),cnt=qs('#mc-cnt'),alertEl=qs('#mc-tinggi-alert');if(cnt)cnt.textContent=filtered.length+' rekod';if(alertEl){var tinggi=getMCTinggi().filter(function(m){return m.days>=3});alertEl.innerHTML=tinggi.length?'<div class="notif n-warn" style="flex-direction:column;align-items:flex-start;margin-bottom:8px"><div style="font-weight:700;margin-bottom:5px">⚠ Anggota MC Tinggi (≥3 hari) — Perlu Perhatian:</div>'+tinggi.map(function(m){return'<div style="font-size:8px;padding:1px 0">• <b>'+esc(m.nama)+'</b> ('+esc(m.jab)+') — <b style="color:#fb923c">'+m.days+' hari MC</b> dalam '+m.count+' kali</div>'}).join('')+'</div>':''}if(!el)return;var totalHari=records.reduce(function(s,r){return s+(+r.hari||1)},0),uniq={};records.forEach(function(r){uniq[r.bil||r.nama]=1});var mcT=getMCTinggi().filter(function(m){return m.days>=3}).length;var stats='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px;margin-bottom:12px">'+[{l:'Jumlah Rekod MC',v:records.length,c:'#f0b429'},{l:'Anggota Ada MC',v:Object.keys(uniq).length,c:'#34d399'},{l:'Jumlah Hari MC',v:totalHari,c:'#93c5fd'},{l:'MC Tinggi (≥3 hari)',v:mcT,c:mcT>0?'#f87171':'#34d399'}].map(function(s){return'<div style="background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:9px 12px"><div style="font-size:18px;font-weight:800;color:'+s.c+'">'+s.v+'</div><div style="font-size:7.5px;color:rgba(255,255,255,.4);margin-top:2px">'+s.l+'</div></div>'}).join('')+'</div>';if(!filtered.length){el.innerHTML=stats+'<div class="empty"><div class="empty-ic">📋</div>Tiada rekod MC untuk filter ini.</div>';return}filtered.sort(function(a,b){return(+a.bil||999)-(+b.bil||999)||String(a.dari).localeCompare(String(b.dari))});var table='<div class="panel"><div class="ph"><span class="ph-title">Bulan Ini ('+filtered.length+' rekod — '+filtered.reduce(function(s,r){return s+(+r.hari||1)},0)+' hari)</span></div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>Nama Anggota</th><th>Jab</th><th>Komp</th><th>Tarikh Dari</th><th>Tarikh Hingga</th><th>Nama Klinik</th><th>No Rujukan MC</th><th>Bil Hari</th></tr></thead><tbody>'+filtered.map(function(r,i){var isHaz=/HAZLAN/i.test(r.nama||'');return'<tr style="'+(i%2?'background:rgba(255,255,255,.02)':'')+'"><td style="color:rgba(255,255,255,.3)">'+(i+1)+'</td><td style="font-size:8.5px;font-weight:500'+(isHaz?';color:#fb923c':'')+'">'+esc(r.nama)+(isHaz?' <span style="background:rgba(220,38,38,.3);color:#fca5a5;padding:1px 5px;border-radius:3px;font-size:7px">ISU</span>':'')+'</td><td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+esc(r.jab)+'</td><td style="font-size:7.5px;color:rgba(255,255,255,.38)">'+esc(r.komp)+'</td><td style="font-family:monospace;font-size:8px">'+esc(r.dari||r.tarikh)+'</td><td style="font-family:monospace;font-size:8px">'+esc(r.hingga||r.dari||r.tarikh)+'</td><td style="font-size:8.5px">'+esc(r.klinik||'—')+'</td><td style="font-family:monospace;font-size:8px;color:#f0b429">'+esc(r.no_mc||r.siri||'—')+'</td><td style="text-align:center;font-weight:700;color:'+(r.hari>=5?'#f87171':r.hari>=3?'#fbbf24':'#34d399')+'">'+esc(r.hari||1)+'</td></tr>'}).join('')+'</tbody></table></div></div>';var by={};records.forEach(function(r){var k=r.bil||r.nama;if(!by[k])by[k]={nama:r.nama,jab:r.jab,komp:r.komp,count:0,hari:0};by[k].count++;by[k].hari+=(+r.hari||1)});var sumRows=Object.keys(by).map(function(k){return by[k]}).sort(function(a,b){return b.hari-a.hari});var sum='<div class="panel" style="margin-top:10px"><div class="ph"><span class="ph-title">Ringkasan Jumlah Hari MC per Anggota</span></div><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Nama</th><th>Jab</th><th>Komp</th><th>Bil Rekod</th><th>Jumlah Hari</th><th>Status</th></tr></thead><tbody>'+sumRows.map(function(m){var st=m.hari>=5?'TINGGI':(m.hari>=3?'SEMAK':'NORMAL'),col=m.hari>=5?'#fca5a5':(m.hari>=3?'#fbbf24':'#34d399');return'<tr><td style="font-size:8.5px;font-weight:500">'+esc(m.nama)+'</td><td>'+esc(m.jab)+'</td><td>'+esc(m.komp)+'</td><td style="text-align:center">'+m.count+'</td><td style="text-align:center;font-weight:700">'+m.hari+'</td><td><span style="color:'+col+';font-weight:700;font-size:7.5px">'+st+'</span></td></tr>'}).join('')+'</tbody></table></div></div>';el.innerHTML=stats+table+sum;try{if(typeof renderMCCrossCheck==='function')setTimeout(renderMCCrossCheck,50)}catch(e){}};
+function wrapRestore(n){try{var old=window[n]||eval(n);if(typeof old!=='function'||old.__mc5101)return;var neu=function(){var r=old.apply(this,arguments);[100,400,1200].forEach(function(ms){setTimeout(function(){try{eakhaEnsureMCRegister(n, true);if(typeof renderMCReg==='function')renderMCReg();}catch(e){}},ms)});return r};neu.__mc5101=true;window[n]=neu;try{eval(n+'=window["'+n+'"]')}catch(e){}}catch(e){}}
+wrapRestore('manualRestoreSnapshot');wrapRestore('eakhaRestoreBestBackup');
+
+/* ───────────────────────── KZ EXCEL STAGING ───────────────────────── */
+function stKey(){return'eakha_kz_excel_staging_v5101'}
+function loadSt(){var s=parseJSON(localStorage.getItem(stKey()),null);return s&&typeof s==='object'?Object.assign({kzp:[],kzk:[],semak:[]},s):{kzp:[],kzk:[],semak:[]}}
+function saveSt(s){localStorage.setItem(stKey(),JSON.stringify(s))}
+function detectSheet(sn,forced){if(forced&&forced!=='auto')return forced;var s=String(sn||'').toUpperCase();if(/PENYELIA|KZP|PENYOKONG/.test(s))return'kzp';if(/KOPERAL|KZK|WHATSAPP|KPL/.test(s))return'kzk';return''}
+function findHeader(rows){var best=0,score=-1;for(var i=0;i<Math.min(rows.length,25);i++){var r=rows[i]||[],txt=r.map(function(x){return String(x||'').toUpperCase()}).join('|');var sc=0;if(/NAMA/.test(txt))sc+=5;if(/JABATAN/.test(txt))sc+=3;if(/KOMP/.test(txt))sc+=3;for(var j=0;j<r.length;j++){if(/^\s*(1|01)\b/.test(String(r[j]||'')))sc++}if(sc>score){score=sc;best=i}}return best}
+function parseSheetRows(rows,type,fileName,sheetName,store){var y=yNow(),m=mNow(),max=dim(y,m),hi=findHeader(rows),head=rows[hi]||[];var nameCol=-1,jabCol=-1,kompCol=-1,dayCols=[];head.forEach(function(h,i){var s=String(h||'').toUpperCase().trim();if(nameCol<0&&/NAMA/.test(s))nameCol=i;if(jabCol<0&&/JABATAN|JAB/.test(s))jabCol=i;if(kompCol<0&&/KOMP|COMP|KOMPENI/.test(s))kompCol=i;var mm=s.match(/^(\d{1,2})(\b|\s|\/|\-)/);if(mm){var d=+mm[1];if(d>=1&&d<=max)dayCols.push({i:i,d:d})}});if(nameCol<0){store.semak.push({kind:type,sheet:sheetName,reason:'Header nama tidak dikesan',bulan:m,tahun:y});return 0}if(!dayCols.length){for(var c=0;c<head.length;c++){var s2=String(head[c]||'').trim();if(/^\d{1,2}$/.test(s2)){var dd=+s2;if(dd>=1&&dd<=max)dayCols.push({i:c,d:dd})}}}var count=0;for(var r=hi+1;r<rows.length;r++){var row=rows[r]||[],raw=String(row[nameCol]||'').trim();if(!raw||/NAMA|JUMLAH|JABATAN|KOMPENI/i.test(raw))continue;var jab=normJab(row[jabCol]||''),komp=normKomp(row[kompCol]||'');var mem=matchMember(raw,jab,komp);if(!mem){store.semak.push({kind:type,sheet:sheetName,rawName:raw,jabatan:jab,kompeni:komp,reason:'Nama tidak padan roster rasmi / ambigu',bulan:m,tahun:y});continue}if(MAIN_JABS.indexOf(mem.jab)<0)continue;dayCols.forEach(function(dc){var st=normStatus(row[dc.i],raw||mem.nama);if(!st)return;if(isTHName(mem.nama))st='TH';store[type].push({year:y,month:m,day:dc.d,bil:mem.bil,nama_rasmi:mem.nama,jabatan:mem.jab,kompeni:mem.komp,status:st,status_asal:String(row[dc.i]||''),source:fileName,sheet:sheetName,catatan:'Excel KZ '+(type==='kzp'?'Penyelia':'Koperal')});count++})}return count}
+window.eakhaV510ImportKZ=function(type,file){if(!file)return;if(typeof XLSX==='undefined'){toast2('Library Excel belum loaded. Refresh semula.','err');return}var reader=new FileReader();reader.onload=function(e){try{var wb=XLSX.read(e.target.result,{type:'array'}),store=loadSt(),added=0,skipped=0;wb.SheetNames.forEach(function(sn){var tp=detectSheet(sn,type);if(!tp){skipped++;return}var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});added+=parseSheetRows(rows,tp,file.name,sn,store)});saveSt(store);renderKZPanels();toast2('Import KZ Excel: '+added+' rekod masuk staging'+(skipped?' · '+skipped+' sheet tidak jelas':''),'ok')}catch(err){console.error(err);toast2('Ralat baca Excel: '+err.message,'err')}};reader.readAsArrayBuffer(file)};
+window.eakhaV510SyncKZ=function(type){var store=loadSt(),arr=(store[type]||[]).filter(function(r){return +r.year===yNow()&&+r.month===mNow()}),n=0;if(typeof D==='undefined'){toast2('Master belum ready','err');return}arr.forEach(function(r){if(!D[r.bil])D[r.bil]={};if(!D[r.bil][r.day])D[r.bil][r.day]={kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''};var key=type==='kzp'?'kzp':'kzk';D[r.bil][r.day][key]=isTHName(r.nama_rasmi)?'TH':r.status;n++});try{localStorage.setItem('eakha_data',JSON.stringify(D));if(typeof saveDataset==='function')saveDataset('SYNC KZ '+type.toUpperCase())}catch(e){}try{renderMaster(null);renderKZPanels();updFlags()}catch(e){}toast2('KZ '+(type==='kzp'?'Penyelia':'Koperal')+' → Master: '+n+' sel dikemaskini','ok')};
+window.eakhaV510ResetKZ=function(type){if(!confirm('Reset staging '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' bulan ini?'))return;var s=loadSt();s[type]=(s[type]||[]).filter(function(r){return !(r.year===yNow()&&r.month===mNow())});saveSt(s);renderKZPanels();toast2('Staging KZ bulan ini direset','ok')};
+function kzTable(type){var s=loadSt(),arr=(s[type]||[]).filter(function(r){return +r.year===yNow()&&+r.month===mNow()});var rows=arr.slice(-300).reverse().map(function(r){return'<tr><td>'+r.day+'/'+pad(r.month)+'/'+r.year+'</td><td>'+esc(r.jabatan)+'</td><td>'+esc(r.kompeni)+'</td><td>'+esc(r.nama_rasmi)+'</td><td><b>'+esc(r.status)+'</b></td><td>'+esc(r.source)+'</td><td>'+esc(r.sheet)+'</td></tr>'}).join('');return'<div style="max-height:260px;overflow:auto;margin-top:8px"><table class="tbl"><thead><tr><th>Tarikh</th><th>Jabatan</th><th>Kompeni</th><th>Nama</th><th>Status</th><th>File</th><th>Sheet</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7" class="empty">Belum ada data Excel untuk bulan aktif.</td></tr>')+'</tbody></table></div>'}
+function semakHtml(){var s=loadSt(),arr=(s.semak||[]).filter(function(r){return !r.bulan||+r.bulan===mNow()});if(!arr.length)return'<div class="empty">Tiada isu padanan.</div>';return'<div style="max-height:220px;overflow:auto"><table class="tbl"><thead><tr><th>Jenis</th><th>Sheet</th><th>Nama Asal</th><th>Sebab</th></tr></thead><tbody>'+arr.slice(-200).reverse().map(function(r){return'<tr><td>'+esc((r.kind||'').toUpperCase())+'</td><td>'+esc(r.sheet||'')+'</td><td>'+esc(r.rawName||'')+'</td><td style="color:#fbbf24">'+esc(r.reason||'')+'</td></tr>'}).join('')+'</tbody></table></div>'}
+function renderKZPanels(){[['kzp','page-kzp-staging','KZ Penyelia Excel'],['kzk','page-kzk-staging','KZ Koperal Excel']].forEach(function(x){var type=x[0],page=qs('#'+x[1]);if(!page)return;var box=qs('.e510-kzbox',page);if(!box){box=document.createElement('div');box.className='panel e510-kzbox';page.insertBefore(box,page.firstChild)}box.innerHTML='<div class="ph"><div class="ph-title">'+x[2]+' — '+monthName(mNow())+' '+yNow()+'</div></div><div class="pb"><div class="notif n-info"><div>Upload Excel masuk staging dahulu. Data sah sahaja masuk Master selepas tekan Kemaskini ke Master File. Fokus IKTAR/MHKL/RT. ASREE, AMINUDIN/AMINUDDIN dan NAZRI ISMAIL dipaksa TH.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn btn-bl">Upload '+x[2]+'<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV510ImportKZ(\''+type+'\',this.files[0]);this.value=\'\'"></label><label class="btn btn-gold">Upload Excel Gabungan<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV510ImportKZ(\'auto\',this.files[0]);this.value=\'\'"></label><button class="btn btn-gn" onclick="window.eakhaV510SyncKZ(\''+type+'\')">Kemaskini ke Master File</button><button class="btn btn-rd" onclick="window.eakhaV510ResetKZ(\''+type+'\')">Reset Bulan Ini</button></div>'+kzTable(type)+'<div class="panel" style="margin-top:8px"><div class="ph"><span class="ph-title">Semak Padanan</span></div><div class="pb">'+semakHtml()+'</div></div></div>'})}
+
+/* ───────────────────────── SNAPSHOT BOS LIVE CLONE ───────────────────────── */
+function hideAutoFill(){qsa('button').forEach(function(b){var oc=b.getAttribute('onclick')||'',tx=(b.textContent||'').toUpperCase();if(oc.indexOf('autoFillFromKZ')>=0||tx.indexOf('AUTO-FILL')>=0){b.style.display='none'}})}
+function patchOffText(root){qsa('.dc,.gh-d,td,th',root||document).forEach(function(el){var t=(el.textContent||'').trim().toUpperCase();if(t==='OFFDAY'){el.textContent='OFF';el.title='OFFDAY';el.classList.add('e510-off')}})}
+function injectSnapshotButtons(){var bar=qs('#page-master > div[style*="display:flex"]');if(!bar||qs('#btn-boss-snap-all'))return;var wrap=document.createElement('span');wrap.style.display='inline-flex';wrap.style.gap='5px';wrap.style.flexWrap='wrap';wrap.innerHTML='<button class="btn btn-gold btn-sm" id="btn-boss-snap-all" onclick="window.eakhaSnapshotBosLive(\'\')">Snapshot Bos Semua</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'IKTAR\')">Bos IKTAR</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'MHKL\')">Bos MHKL</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'RT\')">Bos RT</button>';bar.appendChild(wrap)}
+window.eakhaSnapshotBosLive=function(jab){try{if(typeof renderMaster==='function')renderMaster(jab||null)}catch(e){}setTimeout(function(){var grid=qs('#master-grid');if(!grid){toast2('Master grid belum dipaparkan','warn');return}var holder=document.createElement('div');holder.innerHTML=grid.innerHTML;patchOffText(holder);var styles=qsa('style').map(function(s){return s.textContent||''}).join('\n');var override='html,body{margin:0!important;padding:0!important;background:#0a1628!important;color:#fff!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif!important;overflow:auto!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.snap-head{background:#0f1f3d!important;border-bottom:1px solid rgba(200,150,10,.25)!important;padding:7px 10px!important;display:flex!important;justify-content:space-between!important;gap:10px!important}.snap-title{font-size:12px!important;font-weight:900!important;color:#f0b429!important}.snap-meta{font-size:7px!important;color:rgba(255,255,255,.65)!important;text-align:right!important}.snap-content{padding:7px!important}.mg-wrap,.tscroll{overflow:visible!important;max-width:none!important}.gh,.gh-nm,.gh-lyr,.ntd,.ltd{position:static!important;left:auto!important;z-index:auto!important}.ntd,.gh-nm{min-width:132px!important;max-width:132px!important;width:132px!important}.ltd,.gh-lyr{min-width:82px!important;max-width:82px!important;width:82px!important}.dc,.gh-d{min-width:56px!important;width:56px!important;max-width:56px!important}.nn{font-size:6.8px!important;line-height:1.05!important}.nm{font-size:5.5px!important}.e510-off,.tc-off,.af-off,.kz-bp{font-size:5px!important;line-height:.95!important;letter-spacing:-.3px!important;padding:1px!important}.dc{font-size:6px!important}@page{size:A3 landscape;margin:5mm}@media print{.snap-head{padding:4px 7px!important}.snap-title{font-size:10px!important}.snap-meta{font-size:6px!important}.snap-content{padding:4px!important}.snap-grid{zoom:.60}.panel,.notif{display:none!important}}';var w=window.open('','_blank');var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Snapshot Bos '+esc(monthName(mNow()))+' '+yNow()+'</title><style>'+styles+'\n'+override+'</style></head><body><div class="snap-head"><div><div class="snap-title">e-AKHA VSAVAGE - SNAPSHOT BOS</div><div style="font-size:7px;color:rgba(255,255,255,.45)">Layout sama seperti paparan live Master File</div></div><div class="snap-meta">Bulan Audit: '+esc(monthName(mNow()))+' '+yNow()+'<br>Jabatan: '+esc(jab||'SEMUA IKTAR/MHKL/RT')+'<br>Tarikh Jana: '+esc(new Date().toLocaleString('ms-MY'))+'</div></div><div class="snap-content"><div class="snap-grid">'+holder.innerHTML+'</div></div></body></html>';w.document.open();w.document.write(html);w.document.close();setTimeout(function(){try{w.focus();w.print()}catch(e){}},700)},180)};
+
+function afterRender(){hideAutoFill();injectSnapshotButtons();renderKZPanels();patchOffText(document)}
+var oldNav=window.nav;if(typeof oldNav==='function'&&!oldNav.__e5101){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(afterRender,80);return r};window.nav.__e5101=true}
+var oldRM=window.renderMaster;if(typeof oldRM==='function'&&!oldRM.__e5101){window.renderMaster=function(){var r=oldRM.apply(this,arguments);setTimeout(afterRender,80);return r};window.renderMaster.__e5101=true}
+var oldSet=window.setMonth;if(typeof oldSet==='function'&&!oldSet.__e5101){window.setMonth=function(){var r=oldSet.apply(this,arguments);setTimeout(function(){eakhaEnsureMCRegister('setMonth',true);afterRender();},180);return r};window.setMonth.__e5101=true}
+document.addEventListener('DOMContentLoaded',function(){[300,900,1800,3500].forEach(function(ms){setTimeout(function(){try{eakhaEnsureMCRegister('boot '+ms,true);afterRender();if(qs('#page-mc-reg')&&qs('#page-mc-reg').classList.contains('on'))renderMCReg()}catch(e){}},ms)})});
+try{eakhaEnsureMCRegister('patch-load',true);console.log('[e-AKHA '+PATCH+'] ready')}catch(e){}
+})();
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage PATCH v5.10.3
+   Fokus:
+   1) Reader KZ Excel ikut format sebenar yang ChatGPT jana untuk KZ Koperal/KZ Penyelia.
+   2) Backup Drive fallback: download JSON yang boleh simpan/upload ke Google Drive.
+   3) HRMIS → Master File: rekod HRMIS dipaparkan sebagai CR/EL/CTR/CB ikut jenis, terutama CUTI REHAT = CR.
+══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var PATCH='v5.10.3-KZ-HRMIS-BACKUP-FLOW';
+  window.EAKHA_PATCH_VERSION = PATCH;
+
+  function q(s,r){return (r||document).querySelector(s)}
+  function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function toast2(msg,type){try{toast(msg,type||'ok')}catch(e){console.log(msg)}}
+  function yNow(){return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)||2026}
+  function mNow(){return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)||4}
+  function pad(n){return String(n).padStart(2,'0')}
+  function dim(y,m){return new Date(y,m,0).getDate()}
+  function monthName2(m){try{return typeof monthName==='function'?monthName(m):['','Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'][m]}catch(e){return String(m)}}
+  function monthCode(m){return ['','JAN','FEB','MAC','APR','MEI','JUN','JUL','OGOS','SEP','OKT','NOV','DIS'][+m]||String(m)}
+  function parseJSON(raw,fb){try{return JSON.parse(raw||'')}catch(e){return fb}}
+  function clone(o){return JSON.parse(JSON.stringify(o||{}))}
+
+  // ───────────────────── Normalisasi nama/padanan rasmi ─────────────────────
+  function normName(s){
+    s=String(s||'').toUpperCase();
+    s=s.replace(/&AMP;/g,'&').replace(/\b(L\/KPL|KPL\/PB|LKPL\/PB|KONST\/PB|KOST\/PB|PEL\.PB|PEL\/PB|KPL|LKPL|KONST|KOST|PEL|PB|SM|SJN|DSP|INSP|SARJAN|KOPERAL)\b\.?/g,' ');
+    s=s.replace(/[^A-Z0-9@\/\s]/g,' ');
+    s=s.replace(/\bMUHAMMAD\b|\bMOHAMMAD\b|\bMOHAMAD\b/g,'MOHAMAD');
+    s=s.replace(/\bMUHD\b/g,'MOHD').replace(/\bMD\b/g,'MOHD');
+    s=s.replace(/\bYUSOFF\b/g,'YUSOF').replace(/\bHAIKAL\b/g,'HAIQAL');
+    s=s.replace(/\bAUNI\b/g,'AAUNI').replace(/\bNURSYUHADA\b/g,'NUR SYUHADA');
+    s=s.replace(/\bBT\b/g,'BINTI').replace(/\bBTE\b/g,'BINTI');
+    s=s.replace(/\s+/g,' ').trim();
+    return s;
+  }
+  function tokens(s){
+    var stop={BIN:1,BINTI:1,BT:1,A:1,L:1,'A/L':1,'A/P':1,AL:1,AP:1,PENAMA:1,MOHD:0,MOHAMAD:0};
+    return normName(s).replace(/\bA\s*\/\s*L\b/g,'AL').split(/\s+/).filter(function(t){return t&&!stop[t]&&t.length>1});
+  }
+  function scoreName(a,b){
+    var A=tokens(a),B=tokens(b); if(!A.length||!B.length) return 0;
+    var setB={}; B.forEach(function(x){setB[x]=1});
+    var hit=A.filter(function(x){return setB[x]}).length;
+    var base=hit/Math.max(A.length,B.length);
+    var na=normName(a), nb=normName(b);
+    if(na===nb) base=1;
+    else if(na.indexOf(nb)>=0||nb.indexOf(na)>=0) base=Math.max(base,.88);
+    if(A[0]&&B[0]&&A[0]===B[0]) base+=.05;
+    if(A[A.length-1]&&B[B.length-1]&&A[A.length-1]===B[B.length-1]) base+=.05;
+    return Math.min(1,base);
+  }
+  function mainJab(j){j=String(j||'').toUpperCase(); if(/IKTAR/.test(j))return'IKTAR'; if(/MHKL|MADANI|HKL/.test(j))return'MHKL'; if(/RT|RADIO/.test(j))return'RT'; return j.replace(/[^A-Z0-9]/g,'')}
+  function kompNorm(k){k=String(k||'').toUpperCase(); if(/ALPHA|ALFA/.test(k))return'ALPHA'; if(/BRAVO/.test(k))return'BRAVO'; if(/CHARLIE|C\b/.test(k))return'CHARLIE'; if(/DELTA|D\b/.test(k))return'DELTA'; return k.replace(/[^A-Z0-9]/g,'')}
+  function isTHName(n){var x=normName(n); return /\bASREE\b/.test(x)||/\bAMINUDIN\b|\bAMINUDDIN\b/.test(x)||(/\bNAZRI\b/.test(x)&&/\bISMAIL\b/.test(x))}
+  function memberByBil(bil){bil=+String(bil||'').replace(/\D/g,''); return (typeof MASTER!=='undefined'?MASTER:[]).find(function(m){return +m.bil===bil})||null}
+  function matchMember(raw,jab,komp,bil){
+    var byBil=memberByBil(bil); if(byBil) return byBil;
+    var list=(typeof MASTER!=='undefined'?MASTER:[]).filter(function(m){return ['IKTAR','MHKL','RT'].indexOf(m.jab)>=0});
+    jab=mainJab(jab); komp=kompNorm(komp);
+    var scored=list.map(function(m){
+      var s=scoreName(raw,m.nama);
+      if(jab&&m.jab!==jab) s-=.08;
+      if(komp&&m.komp!==komp) s-=.05;
+      return {m:m,s:s};
+    }).sort(function(a,b){return b.s-a.s});
+    if(scored[0]&&scored[0].s>=.78&&(scored.length<2||scored[0].s-scored[1].s>=.04)) return scored[0].m;
+    return null;
+  }
+  function statusNorm(v,rawName){
+    var s=String(v==null?'':v).toUpperCase().trim(); if(!s)return''; if(isTHName(rawName))return'TH';
+    if(/\bTH\b|TAHAN\s*TUGAS/.test(s))return'TH';
+    if(/\bMC\b|CUTI\s*SAKIT|SAKIT/.test(s))return'MC';
+    if(/\bEL\b|EMERGENCY|KECEMASAN/.test(s))return'EL';
+    if(/\bCR\b|CUTI\s*REHAT/.test(s))return'CR';
+    if(/\bCTR\b|TANPA\s*REKOD/.test(s))return'CTR';
+    if(/\bCB\b|BERSALIN/.test(s))return'CB';
+    if(/\bOT\b|LEBIH\s*MASA/.test(s))return'OT';
+    if(/\bABS\b|TIDAK\s*HADIR|TDK\s*HADIR|PANGKAH|^X$/.test(s))return'ABS';
+    if(/^L\b|LEWAT/.test(s))return'L';
+    if(/^OF$|OFF|OFFDAY/.test(s))return'OF';
+    if(/[✓√✔]/.test(s)||/HADIR|BERTUGAS|POS|R1|R2/.test(s))return'✓';
+    return s.length<=10?s:'✓';
+  }
+  function parseDateAny(v){
+    if(v==null||v==='')return null;
+    if(typeof v==='number'&&isFinite(v)){var dt=new Date(Math.round((v-25569)*86400*1000)); return {y:dt.getUTCFullYear(),m:dt.getUTCMonth()+1,d:dt.getUTCDate()};}
+    var s=String(v).trim();
+    var m=s.match(/(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?/);
+    if(m){var y=m[3]?+m[3]:yNow(); if(y<100)y+=2000; return {d:+m[1],m:+m[2],y:y};}
+    m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if(m)return{y:+m[1],m:+m[2],d:+m[3]};
+    return null;
+  }
+  function dateRange(dari,hingga){
+    var a=parseDateAny(dari), b=parseDateAny(hingga||dari); if(!a)return[]; if(!b)b=a;
+    var start=new Date(a.y,a.m-1,a.d), end=new Date(b.y,b.m-1,b.d), out=[];
+    for(var dt=new Date(start);dt<=end;dt.setDate(dt.getDate()+1)) out.push({y:dt.getFullYear(),m:dt.getMonth()+1,d:dt.getDate()});
+    return out;
+  }
+
+  // ───────────────────── KZ Excel reader tepat ─────────────────────
+  var KZKEY='eakha_kz_excel_staging_v5103';
+  function blankSt(){return {kzp:[],kzk:[],semak:[]}}
+  function loadKZ(){
+    var s=parseJSON(localStorage.getItem(KZKEY),null);
+    if(!s){
+      s=blankSt();
+      ['eakha_kz_excel_staging_v5101','eakha_kz_v510'].forEach(function(k){
+        var old=parseJSON(localStorage.getItem(k),null); if(!old)return;
+        ['kzp','kzk','semak'].forEach(function(x){ if(Array.isArray(old[x])) s[x]=s[x].concat(old[x]); });
+      });
+    }
+    ['kzp','kzk','semak'].forEach(function(x){if(!Array.isArray(s[x]))s[x]=[]}); return s;
+  }
+  function saveKZ(s){localStorage.setItem(KZKEY,JSON.stringify(s||blankSt()))}
+  function currentSheetAllowed(sn){
+    var S=String(sn||'').toUpperCase(), codes=['JAN','FEB','MAC','APR','MEI','JUN','JUL','OGOS','SEP','OKT','NOV','DIS'];
+    var found=codes.find(function(c){return new RegExp('(^|[_\\s-])'+c+'($|[_\\s-])').test(S)});
+    if(found && found!==monthCode(mNow())) return false;
+    var ym=S.match(/20\d{2}/); if(ym && +ym[0]!==yNow()) return false;
+    return true;
+  }
+  function detectType(sn,forced){
+    if(forced&&forced!=='auto') return forced;
+    var S=String(sn||'').toUpperCase();
+    if(/PENYELIA|KZP|PENYOKONG/.test(S)) return 'kzp';
+    if(/KOPERAL|KZK|WHATSAPP|\bKPL\b|DETAIL_SAH/.test(S)) return 'kzk';
+    if(/MATRIX|STATUSONLY/.test(S)) return 'kzk'; // Excel yang ChatGPT jana untuk WhatsApp KZ Koperal
+    return '';
+  }
+  function findHeader(rows){
+    var best=0,bs=-1;
+    for(var r=0;r<Math.min(rows.length,20);r++){
+      var row=rows[r]||[], s=row.map(function(x){return String(x||'').toUpperCase()}).join('|');
+      var score=0; if(/NAMA/.test(s))score+=3; if(/JABATAN|JAB/.test(s))score++; if(/KOMP/.test(s))score++; if(/ROSTER/.test(s))score++;
+      row.forEach(function(x){if(/^\d{1,2}$/.test(String(x||'').trim()))score++});
+      if(score>bs){bs=score;best=r}
+    }
+    return best;
+  }
+  function idxOf(head,patterns){
+    for(var i=0;i<head.length;i++){var h=String(head[i]||'').toUpperCase().trim(); for(var p=0;p<patterns.length;p++){if(patterns[p].test(h))return i}}
+    return -1;
+  }
+  function removeSheetRows(store,type,fileName,sheetName){
+    var y=yNow(),m=mNow();
+    store[type]=(store[type]||[]).filter(function(r){return !(+r.year===y&&+r.month===m&&r.source===fileName&&r.sheet===sheetName)});
+  }
+  function pushSemak(store,type,sheet,raw,reason){store.semak.push({kind:type,sheet:sheet,rawName:raw||'',reason:reason,bulan:mNow(),tahun:yNow(),when:new Date().toISOString()})}
+  function addKZ(store,type,rec){
+    var arr=store[type];
+    var key=[rec.year,rec.month,rec.day,rec.bil,rec.source,rec.sheet].join('|');
+    var ix=arr.findIndex(function(r){return [r.year,r.month,r.day,r.bil,r.source,r.sheet].join('|')===key});
+    if(ix>=0) arr[ix]=rec; else arr.push(rec);
+  }
+  function parseMatrix(rows,type,fileName,sheetName,store){
+    if(!currentSheetAllowed(sheetName)) return 0;
+    var hi=findHeader(rows), head=rows[hi]||[], y=yNow(),m=mNow(),max=dim(y,m), added=0;
+    var nameCol=idxOf(head,[/NAMA\s*RASMI/,/NAMA\s*ANGGOTA/,/^NAMA$/,/NAMA/]);
+    var jabCol=idxOf(head,[/JABATAN\s*FOKUS/,/^JABATAN/,/JAB/]);
+    var kompCol=idxOf(head,[/KOMPENI/,/KOMP/]);
+    var bilCol=idxOf(head,[/ROSTER\s*ID/,/^BIL$/, /BIL\s*ASAL/]);
+    var dayCols=[]; head.forEach(function(h,i){var d=+String(h||'').trim(); if(d>=1&&d<=max)dayCols.push({i:i,d:d})});
+    if(nameCol<0||!dayCols.length) return 0;
+    removeSheetRows(store,type,fileName,sheetName);
+    for(var r=hi+1;r<rows.length;r++){
+      var row=rows[r]||[], raw=String(row[nameCol]||'').trim(); if(!raw||/NAMA|JUMLAH|JABATAN/i.test(raw))continue;
+      var mem=matchMember(raw,row[jabCol]||'',row[kompCol]||'',row[bilCol]||'');
+      if(!mem){pushSemak(store,type,sheetName,raw,'Nama tidak padan roster rasmi');continue}
+      dayCols.forEach(function(dc){
+        var st=statusNorm(row[dc.i],raw); if(!st)return; if(isTHName(mem.nama))st='TH';
+        addKZ(store,type,{year:y,month:m,day:dc.d,bil:mem.bil,nama_rasmi:mem.nama,jabatan:mem.jab,kompeni:mem.komp,status:st,status_asal:String(row[dc.i]||''),source:fileName,sheet:sheetName,catatan:'Import matrix/statusonly '+PATCH}); added++;
+      });
+    }
+    return added;
+  }
+  function parseDetail(rows,type,fileName,sheetName,store){
+    var hi=findHeader(rows), head=rows[hi]||[], y=yNow(),m=mNow(), added=0;
+    var dateCol=idxOf(head,[/TARIKH\s*LAPORAN/,/TARIKH\s*CHAT/,/^TARIKH/]);
+    var nameCol=idxOf(head,[/NAMA\s*RASMI/,/NAMA\s*ANGGOTA/,/NAMA/]);
+    var rawCol=idxOf(head,[/NAMA\s*RAW/]);
+    var statCol=idxOf(head,[/STATUS\s*AUDIT/,/^STATUS$/,/STATUS/]);
+    var bilCol=idxOf(head,[/ROSTER\s*ID/,/^BIL/]);
+    var jabCol=idxOf(head,[/JABATAN\s*FOKUS/,/JABATAN/]);
+    var kompCol=idxOf(head,[/KOMPENI\s*KZ/,/KOMPENI\s*WHATSAPP/,/KOMPENI/,/KOMP/]);
+    if(dateCol<0||nameCol<0||statCol<0) return 0;
+    removeSheetRows(store,type,fileName,sheetName);
+    for(var r=hi+1;r<rows.length;r++){
+      var row=rows[r]||[], dt=parseDateAny(row[dateCol]); if(!dt||dt.y!==y||dt.m!==m)continue;
+      var raw=String(row[nameCol]||row[rawCol]||'').trim(); if(!raw)continue;
+      var st=statusNorm(row[statCol],raw); if(!st)continue;
+      var mem=matchMember(raw,row[jabCol]||'',row[kompCol]||'',row[bilCol]||'');
+      if(!mem){pushSemak(store,type,sheetName,raw,'Nama detail tidak padan roster rasmi');continue}
+      if(isTHName(mem.nama))st='TH';
+      addKZ(store,type,{year:y,month:m,day:dt.d,bil:mem.bil,nama_rasmi:mem.nama,jabatan:mem.jab,kompeni:mem.komp,status:st,status_asal:String(row[statCol]||''),source:fileName,sheet:sheetName,catatan:'Import detail '+PATCH}); added++;
+    }
+    return added;
+  }
+  function importKZWorkbook(forced,file){
+    if(!file)return; if(typeof XLSX==='undefined'){toast2('Library Excel belum sedia. Refresh semula.','err');return}
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        var wb=XLSX.read(e.target.result,{type:'array',cellDates:false}), store=loadKZ(), added=0, skipped=0;
+        wb.SheetNames.forEach(function(sn){
+          var type=detectType(sn,forced); if(!type){skipped++; return}
+          var rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});
+          var n=0;
+          if(/DETAIL|SAH_3JABATAN/i.test(sn)) n=parseDetail(rows,type,file.name,sn,store);
+          if(!n) n=parseMatrix(rows,type,file.name,sn,store);
+          if(!n && /DETAIL/i.test(sn)) n=parseDetail(rows,type,file.name,sn,store);
+          added+=n;
+        });
+        saveKZ(store); renderKZPanels();
+        toast2('Excel KZ dibaca: '+added+' rekod staging untuk '+monthName2(mNow())+' '+yNow()+(skipped?' · '+skipped+' sheet diabaikan':''),'ok');
+      }catch(err){console.error(err);toast2('Ralat baca Excel KZ: '+err.message,'err')}
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  function syncKZ(type){
+    var s=loadKZ(), arr=(s[type]||[]).filter(function(r){return +r.year===yNow()&&+r.month===mNow()}), n=0;
+    if(typeof D==='undefined'){toast2('Master belum ready','err');return}
+    arr.forEach(function(r){
+      if(!D[r.bil])D[r.bil]={}; if(!D[r.bil][r.day])D[r.bil][r.day]={kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''};
+      var st=isTHName(r.nama_rasmi)?'TH':r.status, key=type==='kzp'?'kzp':'kzk';
+      D[r.bil][r.day][key]=st; if(st==='OT') D[r.bil][r.day].ot=true; n++;
+    });
+    try{localStorage.setItem('eakha_data',JSON.stringify(D)); if(typeof saveDataset==='function')saveDataset('SYNC KZ EXCEL '+type.toUpperCase()+' '+PATCH)}catch(e){}
+    try{if(typeof renderMaster==='function')renderMaster(null); if(typeof updFlags==='function')updFlags(); renderKZPanels()}catch(e){}
+    toast2((type==='kzp'?'KZ Penyelia':'KZ Koperal')+' → Master: '+n+' sel dikemaskini','ok');
+  }
+  function resetKZ(type){
+    if(!confirm('Reset staging '+(type==='kzp'?'KZ Penyelia':'KZ Koperal')+' untuk '+monthName2(mNow())+' '+yNow()+'?'))return;
+    var s=loadKZ(); s[type]=(s[type]||[]).filter(function(r){return !(+r.year===yNow()&&+r.month===mNow())}); saveKZ(s); renderKZPanels();
+  }
+  function tableKZ(type){
+    var arr=(loadKZ()[type]||[]).filter(function(r){return +r.year===yNow()&&+r.month===mNow()});
+    var rows=arr.slice(-500).reverse().map(function(r){return '<tr><td>'+r.day+'/'+pad(r.month)+'/'+r.year+'</td><td>'+esc(r.jabatan)+'</td><td>'+esc(r.kompeni)+'</td><td>'+esc(r.nama_rasmi)+'</td><td><b>'+esc(r.status)+'</b></td><td>'+esc(r.source)+'</td><td>'+esc(r.sheet)+'</td></tr>'}).join('');
+    return '<div style="font-size:8px;color:rgba(255,255,255,.45);margin:7px 0">'+arr.length+' rekod staging bulan aktif. Excel format ChatGPT: <b>STATUSONLY/MATRIX/DETAIL_SAH_3JABATAN</b> disokong.</div><div style="max-height:270px;overflow:auto"><table class="tbl"><thead><tr><th>Tarikh</th><th>Jabatan</th><th>Kompeni</th><th>Nama Rasmi</th><th>Status</th><th>Fail</th><th>Sheet</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7" class="empty">Belum ada data. Upload Excel yang ChatGPT jana atau Excel KZ Penyelia.</td></tr>')+'</tbody></table></div>';
+  }
+  function semakKZ(){
+    var arr=(loadKZ().semak||[]).filter(function(r){return +r.tahun===yNow()&&+r.bulan===mNow()});
+    if(!arr.length)return '<div class="empty">Tiada isu padanan.</div>';
+    return '<div style="max-height:200px;overflow:auto"><table class="tbl"><thead><tr><th>Jenis</th><th>Sheet</th><th>Nama Asal</th><th>Sebab</th></tr></thead><tbody>'+arr.slice(-250).reverse().map(function(r){return '<tr><td>'+esc((r.kind||'').toUpperCase())+'</td><td>'+esc(r.sheet)+'</td><td>'+esc(r.rawName)+'</td><td style="color:#fbbf24">'+esc(r.reason)+'</td></tr>'}).join('')+'</tbody></table></div>';
+  }
+  function renderKZPanels(){
+    [['kzp','page-kzp-staging','KZ Penyelia Excel'],['kzk','page-kzk-staging','KZ Koperal Excel']].forEach(function(x){
+      var type=x[0], page=q('#'+x[1]); if(!page)return; var box=q('.e5103-kzbox',page)||q('.e5102-kzbox',page)||q('.e510-kzbox',page);
+      if(!box){box=document.createElement('div');page.insertBefore(box,page.firstChild)} box.className='panel e5103-kzbox';
+      box.innerHTML='<div class="ph"><div class="ph-title">'+x[2]+' — Bulan Aktif: '+monthName2(mNow())+' '+yNow()+' <span style="font-size:7px;color:#34d399">('+PATCH+')</span></div></div><div class="pb"><div class="notif n-info"><div><b>Flow disahkan:</b> Akak bagi gambar/WhatsApp → ChatGPT susun Excel → sistem baca Excel ini → masuk staging → tekan Kemaskini ke Master File. Untuk bulan depan, guna format Excel yang sama; pilih bulan dahulu, kemudian upload.</div></div><div class="notif n-warn"><div><b>Reader support sheet:</b> 02_APR_2026_MATRIX, 03_APR_2026_STATUSONLY, 04_DETAIL_SAH_3JABATAN, dan sheet bernama PENYELIA/KZP atau KOPERAL/KZK/WHATSAPP. Dalam <b>Upload Gabungan</b>, MATRIX/STATUSONLY tanpa nama KZ akan dianggap KZ Koperal kerana itu format Excel WhatsApp yang saya jana.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btn btn-bl">Upload '+x[2]+'<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV510ImportKZ(\''+type+'\',this.files[0]);this.value=\'\'"></label><label class="btn btn-gold">Upload Excel Gabungan KZ<input type="file" accept=".xlsx,.xls" style="display:none" onchange="window.eakhaV510ImportKZ(\'auto\',this.files[0]);this.value=\'\'"></label><button class="btn btn-gn" onclick="window.eakhaV510SyncKZ(\''+type+'\')">Kemaskini ke Master File</button><button class="btn btn-rd" onclick="window.eakhaV510ResetKZ(\''+type+'\')">Reset Bulan Ini</button></div>'+tableKZ(type)+'<div class="panel" style="margin-top:8px"><div class="ph"><span class="ph-title">Semak Padanan / Nama tidak masuk Master</span></div><div class="pb">'+semakKZ()+'</div></div></div>';
+    });
+  }
+  window.eakhaV510ImportKZ=importKZWorkbook; window.eakhaV510SyncKZ=syncKZ; window.eakhaV510ResetKZ=resetKZ; window.eakhaV510RenderKZPanels=renderKZPanels;
+
+  // ───────────────────── HRMIS → Master File sebagai CR ─────────────────────
+  function hrKey(){return 'eakha_hrmis_'+yNow()+'_'+pad(mNow())}
+  function recKey(r){return normName(r.nama||'')+'|'+String(r.dari||'')+'|'+String(r.hingga||r.dari||'')+'|'+String(r.jenis||'')}
+  function hrCode(jenis){var s=String(jenis||'').toUpperCase(); if(/BERSALIN|\bCB\b|CBR/.test(s))return'CB'; if(/TANPA\s*REKOD|\bCTR\b/.test(s))return'CTR'; if(/KECEMASAN|\bEL\b/.test(s))return'EL'; if(/SAKIT|\bMC\b/.test(s))return'MC'; return'CR'}
+  function gatherHRMIS(){
+    var out=[], seen={};
+    function add(a){(a||[]).forEach(function(r){if(!r||!r.nama||!r.dari)return; var o=Object.assign({},r); o.jenis=o.jenis||'CUTI REHAT (CR)'; var k=recKey(o); if(!seen[k]){seen[k]=1; out.push(o)}})}
+    try{if(typeof HRMIS_PRELOAD!=='undefined')add(HRMIS_PRELOAD)}catch(e){}
+    add(parseJSON(localStorage.getItem('eakha_hrmis'),[])); add(parseJSON(localStorage.getItem(hrKey()),[]));
+    try{var ds=parseJSON(localStorage.getItem('eakha_dataset_'+yNow()+'_'+mNow()),null); if(ds&&Array.isArray(ds.HRMIS_DATA))add(ds.HRMIS_DATA)}catch(e){}
+    return out;
+  }
+  function syncHRMISCRToMaster(reason,doSave){
+    if(typeof D==='undefined'||typeof MASTER==='undefined')return 0;
+    var all=gatherHRMIS(), y=yNow(),m=mNow(), n=0, monthRecs=[];
+    all.forEach(function(r){
+      var mem=matchMember(r.nama,r.jabatan||'',r.kompeni||'',r.bil||r.RosterID||'');
+      if(!mem)return; var code=hrCode(r.jenis); r.kodCuti=code;
+      dateRange(r.dari,r.hingga||r.dari).forEach(function(dt){
+        if(dt.y!==y||dt.m!==m)return; monthRecs.push(r);
+        if(!D[mem.bil])D[mem.bil]={}; if(!D[mem.bil][dt.d])D[mem.bil][dt.d]={kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''};
+        var c=D[mem.bil][dt.d]; c.hrmis=code; c._hrmis_rec=Object.assign({},r,{bil:mem.bil,nama_rasmi:mem.nama,day:dt.d,month:dt.m,year:dt.y}); n++;
+      });
+    });
+    try{localStorage.setItem('eakha_hrmis',JSON.stringify(all)); localStorage.setItem(hrKey(),JSON.stringify(monthRecs)); localStorage.setItem('eakha_data',JSON.stringify(D)); if(doSave&&typeof saveDataset==='function')saveDataset('SYNC HRMIS CR '+(reason||PATCH))}catch(e){}
+    return n;
+  }
+  window.eakhaSyncHRMISCRToMaster=syncHRMISCRToMaster;
+  window.eakhaFixHRMISCR=function(){var n=syncHRMISCRToMaster('MANUAL BUTTON',true); try{renderMaster(null);renderHRMISReg();renderDash();updFlags()}catch(e){} toast2('HRMIS → Master: '+n+' hari diisi sebagai CR/EL/CTR/CB','ok')};
+
+  // ───────────────────── Backup Google Drive fallback ─────────────────────
+  function backupPayload(){
+    try{syncHRMISCRToMaster('BACKUP',false)}catch(e){}
+    return {patch:PATCH,tahun:yNow(),bulan:mNow(),bulanLabel:monthName2(mNow())+' '+yNow(),savedAt:new Date().toISOString(),savedBy:(typeof AUTH!=='undefined'&&AUTH&&AUTH.id)||'system',D:(typeof D!=='undefined')?clone(D):{},AUDIT_STATE:(typeof AUDIT_STATE!=='undefined')?clone(AUDIT_STATE):{},MC_DATA:(typeof MC_DATA!=='undefined')?clone(MC_DATA):[],HRMIS_DATA:gatherHRMIS(),KZ_STAGING:loadKZ(),RAYA_DATA:(typeof RAYA_DATA!=='undefined')?clone(RAYA_DATA):[],CTR_DATA:(typeof CTR_DATA!=='undefined')?clone(CTR_DATA):[],BAKI_CUTI:(typeof BAKI_CUTI!=='undefined')?clone(BAKI_CUTI):{},note:'Muat turun fail ini dan upload/simpan ke Google Drive. Backup terus ke Drive perlu OAuth/Edge Function yang aktif.'};
+  }
+  function downloadJSON(obj,name){var blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
+  window.doBackup=function(){
+    if(typeof reqAdmin==='function'&&!reqAdmin())return;
+    var payload=backupPayload();
+    var fname='eAKHA_backup_'+yNow()+'_'+pad(mNow())+'_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json';
+    downloadJSON(payload,fname);
+    var st=q('#backup-status')||q('#backup-stat'); if(st)st.innerHTML='<span style="color:#34d399">✓ Backup JSON dimuat turun. Simpan/upload fail ini ke Google Drive.</span>';
+    toast2('Backup dimuat turun — upload fail JSON ke Google Drive','ok');
+  };
+  window.eakhaRestoreBackupFile=function(file){
+    if(!file)return; var r=new FileReader(); r.onload=function(e){try{var p=JSON.parse(e.target.result); if(p.D&&typeof D!=='undefined'){Object.keys(p.D).forEach(function(b){D[b]=p.D[b]})} if(Array.isArray(p.MC_DATA)&&typeof MC_DATA!=='undefined')MC_DATA=p.MC_DATA; if(Array.isArray(p.HRMIS_DATA))localStorage.setItem('eakha_hrmis',JSON.stringify(p.HRMIS_DATA)); if(p.KZ_STAGING)saveKZ(p.KZ_STAGING); if(p.AUDIT_STATE&&typeof AUDIT_STATE!=='undefined')AUDIT_STATE=p.AUDIT_STATE; syncHRMISCRToMaster('RESTORE BACKUP',true); if(typeof saveDataset==='function')saveDataset('RESTORE JSON BACKUP'); try{renderMaster(null);renderMCReg();renderHRMISReg();renderKZPanels();renderDash();updFlags()}catch(x){} toast2('Backup JSON berjaya dipulihkan','ok')}catch(err){toast2('Fail backup tidak sah: '+err.message,'err')}}; r.readAsText(file)};
+  function patchBackupPanel(){
+    var page=q('#page-backup'); if(!page)return;
+    var ph=qa('.ph-title',page).find(function(x){return /Backup/i.test(x.textContent||'')}); if(ph)ph.textContent='☁ Backup / Restore Data e-AKHA';
+    var pb=ph?ph.closest('.panel').querySelector('.pb'):null;
+    if(pb&&!q('.e5103-backup-note',pb)){
+      pb.innerHTML='<div class="notif n-warn e5103-backup-note"><div><b>Nota:</b> Backup terus ke Google Drive perlukan Supabase Edge Function/OAuth yang aktif. Untuk elak gagal, sistem sekarang muat turun fail JSON. Akak boleh upload fail JSON itu ke Google Drive secara manual.</div></div><button class="btn btn-bl" onclick="doBackup()">⬇ Muat Turun Backup JSON</button><label class="btn btn-gold" style="margin-left:6px">Pulih dari Backup JSON<input type="file" accept=".json" style="display:none" onchange="eakhaRestoreBackupFile(this.files[0]);this.value=\'\'"></label><div id="backup-status" style="font-size:8px;color:#34d399;margin-top:6px"></div>';
+    }
+  }
+
+  // ───────────────────── Wrapping render/restore ─────────────────────
+  var oldRenderMaster=window.renderMaster; if(typeof oldRenderMaster==='function'&&!oldRenderMaster.__e5103){window.renderMaster=function(){try{syncHRMISCRToMaster('BEFORE RENDER',false)}catch(e){} return oldRenderMaster.apply(this,arguments)}; window.renderMaster.__e5103=true; try{renderMaster=window.renderMaster}catch(e){}}
+  var oldRenderHR=window.renderHRMISReg; if(typeof oldRenderHR==='function'&&!oldRenderHR.__e5103){window.renderHRMISReg=function(){try{syncHRMISCRToMaster('BEFORE HRMIS REG',true)}catch(e){} return oldRenderHR.apply(this,arguments)}; window.renderHRMISReg.__e5103=true; try{renderHRMISReg=window.renderHRMISReg}catch(e){}}
+  var oldNav=window.nav; if(typeof oldNav==='function'&&!oldNav.__e5103){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(function(){patchBackupPanel();renderKZPanels();try{syncHRMISCRToMaster('NAV',true)}catch(e){}},120);return r}; window.nav.__e5103=true; try{nav=window.nav}catch(e){}}
+  var oldSetMonth=window.setMonth; if(typeof oldSetMonth==='function'&&!oldSetMonth.__e5103){window.setMonth=function(){var r=oldSetMonth.apply(this,arguments);setTimeout(function(){syncHRMISCRToMaster('SET MONTH',true);renderKZPanels();patchBackupPanel();try{renderMaster(null)}catch(e){}},250);return r}; window.setMonth.__e5103=true; try{setMonth=window.setMonth}catch(e){}}
+  var oldManualRestore=window.manualRestoreSnapshot; if(typeof oldManualRestore==='function'&&!oldManualRestore.__e5103){window.manualRestoreSnapshot=function(){var r=oldManualRestore.apply(this,arguments);setTimeout(function(){var n=syncHRMISCRToMaster('AFTER RESTORE SNAPSHOT',true);try{renderMaster(null);renderHRMISReg();renderDash();updFlags()}catch(e){} toast2('Snapshot dipulihkan + HRMIS disync: '+n+' hari','ok')},300);return r}; window.manualRestoreSnapshot.__e5103=true;}
+  var oldRestoreBest=window.eakhaRestoreBestBackup; if(typeof oldRestoreBest==='function'&&!oldRestoreBest.__e5103){window.eakhaRestoreBestBackup=function(){var r=oldRestoreBest.apply(this,arguments);setTimeout(function(){syncHRMISCRToMaster('AFTER PULIH DATA AUTO',true);try{renderMaster(null);renderHRMISReg();renderDash();updFlags()}catch(e){}},450);return r}; window.eakhaRestoreBestBackup.__e5103=true;}
+  function boot(){try{syncHRMISCRToMaster('BOOT',true);renderKZPanels();patchBackupPanel();if(q('#page-hrmis-reg')&&q('#page-hrmis-reg').classList.contains('on'))renderHRMISReg()}catch(e){console.warn('v5.10.3 boot',e)}}
+  document.addEventListener('DOMContentLoaded',function(){[300,1000,2200,4200].forEach(function(ms){setTimeout(boot,ms)})});
+  setTimeout(boot,800);
+  try{console.log('[e-AKHA '+PATCH+'] ready') }catch(e){}
+})();
 </script>
 
 </body>
