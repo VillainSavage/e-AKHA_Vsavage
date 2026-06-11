@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.8 TIMECARD STRICT WINDOWS</title>
+  <title>e-AKHA Vsavage v5.10.9 LOGIN + HAKIKI IMAGE FIX</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -3366,171 +3366,7 @@ function expPDF(){
       '<td style="text-align:center">'+r.h+'</td><td style="text-align:center;color:#8B5E00">'+(r.mc||'')+'</td>'+
       '<td style="text-align:center;color:#1e40af">'+(r.cr||'')+'</td><td style="text-align:center;color:#991b1b;font-weight:bold">'+(r.ab||'')+'</td>'+
       '<td style="text-align:center;color:#9a3412">'+(r.lw||'')+'</td></tr>').join('')+
-    '</tbody></table><script>
-/* ══════════════════════════════════════════════════════════════
-   e-AKHA Vsavage PATCH v5.10.7 — MC ALIF/ALIFF GUARD + IGNORE 27-30
-   - MC Diterima tidak auto-isi KZ Penyelia/KZ Koperal
-   - ALIF NASARUDDIN ≠ ALIFF/ALLIF MOHTAR
-   - Audit 27-30/04 diabaikan daripada Output Perhatian kerana TC problem
-══════════════════════════════════════════════════════════════ */
-(function(){
-'use strict';
-var PATCH='v5.10.7-MC-ALIF-STRICT-IGNORE-2730';
-window.EAKHA_PATCH_5107=PATCH;
-function q(s,r){return (r||document).querySelector(s)}
-function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
-function toast2(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
-function activeM(){return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}
-function activeY(){return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}
-function canon(v){return String(v||'').toUpperCase()
-  .replace(/\b(LKPL|KPL|KONST|KOST|KOP|PEL|PB|PPB|SM|SJN|DSP)\b/g,' ')
-  .replace(/\([^)]*\)/g,' ')
-  .replace(/[^A-Z0-9@\/ ]+/g,' ')
-  .replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHAMAD').replace(/\bMOHD\b/g,'MOHAMAD')
-  .replace(/\bALLIF\b/g,'ALIFF').replace(/\bHAIKAL\b/g,'HAIQAL')
-  .replace(/\s+/g,' ').trim()}
-function normKomp(k){var s=String(k||'').toUpperCase();var M={A:'ALPHA',B:'BRAVO',C:'CHARLIE',D:'DELTA'};if(M[s])return M[s];if(s.indexOf('ALPHA')>=0)return'ALPHA';if(s.indexOf('BRAVO')>=0)return'BRAVO';if(s.indexOf('CHARLIE')>=0)return'CHARLIE';if(s.indexOf('DELTA')>=0)return'DELTA';return''}
-function strictAlifGuard(srcName,masterName){
-  var a=canon(srcName), b=canon(masterName);
-  if(/\b(ALIF|ALIFF)\b/.test(a)||/\b(ALIF|ALIFF)\b/.test(b)){
-    if(a.indexOf('NASARUDDIN')>=0 && b.indexOf('NASARUDDIN')<0) return false;
-    if(a.indexOf('MOHTAR')>=0 && b.indexOf('MOHTAR')<0) return false;
-    if(a.indexOf('HAIQAL')>=0 && b.indexOf('HAIQAL')<0) return false;
-    if(b.indexOf('NASARUDDIN')>=0 && a.indexOf('NASARUDDIN')<0 && a.indexOf('MOHTAR')>=0) return false;
-    if(b.indexOf('MOHTAR')>=0 && a.indexOf('MOHTAR')<0 && a.indexOf('NASARUDDIN')>=0) return false;
-  }
-  return true;
-}
-function scoreName(a,b){
-  if(!strictAlifGuard(a,b)) return 0;
-  var ca=canon(a), cb=canon(b); if(!ca||!cb) return 0; if(ca===cb) return 100;
-  var bad={BIN:1,BINTI:1,BT:1,BTE:1,AL:1,'A/L':1};
-  var toks=ca.split(' ').filter(function(t){return t.length>2&&!bad[t]}); if(!toks.length) return 0;
-  var hit=0; toks.forEach(function(t){if(cb.indexOf(t)>=0)hit++});
-  return Math.round(hit/toks.length*100);
-}
-function findMemberStrict(name,komp){
-  var pool=(typeof MASTER!=='undefined'&&Array.isArray(MASTER))?MASTER:[]; if(!pool.length) return null;
-  var c=canon(name), k=normKomp(komp);
-  var exact=pool.find(function(m){return canon(m.nama)===c && (!k||m.komp===k) && strictAlifGuard(name,m.nama)});
-  if(exact) return exact;
-  var candidates=pool.filter(function(m){return (!k||m.komp===k) && strictAlifGuard(name,m.nama)});
-  if(!candidates.length) candidates=pool.filter(function(m){return strictAlifGuard(name,m.nama)});
-  var best=null,sc=0; candidates.forEach(function(m){var s=scoreName(name,m.nama); if(s>sc){sc=s; best=m}});
-  return (best&&sc>=82)?best:null;
-}
-function parseMCDate(s){
-  s=String(s||''); var p;
-  if(/^\d{4}-/.test(s)){p=s.split('-');return {d:+p[2],m:+p[1],y:+p[0]}}
-  if(s.indexOf('.')>=0){p=s.split('.');return {d:+p[0],m:+p[1],y:+p[2]}}
-  if(s.indexOf('/')>=0){p=s.split('/'); if(p[0].length===4)return {d:+p[2],m:+p[1],y:+p[0]}; return {d:+p[0],m:+p[1],y:+p[2]}}
-  if(s.indexOf('-')>=0){p=s.split('-'); return {d:+p[0],m:+p[1],y:+p[2]}}
-  return null;
-}
-function expandDays(dari,hingga){
-  var a=parseMCDate(dari), b=parseMCDate(hingga||dari); if(!a||!b) return [];
-  var out=[]; if(a.m===b.m&&a.y===b.y){for(var d=a.d;d<=b.d;d++)out.push({d:d,m:a.m,y:a.y}); return out}
-  out.push({d:a.d,m:a.m,y:a.y}); return out;
-}
-function sameMC(a,b){return canon(a.nama)===canon(b.nama)&&String(a.d)===String(b.d)&&String(a.m)===String(b.m)&&String(a.y)===String(b.y)&&String(a.no_mc||a.siri||'')===String(b.no_mc||b.siri||'')}
-function cleanMCAutoKZ(){
-  if(typeof D==='undefined') return 0; var n=0;
-  Object.keys(D).forEach(function(b){var days=D[b]||{}; Object.keys(days).forEach(function(d){var c=days[d]||{};
-    // MC source must stay in MC DITERIMA only. Do not let MC preload impersonate KZP/KZK.
-    if(c._mc){
-      if(String(c.kzp||'').toUpperCase()==='MC' && !c.kzp_src && !c.kzp_sheet){c.kzp=''; n++}
-      if(String(c.kzk||'').toUpperCase()==='MC' && !c.kzk_src && !c.kzk_sheet){c.kzk=''; n++}
-    }
-  })});
-  // Specific historical ambiguity cleanup: KZ record of ALIFF MOHTAR must not sit on ALIF NASARUDDIN.
-  try{
-    var nas=((MASTER||[]).find(function(m){return canon(m.nama).indexOf('ALIF BIN NASARUDDIN')>=0}));
-    if(nas&&D[nas.bil]) [1,2,5].forEach(function(d){var c=D[nas.bil][d]; if(!c)return; ['kzp','kzk'].forEach(function(f){var v=String(c[f]||'').toUpperCase(); if(['MC','L','LL'].indexOf(v)>=0 && !c[f+'_src'] && !c[f+'_sheet']){c[f]=''; n++}})});
-  }catch(e){}
-  return n;
-}
-function markProblemDays(){
-  if(typeof D==='undefined')return; if(!(activeY()===2026&&activeM()===4))return;
-  Object.keys(D).forEach(function(b){[27,28,29,30].forEach(function(d){if(D[b]&&D[b][d]){D[b][d].tc_problem=true;D[b][d].tc_note='SISTEM TIMECARD BERMASALAH (27-30/04) - ABAIKAN AUDIT'}})});
-}
-function isIgnoreAuditDay(d){return activeY()===2026 && activeM()===4 && [27,28,29,30].indexOf(+d)>=0}
-
-// Replace MC preload: MC records go to MC_DATA + _mc only. It must never write KZP/KZK.
-window.applyMCPreload = applyMCPreload = function(targetMonth,targetYear){
-  targetMonth=targetMonth||4; targetYear=targetYear||2026;
-  if(typeof MC_PRELOAD==='undefined'||!Array.isArray(MC_PRELOAD)) return {matched:0,unmatched:0,days:0,unmatchedList:[]};
-  if(typeof MC_DATA==='undefined'||!Array.isArray(MC_DATA)) window.MC_DATA=MC_DATA=[];
-  var matched=0,unmatched=0,daysAdded=0,unmatchedList=[];
-  MC_PRELOAD.forEach(function(rec){
-    var ds=expandDays(rec.dari,rec.hingga).filter(function(x){return x.m===targetMonth&&x.y===targetYear}); if(!ds.length) return;
-    var member=findMemberStrict(rec.nama,rec.komp);
-    if(!member){unmatched++; unmatchedList.push(rec.nama+' ('+(rec.komp||'')+')'); return;}
-    ds.forEach(function(x){
-      var row={bil:member.bil,nama:member.nama,jab:member.jab,komp:member.komp,tarikh:String(x.d).padStart(2,'0')+'/'+String(x.m).padStart(2,'0')+'/'+x.y,dari:rec.dari,hingga:rec.hingga,d:x.d,m:x.m,y:x.y,mc_type:rec.mc_type||'MC',klinik:rec.klinik,no_mc:rec.no_mc||rec.siri,hari:rec.hari,source:'preload_strict',bulanLabel:x.m===targetMonth?'Bulan Ini':'Bulan Lain'};
-      if(!MC_DATA.some(function(r){return sameMC(r,row)})) MC_DATA.push(row);
-      if(typeof D!=='undefined'&&D[member.bil]&&D[member.bil][x.d]) D[member.bil][x.d]._mc=row;
-      daysAdded++;
-    }); matched++;
-  });
-  cleanMCAutoKZ();
-  try{localStorage.setItem('eakha_mc',JSON.stringify(MC_DATA))}catch(e){}
-  return {matched:matched,unmatched:unmatched,days:daysAdded,unmatchedList:unmatchedList};
-};
-
-// Strict KZ preload. KZ sources write KZ only; MC source writes MC only.
-var oldAutoKZ=window.autoLoadKZPreload;
-window.autoLoadKZPreload = autoLoadKZPreload = function(){
-  var nP=0,nK=0;
-  function apply(list,field){(list||[]).forEach(function(rec){
-    var mdate=String(rec.tarikh||'').match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/); if(!mdate) return;
-    var d=+mdate[1], mm=+mdate[2], yy=+mdate[3]; if(mm!==activeM()||yy!==activeY()) return;
-    var mem=findMemberStrict(rec.nama,rec.komp); if(!mem||!D[mem.bil]||!D[mem.bil][d]) return;
-    var code=(typeof mapKZStatus==='function')?mapKZStatus(rec.status):String(rec.status||'').toUpperCase();
-    if(canon(rec.nama).indexOf('ALIF BIN NASARUDDIN')>=0 && canon(mem.nama).indexOf('ALIF BIN NASARUDDIN')<0) return;
-    if(canon(rec.nama).indexOf('ALIFF BIN MOHTAR')>=0 && canon(mem.nama).indexOf('ALIFF BIN MOHTAR')<0) return;
-    D[mem.bil][d][field]=code; D[mem.bil][d][field+'_src']='KZ_PRELOAD_STRICT'; D[mem.bil][d][field+'_sheet']='KZ_SOURCE';
-    if(rec.jam)D[mem.bil][d][field+'_jam']=rec.jam; if(rec.pos)D[mem.bil][d][field+'_pos']=rec.pos; if(rec.pengganti){D[mem.bil][d].pengganti=true;D[mem.bil][d].pengganti_nama=rec.pengganti}
-    if(field==='kzp')nP++; else nK++;
-  })}
-  cleanMCAutoKZ();
-  apply((typeof KZP_PRELOAD!=='undefined'?KZP_PRELOAD:[]),'kzp');
-  apply((typeof KZK_PRELOAD!=='undefined'?KZK_PRELOAD:[]),'kzk');
-  try{console.log('[KZ strict preload] KZP:'+nP+', KZK:'+nK)}catch(e){}
-};
-
-var oldAuditFinal=window.auditFinal;
-window.auditFinal = auditFinal = function(bil,d){
-  if(isIgnoreAuditDay(d)){
-    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:{}; c.tc_problem=true;
-    var mc=(typeof getMC==='function')?getMC(bil,d):null;
-    if(mc) return {txt:'MC SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
-    if(typeof hasHR==='function'&&hasHR(c)) return {txt:'HRMIS SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
-    return {txt:'TC BERMASALAH\nABAIKAN AUDIT 27-30/04',cls:'af-sah',inc:false};
-  }
-  return oldAuditFinal?oldAuditFinal.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
-};
-var oldGetAllFlags=window.getAllFlags;
-if(typeof oldGetAllFlags==='function'){
-  window.getAllFlags = getAllFlags = function(){
-    var arr=oldGetAllFlags.apply(this,arguments)||[];
-    arr.forEach(function(m){m.items=(m.items||[]).filter(function(x){return !isIgnoreAuditDay(x.d)})});
-    return arr.filter(function(m){m.tot=(m.items||[]).length; return m.tot>0}).sort(function(a,b){return b.tot-a.tot});
-  };
-}
-function boot(){
-  try{markProblemDays(); cleanMCAutoKZ(); if(typeof autoLoadKZPreload==='function')autoLoadKZPreload();}catch(e){console.warn('[5107 boot]',e)}
-  try{if(typeof saveDataset==='function')saveDataset('PATCH '+PATCH);else localStorage.setItem('eakha_data',JSON.stringify(D))}catch(e){}
-  try{if(q('#page-master')&&q('#page-master').classList.contains('on'))renderMaster(null); if(q('#page-output')&&q('#page-output').classList.contains('on'))renderOutput(''); if(typeof updFlags==='function')updFlags()}catch(e){}
-}
-var oldNav=window.nav;if(typeof oldNav==='function'&&!oldNav.__v5107){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(boot,200);return r};window.nav.__v5107=true;try{nav=window.nav}catch(e){}}
-var oldSetMonth=window.setMonth;if(typeof oldSetMonth==='function'&&!oldSetMonth.__v5107){window.setMonth=function(){var r=oldSetMonth.apply(this,arguments);setTimeout(boot,350);return r};window.setMonth.__v5107=true;try{setMonth=window.setMonth}catch(e){}}
-var oldRM=window.renderMaster;if(typeof oldRM==='function'&&!oldRM.__v5107){window.renderMaster=function(){markProblemDays();cleanMCAutoKZ();return oldRM.apply(this,arguments)};window.renderMaster.__v5107=true;try{renderMaster=window.renderMaster}catch(e){}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[500,1200,2600,5200].forEach(function(ms){setTimeout(boot,ms)})});else{[150,900,2500].forEach(function(ms){setTimeout(boot,ms)})}
-try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
-})();
-</script>
-
-</body></html>');
+    '</tbody></table></body></html>');
   w.document.close(); setTimeout(()=>w.print(),500);
 }
 
@@ -3640,8 +3476,8 @@ async function doLogin(){
 
   showAuthErr(err,'ID atau kata laluan tidak sah.');
   document.getElementById('l-pw').value='';
-  document.querySelector('.acard').classList.add('shake');
-  setTimeout(()=>document.querySelector('.acard').classList.remove('shake'),400);
+  const ac=document.querySelector('.acard') || document.querySelector('#auth-wall > div');
+  if(ac){ ac.classList.add('shake'); setTimeout(()=>ac.classList.remove('shake'),400); }
   btn.disabled=false; btn.textContent='Log Masuk';
 }
 
@@ -7915,171 +7751,24 @@ function renderKZPanels(){[['kzp','page-kzp-staging','KZ Penyelia Excel'],['kzk'
 function hideAutoFill(){qsa('button').forEach(function(b){var oc=b.getAttribute('onclick')||'',tx=(b.textContent||'').toUpperCase();if(oc.indexOf('autoFillFromKZ')>=0||tx.indexOf('AUTO-FILL')>=0){b.style.display='none'}})}
 function patchOffText(root){qsa('.dc,.gh-d,td,th',root||document).forEach(function(el){var t=(el.textContent||'').trim().toUpperCase();if(t==='OFFDAY'){el.textContent='OFF';el.title='OFFDAY';el.classList.add('e510-off')}})}
 function injectSnapshotButtons(){var bar=qs('#page-master > div[style*="display:flex"]');if(!bar||qs('#btn-boss-snap-all'))return;var wrap=document.createElement('span');wrap.style.display='inline-flex';wrap.style.gap='5px';wrap.style.flexWrap='wrap';wrap.innerHTML='<button class="btn btn-gold btn-sm" id="btn-boss-snap-all" onclick="window.eakhaSnapshotBosLive(\'\')">Snapshot Bos Semua</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'IKTAR\')">Bos IKTAR</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'MHKL\')">Bos MHKL</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'RT\')">Bos RT</button>';bar.appendChild(wrap)}
-window.eakhaSnapshotBosLive=function(jab){try{if(typeof renderMaster==='function')renderMaster(jab||null)}catch(e){}setTimeout(function(){var grid=qs('#master-grid');if(!grid){toast2('Master grid belum dipaparkan','warn');return}var holder=document.createElement('div');holder.innerHTML=grid.innerHTML;patchOffText(holder);var styles=qsa('style').map(function(s){return s.textContent||''}).join('\n');var override='html,body{margin:0!important;padding:0!important;background:#0a1628!important;color:#fff!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif!important;overflow:auto!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.snap-head{background:#0f1f3d!important;border-bottom:1px solid rgba(200,150,10,.25)!important;padding:7px 10px!important;display:flex!important;justify-content:space-between!important;gap:10px!important}.snap-title{font-size:12px!important;font-weight:900!important;color:#f0b429!important}.snap-meta{font-size:7px!important;color:rgba(255,255,255,.65)!important;text-align:right!important}.snap-content{padding:7px!important}.mg-wrap,.tscroll{overflow:visible!important;max-width:none!important}.gh,.gh-nm,.gh-lyr,.ntd,.ltd{position:static!important;left:auto!important;z-index:auto!important}.ntd,.gh-nm{min-width:132px!important;max-width:132px!important;width:132px!important}.ltd,.gh-lyr{min-width:82px!important;max-width:82px!important;width:82px!important}.dc,.gh-d{min-width:56px!important;width:56px!important;max-width:56px!important}.nn{font-size:6.8px!important;line-height:1.05!important}.nm{font-size:5.5px!important}.e510-off,.tc-off,.af-off,.kz-bp{font-size:5px!important;line-height:.95!important;letter-spacing:-.3px!important;padding:1px!important}.dc{font-size:6px!important}@page{size:A3 landscape;margin:5mm}@media print{.snap-head{padding:4px 7px!important}.snap-title{font-size:10px!important}.snap-meta{font-size:6px!important}.snap-content{padding:4px!important}.snap-grid{zoom:.60}.panel,.notif{display:none!important}}';var w=window.open('','_blank');var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Snapshot Bos '+esc(monthName(mNow()))+' '+yNow()+'</title><style>'+styles+'\n'+override+'</style></head><body><div class="snap-head"><div><div class="snap-title">e-AKHA VSAVAGE - SNAPSHOT BOS</div><div style="font-size:7px;color:rgba(255,255,255,.45)">Layout sama seperti paparan live Master File</div></div><div class="snap-meta">Bulan Audit: '+esc(monthName(mNow()))+' '+yNow()+'<br>Jabatan: '+esc(jab||'SEMUA IKTAR/MHKL/RT')+'<br>Tarikh Jana: '+esc(new Date().toLocaleString('ms-MY'))+'</div></div><div class="snap-content"><div class="snap-grid">'+holder.innerHTML+'</div></div><script>
-/* ══════════════════════════════════════════════════════════════
-   e-AKHA Vsavage PATCH v5.10.7 — MC ALIF/ALIFF GUARD + IGNORE 27-30
-   - MC Diterima tidak auto-isi KZ Penyelia/KZ Koperal
-   - ALIF NASARUDDIN ≠ ALIFF/ALLIF MOHTAR
-   - Audit 27-30/04 diabaikan daripada Output Perhatian kerana TC problem
-══════════════════════════════════════════════════════════════ */
-(function(){
-'use strict';
-var PATCH='v5.10.7-MC-ALIF-STRICT-IGNORE-2730';
-window.EAKHA_PATCH_5107=PATCH;
-function q(s,r){return (r||document).querySelector(s)}
-function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
-function toast2(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
-function activeM(){return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}
-function activeY(){return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}
-function canon(v){return String(v||'').toUpperCase()
-  .replace(/\b(LKPL|KPL|KONST|KOST|KOP|PEL|PB|PPB|SM|SJN|DSP)\b/g,' ')
-  .replace(/\([^)]*\)/g,' ')
-  .replace(/[^A-Z0-9@\/ ]+/g,' ')
-  .replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHAMAD').replace(/\bMOHD\b/g,'MOHAMAD')
-  .replace(/\bALLIF\b/g,'ALIFF').replace(/\bHAIKAL\b/g,'HAIQAL')
-  .replace(/\s+/g,' ').trim()}
-function normKomp(k){var s=String(k||'').toUpperCase();var M={A:'ALPHA',B:'BRAVO',C:'CHARLIE',D:'DELTA'};if(M[s])return M[s];if(s.indexOf('ALPHA')>=0)return'ALPHA';if(s.indexOf('BRAVO')>=0)return'BRAVO';if(s.indexOf('CHARLIE')>=0)return'CHARLIE';if(s.indexOf('DELTA')>=0)return'DELTA';return''}
-function strictAlifGuard(srcName,masterName){
-  var a=canon(srcName), b=canon(masterName);
-  if(/\b(ALIF|ALIFF)\b/.test(a)||/\b(ALIF|ALIFF)\b/.test(b)){
-    if(a.indexOf('NASARUDDIN')>=0 && b.indexOf('NASARUDDIN')<0) return false;
-    if(a.indexOf('MOHTAR')>=0 && b.indexOf('MOHTAR')<0) return false;
-    if(a.indexOf('HAIQAL')>=0 && b.indexOf('HAIQAL')<0) return false;
-    if(b.indexOf('NASARUDDIN')>=0 && a.indexOf('NASARUDDIN')<0 && a.indexOf('MOHTAR')>=0) return false;
-    if(b.indexOf('MOHTAR')>=0 && a.indexOf('MOHTAR')<0 && a.indexOf('NASARUDDIN')>=0) return false;
-  }
-  return true;
-}
-function scoreName(a,b){
-  if(!strictAlifGuard(a,b)) return 0;
-  var ca=canon(a), cb=canon(b); if(!ca||!cb) return 0; if(ca===cb) return 100;
-  var bad={BIN:1,BINTI:1,BT:1,BTE:1,AL:1,'A/L':1};
-  var toks=ca.split(' ').filter(function(t){return t.length>2&&!bad[t]}); if(!toks.length) return 0;
-  var hit=0; toks.forEach(function(t){if(cb.indexOf(t)>=0)hit++});
-  return Math.round(hit/toks.length*100);
-}
-function findMemberStrict(name,komp){
-  var pool=(typeof MASTER!=='undefined'&&Array.isArray(MASTER))?MASTER:[]; if(!pool.length) return null;
-  var c=canon(name), k=normKomp(komp);
-  var exact=pool.find(function(m){return canon(m.nama)===c && (!k||m.komp===k) && strictAlifGuard(name,m.nama)});
-  if(exact) return exact;
-  var candidates=pool.filter(function(m){return (!k||m.komp===k) && strictAlifGuard(name,m.nama)});
-  if(!candidates.length) candidates=pool.filter(function(m){return strictAlifGuard(name,m.nama)});
-  var best=null,sc=0; candidates.forEach(function(m){var s=scoreName(name,m.nama); if(s>sc){sc=s; best=m}});
-  return (best&&sc>=82)?best:null;
-}
-function parseMCDate(s){
-  s=String(s||''); var p;
-  if(/^\d{4}-/.test(s)){p=s.split('-');return {d:+p[2],m:+p[1],y:+p[0]}}
-  if(s.indexOf('.')>=0){p=s.split('.');return {d:+p[0],m:+p[1],y:+p[2]}}
-  if(s.indexOf('/')>=0){p=s.split('/'); if(p[0].length===4)return {d:+p[2],m:+p[1],y:+p[0]}; return {d:+p[0],m:+p[1],y:+p[2]}}
-  if(s.indexOf('-')>=0){p=s.split('-'); return {d:+p[0],m:+p[1],y:+p[2]}}
-  return null;
-}
-function expandDays(dari,hingga){
-  var a=parseMCDate(dari), b=parseMCDate(hingga||dari); if(!a||!b) return [];
-  var out=[]; if(a.m===b.m&&a.y===b.y){for(var d=a.d;d<=b.d;d++)out.push({d:d,m:a.m,y:a.y}); return out}
-  out.push({d:a.d,m:a.m,y:a.y}); return out;
-}
-function sameMC(a,b){return canon(a.nama)===canon(b.nama)&&String(a.d)===String(b.d)&&String(a.m)===String(b.m)&&String(a.y)===String(b.y)&&String(a.no_mc||a.siri||'')===String(b.no_mc||b.siri||'')}
-function cleanMCAutoKZ(){
-  if(typeof D==='undefined') return 0; var n=0;
-  Object.keys(D).forEach(function(b){var days=D[b]||{}; Object.keys(days).forEach(function(d){var c=days[d]||{};
-    // MC source must stay in MC DITERIMA only. Do not let MC preload impersonate KZP/KZK.
-    if(c._mc){
-      if(String(c.kzp||'').toUpperCase()==='MC' && !c.kzp_src && !c.kzp_sheet){c.kzp=''; n++}
-      if(String(c.kzk||'').toUpperCase()==='MC' && !c.kzk_src && !c.kzk_sheet){c.kzk=''; n++}
-    }
-  })});
-  // Specific historical ambiguity cleanup: KZ record of ALIFF MOHTAR must not sit on ALIF NASARUDDIN.
-  try{
-    var nas=((MASTER||[]).find(function(m){return canon(m.nama).indexOf('ALIF BIN NASARUDDIN')>=0}));
-    if(nas&&D[nas.bil]) [1,2,5].forEach(function(d){var c=D[nas.bil][d]; if(!c)return; ['kzp','kzk'].forEach(function(f){var v=String(c[f]||'').toUpperCase(); if(['MC','L','LL'].indexOf(v)>=0 && !c[f+'_src'] && !c[f+'_sheet']){c[f]=''; n++}})});
-  }catch(e){}
-  return n;
-}
-function markProblemDays(){
-  if(typeof D==='undefined')return; if(!(activeY()===2026&&activeM()===4))return;
-  Object.keys(D).forEach(function(b){[27,28,29,30].forEach(function(d){if(D[b]&&D[b][d]){D[b][d].tc_problem=true;D[b][d].tc_note='SISTEM TIMECARD BERMASALAH (27-30/04) - ABAIKAN AUDIT'}})});
-}
-function isIgnoreAuditDay(d){return activeY()===2026 && activeM()===4 && [27,28,29,30].indexOf(+d)>=0}
-
-// Replace MC preload: MC records go to MC_DATA + _mc only. It must never write KZP/KZK.
-window.applyMCPreload = applyMCPreload = function(targetMonth,targetYear){
-  targetMonth=targetMonth||4; targetYear=targetYear||2026;
-  if(typeof MC_PRELOAD==='undefined'||!Array.isArray(MC_PRELOAD)) return {matched:0,unmatched:0,days:0,unmatchedList:[]};
-  if(typeof MC_DATA==='undefined'||!Array.isArray(MC_DATA)) window.MC_DATA=MC_DATA=[];
-  var matched=0,unmatched=0,daysAdded=0,unmatchedList=[];
-  MC_PRELOAD.forEach(function(rec){
-    var ds=expandDays(rec.dari,rec.hingga).filter(function(x){return x.m===targetMonth&&x.y===targetYear}); if(!ds.length) return;
-    var member=findMemberStrict(rec.nama,rec.komp);
-    if(!member){unmatched++; unmatchedList.push(rec.nama+' ('+(rec.komp||'')+')'); return;}
-    ds.forEach(function(x){
-      var row={bil:member.bil,nama:member.nama,jab:member.jab,komp:member.komp,tarikh:String(x.d).padStart(2,'0')+'/'+String(x.m).padStart(2,'0')+'/'+x.y,dari:rec.dari,hingga:rec.hingga,d:x.d,m:x.m,y:x.y,mc_type:rec.mc_type||'MC',klinik:rec.klinik,no_mc:rec.no_mc||rec.siri,hari:rec.hari,source:'preload_strict',bulanLabel:x.m===targetMonth?'Bulan Ini':'Bulan Lain'};
-      if(!MC_DATA.some(function(r){return sameMC(r,row)})) MC_DATA.push(row);
-      if(typeof D!=='undefined'&&D[member.bil]&&D[member.bil][x.d]) D[member.bil][x.d]._mc=row;
-      daysAdded++;
-    }); matched++;
-  });
-  cleanMCAutoKZ();
-  try{localStorage.setItem('eakha_mc',JSON.stringify(MC_DATA))}catch(e){}
-  return {matched:matched,unmatched:unmatched,days:daysAdded,unmatchedList:unmatchedList};
+window.eakhaSnapshotBosLive=function(jab){
+  try{if(typeof renderMaster==='function')renderMaster(jab||null)}catch(e){}
+  setTimeout(function(){
+    var grid=qs('#master-grid');
+    if(!grid){toast2('Master grid belum dipaparkan','warn');return}
+    var holder=document.createElement('div');
+    holder.innerHTML=grid.innerHTML;
+    patchOffText(holder);
+    var styles=qsa('style').map(function(s){return s.textContent||''}).join('\n');
+    var override='html,body{margin:0!important;padding:0!important;background:#0a1628!important;color:#fff!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif!important;overflow:auto!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.snap-head{background:#0f1f3d!important;border-bottom:1px solid rgba(200,150,10,.25)!important;padding:7px 10px!important;display:flex!important;justify-content:space-between!important;gap:10px!important}.snap-title{font-size:12px!important;font-weight:900!important;color:#f0b429!important}.snap-meta{font-size:7px!important;color:rgba(255,255,255,.65)!important;text-align:right!important}.snap-content{padding:7px!important}.mg-wrap,.tscroll{overflow:visible!important;max-width:none!important}.gh,.gh-nm,.gh-lyr,.ntd,.ltd{position:static!important;left:auto!important;z-index:auto!important}.ntd,.gh-nm{min-width:132px!important;max-width:132px!important;width:132px!important}.ltd,.gh-lyr{min-width:82px!important;max-width:82px!important;width:82px!important}.dc,.gh-d{min-width:56px!important;width:56px!important;max-width:56px!important}.nn{font-size:6.8px!important;line-height:1.05!important}.nm{font-size:5.5px!important}.e510-off,.tc-off,.af-off,.kz-bp{font-size:5px!important;line-height:.95!important;letter-spacing:-.3px!important;padding:1px!important}.dc{font-size:6px!important}@page{size:A3 landscape;margin:5mm}@media print{.snap-head{padding:4px 7px!important}.snap-title{font-size:10px!important}.snap-meta{font-size:6px!important}.snap-content{padding:4px!important}.snap-grid{zoom:.60}.panel,.notif{display:none!important}}';
+    var w=window.open('','_blank');
+    var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Snapshot Bos '+esc(monthName(mNow()))+' '+yNow()+'</title><style>'+styles+'\n'+override+'</style></head><body><div class="snap-head"><div><div class="snap-title">e-AKHA VSAVAGE - SNAPSHOT BOS</div><div style="font-size:7px;color:rgba(255,255,255,.45)">Layout sama seperti paparan live Master File</div></div><div class="snap-meta">Bulan Audit: '+esc(monthName(mNow()))+' '+yNow()+'<br>Jabatan: '+esc(jab||'SEMUA IKTAR/MHKL/RT')+'<br>Tarikh Jana: '+esc(new Date().toLocaleString('ms-MY'))+'</div></div><div class="snap-content"><div class="snap-grid">'+holder.innerHTML+'</div></div></body></html>';
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    setTimeout(function(){try{w.focus();w.print()}catch(e){}},700);
+  },180);
 };
-
-// Strict KZ preload. KZ sources write KZ only; MC source writes MC only.
-var oldAutoKZ=window.autoLoadKZPreload;
-window.autoLoadKZPreload = autoLoadKZPreload = function(){
-  var nP=0,nK=0;
-  function apply(list,field){(list||[]).forEach(function(rec){
-    var mdate=String(rec.tarikh||'').match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/); if(!mdate) return;
-    var d=+mdate[1], mm=+mdate[2], yy=+mdate[3]; if(mm!==activeM()||yy!==activeY()) return;
-    var mem=findMemberStrict(rec.nama,rec.komp); if(!mem||!D[mem.bil]||!D[mem.bil][d]) return;
-    var code=(typeof mapKZStatus==='function')?mapKZStatus(rec.status):String(rec.status||'').toUpperCase();
-    if(canon(rec.nama).indexOf('ALIF BIN NASARUDDIN')>=0 && canon(mem.nama).indexOf('ALIF BIN NASARUDDIN')<0) return;
-    if(canon(rec.nama).indexOf('ALIFF BIN MOHTAR')>=0 && canon(mem.nama).indexOf('ALIFF BIN MOHTAR')<0) return;
-    D[mem.bil][d][field]=code; D[mem.bil][d][field+'_src']='KZ_PRELOAD_STRICT'; D[mem.bil][d][field+'_sheet']='KZ_SOURCE';
-    if(rec.jam)D[mem.bil][d][field+'_jam']=rec.jam; if(rec.pos)D[mem.bil][d][field+'_pos']=rec.pos; if(rec.pengganti){D[mem.bil][d].pengganti=true;D[mem.bil][d].pengganti_nama=rec.pengganti}
-    if(field==='kzp')nP++; else nK++;
-  })}
-  cleanMCAutoKZ();
-  apply((typeof KZP_PRELOAD!=='undefined'?KZP_PRELOAD:[]),'kzp');
-  apply((typeof KZK_PRELOAD!=='undefined'?KZK_PRELOAD:[]),'kzk');
-  try{console.log('[KZ strict preload] KZP:'+nP+', KZK:'+nK)}catch(e){}
-};
-
-var oldAuditFinal=window.auditFinal;
-window.auditFinal = auditFinal = function(bil,d){
-  if(isIgnoreAuditDay(d)){
-    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:{}; c.tc_problem=true;
-    var mc=(typeof getMC==='function')?getMC(bil,d):null;
-    if(mc) return {txt:'MC SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
-    if(typeof hasHR==='function'&&hasHR(c)) return {txt:'HRMIS SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
-    return {txt:'TC BERMASALAH\nABAIKAN AUDIT 27-30/04',cls:'af-sah',inc:false};
-  }
-  return oldAuditFinal?oldAuditFinal.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
-};
-var oldGetAllFlags=window.getAllFlags;
-if(typeof oldGetAllFlags==='function'){
-  window.getAllFlags = getAllFlags = function(){
-    var arr=oldGetAllFlags.apply(this,arguments)||[];
-    arr.forEach(function(m){m.items=(m.items||[]).filter(function(x){return !isIgnoreAuditDay(x.d)})});
-    return arr.filter(function(m){m.tot=(m.items||[]).length; return m.tot>0}).sort(function(a,b){return b.tot-a.tot});
-  };
-}
-function boot(){
-  try{markProblemDays(); cleanMCAutoKZ(); if(typeof autoLoadKZPreload==='function')autoLoadKZPreload();}catch(e){console.warn('[5107 boot]',e)}
-  try{if(typeof saveDataset==='function')saveDataset('PATCH '+PATCH);else localStorage.setItem('eakha_data',JSON.stringify(D))}catch(e){}
-  try{if(q('#page-master')&&q('#page-master').classList.contains('on'))renderMaster(null); if(q('#page-output')&&q('#page-output').classList.contains('on'))renderOutput(''); if(typeof updFlags==='function')updFlags()}catch(e){}
-}
-var oldNav=window.nav;if(typeof oldNav==='function'&&!oldNav.__v5107){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(boot,200);return r};window.nav.__v5107=true;try{nav=window.nav}catch(e){}}
-var oldSetMonth=window.setMonth;if(typeof oldSetMonth==='function'&&!oldSetMonth.__v5107){window.setMonth=function(){var r=oldSetMonth.apply(this,arguments);setTimeout(boot,350);return r};window.setMonth.__v5107=true;try{setMonth=window.setMonth}catch(e){}}
-var oldRM=window.renderMaster;if(typeof oldRM==='function'&&!oldRM.__v5107){window.renderMaster=function(){markProblemDays();cleanMCAutoKZ();return oldRM.apply(this,arguments)};window.renderMaster.__v5107=true;try{renderMaster=window.renderMaster}catch(e){}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[500,1200,2600,5200].forEach(function(ms){setTimeout(boot,ms)})});else{[150,900,2500].forEach(function(ms){setTimeout(boot,ms)})}
-try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
-})();
-</script>
-
-</body></html>';w.document.open();w.document.write(html);w.document.close();setTimeout(function(){try{w.focus();w.print()}catch(e){}},700)},180)};
 
 function afterRender(){hideAutoFill();injectSnapshotButtons();renderKZPanels();patchOffText(document)}
 var oldNav=window.nav;if(typeof oldNav==='function'&&!oldNav.__e5101){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(afterRender,80);return r};window.nav.__e5101=true}
@@ -8669,7 +8358,7 @@ try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 <script>
 (function(){
 'use strict';
-var PATCH='v5.10.8 TIMECARD STRICT WINDOWS';
+var PATCH='v5.10.9 LOGIN + HAKIKI IMAGE FIX';
 function _am(){try{return typeof activeM==='function'?activeM():ACTIVE_MONTH||4}catch(e){return 4}}
 function _ay(){try{return typeof activeY==='function'?activeY():ACTIVE_YEAR||2026}catch(e){return 2026}}
 function _pad(n){return String(n).padStart(2,'0')}
@@ -8764,7 +8453,84 @@ var _oldRenderOutput=window.renderOutput; if(typeof _oldRenderOutput==='function
 var _oldSaveCEdit=window.saveCEdit; if(typeof _oldSaveCEdit==='function'&&!_oldSaveCEdit.__v5108){window.saveCEdit=saveCEdit=function(){var b=(typeof CE!=='undefined'&&CE)?CE.bil:null,d=(typeof CE!=='undefined'&&CE)?CE.d:null;var uiIn=document.getElementById('ce-in')?document.getElementById('ce-in').value.trim():'';var uiOut=document.getElementById('ce-out')?document.getElementById('ce-out').value.trim():'';var r=_oldSaveCEdit.apply(this,arguments);try{if(b&&d&&D[b]&&D[b][d]&&(uiIn||uiOut)){D[b][d].tc_manual=true;D[b][d].tc_rule_version='manual';localStorage.setItem('eakha_data',JSON.stringify(D));}}catch(e){}return r};window.saveCEdit.__v5108=true;}
 function boot5108(){try{window.applyStrictAllTC(true); if(typeof renderMaster==='function'){var pg=document.getElementById('page-master'); if(pg&&pg.classList.contains('on'))renderMaster(null)} if(typeof renderOutput==='function'){var po=document.getElementById('page-output'); if(po&&po.classList.contains('on'))renderOutput('')}}catch(e){console.warn('[5108 boot]',e)}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[600,1500,3500].forEach(function(ms){setTimeout(boot5108,ms)})});else{[300,1200,3000].forEach(function(ms){setTimeout(boot5108,ms)})}
-try{document.title='e-AKHA Vsavage v5.10.8 TIMECARD STRICT WINDOWS';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+
+
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.9 HAKIKI IMAGE FIX
+   Rujukan gambar jadual hakiki Jan–Dis 2026:
+   ALPHA   : PT PT PG PG M M OFF OFF
+   BRAVO   : M M OFF OFF PT PT PG PG
+   CHARLIE : PG PG M M OFF OFF PT PT
+   DELTA   : OFF OFF PT PT PG PG M M
+   Nota: kod dalaman asal dikekalkan — P=PT, S=PG, M=M, O=OFF.
+   ══════════════════════════════════════════════════════════════ */
+try{
+  window.__EAKHA_HAKIKI_IMAGE_FIX = 'v5.10.9-hakiki-ikut-gambar-2026';
+  window.HAKIKI_RUJUKAN_GAMBAR_2026 = {
+    ALPHA:   ['P','P','S','S','M','M','O','O'],
+    BRAVO:   ['M','M','O','O','P','P','S','S'],
+    CHARLIE: ['S','S','M','M','O','O','P','P'],
+    DELTA:   ['O','O','P','P','S','S','M','M']
+  };
+  window.HAKIKI_LABEL_GAMBAR = {P:'PT',S:'PG',M:'M',O:'OFF'};
+
+  function eakhaHakikiKomp(bil){
+    bil = +bil;
+    try{ if(typeof BK !== 'undefined' && BK && BK[bil]) return String(BK[bil]).toUpperCase(); }catch(e){}
+    try{
+      if(typeof MASTER !== 'undefined' && Array.isArray(MASTER)){
+        var m = MASTER.find(function(x){ return +x.bil === bil; });
+        if(m && m.komp) return String(m.komp).toUpperCase();
+      }
+    }catch(e){}
+    return '';
+  }
+
+  function eakhaHakikiIndex(y,m,d){
+    y = +y || 2026; m = +m || 4; d = +d || 1;
+    var ref = Date.UTC(2026,3,1); // 1 April 2026 = ALPHA PT pertama dalam gambar
+    var cur = Date.UTC(y,m-1,d);
+    var diff = Math.round((cur - ref) / 86400000);
+    return ((diff % 8) + 8) % 8;
+  }
+
+  window.eakhaHakikiShiftKomp = function(komp,y,m,d){
+    komp = String(komp||'').toUpperCase().trim();
+    var row = window.HAKIKI_RUJUKAN_GAMBAR_2026[komp];
+    if(!row) return '';
+    return row[eakhaHakikiIndex(y,m,d)] || '';
+  };
+
+  window.eakhaHakikiShiftLabel = function(komp,y,m,d){
+    var s = window.eakhaHakikiShiftKomp(komp,y,m,d);
+    return window.HAKIKI_LABEL_GAMBAR[s] || s || '';
+  };
+
+  window.gShift = gShift = function(bil,y,m,d){
+    return window.eakhaHakikiShiftKomp(eakhaHakikiKomp(bil), y, m, d);
+  };
+
+  window.gSh = gSh = function(bil,d){
+    var y = (typeof ACTIVE_YEAR !== 'undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026;
+    var m = (typeof ACTIVE_MONTH !== 'undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4;
+    return window.gShift(bil, y, m, d);
+  };
+
+  window.eakhaSemakHakiki = function(y,m){
+    y = +y || ((typeof ACTIVE_YEAR !== 'undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026);
+    m = +m || ((typeof ACTIVE_MONTH !== 'undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4);
+    var days = new Date(y,m,0).getDate();
+    var out = {};
+    ['ALPHA','BRAVO','CHARLIE','DELTA'].forEach(function(k){
+      out[k] = [];
+      for(var d=1; d<=days; d++) out[k].push(window.eakhaHakikiShiftLabel(k,y,m,d));
+    });
+    console.table(out);
+    return out;
+  };
+}catch(e){ console.warn('[v5.10.9 hakiki image fix]', e); }
+
+try{document.title='e-AKHA Vsavage v5.10.9 LOGIN + HAKIKI IMAGE FIX';console.log('[e-AKHA '+PATCH+' + v5.10.9 hakiki] loaded')}catch(e){}
 })();
 </script>
 
