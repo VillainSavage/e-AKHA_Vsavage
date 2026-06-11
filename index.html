@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.9 LOGIN + HAKIKI IMAGE FIX</title>
+  <title>e-AKHA Vsavage v5.10.6 HRMIS BACKUP + KZ SOURCE SPLIT LOGIN SAFE</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
@@ -3476,8 +3476,8 @@ async function doLogin(){
 
   showAuthErr(err,'ID atau kata laluan tidak sah.');
   document.getElementById('l-pw').value='';
-  const ac=document.querySelector('.acard') || document.querySelector('#auth-wall > div');
-  if(ac){ ac.classList.add('shake'); setTimeout(()=>ac.classList.remove('shake'),400); }
+  var _ac=document.querySelector('.acard') || document.querySelector('#auth-wall > div');
+  if(_ac){ _ac.classList.add('shake'); setTimeout(function(){_ac.classList.remove('shake');},400); }
   btn.disabled=false; btn.textContent='Log Masuk';
 }
 
@@ -7751,24 +7751,7 @@ function renderKZPanels(){[['kzp','page-kzp-staging','KZ Penyelia Excel'],['kzk'
 function hideAutoFill(){qsa('button').forEach(function(b){var oc=b.getAttribute('onclick')||'',tx=(b.textContent||'').toUpperCase();if(oc.indexOf('autoFillFromKZ')>=0||tx.indexOf('AUTO-FILL')>=0){b.style.display='none'}})}
 function patchOffText(root){qsa('.dc,.gh-d,td,th',root||document).forEach(function(el){var t=(el.textContent||'').trim().toUpperCase();if(t==='OFFDAY'){el.textContent='OFF';el.title='OFFDAY';el.classList.add('e510-off')}})}
 function injectSnapshotButtons(){var bar=qs('#page-master > div[style*="display:flex"]');if(!bar||qs('#btn-boss-snap-all'))return;var wrap=document.createElement('span');wrap.style.display='inline-flex';wrap.style.gap='5px';wrap.style.flexWrap='wrap';wrap.innerHTML='<button class="btn btn-gold btn-sm" id="btn-boss-snap-all" onclick="window.eakhaSnapshotBosLive(\'\')">Snapshot Bos Semua</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'IKTAR\')">Bos IKTAR</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'MHKL\')">Bos MHKL</button><button class="btn btn-sm" onclick="window.eakhaSnapshotBosLive(\'RT\')">Bos RT</button>';bar.appendChild(wrap)}
-window.eakhaSnapshotBosLive=function(jab){
-  try{if(typeof renderMaster==='function')renderMaster(jab||null)}catch(e){}
-  setTimeout(function(){
-    var grid=qs('#master-grid');
-    if(!grid){toast2('Master grid belum dipaparkan','warn');return}
-    var holder=document.createElement('div');
-    holder.innerHTML=grid.innerHTML;
-    patchOffText(holder);
-    var styles=qsa('style').map(function(s){return s.textContent||''}).join('\n');
-    var override='html,body{margin:0!important;padding:0!important;background:#0a1628!important;color:#fff!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif!important;overflow:auto!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.snap-head{background:#0f1f3d!important;border-bottom:1px solid rgba(200,150,10,.25)!important;padding:7px 10px!important;display:flex!important;justify-content:space-between!important;gap:10px!important}.snap-title{font-size:12px!important;font-weight:900!important;color:#f0b429!important}.snap-meta{font-size:7px!important;color:rgba(255,255,255,.65)!important;text-align:right!important}.snap-content{padding:7px!important}.mg-wrap,.tscroll{overflow:visible!important;max-width:none!important}.gh,.gh-nm,.gh-lyr,.ntd,.ltd{position:static!important;left:auto!important;z-index:auto!important}.ntd,.gh-nm{min-width:132px!important;max-width:132px!important;width:132px!important}.ltd,.gh-lyr{min-width:82px!important;max-width:82px!important;width:82px!important}.dc,.gh-d{min-width:56px!important;width:56px!important;max-width:56px!important}.nn{font-size:6.8px!important;line-height:1.05!important}.nm{font-size:5.5px!important}.e510-off,.tc-off,.af-off,.kz-bp{font-size:5px!important;line-height:.95!important;letter-spacing:-.3px!important;padding:1px!important}.dc{font-size:6px!important}@page{size:A3 landscape;margin:5mm}@media print{.snap-head{padding:4px 7px!important}.snap-title{font-size:10px!important}.snap-meta{font-size:6px!important}.snap-content{padding:4px!important}.snap-grid{zoom:.60}.panel,.notif{display:none!important}}';
-    var w=window.open('','_blank');
-    var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Snapshot Bos '+esc(monthName(mNow()))+' '+yNow()+'</title><style>'+styles+'\n'+override+'</style></head><body><div class="snap-head"><div><div class="snap-title">e-AKHA VSAVAGE - SNAPSHOT BOS</div><div style="font-size:7px;color:rgba(255,255,255,.45)">Layout sama seperti paparan live Master File</div></div><div class="snap-meta">Bulan Audit: '+esc(monthName(mNow()))+' '+yNow()+'<br>Jabatan: '+esc(jab||'SEMUA IKTAR/MHKL/RT')+'<br>Tarikh Jana: '+esc(new Date().toLocaleString('ms-MY'))+'</div></div><div class="snap-content"><div class="snap-grid">'+holder.innerHTML+'</div></div></body></html>';
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    setTimeout(function(){try{w.focus();w.print()}catch(e){}},700);
-  },180);
-};
+window.eakhaSnapshotBosLive=function(jab){try{if(typeof renderMaster==='function')renderMaster(jab||null)}catch(e){}setTimeout(function(){var grid=qs('#master-grid');if(!grid){toast2('Master grid belum dipaparkan','warn');return}var holder=document.createElement('div');holder.innerHTML=grid.innerHTML;patchOffText(holder);var styles=qsa('style').map(function(s){return s.textContent||''}).join('\n');var override='html,body{margin:0!important;padding:0!important;background:#0a1628!important;color:#fff!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif!important;overflow:auto!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.snap-head{background:#0f1f3d!important;border-bottom:1px solid rgba(200,150,10,.25)!important;padding:7px 10px!important;display:flex!important;justify-content:space-between!important;gap:10px!important}.snap-title{font-size:12px!important;font-weight:900!important;color:#f0b429!important}.snap-meta{font-size:7px!important;color:rgba(255,255,255,.65)!important;text-align:right!important}.snap-content{padding:7px!important}.mg-wrap,.tscroll{overflow:visible!important;max-width:none!important}.gh,.gh-nm,.gh-lyr,.ntd,.ltd{position:static!important;left:auto!important;z-index:auto!important}.ntd,.gh-nm{min-width:132px!important;max-width:132px!important;width:132px!important}.ltd,.gh-lyr{min-width:82px!important;max-width:82px!important;width:82px!important}.dc,.gh-d{min-width:56px!important;width:56px!important;max-width:56px!important}.nn{font-size:6.8px!important;line-height:1.05!important}.nm{font-size:5.5px!important}.e510-off,.tc-off,.af-off,.kz-bp{font-size:5px!important;line-height:.95!important;letter-spacing:-.3px!important;padding:1px!important}.dc{font-size:6px!important}@page{size:A3 landscape;margin:5mm}@media print{.snap-head{padding:4px 7px!important}.snap-title{font-size:10px!important}.snap-meta{font-size:6px!important}.snap-content{padding:4px!important}.snap-grid{zoom:.60}.panel,.notif{display:none!important}}';var w=window.open('','_blank');var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Snapshot Bos '+esc(monthName(mNow()))+' '+yNow()+'</title><style>'+styles+'\n'+override+'</style></head><body><div class="snap-head"><div><div class="snap-title">e-AKHA VSAVAGE - SNAPSHOT BOS</div><div style="font-size:7px;color:rgba(255,255,255,.45)">Layout sama seperti paparan live Master File</div></div><div class="snap-meta">Bulan Audit: '+esc(monthName(mNow()))+' '+yNow()+'<br>Jabatan: '+esc(jab||'SEMUA IKTAR/MHKL/RT')+'<br>Tarikh Jana: '+esc(new Date().toLocaleString('ms-MY'))+'</div></div><div class="snap-content"><div class="snap-grid">'+holder.innerHTML+'</div></div></body></html>';w.document.open();w.document.write(html);w.document.close();setTimeout(function(){try{w.focus();w.print()}catch(e){}},700)},180)};
 
 function afterRender(){hideAutoFill();injectSnapshotButtons();renderKZPanels();patchOffText(document)}
 var oldNav=window.nav;if(typeof oldNav==='function'&&!oldNav.__e5101){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(afterRender,80);return r};window.nav.__e5101=true}
@@ -8191,348 +8174,926 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 try{console.log('[e-AKHA '+PATCH+'] loaded on v5.10.3 HRMIS backup base')}catch(e){}
 })();
 </script>
-<script>
-/* ══════════════════════════════════════════════════════════════
-   e-AKHA Vsavage PATCH v5.10.7 — MC ALIF/ALIFF GUARD + IGNORE 27-30
-   - MC Diterima tidak auto-isi KZ Penyelia/KZ Koperal
-   - ALIF NASARUDDIN ≠ ALIFF/ALLIF MOHTAR
-   - Audit 27-30/04 diabaikan daripada Output Perhatian kerana TC problem
-══════════════════════════════════════════════════════════════ */
+
+
+<!-- PATCH v5.10.10: LOGIN SAFE CONFIRMED + TIMECARD STRICT WINDOWS (inserted before real closing body only) -->
+<script id="patch-v5110-login-safe-confirmed-timecard-strict">
 (function(){
-'use strict';
-var PATCH='v5.10.7-MC-ALIF-STRICT-IGNORE-2730';
-window.EAKHA_PATCH_5107=PATCH;
-function q(s,r){return (r||document).querySelector(s)}
-function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
-function toast2(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
-function activeM(){return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}
-function activeY(){return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}
-function canon(v){return String(v||'').toUpperCase()
-  .replace(/\b(LKPL|KPL|KONST|KOST|KOP|PEL|PB|PPB|SM|SJN|DSP)\b/g,' ')
-  .replace(/\([^)]*\)/g,' ')
-  .replace(/[^A-Z0-9@\/ ]+/g,' ')
-  .replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHAMAD').replace(/\bMOHD\b/g,'MOHAMAD')
-  .replace(/\bALLIF\b/g,'ALIFF').replace(/\bHAIKAL\b/g,'HAIQAL')
-  .replace(/\s+/g,' ').trim()}
-function normKomp(k){var s=String(k||'').toUpperCase();var M={A:'ALPHA',B:'BRAVO',C:'CHARLIE',D:'DELTA'};if(M[s])return M[s];if(s.indexOf('ALPHA')>=0)return'ALPHA';if(s.indexOf('BRAVO')>=0)return'BRAVO';if(s.indexOf('CHARLIE')>=0)return'CHARLIE';if(s.indexOf('DELTA')>=0)return'DELTA';return''}
-function strictAlifGuard(srcName,masterName){
-  var a=canon(srcName), b=canon(masterName);
-  if(/\b(ALIF|ALIFF)\b/.test(a)||/\b(ALIF|ALIFF)\b/.test(b)){
-    if(a.indexOf('NASARUDDIN')>=0 && b.indexOf('NASARUDDIN')<0) return false;
-    if(a.indexOf('MOHTAR')>=0 && b.indexOf('MOHTAR')<0) return false;
-    if(a.indexOf('HAIQAL')>=0 && b.indexOf('HAIQAL')<0) return false;
-    if(b.indexOf('NASARUDDIN')>=0 && a.indexOf('NASARUDDIN')<0 && a.indexOf('MOHTAR')>=0) return false;
-    if(b.indexOf('MOHTAR')>=0 && a.indexOf('MOHTAR')<0 && a.indexOf('NASARUDDIN')>=0) return false;
+  'use strict';
+  window.EAKHA_PATCH_VERSION = 'v5.10.10_LOGIN_SAFE_CONFIRMED_TIMECARD_STRICT';
+
+  function nMins(t){
+    if(!t) return null;
+    var m = String(t).match(/(\d{1,2})[:.]?(\d{2})/);
+    if(!m) return null;
+    var h = parseInt(m[1],10), mi = parseInt(m[2],10);
+    if(h<0 || h>23 || mi<0 || mi>59) return null;
+    return h*60+mi;
   }
-  return true;
-}
-function scoreName(a,b){
-  if(!strictAlifGuard(a,b)) return 0;
-  var ca=canon(a), cb=canon(b); if(!ca||!cb) return 0; if(ca===cb) return 100;
-  var bad={BIN:1,BINTI:1,BT:1,BTE:1,AL:1,'A/L':1};
-  var toks=ca.split(' ').filter(function(t){return t.length>2&&!bad[t]}); if(!toks.length) return 0;
-  var hit=0; toks.forEach(function(t){if(cb.indexOf(t)>=0)hit++});
-  return Math.round(hit/toks.length*100);
-}
-function findMemberStrict(name,komp){
-  var pool=(typeof MASTER!=='undefined'&&Array.isArray(MASTER))?MASTER:[]; if(!pool.length) return null;
-  var c=canon(name), k=normKomp(komp);
-  var exact=pool.find(function(m){return canon(m.nama)===c && (!k||m.komp===k) && strictAlifGuard(name,m.nama)});
-  if(exact) return exact;
-  var candidates=pool.filter(function(m){return (!k||m.komp===k) && strictAlifGuard(name,m.nama)});
-  if(!candidates.length) candidates=pool.filter(function(m){return strictAlifGuard(name,m.nama)});
-  var best=null,sc=0; candidates.forEach(function(m){var s=scoreName(name,m.nama); if(s>sc){sc=s; best=m}});
-  return (best&&sc>=82)?best:null;
-}
-function parseMCDate(s){
-  s=String(s||''); var p;
-  if(/^\d{4}-/.test(s)){p=s.split('-');return {d:+p[2],m:+p[1],y:+p[0]}}
-  if(s.indexOf('.')>=0){p=s.split('.');return {d:+p[0],m:+p[1],y:+p[2]}}
-  if(s.indexOf('/')>=0){p=s.split('/'); if(p[0].length===4)return {d:+p[2],m:+p[1],y:+p[0]}; return {d:+p[0],m:+p[1],y:+p[2]}}
-  if(s.indexOf('-')>=0){p=s.split('-'); return {d:+p[0],m:+p[1],y:+p[2]}}
-  return null;
-}
-function expandDays(dari,hingga){
-  var a=parseMCDate(dari), b=parseMCDate(hingga||dari); if(!a||!b) return [];
-  var out=[]; if(a.m===b.m&&a.y===b.y){for(var d=a.d;d<=b.d;d++)out.push({d:d,m:a.m,y:a.y}); return out}
-  out.push({d:a.d,m:a.m,y:a.y}); return out;
-}
-function sameMC(a,b){return canon(a.nama)===canon(b.nama)&&String(a.d)===String(b.d)&&String(a.m)===String(b.m)&&String(a.y)===String(b.y)&&String(a.no_mc||a.siri||'')===String(b.no_mc||b.siri||'')}
-function cleanMCAutoKZ(){
-  if(typeof D==='undefined') return 0; var n=0;
-  Object.keys(D).forEach(function(b){var days=D[b]||{}; Object.keys(days).forEach(function(d){var c=days[d]||{};
-    // MC source must stay in MC DITERIMA only. Do not let MC preload impersonate KZP/KZK.
-    if(c._mc){
-      if(String(c.kzp||'').toUpperCase()==='MC' && !c.kzp_src && !c.kzp_sheet){c.kzp=''; n++}
-      if(String(c.kzk||'').toUpperCase()==='MC' && !c.kzk_src && !c.kzk_sheet){c.kzk=''; n++}
+  function normTime(t){
+    if(!t) return '';
+    var m = String(t).match(/(\d{1,2})[:.]?(\d{2})/);
+    if(!m) return '';
+    var h = parseInt(m[1],10), mi = parseInt(m[2],10);
+    if(h<0 || h>23 || mi<0 || mi>59) return '';
+    return String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0');
+  }
+  function uniqTimes(arr){
+    var seen={}, out=[];
+    (arr||[]).forEach(function(x){
+      var t = typeof x === 'object' ? (x.t || x.time || '') : x;
+      t = normTime(t);
+      if(t && !seen[t]){ seen[t]=1; out.push(t); }
+    });
+    return out;
+  }
+  function daysActive(){ try{ if(typeof daysInActiveMonth==='function') return daysInActiveMonth(); }catch(e){} return 30; }
+  function getShiftSafe(bil,d){ try{ return typeof gSh==='function' ? gSh(bil,d) : ''; }catch(e){ return ''; } }
+  function inBand(mins, start, end){ return mins!==null && mins>=start && mins<=end; }
+  function pickNearest(arr, target){ if(!arr.length) return null; return arr.reduce(function(a,b){ return Math.abs(a.abs-target)<=Math.abs(b.abs-target)?a:b; }); }
+  function bandsForShift(sh){
+    if(sh==='S') return {inCandidate:[360,480], inValid:[360,425], inStart:420, outCandidate:[720,1020], outValid:[900,960], outEnd:900, label:'PAGI'};
+    if(sh==='P') return {inCandidate:[840,960], inValid:[840,905], inStart:900, outCandidate:[1260,1500], outValid:[1380,1445], outEnd:1380, label:'PETANG'};
+    if(sh==='M') return {inCandidate:[1320,1439], inValid:[1320,1380], inStart:1380, outCandidate:[1740,1980], outValid:[1860,1920], outEnd:1860, label:'MALAM'};
+    return null;
+  }
+  function allPunchObjects(bil,d,sh){
+    var c = window.D && D[bil] && D[bil][d] ? D[bil][d] : null;
+    if(!c) return [];
+    var raw=[];
+    if(Array.isArray(c.tc_all_raw)) raw=raw.concat(c.tc_all_raw);
+    if(Array.isArray(c.tc_all)) raw=raw.concat(c.tc_all);
+    if(c.tc_in) raw.push(c.tc_in);
+    if(c.tc_out) raw.push(c.tc_out);
+    var cur=uniqTimes(raw).map(function(t){return {t:t, mins:nMins(t), abs:nMins(t), nextDay:false};});
+    var next=[], nd=window.D && D[bil] && D[bil][d+1] ? D[bil][d+1] : null;
+    if(nd && (sh==='P'||sh==='M')){
+      var nx=[];
+      if(Array.isArray(nd.tc_all_raw)) nx=nx.concat(nd.tc_all_raw);
+      if(Array.isArray(nd.tc_all)) nx=nx.concat(nd.tc_all);
+      if(nd.tc_in) nx.push(nd.tc_in);
+      if(nd.tc_out) nx.push(nd.tc_out);
+      uniqTimes(nx).forEach(function(t){
+        var m=nMins(t);
+        if(sh==='P' && m!==null && m<=60) next.push({t:t, mins:m, abs:m+1440, nextDay:true});
+        if(sh==='M' && m!==null && m>=300 && m<=540) next.push({t:t, mins:m, abs:m+1440, nextDay:true});
+      });
     }
-  })});
-  // Specific historical ambiguity cleanup: KZ record of ALIFF MOHTAR must not sit on ALIF NASARUDDIN.
-  try{
-    var nas=((MASTER||[]).find(function(m){return canon(m.nama).indexOf('ALIF BIN NASARUDDIN')>=0}));
-    if(nas&&D[nas.bil]) [1,2,5].forEach(function(d){var c=D[nas.bil][d]; if(!c)return; ['kzp','kzk'].forEach(function(f){var v=String(c[f]||'').toUpperCase(); if(['MC','L','LL'].indexOf(v)>=0 && !c[f+'_src'] && !c[f+'_sheet']){c[f]=''; n++}})});
-  }catch(e){}
-  return n;
-}
-function markProblemDays(){
-  if(typeof D==='undefined')return; if(!(activeY()===2026&&activeM()===4))return;
-  Object.keys(D).forEach(function(b){[27,28,29,30].forEach(function(d){if(D[b]&&D[b][d]){D[b][d].tc_problem=true;D[b][d].tc_note='SISTEM TIMECARD BERMASALAH (27-30/04) - ABAIKAN AUDIT'}})});
-}
-function isIgnoreAuditDay(d){return activeY()===2026 && activeM()===4 && [27,28,29,30].indexOf(+d)>=0}
-
-// Replace MC preload: MC records go to MC_DATA + _mc only. It must never write KZP/KZK.
-window.applyMCPreload = applyMCPreload = function(targetMonth,targetYear){
-  targetMonth=targetMonth||4; targetYear=targetYear||2026;
-  if(typeof MC_PRELOAD==='undefined'||!Array.isArray(MC_PRELOAD)) return {matched:0,unmatched:0,days:0,unmatchedList:[]};
-  if(typeof MC_DATA==='undefined'||!Array.isArray(MC_DATA)) window.MC_DATA=MC_DATA=[];
-  var matched=0,unmatched=0,daysAdded=0,unmatchedList=[];
-  MC_PRELOAD.forEach(function(rec){
-    var ds=expandDays(rec.dari,rec.hingga).filter(function(x){return x.m===targetMonth&&x.y===targetYear}); if(!ds.length) return;
-    var member=findMemberStrict(rec.nama,rec.komp);
-    if(!member){unmatched++; unmatchedList.push(rec.nama+' ('+(rec.komp||'')+')'); return;}
-    ds.forEach(function(x){
-      var row={bil:member.bil,nama:member.nama,jab:member.jab,komp:member.komp,tarikh:String(x.d).padStart(2,'0')+'/'+String(x.m).padStart(2,'0')+'/'+x.y,dari:rec.dari,hingga:rec.hingga,d:x.d,m:x.m,y:x.y,mc_type:rec.mc_type||'MC',klinik:rec.klinik,no_mc:rec.no_mc||rec.siri,hari:rec.hari,source:'preload_strict',bulanLabel:x.m===targetMonth?'Bulan Ini':'Bulan Lain'};
-      if(!MC_DATA.some(function(r){return sameMC(r,row)})) MC_DATA.push(row);
-      if(typeof D!=='undefined'&&D[member.bil]&&D[member.bil][x.d]) D[member.bil][x.d]._mc=row;
-      daysAdded++;
-    }); matched++;
-  });
-  cleanMCAutoKZ();
-  try{localStorage.setItem('eakha_mc',JSON.stringify(MC_DATA))}catch(e){}
-  return {matched:matched,unmatched:unmatched,days:daysAdded,unmatchedList:unmatchedList};
-};
-
-// Strict KZ preload. KZ sources write KZ only; MC source writes MC only.
-var oldAutoKZ=window.autoLoadKZPreload;
-window.autoLoadKZPreload = autoLoadKZPreload = function(){
-  var nP=0,nK=0;
-  function apply(list,field){(list||[]).forEach(function(rec){
-    var mdate=String(rec.tarikh||'').match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/); if(!mdate) return;
-    var d=+mdate[1], mm=+mdate[2], yy=+mdate[3]; if(mm!==activeM()||yy!==activeY()) return;
-    var mem=findMemberStrict(rec.nama,rec.komp); if(!mem||!D[mem.bil]||!D[mem.bil][d]) return;
-    var code=(typeof mapKZStatus==='function')?mapKZStatus(rec.status):String(rec.status||'').toUpperCase();
-    if(canon(rec.nama).indexOf('ALIF BIN NASARUDDIN')>=0 && canon(mem.nama).indexOf('ALIF BIN NASARUDDIN')<0) return;
-    if(canon(rec.nama).indexOf('ALIFF BIN MOHTAR')>=0 && canon(mem.nama).indexOf('ALIFF BIN MOHTAR')<0) return;
-    D[mem.bil][d][field]=code; D[mem.bil][d][field+'_src']='KZ_PRELOAD_STRICT'; D[mem.bil][d][field+'_sheet']='KZ_SOURCE';
-    if(rec.jam)D[mem.bil][d][field+'_jam']=rec.jam; if(rec.pos)D[mem.bil][d][field+'_pos']=rec.pos; if(rec.pengganti){D[mem.bil][d].pengganti=true;D[mem.bil][d].pengganti_nama=rec.pengganti}
-    if(field==='kzp')nP++; else nK++;
-  })}
-  cleanMCAutoKZ();
-  apply((typeof KZP_PRELOAD!=='undefined'?KZP_PRELOAD:[]),'kzp');
-  apply((typeof KZK_PRELOAD!=='undefined'?KZK_PRELOAD:[]),'kzk');
-  try{console.log('[KZ strict preload] KZP:'+nP+', KZK:'+nK)}catch(e){}
-};
-
-var oldAuditFinal=window.auditFinal;
-window.auditFinal = auditFinal = function(bil,d){
-  if(isIgnoreAuditDay(d)){
-    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:{}; c.tc_problem=true;
-    var mc=(typeof getMC==='function')?getMC(bil,d):null;
-    if(mc) return {txt:'MC SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
-    if(typeof hasHR==='function'&&hasHR(c)) return {txt:'HRMIS SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
-    return {txt:'TC BERMASALAH\nABAIKAN AUDIT 27-30/04',cls:'af-sah',inc:false};
+    return cur.concat(next);
   }
-  return oldAuditFinal?oldAuditFinal.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
-};
-var oldGetAllFlags=window.getAllFlags;
-if(typeof oldGetAllFlags==='function'){
-  window.getAllFlags = getAllFlags = function(){
-    var arr=oldGetAllFlags.apply(this,arguments)||[];
-    arr.forEach(function(m){m.items=(m.items||[]).filter(function(x){return !isIgnoreAuditDay(x.d)})});
-    return arr.filter(function(m){m.tot=(m.items||[]).length; return m.tot>0}).sort(function(a,b){return b.tot-a.tot});
+  function strictAssignOne(bil,d,force){
+    if(!window.D || !D[bil] || !D[bil][d]) return;
+    var c=D[bil][d];
+    if(c.tc_problem){ c.tc_audit_done=true; return; }
+    if(c.tc_manual && !force) return;
+    if(c.tc_strict_done && !force) return;
+    var sh=getShiftSafe(bil,d);
+    if(sh==='O'||sh==='OFF'||sh==='OF'){ c.tc_strict_done=true; return; }
+    var band=bandsForShift(sh); if(!band){ c.tc_strict_done=true; return; }
+    var rawBefore=uniqTimes([].concat(c.tc_all_raw||[], c.tc_all||[], c.tc_in||[], c.tc_out||[]));
+    if(!rawBefore.length){ c.tc_strict_done=true; return; }
+    var pts=allPunchObjects(bil,d,sh).filter(function(p){return p && p.abs!==null;});
+    var inCands=pts.filter(function(p){ return !p.nextDay && inBand(p.abs, band.inCandidate[0], band.inCandidate[1]); });
+    var inPick=pickNearest(inCands, band.inStart);
+    var outCands=pts.filter(function(p){
+      if(inPick && p.t===inPick.t && p.nextDay===inPick.nextDay) return false;
+      return inBand(p.abs, band.outCandidate[0], band.outCandidate[1]);
+    });
+    var outPick=pickNearest(outCands, band.outEnd);
+    c.tc_all_raw=rawBefore.slice();
+    c.tc_in=inPick?inPick.t:'';
+    c.tc_out=outPick?outPick.t:'';
+    c.tc_out_nextday=!!(outPick && outPick.nextDay);
+    c.tc_shift=sh;
+    c.tc_window_label=band.label;
+    if(!c.tc_in && !c.tc_out && rawBefore.length){
+      c.tc_note='PUNCH LUAR TETINGKAP HAKIKI: '+rawBefore.join(', ');
+      c.tc_all=[]; // halang auto-assign lama pilih punch salah
+    }
+    c.tc_strict_done=true; c.tc_audit_done=true;
+  }
+  function applyStrictAll(force){
+    if(!window.MASTER || !window.D) return;
+    try{
+      MASTER.forEach(function(m){ for(var d=1; d<=daysActive(); d++) strictAssignOne(m.bil,d,force); });
+      try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+    }catch(e){ console.warn('v5109 strict TC apply:',e); }
+  }
+  window.eakhaApplyStrictTimecardWindows=applyStrictAll;
+  var oldEnsure=window.ensureAuditReady;
+  window.ensureAuditReady=ensureAuditReady=function(force){ applyStrictAll(!!force); if(typeof oldEnsure==='function'){ try{return oldEnsure.apply(this, arguments);}catch(e){console.warn('old ensureAuditReady:',e);} } };
+  var oldTcAudit=window.tcAudit;
+  window.tcAudit=tcAudit=function(bil,d){
+    strictAssignOne(bil,d,false);
+    var c=window.D && D[bil] && D[bil][d] ? D[bil][d] : null;
+    var sh=getShiftSafe(bil,d);
+    if(!c) return {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    if(c.tc_problem) return {txt:'TIMECARD PROBLEM\nABAIKAN',cls:'tc-off',ok:true};
+    if(sh==='O') return (c.tc_in||c.tc_out)?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
+    var band=bandsForShift(sh);
+    if(!band) return typeof oldTcAudit==='function'?oldTcAudit(bil,d):{txt:'—',cls:'tc-bp',ok:false};
+    var lines=[], ok=true, cls='tc-ok', raw=c.tc_all_raw||c.tc_all||[];
+    if(!c.tc_in && !c.tc_out){
+      if(raw && raw.length) return {txt:'TIADA IN\nTIADA OUT\n'+(c.tc_note||('PUNCH LUAR TETINGKAP: '+raw.join(', '))),cls:'tc-abs',ok:false};
+      if(c.kzp||c.kzk) return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+      return {txt:'—',cls:'tc-bp',ok:false};
+    }
+    if(c.tc_in){ var im=nMins(c.tc_in); if(im!==null && im>band.inValid[1]){lines.push('LEWAT');lines.push('IN '+c.tc_in);cls='tc-lw';ok=false;} else lines.push('✓ IN '+c.tc_in); }
+    else {lines.push('⚠ TIADA IN');cls='tc-warn';ok=false;}
+    if(c.tc_out){
+      var om=nMins(c.tc_out), absOut=om;
+      if(sh==='P' && om!==null && om<=60) absOut=om+1440;
+      if(sh==='M' && c.tc_out_nextday) absOut=om+1440;
+      if(absOut!==null && absOut<band.outValid[0]){lines.push('⚠ OUT AWAL');lines.push('OUT '+c.tc_out);cls='tc-lw';ok=false;}
+      else if(absOut!==null && absOut>band.outValid[1]){lines.push('⚠ OUT LEWAT');lines.push('OUT '+c.tc_out);if(cls==='tc-ok')cls='tc-warn';}
+      else lines.push('✓ OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':''));
+    } else {lines.push('⚠ TIADA OUT');cls='tc-warn';ok=false;}
+    return {txt:lines.join('\n'),cls:cls,ok:ok};
   };
-}
-function boot(){
-  try{markProblemDays(); cleanMCAutoKZ(); if(typeof autoLoadKZPreload==='function')autoLoadKZPreload();}catch(e){console.warn('[5107 boot]',e)}
-  try{if(typeof saveDataset==='function')saveDataset('PATCH '+PATCH);else localStorage.setItem('eakha_data',JSON.stringify(D))}catch(e){}
-  try{if(q('#page-master')&&q('#page-master').classList.contains('on'))renderMaster(null); if(q('#page-output')&&q('#page-output').classList.contains('on'))renderOutput(''); if(typeof updFlags==='function')updFlags()}catch(e){}
-}
-var oldNav=window.nav;if(typeof oldNav==='function'&&!oldNav.__v5107){window.nav=function(){var r=oldNav.apply(this,arguments);setTimeout(boot,200);return r};window.nav.__v5107=true;try{nav=window.nav}catch(e){}}
-var oldSetMonth=window.setMonth;if(typeof oldSetMonth==='function'&&!oldSetMonth.__v5107){window.setMonth=function(){var r=oldSetMonth.apply(this,arguments);setTimeout(boot,350);return r};window.setMonth.__v5107=true;try{setMonth=window.setMonth}catch(e){}}
-var oldRM=window.renderMaster;if(typeof oldRM==='function'&&!oldRM.__v5107){window.renderMaster=function(){markProblemDays();cleanMCAutoKZ();return oldRM.apply(this,arguments)};window.renderMaster.__v5107=true;try{renderMaster=window.renderMaster}catch(e){}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[500,1200,2600,5200].forEach(function(ms){setTimeout(boot,ms)})});else{[150,900,2500].forEach(function(ms){setTimeout(boot,ms)})}
-try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+  var oldRenderMaster=window.renderMaster; if(typeof oldRenderMaster==='function') window.renderMaster=renderMaster=function(){applyStrictAll(false);return oldRenderMaster.apply(this,arguments);};
+  var oldRenderOutput=window.renderOutput; if(typeof oldRenderOutput==='function') window.renderOutput=renderOutput=function(){applyStrictAll(false);return oldRenderOutput.apply(this,arguments);};
+  var oldValidasi=window.validasiAudit; if(typeof oldValidasi==='function') window.validasiAudit=validasiAudit=function(){applyStrictAll(false);return oldValidasi.apply(this,arguments);};
+  var oldDoLogin=window.doLogin; if(typeof oldDoLogin==='function') window.doLogin=doLogin=async function(){var ret=await oldDoLogin.apply(this,arguments);setTimeout(function(){applyStrictAll(false);try{if(typeof renderMaster==='function')renderMaster(null);}catch(e){}},350);return ret;};
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){applyStrictAll(false);},1000);});
+})();
+/* =========================================================
+   e-AKHA Vsavage v5.10.11 — TIMECARD HAKIKI WINDOW FIX
+   Fix requested: HAZLAN PG 08:40 = IN LEWAT, not TIADA IN.
+   Rule:
+   PG  IN 0600-0705; lewat selepas 0705 sebelum OUT window. OUT 1500-1600.
+   PT  IN 1400-1505; OUT 2300-0005, 2100-2259 = OUT AWAL.
+   M   IN 2200-2300; OUT esok 0700-0800.
+   Punch luar tetingkap hakiki tidak dipaksa menjadi IN/OUT.
+   ========================================================= */
+(function(){
+  'use strict';
+  var PATCH='v5.10.11_TIME_WINDOW_LATE_FIX';
+  function min(t){ try{ return typeof toMins==='function'?toMins(t):NaN; }catch(e){ return NaN; } }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function mkCell(){ return {kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''}; }
+  function hasVal(v){ return v!==undefined && v!==null && String(v).trim()!==''; }
+  function uniqPunch(arr){
+    var out=[], seen={};
+    (arr||[]).forEach(function(x){
+      if(!x) return;
+      var t=String(typeof x==='object'?x.t:x).trim();
+      if(!/^\d{1,2}:\d{2}$/.test(t)) return;
+      var k=(typeof x==='object'&&x.nextDay?'N:':'D:')+t;
+      if(!seen[k]){ seen[k]=1; out.push({t:t, mins:(typeof x==='object'&&isFinite(x.mins))?x.mins:min(t), nextDay:!!(typeof x==='object'&&x.nextDay)}); }
+    });
+    return out.sort(function(a,b){ return a.mins-b.mins; });
+  }
+  function getRawPunches(bil,d,c,sh){
+    var raw=[];
+    if(c && Array.isArray(c.tc_all) && c.tc_all.length){ raw=raw.concat(c.tc_all.map(function(t){return {t:t,mins:min(t),nextDay:false};})); }
+    else if(c){
+      if(c.tc_in) raw.push({t:c.tc_in,mins:min(c.tc_in),nextDay:false});
+      if(c.tc_out) raw.push({t:c.tc_out,mins:min(c.tc_out),nextDay:false});
+    }
+    // Cross-day candidates only where relevant, and only within the real OUT window area.
+    var nd=(typeof D!=='undefined' && D[bil] && D[bil][d+1])?D[bil][d+1]:null;
+    if(nd && Array.isArray(nd.tc_all) && nd.tc_all.length){
+      nd.tc_all.forEach(function(t){
+        var m=min(t);
+        if(!isFinite(m)) return;
+        if(sh==='P' && m<=60) raw.push({t:t,mins:m+1440,nextDay:true});       // PT OUT 0000-0100 max
+        if(sh==='M' && m>=360 && m<=900) raw.push({t:t,mins:m+1440,nextDay:true}); // M OUT 0600-1500 review range
+      });
+    }
+    return uniqPunch(raw).filter(function(p){return isFinite(p.mins);});
+  }
+  function classifyIn(sh,p){
+    var m=((p.mins%1440)+1440)%1440;
+    if(sh==='S'){
+      if(m>=360 && m<=425) return {ok:true,type:'ok',score:Math.abs(m-420)};       // 0600-0705
+      if(m>=426 && m<900) return {ok:true,type:'late',score:1000+(m-425)};         // 0706-1459 = IN LEWAT
+      if(m>=330 && m<360) return {ok:true,type:'early',score:1500+(360-m)};        // very early but near PG
+      return null;
+    }
+    if(sh==='P'){
+      if(m>=840 && m<=905) return {ok:true,type:'ok',score:Math.abs(m-900)};       // 1400-1505
+      if(m>=906 && m<1260) return {ok:true,type:'late',score:1000+(m-905)};        // 1506-2059 = IN LEWAT
+      if(m>=780 && m<840) return {ok:true,type:'early',score:1500+(840-m)};        // 1300-1359 = IN AWAL
+      return null;
+    }
+    if(sh==='M'){
+      if(m>=1320 && m<=1380) return {ok:true,type:'ok',score:Math.abs(m-1380)};    // 2200-2300
+      if(m>1380 && m<=1439) return {ok:true,type:'late',score:1000+(m-1380)};      // 2301-2359
+      if(m>=0 && m<=120) return {ok:true,type:'late',score:1600+m};                // 0000-0200 semak lewat
+      return null;
+    }
+    return null;
+  }
+  function classifyOut(sh,p){
+    var abs=p.mins, m=((abs%1440)+1440)%1440;
+    if(sh==='S'){
+      if(m>=900 && m<=960) return {ok:true,type:'ok',score:Math.abs(m-900)};       // 1500-1600
+      if(m>=720 && m<900) return {ok:true,type:'early',score:1000+(900-m)};        // 1200-1459 OUT AWAL
+      if(m>960 && m<=1200) return {ok:true,type:'late',score:1500+(m-960)};        // 1601-2000 OUT LEWAT/OT-ish
+      return null;
+    }
+    if(sh==='P'){
+      if(m>=1380 || m<=5) return {ok:true,type:'ok',score:Math.min(Math.abs(m-1380),m+60)}; // 2300-0005
+      if(m>=1260 && m<1380) return {ok:true,type:'early',score:1000+(1380-m)};     // 2100-2259 OUT AWAL
+      if(m>5 && m<=60) return {ok:true,type:'late',score:1500+(m-5)};              // 0006-0100
+      return null;
+    }
+    if(sh==='M'){
+      // Prefer next-day morning. Current-day morning is usually previous night's OUT, so ignore unless marked nextDay.
+      if(!p.nextDay && m<1200) return null;
+      if(p.nextDay && m>=420 && m<=480) return {ok:true,type:'ok',score:Math.abs(m-420)};   // 0700-0800 esok
+      if(p.nextDay && m>=360 && m<420) return {ok:true,type:'early',score:1000+(420-m)};    // 0600-0659 esok
+      if(p.nextDay && m>480 && m<=900) return {ok:true,type:'late',score:1500+(m-480)};     // 0801-1500 semak/late
+      return null;
+    }
+    return null;
+  }
+  function chooseCandidate(points, classifier, exclude){
+    var best=null;
+    points.forEach(function(p){
+      if(exclude && p.t===exclude.t && p.nextDay===exclude.nextDay) return;
+      var c=classifier(p); if(!c) return;
+      var cand=Object.assign({},p,c);
+      if(!best || cand.score<best.score) best=cand;
+    });
+    return best;
+  }
+  window.eakhaAssignTimecardHakiki = function(bil,d,force){
+    try{
+      if(typeof D==='undefined' || !D[bil]) return null;
+      if(!D[bil][d]) D[bil][d]=mkCell();
+      var c=D[bil][d];
+      if(c.tc_manual && !force) return c;
+      var sh=(typeof gSh==='function')?gSh(bil,d):(c.tc_shift||'');
+      c.tc_shift=sh;
+      if(c.tc_problem){ c.tc_audit_done=true; return c; }
+      if(sh==='O') return c;
+      var pts=getRawPunches(bil,d,c,sh);
+      if(!pts.length) { c.tc_in=''; c.tc_out=''; c.tc_in_type=''; c.tc_out_type=''; c.tc_audit_done=true; return c; }
+      var inCand=chooseCandidate(pts,function(p){return classifyIn(sh,p);},null);
+      var outCand=chooseCandidate(pts,function(p){return classifyOut(sh,p);},inCand);
+      // Do not force any outside-window punch into IN/OUT.
+      c.tc_in=inCand?inCand.t:'';
+      c.tc_in_type=inCand?inCand.type:'';
+      c.tc_out=outCand?outCand.t:'';
+      c.tc_out_type=outCand?outCand.type:'';
+      c.tc_out_nextday=!!(outCand&&outCand.nextDay);
+      c.tc_audit_done=true;
+      c.tc_rule_patch=PATCH;
+      return c;
+    }catch(e){ console.warn('[51011 assign tc]',e); return null; }
+  };
+  function normalizeAllTC(force){
+    try{
+      if(typeof MASTER==='undefined' || typeof D==='undefined') return 0;
+      var n=0, maxDay=(typeof daysInActiveMonth==='function'?daysInActiveMonth():31);
+      MASTER.forEach(function(m){
+        for(var d=1; d<=maxDay; d++){
+          var c=D[m.bil]&&D[m.bil][d];
+          if(c && (Array.isArray(c.tc_all)&&c.tc_all.length || c.tc_in || c.tc_out)){
+            eakhaAssignTimecardHakiki(m.bil,d,force); n++;
+          }
+        }
+      });
+      try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
+      return n;
+    }catch(e){ console.warn('[51011 normalize all tc]',e); return 0; }
+  }
+  window.eakhaNormalizeAllTimecardHakiki = normalizeAllTC;
+
+  // Override tcAudit: use hakiki-window assignment before audit text is generated.
+  var oldTcAudit = (typeof tcAudit==='function') ? tcAudit : null;
+  window.tcAudit = tcAudit = function(bil,d){
+    try{
+      var c=(typeof D!=='undefined' && D[bil] && D[bil][d])?D[bil][d]:null;
+      var sh=(typeof gSh==='function')?gSh(bil,d):'';
+      if(c) eakhaAssignTimecardHakiki(bil,d,false);
+      if(!c) return oldTcAudit?oldTcAudit(bil,d):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+      if(sh==='O') return (c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length))?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
+      if(c.kzp==='TT'||c.kzk==='TT') return {txt:'TAHAN TUGAS',cls:'tc-off',ok:true};
+      if(c.kzp==='TH'||c.kzk==='TH') return {txt:'TIDAK HADIR',cls:'tc-off',ok:true};
+      var raw=(Array.isArray(c.tc_all)&&c.tc_all.length)?c.tc_all.slice():[];
+      if(!c.tc_in && !c.tc_out){
+        if(raw.length) return {txt:'PUNCH LUAR WAKTU HAKIKI\n'+raw.join(' · '),cls:'tc-warn',ok:false};
+        var cuti=(typeof isCuti==='function')&&(isCuti(c.kzp)||isCuti(c.kzk));
+        var hasKZ=!!(c.kzp||c.kzk);
+        if(!hasKZ) return {txt:'—',cls:'tc-bp',ok:false};
+        return cuti?{txt:'TIADA PUNCH\n(CUTI '+(c.kzp||c.kzk)+')',cls:'tc-off',ok:true}:{txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+      }
+      var lines=[], cls='tc-ok', ok=true;
+      if(c.tc_in){
+        if(c.tc_in_type==='late'){ lines.push('LEWAT'); lines.push('IN '+c.tc_in); cls='tc-lw'; ok=false; }
+        else if(c.tc_in_type==='early'){ lines.push('IN AWAL'); lines.push('IN '+c.tc_in); cls='tc-lw'; ok=false; }
+        else lines.push('✓ IN '+c.tc_in);
+      } else if(c.tc_out){ lines.push('⚠ TIADA IN'); cls='tc-warn'; ok=false; }
+      if(c.tc_out){
+        if(c.tc_out_type==='early'){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out); if(cls==='tc-ok'){cls='tc-lw';ok=false;} }
+        else if(c.tc_out_type==='late'){ lines.push('OUT LEWAT'); lines.push('OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'')); if(cls==='tc-ok') cls='tc-warn'; }
+        else lines.push((c.tc_in?'✓ ':'')+'OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':''));
+      } else if(c.tc_in){
+        if(sh==='M'){ lines.push('SEMAK ESOK'); if(cls==='tc-ok') cls='tc-warn'; }
+        else { lines.push('⚠ TIADA OUT'); if(cls==='tc-ok'){cls='tc-warn';ok=false;} }
+      }
+      return {txt:lines.join('\n'),cls:cls,ok:ok};
+    }catch(e){ console.warn('[51011 tcAudit]',e); return oldTcAudit?oldTcAudit(bil,d):{txt:'RALAT TC',cls:'tc-warn',ok:false}; }
+  };
+
+  // Override ensureAuditReady so old closest-time assignment no longer marks late IN as missing.
+  var oldEnsure = (typeof ensureAuditReady==='function') ? ensureAuditReady : null;
+  window.ensureAuditReady = ensureAuditReady = function(force){
+    normalizeAllTC(!!force);
+    if(oldEnsure){
+      // Old ensure will skip cells because tc_in/tc_out are already assigned correctly.
+      return oldEnsure.apply(this, arguments);
+    }
+  };
+
+  // Wrap render/validasi/save/load points.
+  if(typeof renderMaster==='function'){
+    var oldRenderMaster=renderMaster;
+    window.renderMaster = renderMaster = function(){ normalizeAllTC(false); return oldRenderMaster.apply(this, arguments); };
+  }
+  if(typeof renderOutput==='function'){
+    var oldRenderOutput=renderOutput;
+    window.renderOutput = renderOutput = function(){ normalizeAllTC(false); return oldRenderOutput.apply(this, arguments); };
+  }
+  if(typeof validasiAudit==='function'){
+    var oldValidasi=validasiAudit;
+    window.validasiAudit = validasiAudit = function(){ normalizeAllTC(true); return oldValidasi.apply(this, arguments); };
+  }
+  if(typeof saveCEdit==='function'){
+    var oldSaveCEdit=saveCEdit;
+    window.saveCEdit = saveCEdit = function(){
+      var bil=(typeof CE!=='undefined'&&CE)?CE.bil:null, d=(typeof CE!=='undefined'&&CE)?CE.d:null;
+      var before=null; try{ before=(bil&&d&&D[bil]&&D[bil][d])?JSON.stringify({i:D[bil][d].tc_in||'',o:D[bil][d].tc_out||''}):null; }catch(e){}
+      var r=oldSaveCEdit.apply(this, arguments);
+      try{
+        var c=(bil&&d&&D[bil]&&D[bil][d])?D[bil][d]:null;
+        var after=c?JSON.stringify({i:c.tc_in||'',o:c.tc_out||''}):null;
+        if(c && before!==after && (c.tc_in||c.tc_out)){ c.tc_manual=true; c.tc_rule_patch=PATCH+'_MANUAL'; localStorage.setItem('eakha_data',JSON.stringify(D)); }
+      }catch(e){}
+      return r;
+    };
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    [500,1600,3200].forEach(function(ms){ setTimeout(function(){ try{ var n=normalizeAllTC(false); if(ms===3200 && typeof renderMaster==='function' && document.getElementById('page-master')?.classList.contains('on')) renderMaster(null); console.log('[e-AKHA '+PATCH+'] normalized TC cells:',n); }catch(e){} }, ms); });
+  });
+  try{ console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
+})();
+
+</script>
+
+
+<!-- PATCH v5.10.12: TIMECARD NEAREST HAKIKI IN/OUT FIX -->
+<script id="patch-v5112-timecard-nearest-hakiki">
+(function(){
+  'use strict';
+  var PATCH='v5.10.12_TIMECARD_NEAREST_HAKIKI';
+  window.EAKHA_PATCH_VERSION=PATCH;
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function toMin(t){
+    if(t===undefined||t===null) return NaN;
+    var s=String(typeof t==='object'?(t.t||t.time||''):t).trim();
+    var m=s.match(/(\d{1,2})[:.](\d{2})/);
+    if(!m) return NaN;
+    var h=+m[1], mi=+m[2];
+    if(h<0||h>23||mi<0||mi>59) return NaN;
+    return h*60+mi;
+  }
+  function normTime(t){
+    var m=toMin(t); if(!isFinite(m)) return '';
+    return pad2(Math.floor(m/60))+':'+pad2(m%60);
+  }
+  function getCell(bil,d){ return (window.D&&D[bil]&&D[bil][d])?D[bil][d]:null; }
+  function mkCell(){ return {kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_all_raw:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''}; }
+  function shiftOf(bil,d,c){
+    try{ if(typeof gSh==='function') return gSh(bil,d); }catch(e){}
+    return (c&&c.tc_shift)||'';
+  }
+  function activeDays(){ try{ if(typeof daysInActiveMonth==='function') return daysInActiveMonth(); }catch(e){} return 31; }
+  function uniq(arr){
+    var seen={}, out=[];
+    (arr||[]).forEach(function(x){
+      if(x===undefined||x===null) return;
+      var raw=typeof x==='object'?(x.t||x.time||''):x;
+      var t=normTime(raw); if(!t) return;
+      var next=!!(typeof x==='object'&&x.nextDay);
+      var mins=isFinite(typeof x==='object'?x.mins:NaN)?x.mins:toMin(t)+(next?1440:0);
+      var k=(next?'N:':'D:')+t;
+      if(!seen[k]){ seen[k]=1; out.push({t:t,mins:mins,nextDay:next}); }
+    });
+    return out.sort(function(a,b){ return a.mins-b.mins; });
+  }
+  function collectRaw(bil,d,sh){
+    var c=getCell(bil,d), raw=[];
+    if(c){
+      if(Array.isArray(c.tc_all_raw)) raw=raw.concat(c.tc_all_raw.map(function(t){return {t:t,mins:toMin(t),nextDay:false};}));
+      if(Array.isArray(c.tc_all)) raw=raw.concat(c.tc_all.map(function(t){return {t:t,mins:toMin(t),nextDay:false};}));
+      if(c.tc_in) raw.push({t:c.tc_in,mins:toMin(c.tc_in),nextDay:false});
+      if(c.tc_out) raw.push({t:c.tc_out,mins:toMin(c.tc_out),nextDay:!!c.tc_out_nextday});
+    }
+    // For night shift, true OUT belongs to next morning, so read next date too.
+    // For petang, 00:00-00:05 may also appear on the next date.
+    var nd=getCell(bil,d+1);
+    if(nd && (sh==='M'||sh==='P')){
+      var nx=[];
+      if(Array.isArray(nd.tc_all_raw)) nx=nx.concat(nd.tc_all_raw);
+      if(Array.isArray(nd.tc_all)) nx=nx.concat(nd.tc_all);
+      if(nd.tc_in) nx.push(nd.tc_in);
+      if(nd.tc_out) nx.push(nd.tc_out);
+      nx.forEach(function(t){
+        var m=toMin(t); if(!isFinite(m)) return;
+        if(sh==='M' && m>=300 && m<=900) raw.push({t:normTime(t),mins:m+1440,nextDay:true});
+        if(sh==='P' && m>=0 && m<=60) raw.push({t:normTime(t),mins:m+1440,nextDay:true});
+      });
+    }
+    return uniq(raw).filter(function(p){return isFinite(p.mins);});
+  }
+  function classifyIn(sh,p){
+    var m=((p.mins%1440)+1440)%1440;
+    if(p.nextDay) return null;
+    if(sh==='S'){
+      if(m>=360 && m<=425) return {type:'ok',score:Math.abs(m-420)};       // 0600-0705 sah
+      if(m>425 && m<900)   return {type:'late',score:1000+Math.abs(m-420)}; // 0706-1459 lewat
+      return null;
+    }
+    if(sh==='P'){
+      if(m>=840 && m<=905) return {type:'ok',score:Math.abs(m-900)};        // 1400-1505 sah
+      if(m>905 && m<1260)  return {type:'late',score:1000+Math.abs(m-900)}; // 1506-2059 lewat
+      return null;
+    }
+    if(sh==='M'){
+      if(m>=1320 && m<=1380) return {type:'ok',score:Math.abs(m-1380)};     // 2200-2300 sah
+      if(m>1380 && m<=1439)  return {type:'late',score:1000+Math.abs(m-1380)}; // 2301-2359 lewat
+      if(m>=0 && m<=120)     return {type:'late',score:1500+m};             // 0000-0200 lewat tetapi masih permulaan malam
+      return null;
+    }
+    return null;
+  }
+  function classifyOut(sh,p){
+    var m=((p.mins%1440)+1440)%1440;
+    if(sh==='S'){
+      if(p.nextDay) return null;
+      if(m>=900 && m<=960) return {type:'ok',score:Math.abs(m-900)};        // 1500-1600 sah
+      if(m>=720 && m<900)  return {type:'early',score:1000+(900-m)};        // 1200-1459 out awal
+      return null; // selepas 1600 tidak dipaksa jadi OUT hakiki
+    }
+    if(sh==='P'){
+      if(!p.nextDay && m>=1380 && m<=1439) return {type:'ok',score:Math.abs(m-1380)}; // 2300-2359
+      if(p.nextDay && m>=0 && m<=5)        return {type:'ok',score:m};                 // 0000-0005
+      if(!p.nextDay && m>=1260 && m<1380) return {type:'early',score:1000+(1380-m)};   // 2100-2259
+      return null;
+    }
+    if(sh==='M'){
+      if(!p.nextDay) return null; // pagi pada hari sama biasanya OUT shift malam sebelumnya, bukan OUT shift malam hari ini
+      if(m>=420 && m<=480) return {type:'ok',score:Math.abs(m-420)};        // 0700-0800 esok sah
+      if(m>=360 && m<420)  return {type:'early',score:1000+(420-m)};        // 0600-0659 out awal
+      return null; // selepas 0800 tidak dipaksa jadi OUT hakiki
+    }
+    return null;
+  }
+  function choose(points, classifier, exclude){
+    var best=null;
+    points.forEach(function(p){
+      if(exclude && p.t===exclude.t && p.nextDay===exclude.nextDay) return;
+      var c=classifier(p); if(!c) return;
+      var cand={t:p.t,mins:p.mins,nextDay:p.nextDay,type:c.type,score:c.score};
+      if(!best || cand.score<best.score) best=cand;
+    });
+    return best;
+  }
+  function assignTC(bil,d,force){
+    try{
+      if(!window.D) return null;
+      if(!D[bil]) D[bil]={};
+      if(!D[bil][d]) D[bil][d]=mkCell();
+      var c=D[bil][d];
+      if(c.tc_manual && !force) return c;
+      var sh=shiftOf(bil,d,c); c.tc_shift=sh;
+      if(c.tc_problem){ c.tc_audit_done=true; return c; }
+      if(sh==='O'||sh==='OFF'||sh==='OF') return c;
+      var pts=collectRaw(bil,d,sh);
+      // Preserve original punch list forever, so future patches do not lose raw evidence.
+      if(pts.length) c.tc_all_raw=uniq([].concat(c.tc_all_raw||[], pts)).filter(function(p){return !p.nextDay;}).map(function(p){return p.t;});
+      if(!pts.length){ c.tc_in=''; c.tc_out=''; c.tc_in_type=''; c.tc_out_type=''; c.tc_audit_done=true; return c; }
+      var inPick=choose(pts,function(p){return classifyIn(sh,p);},null);
+      var outPick=choose(pts,function(p){return classifyOut(sh,p);},inPick);
+      c.tc_in=inPick?inPick.t:'';
+      c.tc_in_type=inPick?inPick.type:'';
+      c.tc_out=outPick?outPick.t:'';
+      c.tc_out_type=outPick?outPick.type:'';
+      c.tc_out_nextday=!!(outPick&&outPick.nextDay);
+      c.tc_rule_patch=PATCH;
+      c.tc_audit_done=true;
+      return c;
+    }catch(e){ console.warn('[5112 assignTC]',e); return null; }
+  }
+  function normalizeAll(force){
+    try{
+      if(typeof MASTER==='undefined'||typeof D==='undefined') return 0;
+      var n=0, max=activeDays();
+      MASTER.forEach(function(m){
+        for(var d=1; d<=max; d++){
+          var c=D[m.bil]&&D[m.bil][d];
+          if(c && (c.tc_in||c.tc_out||(Array.isArray(c.tc_all)&&c.tc_all.length)||(Array.isArray(c.tc_all_raw)&&c.tc_all_raw.length))){ assignTC(m.bil,d,force); n++; }
+        }
+      });
+      try{ localStorage.setItem('eakha_data',JSON.stringify(D)); }catch(e){}
+      return n;
+    }catch(e){ console.warn('[5112 normalizeAll]',e); return 0; }
+  }
+  window.eakhaAssignTimecardNearestHakiki=assignTC;
+  window.eakhaNormalizeTimecardNearestHakiki=normalizeAll;
+
+  var prevEnsure=(typeof ensureAuditReady==='function')?ensureAuditReady:null;
+  window.ensureAuditReady=ensureAuditReady=function(force){
+    var r;
+    if(prevEnsure){ try{ r=prevEnsure.apply(this,arguments); }catch(e){ console.warn('[5112 prev ensure]',e); } }
+    normalizeAll(!!force); // run AFTER old engine so old engine cannot leave wrong TIADA IN
+    return r;
+  };
+
+  var prevTcAudit=(typeof tcAudit==='function')?tcAudit:null;
+  window.tcAudit=tcAudit=function(bil,d){
+    try{
+      var c=getCell(bil,d), sh=shiftOf(bil,d,c||{});
+      if(c) assignTC(bil,d,false);
+      c=getCell(bil,d);
+      if(!c) return prevTcAudit?prevTcAudit(bil,d):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+      if(c.tc_problem) return {txt:'TIMECARD PROBLEM\nABAIKAN',cls:'tc-off',ok:true};
+      if(sh==='O'||sh==='OFF'||sh==='OF') return (c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length)||(c.tc_all_raw&&c.tc_all_raw.length))?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
+      var raw=(Array.isArray(c.tc_all_raw)&&c.tc_all_raw.length?c.tc_all_raw:(Array.isArray(c.tc_all)?c.tc_all:[]));
+      if(!c.tc_in && !c.tc_out){
+        if(raw.length) return {txt:'PUNCH LUAR WAKTU HAKIKI\n'+raw.join(' · '),cls:'tc-warn',ok:false};
+        if(c.kzp||c.kzk) return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+        return {txt:'—',cls:'tc-bp',ok:false};
+      }
+      var lines=[], cls='tc-ok', ok=true;
+      if(c.tc_in){
+        if(c.tc_in_type==='late'){ lines.push('LEWAT'); lines.push('IN '+c.tc_in); cls='tc-lw'; ok=false; }
+        else if(c.tc_in_type==='early'){ lines.push('IN AWAL'); lines.push('IN '+c.tc_in); cls='tc-lw'; ok=false; }
+        else lines.push('✓ IN '+c.tc_in);
+      } else { lines.push('⚠ TIADA IN'); cls='tc-warn'; ok=false; }
+      if(c.tc_out){
+        if(c.tc_out_type==='early'){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'')); if(cls==='tc-ok') cls='tc-lw'; ok=false; }
+        else if(c.tc_out_type==='late'){ lines.push('⚠ OUT LEWAT'); lines.push('OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'')); if(cls==='tc-ok') cls='tc-warn'; }
+        else lines.push((c.tc_in?'✓ ':'')+'OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':''));
+      } else {
+        if(sh==='M'){ lines.push('SEMAK OUT ESOK'); if(cls==='tc-ok') cls='tc-warn'; }
+        else { lines.push('⚠ TIADA OUT'); if(cls==='tc-ok') cls='tc-warn'; ok=false; }
+      }
+      return {txt:lines.join('\n'),cls:cls,ok:ok};
+    }catch(e){ console.warn('[5112 tcAudit]',e); return prevTcAudit?prevTcAudit(bil,d):{txt:'RALAT TC',cls:'tc-warn',ok:false}; }
+  };
+
+  function wrap(name, after){
+    try{
+      var old=window[name]||eval(name);
+      if(typeof old!=='function'||old.__v5112) return;
+      var neu=function(){ normalizeAll(false); var r=old.apply(this,arguments); if(after) setTimeout(function(){ normalizeAll(false); },80); return r; };
+      neu.__v5112=true; window[name]=neu; try{ eval(name+'=window["'+name+'"]'); }catch(e){}
+    }catch(e){}
+  }
+  wrap('renderMaster',true); wrap('renderOutput',true); wrap('validasiAudit',true); wrap('saveDataset',false);
+  var oldLogin=(typeof doLogin==='function')?doLogin:null;
+  if(oldLogin && !oldLogin.__v5112){
+    window.doLogin=doLogin=async function(){ var r=await oldLogin.apply(this,arguments); setTimeout(function(){ normalizeAll(false); try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){} },450); return r; };
+    window.doLogin.__v5112=true;
+  }
+  document.addEventListener('DOMContentLoaded',function(){ [500,1600,3200].forEach(function(ms){ setTimeout(function(){ try{ var n=normalizeAll(false); console.log('[e-AKHA '+PATCH+'] normalized TC:',n); }catch(e){} },ms); }); });
+  try{ console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
 })();
 </script>
 
-<script>
+
+
+<script id="eakha-v5-10-13-master-data-protect">
 (function(){
-'use strict';
-var PATCH='v5.10.9 LOGIN + HAKIKI IMAGE FIX';
-function _am(){try{return typeof activeM==='function'?activeM():ACTIVE_MONTH||4}catch(e){return 4}}
-function _ay(){try{return typeof activeY==='function'?activeY():ACTIVE_YEAR||2026}catch(e){return 2026}}
-function _pad(n){return String(n).padStart(2,'0')}
-function _toM(t){try{return typeof toMins==='function'?toMins(t):(function(x){var a=String(x||'').split(':').map(Number);return a[0]*60+a[1]})(t)}catch(e){return null}}
-function _fmt(m){try{return typeof fmtMin==='function'?fmtMin(m):m+'min'}catch(e){return m+'min'}}
-function _sh(s){s=String(s||'').toUpperCase(); if(s==='PG'||s==='PAGI'||s==='S'||s==='SIANG')return 'S'; if(s==='PT'||s==='PETANG'||s==='P')return 'P'; if(s==='M'||s==='MALAM')return 'M'; if(s==='O'||s==='OF'||s==='OFF'||s==='OFFDAY')return 'O'; return s;}
-function _pt(t,day){var m=_toM(t); if(m===null||isNaN(m))return null; return {t:String(t),mins:m,day:day||0,abs:m+(day||0)*1440};}
-function _pick(arr,targetAbs){if(!arr||!arr.length)return null; return arr.slice().sort(function(a,b){return Math.abs(a.abs-targetAbs)-Math.abs(b.abs-targetAbs)})[0];}
-function _rawPoints(bil,d){
-  var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null, pts=[];
-  if(c&&Array.isArray(c.tc_all)) c.tc_all.forEach(function(t){var p=(typeof t==='object')?_pt(t.t||t.time||'',t.nextDay?1:0):_pt(t,0); if(p)pts.push(p);});
-  var next=D&&D[bil]&&D[bil][d+1]?D[bil][d+1]:null;
-  if(next&&Array.isArray(next.tc_all)) next.tc_all.forEach(function(t){var p=(typeof t==='object')?_pt(t.t||t.time||'',1):_pt(t,1); if(p)pts.push(p);});
-  return pts;
-}
-function _validIn(p,sh){var m=p.mins,d=p.day;if(sh==='S')return d===0&&m>=360&&m<=425; if(sh==='P')return d===0&&m>=840&&m<=905; if(sh==='M')return d===0&&m>=1320&&m<=1380; return false;}
-function _validOut(p,sh){var m=p.mins,d=p.day;if(sh==='S')return d===0&&m>=900&&m<=960; if(sh==='P')return (d===0&&m>=1380&&m<=1439)||(d===1&&m>=0&&m<=5); if(sh==='M')return d===1&&m>=420&&m<=480; return false;}
-function _earlyOut(p,sh){var m=p.mins,d=p.day;if(sh==='S')return d===0&&m>=840&&m<900; if(sh==='P')return d===0&&m>=1320&&m<1380; if(sh==='M')return d===1&&m>=360&&m<420; return false;}
-function _targetIn(sh){return sh==='S'?420:sh==='P'?900:sh==='M'?1380:0}
-function _targetOut(sh){return sh==='S'?900:sh==='P'?1380:sh==='M'?1860:0}
-function _hasWeirdLatePagi(points){return points.some(function(p){return p.day===0&&p.mins>=1200;});}
-window.applyStrictTCAssignment=function(bil,d,opt){
-  opt=opt||{}; var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null; if(!c||c.tc_problem)return false;
-  var sh=_sh(typeof gSh==='function'?gSh(bil,d):(c.tc_shift||'')); if(sh==='O')return false;
-  if(c.tc_manual&&!opt.forceManual)return false;
-  var pts=_rawPoints(bil,d); if(!pts.length)return false;
-  var inC=pts.filter(function(p){return _validIn(p,sh)});
-  var outC=pts.filter(function(p){return _validOut(p,sh)});
-  var earlyC=pts.filter(function(p){return _earlyOut(p,sh)});
-  var inP=_pick(inC,_targetIn(sh));
-  var outP=_pick(outC,_targetOut(sh));
-  var earlyP=_pick(earlyC,_targetOut(sh));
-  c.tc_rule_version='5108'; c.tc_out_awal=false; c.tc_out_nextday=false; c.tc_in_invalid=false; c.tc_ignored=(c.tc_all||[]).join(' · ');
-  // Jika shift pagi tiada IN sah tetapi ada punch malam (contoh 22:28), jangan pasangkan OUT 15:xx secara palsu.
-  if(sh==='S'&&!inP&&_hasWeirdLatePagi(pts)){outP=null; earlyP=null;}
-  if(!outP&&earlyP){outP=earlyP; c.tc_out_awal=true;}
-  c.tc_in=inP?inP.t:'';
-  c.tc_out=outP?outP.t:'';
-  if(outP&&outP.day===1)c.tc_out_nextday=true;
-  c.tc_shift=sh;
-  c.tc_audit_done=true;
-  return true;
-};
-window.applyStrictAllTC=function(force){
-  try{if(typeof MASTER==='undefined'||typeof D==='undefined')return; MASTER.forEach(function(m){for(var d=1;d<= (typeof daysInActiveMonth==='function'?daysInActiveMonth():30);d++){var c=D[m.bil]&&D[m.bil][d]; if(!c||!Array.isArray(c.tc_all)||!c.tc_all.length)continue; if(force||c.tc_rule_version!=='5108')window.applyStrictTCAssignment(m.bil,d,{forceManual:false});}}); try{localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}}catch(e){console.warn('[5108 applyStrictAllTC]',e)}
-};
-window.tcAudit = tcAudit = function(bil,d){
-  var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null; var sh=_sh(typeof gSh==='function'?gSh(bil,d):'');
-  if(!c)return {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
-  if(c.tc_all&&c.tc_all.length&&!c.tc_manual) window.applyStrictTCAssignment(bil,d,{});
-  if(sh==='O')return (c.tc_in||c.tc_out)?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
-  if(c.kzp==='TT'||c.kzk==='TT')return {txt:'TAHAN TUGAS',cls:'tc-off',ok:true};
-  if(c.kzp==='TH'||c.kzk==='TH')return {txt:'TIDAK HADIR',cls:'tc-off',ok:true};
-  if(!(c.tc_in||c.tc_out)){
-    var cutiK=(typeof isCuti==='function')&&(isCuti(c.kzp)||isCuti(c.kzk)); var hasKZ=!!(c.kzp||c.kzk);
-    if(!hasKZ)return {txt:'—',cls:'tc-bp',ok:false};
-    return cutiK?{txt:'TIADA PUNCH\n(CUTI '+(c.kzp||c.kzk)+')',cls:'tc-off',ok:true}:{txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
-  }
-  var lines=[],cls='tc-ok',ok=true;
-  function inWindow(t){var p=_pt(t,0);return p&&_validIn(p,sh)}
-  function outWindow(t){var p=_pt(t,c.tc_out_nextday?1:0);return p&&_validOut(p,sh)}
-  function earlyWindow(t){var p=_pt(t,c.tc_out_nextday?1:0);return p&&_earlyOut(p,sh)}
-  if(c.tc_in){
-    if(inWindow(c.tc_in)){
-      var im=_toM(c.tc_in), late=0;
-      if(sh==='S')late=im-420; else if(sh==='P')late=im-900; else if(sh==='M')late=im-1380;
-      if(!c.ot&&late>5){lines.push('LEWAT');lines.push('IN '+c.tc_in+' (+'+late+'min)');cls='tc-lw';ok=false;}
-      else lines.push('✓ IN '+c.tc_in);
-    }else{lines.push('IN DI LUAR WAKTU');lines.push('IN '+c.tc_in+' (tidak sah ikut shift hakiki)');cls='tc-lw';ok=false;}
-  }
-  if(c.tc_out){
-    var outTxt='OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'');
-    if(c.tc_out_awal||earlyWindow(c.tc_out)){lines.push('OUT AWAL');lines.push(outTxt);cls='tc-lw';ok=false;}
-    else if(outWindow(c.tc_out)){lines.push((c.tc_in?'✓ ':'')+outTxt);}
-    else{lines.push('OUT DI LUAR WAKTU');lines.push(outTxt+' (tidak sah ikut shift hakiki)');cls='tc-lw';ok=false;}
-  }
-  if(!c.tc_in&&c.tc_out){
-    // Untuk kes petang 07:46 / 22:45: paparkan OUT AWAL dahulu, kemudian TIADA IN.
-    if(lines[0]!=='OUT AWAL')lines.unshift('TIADA IN'); else lines.splice(1,0,'TIADA IN');
-    cls=cls==='tc-ok'?'tc-warn':cls; ok=false;
-  }
-  if(c.tc_in&&!c.tc_out){
-    if(sh==='M'){lines.push('SEMAK ESOK'); if(cls==='tc-ok')cls='tc-warn';}
-    else{lines.push('TIADA OUT'); if(cls==='tc-ok')cls='tc-warn'; ok=false;}
-  }
-  return {txt:lines.join('\n'),cls:cls,ok:ok};
-};
-window.ensureAuditReady = ensureAuditReady = function(force){window.applyStrictAllTC(!!force); try{MASTER.forEach(function(m){for(var d=1;d<= (typeof daysInActiveMonth==='function'?daysInActiveMonth():30);d++){var c=D[m.bil]&&D[m.bil][d]; if(c)c.tc_audit_done=true;}});localStorage.setItem('eakha_data',JSON.stringify(D));}catch(e){}};
-var _oldValidasi=window.validasiAudit; if(typeof _oldValidasi==='function'&&!_oldValidasi.__v5108){window.validasiAudit=validasiAudit=function(){window.applyStrictAllTC(true);return _oldValidasi.apply(this,arguments)};window.validasiAudit.__v5108=true;}
-var _oldRenderMaster=window.renderMaster; if(typeof _oldRenderMaster==='function'&&!_oldRenderMaster.__v5108){window.renderMaster=renderMaster=function(){window.applyStrictAllTC(false);return _oldRenderMaster.apply(this,arguments)};window.renderMaster.__v5108=true;}
-var _oldRenderOutput=window.renderOutput; if(typeof _oldRenderOutput==='function'&&!_oldRenderOutput.__v5108){window.renderOutput=renderOutput=function(){window.applyStrictAllTC(false);return _oldRenderOutput.apply(this,arguments)};window.renderOutput.__v5108=true;}
-var _oldSaveCEdit=window.saveCEdit; if(typeof _oldSaveCEdit==='function'&&!_oldSaveCEdit.__v5108){window.saveCEdit=saveCEdit=function(){var b=(typeof CE!=='undefined'&&CE)?CE.bil:null,d=(typeof CE!=='undefined'&&CE)?CE.d:null;var uiIn=document.getElementById('ce-in')?document.getElementById('ce-in').value.trim():'';var uiOut=document.getElementById('ce-out')?document.getElementById('ce-out').value.trim():'';var r=_oldSaveCEdit.apply(this,arguments);try{if(b&&d&&D[b]&&D[b][d]&&(uiIn||uiOut)){D[b][d].tc_manual=true;D[b][d].tc_rule_version='manual';localStorage.setItem('eakha_data',JSON.stringify(D));}}catch(e){}return r};window.saveCEdit.__v5108=true;}
-function boot5108(){try{window.applyStrictAllTC(true); if(typeof renderMaster==='function'){var pg=document.getElementById('page-master'); if(pg&&pg.classList.contains('on'))renderMaster(null)} if(typeof renderOutput==='function'){var po=document.getElementById('page-output'); if(po&&po.classList.contains('on'))renderOutput('')}}catch(e){console.warn('[5108 boot]',e)}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[600,1500,3500].forEach(function(ms){setTimeout(boot5108,ms)})});else{[300,1200,3000].forEach(function(ms){setTimeout(boot5108,ms)})}
+  'use strict';
+  var PATCH='v5.10.13_MASTER_DATA_PROTECT_TIMECARD_NEAREST';
+  window.EAKHA_PATCH_VERSION=PATCH;
 
-
-/* ══════════════════════════════════════════════════════════════
-   e-AKHA Vsavage v5.10.9 HAKIKI IMAGE FIX
-   Rujukan gambar jadual hakiki Jan–Dis 2026:
-   ALPHA   : PT PT PG PG M M OFF OFF
-   BRAVO   : M M OFF OFF PT PT PG PG
-   CHARLIE : PG PG M M OFF OFF PT PT
-   DELTA   : OFF OFF PT PT PG PG M M
-   Nota: kod dalaman asal dikekalkan — P=PT, S=PG, M=M, O=OFF.
-   ══════════════════════════════════════════════════════════════ */
-try{
-  window.__EAKHA_HAKIKI_IMAGE_FIX = 'v5.10.9-hakiki-ikut-gambar-2026';
-  window.HAKIKI_RUJUKAN_GAMBAR_2026 = {
-    ALPHA:   ['P','P','S','S','M','M','O','O'],
-    BRAVO:   ['M','M','O','O','P','P','S','S'],
-    CHARLIE: ['S','S','M','M','O','O','P','P'],
-    DELTA:   ['O','O','P','P','S','S','M','M']
-  };
-  window.HAKIKI_LABEL_GAMBAR = {P:'PT',S:'PG',M:'M',O:'OFF'};
-
-  function eakhaHakikiKomp(bil){
-    bil = +bil;
-    try{ if(typeof BK !== 'undefined' && BK && BK[bil]) return String(BK[bil]).toUpperCase(); }catch(e){}
+  function log(){ try{ console.log.apply(console, arguments); }catch(e){} }
+  function warn(){ try{ console.warn.apply(console, arguments); }catch(e){} }
+  function toastMsg(m,t){ try{ if(typeof toast==='function') toast(m,t||'ok'); }catch(e){} }
+  function parseJSON(raw,fb){ try{ if(!raw) return fb; return JSON.parse(raw); }catch(e){ return fb; } }
+  function yNow(){ return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026; }
+  function mNow(){ return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4; }
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function hasVal(v){ return !(v===undefined||v===null||v===''||v==='-'||v==='—'); }
+  function isObj(v){ return v && typeof v==='object' && !Array.isArray(v); }
+  function normTime(t){
+    if(t===undefined||t===null) return '';
+    var s=String(typeof t==='object'?(t.t||t.time||''):t).trim();
+    var m=s.match(/(\d{1,2})[:.](\d{2})/); if(!m) return '';
+    var h=+m[1], mi=+m[2]; if(h<0||h>23||mi<0||mi>59) return '';
+    return pad(h)+':'+pad(mi);
+  }
+  function toMin(t){ var s=normTime(t); if(!s) return NaN; return (+s.slice(0,2))*60+(+s.slice(3,5)); }
+  function cellScore(c){
+    if(!isObj(c)) return 0;
+    var score=0;
+    ['kzp','kzk','kzp_jam','kzk_pos','kzk_jam','tc_in','tc_out','hrmis','note','pengganti_nama','tc_shift','tc_in_type','tc_out_type'].forEach(function(k){ if(hasVal(c[k])) score += (k==='kzp'||k==='kzk'||k==='tc_in'||k==='tc_out'||k==='hrmis'?4:1); });
+    if(c.pengganti||c.ot||c.tc_problem) score += 1;
+    if(Array.isArray(c.tc_all)) score += Math.min(4,c.tc_all.length);
+    if(Array.isArray(c.tc_all_raw)) score += Math.min(5,c.tc_all_raw.length);
+    if(c._mc||c.mc) score += 3;
+    if(c._hrmis_rec) score += 3;
+    return score;
+  }
+  function scoreD(d){
+    if(!isObj(d)) return 0;
+    var s=0,cells=0;
+    Object.keys(d).forEach(function(b){ var row=d[b]; if(!isObj(row)) return; Object.keys(row).forEach(function(dd){ var x=cellScore(row[dd]); if(x){ s+=x; cells++; } }); });
+    return s+cells;
+  }
+  function looksLikeD(o){
+    if(!isObj(o)) return false;
+    var hits=0;
+    Object.keys(o).slice(0,80).forEach(function(b){ if(!/^\d+$/.test(String(b))) return; var row=o[b]; if(!isObj(row)) return; Object.keys(row).slice(0,35).forEach(function(d){ if(/^\d+$/.test(String(d)) && isObj(row[d])) hits++; }); });
+    return hits>5;
+  }
+  function extractD(o){
+    if(!o) return null;
+    if(looksLikeD(o)) return o;
+    if(o.D && looksLikeD(o.D)) return o.D;
+    if(o.data && looksLikeD(o.data)) return o.data;
+    if(o.payload && o.payload.D && looksLikeD(o.payload.D)) return o.payload.D;
+    return null;
+  }
+  function keyLikely(k){
+    return k==='eakha_data' || k==='eakha_boot_predeploy_backup' || /^eakha_dataset_/.test(k) || /^eakha_master_/.test(k) || /^eakha_guard_/.test(k) || /^eakha_month_master_/.test(k) || /^eakha_last_good/.test(k);
+  }
+  function scanCandidates(){
+    var out=[];
     try{
-      if(typeof MASTER !== 'undefined' && Array.isArray(MASTER)){
-        var m = MASTER.find(function(x){ return +x.bil === bil; });
-        if(m && m.komp) return String(m.komp).toUpperCase();
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i); if(!k||!keyLikely(k)) continue;
+        var raw=localStorage.getItem(k); var obj=parseJSON(raw,null); var d=extractD(obj);
+        if(!d && obj && obj.D) d=obj.D;
+        if(!d) continue;
+        var sc=scoreD(d); if(sc>0) out.push({key:k,obj:obj,D:d,score:sc});
+      }
+      var last=localStorage.getItem('eakha_last_dataset_key');
+      if(last){ var obj=parseJSON(localStorage.getItem(last),null), d=extractD(obj); if(d) out.push({key:last,obj:obj,D:d,score:scoreD(d)}); }
+    }catch(e){ warn('[5113 scan]',e); }
+    out.sort(function(a,b){return b.score-a.score;});
+    return out;
+  }
+  function mergeArray(dst,src){
+    var out=[]; var seen={};
+    (Array.isArray(dst)?dst:[]).concat(Array.isArray(src)?src:[]).forEach(function(x){
+      var t=normTime(x); if(!t && hasVal(x)) t=String(x); if(!t) return;
+      if(!seen[t]){ seen[t]=1; out.push(t); }
+    });
+    return out;
+  }
+  function mergeCell(dst,src){
+    if(!isObj(src)) return 0;
+    if(!isObj(dst)) dst={};
+    var changed=0;
+    // Layer fields: restore only if destination is empty. This prevents old blank/preload from deleting checked data.
+    ['kzp','kzk','kzp_jam','kzk_pos','kzk_jam','hrmis','note','pengganti_nama','tc_shift','tc_in_type','tc_out_type'].forEach(function(k){
+      if(!hasVal(dst[k]) && hasVal(src[k])){ dst[k]=src[k]; changed++; }
+    });
+    if(!dst.pengganti && src.pengganti){ dst.pengganti=src.pengganti; changed++; }
+    if(!dst.ot && src.ot){ dst.ot=src.ot; changed++; }
+    if(!dst.tc_problem && src.tc_problem){ dst.tc_problem=src.tc_problem; changed++; }
+    // Timecard: if either side has raw punches, keep all raw evidence. Raw punch is the source of truth for recalculation.
+    var a1=mergeArray(dst.tc_all_raw, src.tc_all_raw), a2=mergeArray(dst.tc_all, src.tc_all);
+    var merged=mergeArray(a1,a2);
+    if(src.tc_in) merged=mergeArray(merged,[src.tc_in]);
+    if(src.tc_out) merged=mergeArray(merged,[src.tc_out]);
+    if(merged.length && JSON.stringify(merged)!==JSON.stringify(dst.tc_all_raw||[])){ dst.tc_all_raw=merged; changed++; }
+    if(!hasVal(dst.tc_in) && hasVal(src.tc_in)){ dst.tc_in=normTime(src.tc_in)||src.tc_in; changed++; }
+    if(!hasVal(dst.tc_out) && hasVal(src.tc_out)){ dst.tc_out=normTime(src.tc_out)||src.tc_out; changed++; }
+    if(src.tc_out_nextday && !dst.tc_out_nextday){ dst.tc_out_nextday=true; changed++; }
+    if(!dst._mc && src._mc){ dst._mc=src._mc; changed++; }
+    if(!dst.mc && src.mc){ dst.mc=src.mc; changed++; }
+    if(!dst._hrmis_rec && src._hrmis_rec){ dst._hrmis_rec=src._hrmis_rec; changed++; }
+    return changed;
+  }
+  function forceTHNames(){
+    try{
+      if(typeof MASTER==='undefined'||typeof D==='undefined') return 0;
+      var n=0;
+      MASTER.forEach(function(m){
+        var nm=String(m.nama||'').toUpperCase();
+        if(/\bASREE\b/.test(nm)||/\bAMINUD+IN\b/.test(nm)||/NAZRI\s+BIN\s+ISMAIL|NAZRI\s+ISMAIL/.test(nm)){
+          var bil=m.bil; if(!D[bil]) D[bil]={};
+          for(var d=1;d<=31;d++){
+            if(!D[bil][d]) D[bil][d]={};
+            var sh=''; try{ sh=typeof gSh==='function'?gSh(bil,d):''; }catch(e){}
+            if(sh && sh!=='O' && sh!=='OFF' && sh!=='OF'){
+              if(D[bil][d].kzp!=='TH'){ D[bil][d].kzp='TH'; n++; }
+              if(D[bil][d].kzk!=='TH'){ D[bil][d].kzk='TH'; n++; }
+            }
+          }
+        }
+      });
+      return n;
+    }catch(e){ return 0; }
+  }
+  function recoverMissing(reason,force){
+    try{
+      if(typeof D==='undefined') return 0;
+      var before=scoreD(D), changed=0;
+      var cands=scanCandidates();
+      cands.forEach(function(cand){
+        if(!force && cand.score < 50) return;
+        Object.keys(cand.D||{}).forEach(function(b){
+          if(!D[b]) D[b]={};
+          Object.keys(cand.D[b]||{}).forEach(function(d){
+            if(!D[b][d]) D[b][d]={};
+            changed += mergeCell(D[b][d], cand.D[b][d]);
+          });
+        });
+      });
+      changed += forceTHNames();
+      if(changed){
+        try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+        log('[e-AKHA '+PATCH+'] recovered '+changed+' fields from '+cands.length+' candidates. before='+before+' after='+scoreD(D)+' reason='+reason);
+      }
+      return changed;
+    }catch(e){ warn('[5113 recover]',e); return 0; }
+  }
+  window.eakhaRecoverMasterMissingData=function(force){
+    var n=recoverMissing('MANUAL BUTTON', force!==false);
+    try{ if(typeof eakhaNormalizeTimecardNearestHakiki==='function') eakhaNormalizeTimecardNearestHakiki(true); else normalizeTimecards(true); }catch(e){}
+    try{ if(typeof renderMaster==='function') renderMaster(null); if(typeof renderDash==='function') renderDash(); if(typeof updFlags==='function') updFlags(); }catch(e){}
+    toastMsg(n?'Master lengkap dipulihkan: '+n+' data':'Tiada data lama yang lebih lengkap ditemui','ok');
+    return n;
+  };
+
+  // Block accidental snapshot saves caused only by rendering/switching tab. Save must happen on explicit actions only.
+  var oldSaveDataset = (typeof window.saveDataset==='function') ? window.saveDataset : (typeof saveDataset==='function'?saveDataset:null);
+  if(oldSaveDataset && !oldSaveDataset.__v5113){
+    window.saveDataset = saveDataset = function(reason){
+      var r=String(reason||'');
+      if(/renderMaster|renderMiniGrid|LOAD MONTH|BOOT\s*\d+ms|POST_RENDER|PRE_RENDER/i.test(r)){
+        // Do not freeze an incomplete render state into the monthly snapshot.
+        return true;
+      }
+      recoverMissing('BEFORE SAVE '+r,false);
+      return oldSaveDataset.apply(this, arguments);
+    };
+    window.saveDataset.__v5113=true;
+  }
+  var oldSaveMasterMonth = (typeof window.saveMasterMonth==='function') ? window.saveMasterMonth : (typeof saveMasterMonth==='function'?saveMasterMonth:null);
+  if(oldSaveMasterMonth && !oldSaveMasterMonth.__v5113){
+    window.saveMasterMonth = saveMasterMonth = function(reason){
+      var best=scanCandidates()[0];
+      var cur=(typeof D!=='undefined')?scoreD(D):0;
+      if(best && best.score>cur*1.25 && !/MANUAL|VALIDASI|KEMASKINI|RESTORE|SAVE ENTRY|CEDIT/i.test(String(reason||''))){
+        recoverMissing('SAVE MASTER GUARD '+reason,false);
+      }
+      return oldSaveMasterMonth.apply(this, arguments);
+    };
+    window.saveMasterMonth.__v5113=true;
+  }
+
+  // Timecard nearest-to-hakiki engine, with late IN allowed but punch outside logical shift not forced.
+  function shiftKey(sh){
+    sh=String(sh||'').toUpperCase();
+    if(sh==='PG'||sh==='PAGI'||sh==='S') return 'S';
+    if(sh==='PT'||sh==='PETANG'||sh==='P') return 'P';
+    if(sh==='M'||sh==='MALAM') return 'M';
+    if(sh==='O'||sh==='OF'||sh==='OFF'||sh==='OFFDAY') return 'O';
+    return sh;
+  }
+  function getCell(b,d){ return (typeof D!=='undefined'&&D[b]&&D[b][d])?D[b][d]:null; }
+  function mkCell(){ return {kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all_raw:[],tc_all:[],hrmis:'',ot:false,note:''}; }
+  function cellShift(b,d,c){ try{ return shiftKey(typeof gSh==='function'?gSh(+b,+d):(c&&c.tc_shift)); }catch(e){ return shiftKey(c&&c.tc_shift); } }
+  function uniqPoints(arr){
+    var seen={},out=[];
+    (arr||[]).forEach(function(p){
+      var t=normTime(p&&typeof p==='object'?p.t:p); if(!t) return;
+      var nd=!!(p&&typeof p==='object'&&p.nextDay);
+      var mins=(p&&typeof p==='object'&&isFinite(p.mins))?p.mins:(toMin(t)+(nd?1440:0));
+      var k=(nd?'N':'D')+'|'+t;
+      if(!seen[k]){ seen[k]=1; out.push({t:t,mins:mins,nextDay:nd}); }
+    });
+    return out.sort(function(a,b){return a.mins-b.mins;});
+  }
+  function rawPoints(b,d,sh){
+    var c=getCell(b,d), arr=[];
+    if(c){
+      ['tc_all_raw','tc_all'].forEach(function(k){ if(Array.isArray(c[k])) c[k].forEach(function(t){ arr.push({t:t,mins:toMin(t),nextDay:false}); }); });
+      if(c.tc_in) arr.push({t:c.tc_in,mins:toMin(c.tc_in),nextDay:false});
+      if(c.tc_out) arr.push({t:c.tc_out,mins:toMin(c.tc_out),nextDay:!!c.tc_out_nextday});
+    }
+    var nd=getCell(b,+d+1);
+    if(nd && (sh==='M'||sh==='P')){
+      var nx=[];
+      ['tc_all_raw','tc_all'].forEach(function(k){ if(Array.isArray(nd[k])) nx=nx.concat(nd[k]); });
+      if(nd.tc_in) nx.push(nd.tc_in); if(nd.tc_out) nx.push(nd.tc_out);
+      nx.forEach(function(t){ var m=toMin(t); if(!isFinite(m)) return; if(sh==='M' && m>=300 && m<=900) arr.push({t:t,mins:m+1440,nextDay:true}); if(sh==='P' && m>=0 && m<=60) arr.push({t:t,mins:m+1440,nextDay:true}); });
+    }
+    return uniqPoints(arr).filter(function(p){return isFinite(p.mins);});
+  }
+  function classifyIn(sh,p){
+    if(p.nextDay) return null; var m=((p.mins%1440)+1440)%1440;
+    if(sh==='S'){ if(m>=360&&m<=425) return {type:'ok',score:Math.abs(m-420)}; if(m>425&&m<900) return {type:'late',score:1000+Math.abs(m-420)}; return null; }
+    if(sh==='P'){ if(m>=840&&m<=905) return {type:'ok',score:Math.abs(m-900)}; if(m>905&&m<=1080) return {type:'late',score:1000+Math.abs(m-900)}; return null; }
+    if(sh==='M'){ if(m>=1320&&m<=1380) return {type:'ok',score:Math.abs(m-1380)}; if(m>1380&&m<=1439) return {type:'late',score:1000+Math.abs(m-1380)}; if(m>=0&&m<=120) return {type:'late',score:1500+m}; return null; }
+    return null;
+  }
+  function classifyOut(sh,p){
+    var m=((p.mins%1440)+1440)%1440;
+    if(sh==='S'){ if(p.nextDay) return null; if(m>=900&&m<=960) return {type:'ok',score:Math.abs(m-900)}; if(m>=720&&m<900) return {type:'early',score:1000+(900-m)}; return null; }
+    if(sh==='P'){ if(!p.nextDay&&m>=1380&&m<=1439) return {type:'ok',score:Math.abs(m-1380)}; if(p.nextDay&&m>=0&&m<=5) return {type:'ok',score:m}; if(!p.nextDay&&m>=1260&&m<1380) return {type:'early',score:1000+(1380-m)}; return null; }
+    if(sh==='M'){ if(!p.nextDay) return null; if(m>=420&&m<=480) return {type:'ok',score:Math.abs(m-420)}; if(m>=360&&m<420) return {type:'early',score:1000+(420-m)}; return null; }
+    return null;
+  }
+  function choose(pts,fn,ex){
+    var best=null;
+    pts.forEach(function(p){ if(ex && p.t===ex.t && p.nextDay===ex.nextDay) return; var c=fn(p); if(!c) return; var cand={t:p.t,mins:p.mins,nextDay:p.nextDay,type:c.type,score:c.score}; if(!best||cand.score<best.score) best=cand; });
+    return best;
+  }
+  function assignTC(b,d,force){
+    try{
+      if(typeof D==='undefined') return null;
+      if(!D[b]) D[b]={}; if(!D[b][d]) D[b][d]=mkCell();
+      var c=D[b][d]; if(c.tc_manual&&!force) return c;
+      var sh=cellShift(b,d,c); c.tc_shift=sh;
+      if(sh==='O') return c;
+      if(c.tc_problem){ c.tc_audit_done=true; return c; }
+      var pts=rawPoints(b,d,sh);
+      if(pts.length){ c.tc_all_raw=uniqPoints([].concat(c.tc_all_raw||[],pts.filter(function(p){return !p.nextDay;}))).map(function(p){return p.t;}); }
+      if(!pts.length){ c.tc_in=''; c.tc_out=''; c.tc_in_type=''; c.tc_out_type=''; return c; }
+      var inp=choose(pts,function(p){return classifyIn(sh,p);},null);
+      var outp=choose(pts,function(p){return classifyOut(sh,p);},inp);
+      c.tc_in=inp?inp.t:''; c.tc_in_type=inp?inp.type:'';
+      c.tc_out=outp?outp.t:''; c.tc_out_type=outp?outp.type:''; c.tc_out_nextday=!!(outp&&outp.nextDay);
+      c.tc_rule_patch=PATCH; c.tc_audit_done=true;
+      return c;
+    }catch(e){ warn('[5113 assignTC]',e); return null; }
+  }
+  function normalizeTimecards(force){
+    try{
+      if(typeof MASTER==='undefined'||typeof D==='undefined') return 0;
+      var n=0, max=(typeof daysInActiveMonth==='function'?daysInActiveMonth():31);
+      MASTER.forEach(function(m){ for(var d=1;d<=max;d++){ var c=getCell(m.bil,d); if(c && (c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length)||(c.tc_all_raw&&c.tc_all_raw.length))){ assignTC(m.bil,d,!!force); n++; } } });
+      try{ localStorage.setItem('eakha_data', JSON.stringify(D)); }catch(e){}
+      return n;
+    }catch(e){ warn('[5113 normalizeTC]',e); return 0; }
+  }
+  window.eakhaAssignTimecardNearestHakiki=assignTC;
+  window.eakhaNormalizeTimecardNearestHakiki=normalizeTimecards;
+
+  var oldTcAudit=(typeof window.tcAudit==='function')?window.tcAudit:(typeof tcAudit==='function'?tcAudit:null);
+  window.tcAudit=tcAudit=function(b,d){
+    try{
+      var c=getCell(b,d); if(c) assignTC(b,d,false); c=getCell(b,d);
+      var sh=cellShift(b,d,c||{});
+      if(!c) return oldTcAudit?oldTcAudit(b,d):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+      if(c.tc_problem) return {txt:'TIMECARD PROBLEM\nABAIKAN',cls:'tc-off',ok:true};
+      if(sh==='O') return (c.tc_in||c.tc_out||(c.tc_all&&c.tc_all.length)||(c.tc_all_raw&&c.tc_all_raw.length))?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
+      var raw=(Array.isArray(c.tc_all_raw)&&c.tc_all_raw.length?c.tc_all_raw:(Array.isArray(c.tc_all)?c.tc_all:[]));
+      if(!c.tc_in && !c.tc_out){
+        if(raw.length) return {txt:'PUNCH LUAR WAKTU HAKIKI\n'+raw.join(' · '),cls:'tc-warn',ok:false};
+        if(c.kzp||c.kzk) return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+        return {txt:'—',cls:'tc-bp',ok:false};
+      }
+      var lines=[], cls='tc-ok', ok=true;
+      if(c.tc_in){ if(c.tc_in_type==='late'){ lines.push('LEWAT'); lines.push('IN '+c.tc_in); cls='tc-lw'; ok=false; } else lines.push('✓ IN '+c.tc_in); }
+      else { lines.push('⚠ TIADA IN'); cls='tc-warn'; ok=false; }
+      if(c.tc_out){ if(c.tc_out_type==='early'){ lines.push('⚠ OUT AWAL'); lines.push('OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'')); if(cls==='tc-ok') cls='tc-lw'; ok=false; } else lines.push((c.tc_in?'✓ ':'')+'OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'')); }
+      else { if(sh==='M'){ lines.push('SEMAK OUT ESOK'); if(cls==='tc-ok') cls='tc-warn'; } else { lines.push('⚠ TIADA OUT'); if(cls==='tc-ok') cls='tc-warn'; ok=false; } }
+      return {txt:lines.join('\n'),cls:cls,ok:ok};
+    }catch(e){ warn('[5113 tcAudit]',e); return oldTcAudit?oldTcAudit(b,d):{txt:'RALAT TC',cls:'tc-warn',ok:false}; }
+  };
+
+  var oldEnsure=(typeof window.ensureAuditReady==='function')?window.ensureAuditReady:(typeof ensureAuditReady==='function'?ensureAuditReady:null);
+  window.ensureAuditReady=ensureAuditReady=function(force){ var r; if(oldEnsure){ try{ r=oldEnsure.apply(this,arguments); }catch(e){} } recoverMissing('ENSURE AUDIT',false); normalizeTimecards(!!force); return r; };
+
+  function wrapRender(name){
+    try{
+      var old=window[name]||eval(name); if(typeof old!=='function'||old.__v5113) return;
+      var neu=function(){ recoverMissing('PRE '+name,false); normalizeTimecards(false); var r=old.apply(this,arguments); return r; };
+      neu.__v5113=true; window[name]=neu; try{ eval(name+'=window["'+name+'"]'); }catch(e){}
+    }catch(e){}
+  }
+  ['renderMaster','renderMiniGrid','renderOutput','renderDash','kemaskiniMaster','validasiAudit'].forEach(wrapRender);
+
+  function injectButton(){
+    try{
+      var bar=document.querySelector('#topbar > div[style*="margin-left:auto"]');
+      if(bar && !document.getElementById('btn-recover-master-complete')){
+        var b=document.createElement('button'); b.id='btn-recover-master-complete'; b.className='btn btn-sm'; b.style.fontSize='7.5px'; b.textContent='Pulih Master Lengkap'; b.title='Gabungkan data terbaik dari snapshot/backup tanpa padam KZ/TC/MC/HRMIS'; b.onclick=function(){ eakhaRecoverMasterMissingData(true); };
+        bar.appendChild(b);
       }
     }catch(e){}
-    return '';
   }
-
-  function eakhaHakikiIndex(y,m,d){
-    y = +y || 2026; m = +m || 4; d = +d || 1;
-    var ref = Date.UTC(2026,3,1); // 1 April 2026 = ALPHA PT pertama dalam gambar
-    var cur = Date.UTC(y,m-1,d);
-    var diff = Math.round((cur - ref) / 86400000);
-    return ((diff % 8) + 8) % 8;
+  var oldBoot=(typeof window.bootApp==='function')?window.bootApp:(typeof bootApp==='function'?bootApp:null);
+  if(oldBoot && !oldBoot.__v5113){
+    window.bootApp=bootApp=async function(){ var r=await oldBoot.apply(this,arguments); [100,600,1500,3200].forEach(function(ms){ setTimeout(function(){ try{ injectButton(); recoverMissing('BOOT '+ms,false); normalizeTimecards(false); if(typeof renderMaster==='function' && document.getElementById('page-master') && document.getElementById('page-master').classList.contains('on')) renderMaster(null); }catch(e){} },ms); }); return r; };
+    window.bootApp.__v5113=true;
   }
-
-  window.eakhaHakikiShiftKomp = function(komp,y,m,d){
-    komp = String(komp||'').toUpperCase().trim();
-    var row = window.HAKIKI_RUJUKAN_GAMBAR_2026[komp];
-    if(!row) return '';
-    return row[eakhaHakikiIndex(y,m,d)] || '';
-  };
-
-  window.eakhaHakikiShiftLabel = function(komp,y,m,d){
-    var s = window.eakhaHakikiShiftKomp(komp,y,m,d);
-    return window.HAKIKI_LABEL_GAMBAR[s] || s || '';
-  };
-
-  window.gShift = gShift = function(bil,y,m,d){
-    return window.eakhaHakikiShiftKomp(eakhaHakikiKomp(bil), y, m, d);
-  };
-
-  window.gSh = gSh = function(bil,d){
-    var y = (typeof ACTIVE_YEAR !== 'undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026;
-    var m = (typeof ACTIVE_MONTH !== 'undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4;
-    return window.gShift(bil, y, m, d);
-  };
-
-  window.eakhaSemakHakiki = function(y,m){
-    y = +y || ((typeof ACTIVE_YEAR !== 'undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026);
-    m = +m || ((typeof ACTIVE_MONTH !== 'undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4);
-    var days = new Date(y,m,0).getDate();
-    var out = {};
-    ['ALPHA','BRAVO','CHARLIE','DELTA'].forEach(function(k){
-      out[k] = [];
-      for(var d=1; d<=days; d++) out[k].push(window.eakhaHakikiShiftLabel(k,y,m,d));
-    });
-    console.table(out);
-    return out;
-  };
-}catch(e){ console.warn('[v5.10.9 hakiki image fix]', e); }
-
-try{document.title='e-AKHA Vsavage v5.10.9 LOGIN + HAKIKI IMAGE FIX';console.log('[e-AKHA '+PATCH+' + v5.10.9 hakiki] loaded')}catch(e){}
+  document.addEventListener('DOMContentLoaded',function(){ injectButton(); [500,1600,3000].forEach(function(ms){ setTimeout(function(){ try{ injectButton(); recoverMissing('DOMContentLoaded '+ms,false); normalizeTimecards(false); }catch(e){} },ms); }); });
+  try{ log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
 })();
 </script>
-
 </body>
 </html>
