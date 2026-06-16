@@ -8940,7 +8940,304 @@ try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('
     },2500);
   });
 
-  try{ document.title='e-AKHA Vsavage v5.10.19 LOGIN GUARD SAFE'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
+  try{ document.title='e-AKHA Vsavage v5.10.21 LOGIN OK + SNAPSHOT PROTECT'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
+})();
+</script>
+
+
+
+<!-- v5.10.21 LOGIN OK + SNAPSHOT PROTECT RESTORE: protects edited April snapshot from low-score overwrite -->
+<script>
+(function(){
+  'use strict';
+  var PATCH='v5.10.21-login-ok-snapshot-protect';
+  window.EAKHA_PATCH_51021 = PATCH;
+
+  function pad(n){ return String(+n||0).padStart(2,'0'); }
+  function yNow(){ return (typeof ACTIVE_YEAR!=='undefined' && ACTIVE_YEAR) ? +ACTIVE_YEAR : 2026; }
+  function mNow(){ return (typeof ACTIVE_MONTH!=='undefined' && ACTIVE_MONTH) ? +ACTIVE_MONTH : 4; }
+  function daysNow(){ try{return (typeof daysInActiveMonth==='function')?daysInActiveMonth():new Date(yNow(),mNow(),0).getDate();}catch(e){return 31;} }
+  function monthName(m){ try{return (typeof MONTHS_MS!=='undefined'&&MONTHS_MS[+m])?MONTHS_MS[+m]:'Bulan '+m;}catch(e){return 'Bulan '+m;} }
+  function clone(x){ try{return JSON.parse(JSON.stringify(x));}catch(e){return x;} }
+  function parse(raw,fb){ try{var x=JSON.parse(raw||''); return x==null?fb:x;}catch(e){return fb;} }
+  function has(v){
+    if(v===undefined || v===null) return false;
+    var s=String(v).trim();
+    return !!s && s!=='-' && s!=='—' && !/^—?\s*klik\s*—?$/i.test(s);
+  }
+  function manualKey(y,m){ return 'eakha_snapshot_manual_'+(+y)+'_'+pad(m); }
+  function protectKey(y,m){ return 'eakha_snapshot_protected_'+(+y)+'_'+pad(m); }
+  function latestKey(y,m){ return 'eakha_snapshot_latest_'+(+y)+'_'+pad(m); }
+  function autoKey(y,m){ return 'eakha_snapshot_auto_'+(+y)+'_'+pad(m); }
+  function dataKey(y,m){ return 'eakha_dataset_'+(+y)+'_'+(+m); }
+  function masterKey(y,m){ return 'eakha_master_'+(+y)+'_'+pad(m); }
+  function auditKey(y,m){ return 'eakha_audit_state_'+(+y)+'_'+pad(m); }
+  function hrKey(y,m){ return 'eakha_hrmis_'+(+y)+'_'+pad(m); }
+  function mcKey(y,m){ return 'eakha_mc_'+(+y)+'_'+pad(m); }
+  function cell(){ return {kzp:'',kzk:'',tc_in:'',tc_out:'',tc_all:[],tc_shift:'',ot:false,hrmis:'',pengganti:false,note:''}; }
+
+  function scoreD(d){
+    var s=0; if(!d||typeof d!=='object') return 0;
+    Object.keys(d).forEach(function(b){
+      var row=d[b]||{};
+      Object.keys(row).forEach(function(dd){
+        var c=row[dd]||{};
+        ['kzp','kzk','tc_in','tc_out','tc_shift','hrmis','note','pengganti_nama'].forEach(function(k){ if(has(c[k])) s++; });
+        if(c.pengganti) s++;
+        if(c.tc_all && c.tc_all.length) s+=Math.min(4,c.tc_all.length);
+        if(c._mc) s+=3;
+        if(c._hrmis_rec) s+=3;
+      });
+    });
+    return s;
+  }
+
+  function snapFromCurrent(reason,manual){
+    try{ if(typeof eakhaSyncHRMISStoreToMaster==='function') eakhaSyncHRMISStoreToMaster('SNAPSHOT '+(reason||'')); }catch(e){}
+    try{ if(typeof normalizeHRMISAll==='function') normalizeHRMISAll(); }catch(e){}
+    var y=yNow(), m=mNow();
+    var snap={
+      patch:PATCH, tahun:y, bulan:m, monthLabel:monthName(m)+' '+y,
+      reason:reason||'SNAPSHOT', manual:!!manual, protected:!!manual,
+      savedAt:new Date().toISOString(), savedBy:(typeof AUTH!=='undefined'&&AUTH&&AUTH.id)||'system',
+      D:(typeof D!=='undefined')?clone(D):{},
+      AUDIT_STATE:(typeof AUDIT_STATE!=='undefined')?clone(AUDIT_STATE):{},
+      MC_DATA:(typeof MC_DATA!=='undefined')?clone(MC_DATA):[],
+      HRMIS_DATA:parse(localStorage.getItem('eakha_hrmis'),[]),
+      RAYA_DATA:(typeof RAYA_DATA!=='undefined')?clone(RAYA_DATA):[],
+      CTR_DATA:(typeof CTR_DATA!=='undefined')?clone(CTR_DATA):[],
+      STAGING:(typeof STAGING!=='undefined')?clone(STAGING):{},
+      BAKI_CUTI:(typeof BAKI_CUTI!=='undefined')?clone(BAKI_CUTI):{},
+      CUSTOM_ANGGOTA:(typeof CUSTOM_ANGGOTA!=='undefined')?clone(CUSTOM_ANGGOTA):[],
+      ANGGOTA_LAIN:(typeof ANGGOTA_LAIN!=='undefined')?clone(ANGGOTA_LAIN):[]
+    };
+    snap.score=scoreD(snap.D);
+    return snap;
+  }
+
+  function inferYMFromKey(k){
+    var m=String(k||'').match(/(20\d{2})[_-](\d{1,2})/);
+    return m?{y:+m[1],m:+m[2]}:null;
+  }
+
+  function candFromRaw(key,raw){
+    var s=parse(raw,null); if(!s) return null;
+    var ym=inferYMFromKey(key)||{};
+    var D0=null;
+    if(s.D && typeof s.D==='object') D0=s.D;
+    else if(key==='eakha_data' && typeof s==='object') D0=s;
+    else return null;
+    var y=+(s.tahun||s.year||ym.y||yNow());
+    var m=+(s.bulan||s.month||ym.m||mNow());
+    if(+y!==+yNow() || +m!==+mNow()) return null;
+    var sc=scoreD(D0);
+    return {key:key, snap:s, D:D0, score:sc, savedAt:s.savedAt||'', manual:!!s.manual, protected:!!s.protected};
+  }
+
+  function allCandidates(){
+    var list=[], seen={};
+    var y=yNow(), m=mNow();
+    var preferred=[protectKey(y,m),manualKey(y,m),latestKey(y,m),autoKey(y,m),dataKey(y,m),masterKey(y,m),'eakha_guard_last_good_dataset','eakha_guard_last_good_data','eakha_data'];
+    function add(k){
+      if(!k || seen[k]) return; seen[k]=true;
+      var c=candFromRaw(k, localStorage.getItem(k));
+      if(c && c.score>0) list.push(c);
+    }
+    preferred.forEach(add);
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i)||'';
+        if(/^eakha_/.test(k) && (k.indexOf(String(y))>-1 || k==='eakha_data' || k.indexOf('guard_last_good')>-1)) add(k);
+      }
+    }catch(e){}
+    list.sort(function(a,b){
+      var ap=(a.key===protectKey(y,m)?50:0)+(a.key===manualKey(y,m)?40:0)+(a.manual?15:0)+(a.protected?20:0);
+      var bp=(b.key===protectKey(y,m)?50:0)+(b.key===manualKey(y,m)?40:0)+(b.manual?15:0)+(b.protected?20:0);
+      if((b.score+bp)!==(a.score+ap)) return (b.score+bp)-(a.score+ap);
+      return String(b.savedAt||'').localeCompare(String(a.savedAt||''));
+    });
+    return list;
+  }
+
+  function bestCandidate(){
+    var list=allCandidates();
+    if(!list.length) return null;
+    var y=yNow(), m=mNow();
+    var protectedCand=list.find(function(c){return c.key===protectKey(y,m) || c.key===manualKey(y,m);});
+    var best=list[0];
+    // If a protected/manual snapshot is reasonably complete, keep it as the authority.
+    if(protectedCand && protectedCand.score>=Math.max(50,best.score*0.70)) return protectedCand;
+    return best;
+  }
+
+  function safeSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ console.warn('[e-AKHA '+PATCH+'] setItem failed '+k,e); return false; } }
+
+  function writeProtectedSnapshot(snap,manual){
+    if(!snap || !snap.D) return false;
+    var y=+snap.tahun||yNow(), m=+snap.bulan||mNow();
+    var sc=scoreD(snap.D); snap.score=sc;
+    var existing=bestCandidate();
+    var oldScore=existing?existing.score:0;
+
+    // Auto/boot saves are blocked if they are much emptier than an existing edited snapshot.
+    if(!manual && oldScore>=80 && sc < oldScore*0.75){
+      try{ safeSet('eakha_snapshot_blocked_low_score_'+y+'_'+pad(m)+'_'+Date.now(), JSON.stringify(snap)); }catch(e){}
+      console.warn('[e-AKHA '+PATCH+'] blocked AUTO snapshot overwrite old='+oldScore+' new='+sc+' reason='+(snap.reason||''));
+      return false;
+    }
+
+    // Manual save should not accidentally replace a good edited snapshot with a blank/half-empty screen.
+    if(manual && oldScore>=80 && sc < oldScore*0.55){
+      try{ safeSet('eakha_snapshot_manual_suspect_'+y+'_'+pad(m)+'_'+Date.now(), JSON.stringify(snap)); }catch(e){}
+      try{ if(typeof toast==='function') toast('Snapshot tidak ditimpa: data semasa nampak kurang lengkap. Tekan Pulih Data Auto untuk ambil data lama.','warn'); }catch(e){}
+      console.warn('[e-AKHA '+PATCH+'] blocked MANUAL low-score save old='+oldScore+' new='+sc);
+      return false;
+    }
+
+    var raw=JSON.stringify(snap);
+    if(manual){
+      snap.manual=true; snap.protected=true;
+      raw=JSON.stringify(snap);
+      safeSet(protectKey(y,m), raw);
+      safeSet(manualKey(y,m), raw);
+      safeSet(latestKey(y,m), raw);
+    }else{
+      safeSet(autoKey(y,m), raw);
+      // Update latest only when the auto snapshot is not a downgrade.
+      if(sc >= oldScore*0.95) safeSet(latestKey(y,m), raw);
+    }
+    safeSet(dataKey(y,m), raw);
+    safeSet(masterKey(y,m), JSON.stringify({patch:PATCH,tahun:y,bulan:m,monthLabel:snap.monthLabel,reason:snap.reason,savedAt:snap.savedAt,savedBy:snap.savedBy,score:sc,D:snap.D,AUDIT_STATE:snap.AUDIT_STATE||{}}));
+    safeSet(auditKey(y,m), JSON.stringify(snap.AUDIT_STATE||{}));
+    safeSet(hrKey(y,m), JSON.stringify(snap.HRMIS_DATA||[]));
+    safeSet(mcKey(y,m), JSON.stringify(snap.MC_DATA||[]));
+    safeSet('eakha_last_dataset_key', dataKey(y,m));
+    safeSet('eakha_data', JSON.stringify(snap.D||{}));
+    safeSet('eakha_hrmis', JSON.stringify(snap.HRMIS_DATA||[]));
+    return true;
+  }
+
+  function replaceDExact(srcD){
+    if(typeof D==='undefined' || !srcD) return;
+    Object.keys(D).forEach(function(k){ delete D[k]; });
+    try{
+      if(typeof MASTER!=='undefined' && Array.isArray(MASTER)){
+        MASTER.forEach(function(m){ D[m.bil]={}; for(var d=1; d<=daysNow(); d++) D[m.bil][d]=cell(); });
+      }
+    }catch(e){}
+    Object.keys(srcD).forEach(function(b){
+      if(!D[b]) D[b]={};
+      Object.keys(srcD[b]||{}).forEach(function(d){ D[b][d]=clone(srcD[b][d]||{}); });
+    });
+  }
+
+  function applyCandidate(c,render){
+    if(!c || !c.D) return false;
+    var s=c.snap||{};
+    try{
+      ACTIVE_YEAR=+(s.tahun||yNow()); ACTIVE_MONTH=+(s.bulan||mNow());
+      replaceDExact(c.D);
+      if(typeof AUDIT_STATE!=='undefined') AUDIT_STATE=clone(s.AUDIT_STATE||{});
+      if(typeof MC_DATA!=='undefined') MC_DATA=clone(s.MC_DATA||[]);
+      if(typeof RAYA_DATA!=='undefined') RAYA_DATA=clone(s.RAYA_DATA||[]);
+      if(typeof CTR_DATA!=='undefined') CTR_DATA=clone(s.CTR_DATA||[]);
+      if(typeof STAGING!=='undefined') STAGING=clone(s.STAGING||{});
+      if(typeof BAKI_CUTI!=='undefined') BAKI_CUTI=clone(s.BAKI_CUTI||{});
+      if(typeof CUSTOM_ANGGOTA!=='undefined') CUSTOM_ANGGOTA=clone(s.CUSTOM_ANGGOTA||[]);
+      if(typeof ANGGOTA_LAIN!=='undefined') ANGGOTA_LAIN=clone(s.ANGGOTA_LAIN||[]);
+      safeSet('eakha_active_year',String(ACTIVE_YEAR));
+      safeSet('eakha_active_month',String(ACTIVE_MONTH));
+      safeSet('eakha_data',JSON.stringify(D));
+      safeSet('eakha_audit_state',JSON.stringify(AUDIT_STATE||{}));
+      safeSet('eakha_hrmis',JSON.stringify(s.HRMIS_DATA||[]));
+      // Restored data becomes protected, so later blank boot/save cannot delete it.
+      var restored=clone(s); restored.D=clone(D); restored.tahun=ACTIVE_YEAR; restored.bulan=ACTIVE_MONTH; restored.manual=true; restored.protected=true; restored.reason='RESTORED PROTECTED FROM '+c.key; restored.savedAt=new Date().toISOString(); restored.score=scoreD(D);
+      writeProtectedSnapshot(restored,true);
+      try{ if(typeof normalizeHRMISAll==='function') normalizeHRMISAll(); }catch(e){}
+      if(render!==false){
+        try{ document.querySelectorAll('.month-item').forEach(function(el){el.classList.toggle('on',+el.dataset.bulan===+ACTIVE_MONTH);}); }catch(e){}
+        try{ var badge=document.getElementById('active-month-badge'); if(badge) badge.textContent=monthName(ACTIVE_MONTH)+' '+ACTIVE_YEAR; }catch(e){}
+        try{ if(typeof populateSels==='function') populateSels(); }catch(e){}
+        try{ if(typeof renderDash==='function') renderDash(); }catch(e){}
+        try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
+        try{ if(typeof renderOutput==='function') renderOutput(''); }catch(e){}
+        try{ if(typeof renderMCReg==='function') renderMCReg(); }catch(e){}
+        try{ if(typeof renderHRMISReg==='function') renderHRMISReg(); }catch(e){}
+        try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+      }
+      console.warn('[e-AKHA '+PATCH+'] restored '+c.key+' score='+c.score);
+      return true;
+    }catch(e){ console.warn('[e-AKHA '+PATCH+'] applyCandidate failed',e); return false; }
+  }
+
+  window.eakhaSaveAuthoritativeSnapshot = function(reason,manual){
+    return writeProtectedSnapshot(snapFromCurrent(reason||'SNAPSHOT',!!manual), !!manual);
+  };
+
+  window.manualSaveSnapshot = function(){
+    var ok=window.eakhaSaveAuthoritativeSnapshot('MANUAL SNAPSHOT PROTECTED', true);
+    try{ if(typeof toast==='function') toast(ok?'Snapshot diedit disimpan & dilindungi ✓':'Snapshot tidak disimpan kerana data semasa kurang lengkap','ok'); }catch(e){}
+    return ok;
+  };
+  try{ manualSaveSnapshot=window.manualSaveSnapshot; }catch(e){}
+
+  window.eakhaRestoreBestBackup = function(){
+    var c=bestCandidate();
+    if(!c){ try{ if(typeof toast==='function') toast('Tiada snapshot/backup lama ditemui','warn'); }catch(e){} return false; }
+    var ok=applyCandidate(c,true);
+    try{ if(typeof toast==='function') toast(ok?'Snapshot terbaik dipulihkan ✓ ('+c.key+')':'Gagal pulih snapshot','ok'); }catch(e){}
+    return ok;
+  };
+
+  window.eakhaRestoreLatestMonthSnapshot = function(silent){
+    var ok=window.eakhaRestoreBestBackup();
+    if(silent===true) return ok;
+    return ok;
+  };
+  window.manualRestoreSnapshot = function(){ return window.eakhaRestoreBestBackup(); };
+  try{ manualRestoreSnapshot=window.manualRestoreSnapshot; }catch(e){}
+
+  var oldSaveDataset=(typeof saveDataset==='function')?saveDataset:null;
+  if(oldSaveDataset && !oldSaveDataset.__v51020){
+    window.saveDataset = saveDataset = function(reason){
+      var snap=snapFromCurrent(reason||'SAVE DATASET',false);
+      var best=bestCandidate(), oldScore=best?best.score:0, sc=snap.score||0;
+      if(oldScore>=80 && sc<oldScore*0.75){
+        console.warn('[e-AKHA '+PATCH+'] blocked saveDataset downgrade old='+oldScore+' new='+sc+' reason='+(reason||''));
+        return false;
+      }
+      var r=false;
+      try{ r=oldSaveDataset.apply(this,arguments); }catch(e){ console.warn('[e-AKHA '+PATCH+'] old saveDataset failed',e); }
+      writeProtectedSnapshot(snap,false);
+      return r!==false;
+    };
+    window.saveDataset.__v51020=true;
+  }
+
+  function bindButtons(){
+    try{ var b=document.getElementById('btn-snapshot-save'); if(b){b.onclick=window.manualSaveSnapshot; b.textContent='Simpan Snapshot'; b.title='Simpan snapshot yang telah diedit dan lindungi daripada overwrite kosong';} }catch(e){}
+    try{ var r=document.getElementById('btn-snapshot-restore'); if(r){r.onclick=window.manualRestoreSnapshot; r.textContent='Pulih Snapshot'; r.title='Pulih snapshot terbaik/terlindung bulan aktif';} }catch(e){}
+    try{ var x=document.getElementById('btn-recover-best'); if(x){x.onclick=window.eakhaRestoreBestBackup; x.textContent='Pulih Data Auto'; x.title='Cari dan pulih data terbaik, termasuk snapshot lama sebelum deploy';} }catch(e){}
+  }
+
+  function bootProtect(){
+    bindButtons();
+    // If a protected/manual snapshot exists, do not auto-apply blank current data. Only restore when current is clearly lower.
+    try{
+      var c=bestCandidate();
+      if(c && c.score>=80 && typeof D!=='undefined'){
+        var cur=scoreD(D);
+        if(cur>0 && cur < c.score*0.55){
+          applyCandidate(c,false);
+          try{ if(typeof toast==='function') toast('Data snapshot lama dikesan & dilindungi semula','warn'); }catch(e){}
+        }
+      }
+    }catch(e){}
+  }
+  [800,2200,4800,8000].forEach(function(ms){ setTimeout(bootProtect,ms); });
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(bootProtect,1200); setTimeout(bindButtons,2600); });
+
+  try{ document.title='e-AKHA Vsavage v5.10.21 LOGIN OK + SNAPSHOT PROTECT RESTORE'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
 })();
 </script>
 
