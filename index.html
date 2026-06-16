@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE</title>
+  <title>e-AKHA Vsavage v5.10.24 FORCE RESTORE SAFE</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script id="eakha-v51024-native-storage-capture">
+(function(){try{if(!window.__EAKHA_NATIVE_STORAGE__){window.__EAKHA_NATIVE_STORAGE__={set:Storage.prototype.setItem,get:Storage.prototype.getItem,remove:Storage.prototype.removeItem};}}catch(e){}})();
+</script>
+
   <style>
 
 :root{--navy:#0a1628;--navy2:#0f1f3d;--navy3:#162040;--gold:#c8960a;--gold2:#f0b429;--red:#dc2626;--green:#059669;--blue:#2563eb}
@@ -9241,19 +9245,21 @@ try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('
 })();
 </script>
 
-<script id="eakha-v51023-quota-rescue-ui">
-/* e-AKHA v5.10.23 QUOTA RESTORE SAFE — rescue panel without overfilling localStorage. */
+<script id="eakha-v51024-force-quota-restore">
+/* e-AKHA v5.10.24 FORCE RESTORE — restores from selected backup by freeing localStorage first. */
 (function(){
   'use strict';
-  if(window.__EAKHA_V51023_QUOTA_RESCUE_UI)return; window.__EAKHA_V51023_QUOTA_RESCUE_UI=true;
-  var PATCH='v5.10.23-quota-rescue';
+  if(window.__EAKHA_V51024_FORCE_RESTORE)return; window.__EAKHA_V51024_FORCE_RESTORE=true;
+  var PATCH='v5.10.24-force-restore';
   var NS=window.__EAKHA_NATIVE_STORAGE__||{set:Storage.prototype.setItem,get:Storage.prototype.getItem,remove:Storage.prototype.removeItem};
   function parse(raw,fb){try{return JSON.parse(raw||'');}catch(e){return fb===undefined?null:fb}}
   function clone(x){return parse(JSON.stringify(x),x)}
   function pad(n){return String(n).padStart(2,'0')}
-  function stamp(){return new Date().toISOString().replace(/[:.]/g,'-')}
   function yNow(){try{return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}catch(e){return 2026}}
   function mNow(){try{return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}catch(e){return 4}}
+  function masterKey(y,m){return 'eakha_master_'+(+y)+'_'+pad(m)}
+  function datasetKey(y,m){return 'eakha_dataset_'+(+y)+'_'+(+m)}
+  function auditKey(y,m){return 'eakha_audit_state_'+(+y)+'_'+pad(m)}
   function isQuota(e){return /Quota|exceeded|NS_ERROR_DOM_QUOTA/i.test((e&&((e.name||'')+' '+(e.message||'')))||'')}
   function extractD(o){
     if(!o||typeof o!=='object')return null;
@@ -9264,168 +9270,169 @@ try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('
     var ks=Object.keys(o), nums=ks.filter(function(k){return /^\d+$/.test(k)}).length;
     return nums>=3?o:null;
   }
+  function has(v){return v!==undefined&&v!==null&&String(v).trim()!==''&&String(v).trim()!=='-'}
   function cellScore(c){
     if(!c||typeof c!=='object')return 0; var n=0;
-    ['kzp','kzk','tc_in','tc_out','hrmis','note','pengganti','pengganti_nama','ot','tc_shift','mc','audit','status','tc_problem'].forEach(function(k){var v=c[k]; if(v!==undefined&&v!==null&&String(v).trim()!==''&&String(v).trim()!=='-')n++;});
+    ['kzp','kzk','tc_in','tc_out','hrmis','note','pengganti','pengganti_nama','ot','tc_shift','kzp_jam','kzk_pos','mc','audit','status','tc_problem'].forEach(function(k){if(has(c[k]))n++;});
     if(c.tc_all&&c.tc_all.length)n+=Math.min(5,c.tc_all.length); if(c._mc||c.mc_)n+=3; if(c._hrmis_rec||c.hrmis_rec)n+=3;
     return n;
   }
   function scoreD(d){
     if(!d||typeof d!=='object')return 0; var total=0,cells=0,members=0;
-    Object.keys(d).forEach(function(b){var row=d[b]||{}, has=false; Object.keys(row).forEach(function(day){var sc=cellScore(row[day]); if(sc>0){cells++; total+=sc; has=true}}); if(has)members++});
+    Object.keys(d).forEach(function(b){var row=d[b]||{}, hasRow=false; Object.keys(row).forEach(function(day){var sc=cellScore(row[day]); if(sc>0){cells++; total+=sc; hasRow=true}}); if(hasRow)members++;});
     return total+cells+(members*3);
   }
   function statsD(d){
     var members=0,cells=0,filled=0; if(!d||typeof d!=='object')return {members:0,cells:0,filled:0};
-    Object.keys(d).forEach(function(b){var row=d[b]||{}, has=false; Object.keys(row).forEach(function(day){cells++; if(cellScore(row[day])>0){filled++;has=true}}); if(has)members++});
+    Object.keys(d).forEach(function(b){var row=d[b]||{}, hasRow=false; Object.keys(row).forEach(function(day){cells++; if(cellScore(row[day])>0){filled++; hasRow=true}}); if(hasRow)members++;});
     return {members:members,cells:cells,filled:filled};
   }
   function candidate(k,raw){
     var o=parse(raw,null), d=extractD(o); if(!d)return null;
-    var s=scoreD(d); if(s<=0)return null;
-    var snap=(o&&o.D)?o:(o&&o.snap&&o.snap.D?o.snap:null);
-    var st=statsD(d);
-    return {key:k,raw:raw,obj:o,D:d,snap:snap,score:s,members:st.members,filled:st.filled,cells:st.cells,savedAt:(snap&&snap.savedAt)||(o&&o.savedAt)||(o&&o.time)||(o&&o.createdAt)||''};
+    var snap=(o&&o.D)?o:(o&&o.snap&&o.snap.D?o.snap:null); var st=statsD(d), sc=scoreD(d);
+    if(sc<=0)return null;
+    return {key:k,raw:raw,obj:o,D:d,snap:snap,score:sc,members:st.members,filled:st.filled,cells:st.cells,savedAt:(snap&&snap.savedAt)||(o&&o.savedAt)||(o&&o.time)||(o&&o.createdAt)||'', bytes:(raw||'').length};
   }
-  function watched(k){k=String(k||''); return k==='eakha_data'||/^eakha_dataset_/.test(k)||/^eakha_master_/.test(k)||/^eakha_snapshot_/.test(k)||/^eakha_guard_/.test(k)||/^eakha_rescue_/.test(k)||k==='eakha_boot_predeploy_backup'||k==='eakha_last_dataset_key';}
+  function watched(k){k=String(k||''); return k==='eakha_data'||/^eakha_dataset_/.test(k)||/^eakha_master_/.test(k)||/^eakha_snapshot_/.test(k)||/^eakha_guard_/.test(k)||/^eakha_rescue_/.test(k)||/^eakha_audit_state/.test(k)||/^eakha_mc/.test(k)||/^eakha_hrmis/.test(k)||k==='eakha_boot_predeploy_backup'||k==='eakha_last_dataset_key';}
   function scan(){
     var out=[];
     try{
       for(var i=0;i<localStorage.length;i++){
         var k=localStorage.key(i); if(!k)continue;
-        if(k==='eakha_last_dataset_key'){var lk=NS.get.call(localStorage,k); var c0=candidate(lk,NS.get.call(localStorage,lk)); if(c0)out.push(c0); continue;}
+        if(k==='eakha_last_dataset_key'){
+          var lk=NS.get.call(localStorage,k); var c0=candidate(lk,NS.get.call(localStorage,lk)); if(c0)out.push(c0); continue;
+        }
         if(!watched(k))continue;
         var c=candidate(k,NS.get.call(localStorage,k)); if(c)out.push(c);
       }
     }catch(e){console.warn('[e-AKHA '+PATCH+'] scan',e)}
-    var seen={}; out=out.filter(function(c){var id=c.key+'|'+c.score+'|'+c.members+'|'+c.filled; if(seen[id])return false; seen[id]=1; return true});
+    var seen={}; out=out.filter(function(c){var id=c.key+'|'+c.score+'|'+c.members+'|'+c.filled+'|'+c.bytes; if(seen[id])return false; seen[id]=1; return true});
     out.sort(function(a,b){
-      var ap=/protected|manual|snapshot_manual|rescue_preload|guard_last_good|beforeunload|boot_predeploy/.test(a.key)?40:0;
-      var bp=/protected|manual|snapshot_manual|rescue_preload|guard_last_good|beforeunload|boot_predeploy/.test(b.key)?40:0;
+      var ap=/beforeunload|boot_predeploy|protected|manual|snapshot_manual|rescue_preload|guard_last_good/i.test(a.key)?80:0;
+      var bp=/beforeunload|boot_predeploy|protected|manual|snapshot_manual|rescue_preload|guard_last_good/i.test(b.key)?80:0;
       return (b.score+bp)-(a.score+ap);
     });
     return out;
   }
-  function monthlyKeys(y,m){return {dataset:'eakha_dataset_'+y+'_'+m, protected:'eakha_snapshot_protected_'+y+'_'+pad(m)}}
-  function makeSnap(c){
-    var s=c.snap?clone(c.snap):{}; s.D=clone(c.D); s.tahun=s.tahun||yNow(); s.bulan=s.bulan||mNow(); s.savedAt=new Date().toISOString(); s.reason='QUOTA SAFE RESCUE RESTORE FROM '+c.key; s.manual=true; s.protected=true; s.score=c.score;
-    if(!s.AUDIT_STATE){try{s.AUDIT_STATE=clone(AUDIT_STATE||{})}catch(e){}}
-    if(!s.MC_DATA){try{s.MC_DATA=clone(MC_DATA||parse(localStorage.getItem('eakha_mc'),[]))}catch(e){}}
-    if(!s.HRMIS_DATA){s.HRMIS_DATA=parse(localStorage.getItem('eakha_hrmis'),[])}
-    try{if(!s.RAYA_DATA)s.RAYA_DATA=clone(RAYA_DATA||[])}catch(e){}
-    try{if(!s.CTR_DATA)s.CTR_DATA=clone(CTR_DATA||[])}catch(e){}
-    try{if(!s.STAGING)s.STAGING=clone(STAGING||{})}catch(e){}
-    return s;
-  }
-  function pruneForQuota(keepKey){
-    var list=[]; var keep=String(keepKey||'');
-    try{
-      for(var i=0;i<localStorage.length;i++){
-        var k=localStorage.key(i)||''; if(!/^eakha_/.test(k)||k===keep)continue;
-        var raw=NS.get.call(localStorage,k)||''; var pri=5;
-        if(/rescue_restored|rescue_blocked|guard_backup|boot_predeploy|guard_beforeunload|rescue_preload_best|rescue_last_good/i.test(k))pri=1;
-        if(/snapshot_auto|snapshot_latest|master_2026_|dataset_2026_/i.test(k))pri=2;
-        if(k==='eakha_data')pri=7;
-        if(/snapshot_manual|snapshot_protected/i.test(k))pri=8;
-        var c=candidate(k,raw); list.push({k:k,len:raw.length,pri:pri,score:c?c.score:0});
-      }
-      list.sort(function(a,b){if(a.pri!==b.pri)return a.pri-b.pri; if(a.score!==b.score)return a.score-b.score; return b.len-a.len});
-      var removed=0, freed=0;
-      for(var j=0;j<list.length;j++){
-        var it=list[j]; if(it.pri>=8)continue;
-        try{NS.remove.call(localStorage,it.k); removed++; freed+=it.len;}catch(e){}
-        if(freed>2200000)break;
-      }
-      return {removed:removed,freed:freed};
-    }catch(e){return {removed:0,freed:0,error:e.message}}
-  }
-  function trySetQuota(k,v,keepKey){
-    try{NS.set.call(localStorage,k,v); return {ok:true};}
-    catch(e){
-      if(!isQuota(e))return {ok:false,error:e};
-      var p=pruneForQuota(keepKey);
-      try{NS.set.call(localStorage,k,v); return {ok:true,pruned:p};}
-      catch(e2){return {ok:false,error:e2,pruned:p};}
-    }
-  }
-  function restoreCandidate(c){
-    if(!c)return false;
-    var y=yNow(), m=mNow(), keys=monthlyKeys(y,m), snap=makeSnap(c), rawD=JSON.stringify(c.D), rawSnap=JSON.stringify(snap), notes=[];
-    try{
-      try{D=clone(c.D)}catch(e){}
-      try{if(snap.AUDIT_STATE)AUDIT_STATE=clone(snap.AUDIT_STATE)}catch(e){}
-      try{if(Array.isArray(snap.MC_DATA))MC_DATA=clone(snap.MC_DATA)}catch(e){}
-      try{if(Array.isArray(snap.HRMIS_DATA))HRMIS_DATA=clone(snap.HRMIS_DATA)}catch(e){}
-      try{if(typeof loadMonthData==='function'){} }catch(e){}
-      try{if(typeof renderMaster==='function')renderMaster(null); if(typeof renderDash==='function')renderDash(); if(typeof renderOutput==='function')renderOutput(''); if(typeof updFlags==='function')updFlags();}catch(e){}
-      var r=trySetQuota('eakha_data',rawD,c.key);
-      if(r.pruned&&r.pruned.removed)notes.push('ruang dibersihkan: '+r.pruned.removed+' backup pendua');
-      if(!r.ok){
-        var p=pruneForQuota(c.key); if(p.removed)notes.push('retry bersih: '+p.removed+' backup');
-        r=trySetQuota('eakha_data',rawD,c.key);
-      }
-      if(r.ok){
-        try{NS.set.call(localStorage,'eakha_data_version','v5.1')}catch(e){}
-        try{NS.set.call(localStorage,'eakha_last_dataset_key',keys.dataset)}catch(e){}
-        trySetQuota(keys.protected,rawSnap,c.key);
-        trySetQuota(keys.dataset,rawSnap,c.key);
-        if(snap.AUDIT_STATE)trySetQuota('eakha_audit_state',JSON.stringify(snap.AUDIT_STATE),c.key);
-        if(Array.isArray(snap.MC_DATA))trySetQuota('eakha_mc',JSON.stringify(snap.MC_DATA),c.key);
-        if(Array.isArray(snap.HRMIS_DATA))trySetQuota('eakha_hrmis',JSON.stringify(snap.HRMIS_DATA),c.key);
-        var msg='Data dipulihkan & disimpan dari '+c.key+' ✓'; if(notes.length)msg+=' ('+notes.join(', ')+')';
-        try{toast(msg,'ok')}catch(e){alert(msg)}
-        return true;
-      }else{
-        var msg2='Data dipulihkan pada paparan sahaja, tapi storage masih penuh. Tekan Export Semua Backup dahulu, jangan refresh.';
-        if(r.error&&r.error.message)msg2+=' Error: '+r.error.message;
-        try{toast(msg2,'warn')}catch(e){alert(msg2)}
-        return false;
-      }
-    }catch(e){
-      var msg='Restore gagal: '+(e&&e.message?e.message:e); if(isQuota(e))msg+=' — storage penuh. Tekan Export Semua Backup kemudian cuba Pulih semula.';
-      console.error('[e-AKHA '+PATCH+'] restore failed',e); try{toast(msg,'err')}catch(x){alert(msg)} return false;
-    }
+  function download(name,data){
+    try{var blob=new Blob([typeof data==='string'?data:JSON.stringify(data,null,2)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove()},1000); return true;}catch(e){console.warn('[e-AKHA '+PATCH+'] download failed',e); return false;}
   }
   function exportAll(){
     try{
-      var data={exportedAt:new Date().toISOString(), location:location.href, candidates:scan().map(function(c){return {key:c.key,score:c.score,members:c.members,filled:c.filled,savedAt:c.savedAt,raw:c.raw}}), allKeys:{}};
+      var data={exportedAt:new Date().toISOString(),location:location.href,candidates:scan().map(function(c){return {key:c.key,score:c.score,members:c.members,filled:c.filled,bytes:c.bytes,savedAt:c.savedAt,raw:c.raw}}),allKeys:{}};
       for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i); if(/^eakha_/.test(k||''))data.allKeys[k]=NS.get.call(localStorage,k)}
-      var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='eAKHA_LOCALSTORAGE_RESCUE_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json'; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+      download('eAKHA_ALL_BACKUP_BEFORE_FORCE_RESTORE_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json',data);
     }catch(e){alert('Export gagal: '+e.message)}
   }
-  function cleanupDuplicates(){
-    var arr=scan(); var best=arr[0]; if(!best){alert('Tiada backup dijumpai');return}
-    var p=pruneForQuota(best.key); alert('Backup pendua dibersihkan: '+p.removed+' key. Backup terbaik dikekalkan: '+best.key);
-    panel();
+  function listEakhaKeys(){
+    var arr=[]; try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i)||''; if(/^eakha_/.test(k)){var raw=NS.get.call(localStorage,k)||''; arr.push({k:k,len:raw.length});}}}catch(e){}
+    arr.sort(function(a,b){return b.len-a.len}); return arr;
+  }
+  function freeSpaceAggressive(){
+    var removed=0, freed=0, keys=listEakhaKeys();
+    keys.forEach(function(it){
+      var k=it.k;
+      // Keep only small UI month markers; all big e-AKHA data is already in memory/export before this runs.
+      if(k==='eakha_active_year'||k==='eakha_active_month'||k==='eakha_data_version')return;
+      try{NS.remove.call(localStorage,k); removed++; freed+=it.len;}catch(e){}
+    });
+    return {removed:removed,freed:freed};
+  }
+  function tryNativeSet(k,v){try{NS.set.call(localStorage,k,v); return {ok:true};}catch(e){return {ok:false,error:e}}}
+  function renderNow(){
+    try{if(typeof populateSels==='function')populateSels()}catch(e){}
+    try{if(typeof renderDash==='function')renderDash()}catch(e){}
+    try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}
+    try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}
+    try{if(typeof renderMCReg==='function')renderMCReg()}catch(e){}
+    try{if(typeof renderHRMISReg==='function')renderHRMISReg()}catch(e){}
+    try{if(typeof updFlags==='function')updFlags()}catch(e){}
+  }
+  function makeMasterPayload(c){
+    var y=yNow(), m=mNow(), snap=c.snap||{};
+    return {patch:PATCH,tahun:y,bulan:m,reason:'FORCE RESTORE FROM '+c.key,savedAt:new Date().toISOString(),score:c.score,D:clone(c.D),AUDIT_STATE:clone((snap&&snap.AUDIT_STATE)||parse(NS.get.call(localStorage,auditKey(y,m)),{})||{})};
+  }
+  function makeDatasetPayload(c){
+    var y=yNow(), m=mNow(), snap=c.snap||{};
+    return {patch:PATCH,tahun:y,bulan:m,version:'v5.10.24',reason:'FORCE DATASET RESTORE FROM '+c.key,savedAt:new Date().toISOString(),score:c.score,D:clone(c.D),AUDIT_STATE:clone((snap&&snap.AUDIT_STATE)||{}),MC_DATA:clone((snap&&snap.MC_DATA)||[]),HRMIS_DATA:clone((snap&&snap.HRMIS_DATA)||[]),RAYA_DATA:clone((snap&&snap.RAYA_DATA)||[]),CTR_DATA:clone((snap&&snap.CTR_DATA)||[]),STAGING:clone((snap&&snap.STAGING)||{}),BAKI_CUTI:clone((snap&&snap.BAKI_CUTI)||{}),CUSTOM_ANGGOTA:clone((snap&&snap.CUSTOM_ANGGOTA)||[]),ANGGOTA_LAIN:clone((snap&&snap.ANGGOTA_LAIN)||[])};
+  }
+  function forceRestore(c){
+    if(!c){alert('Tiada backup dipilih.');return false;}
+    var okConfirm=confirm('Pulih paksa akan EXPORT backup dipilih dan membersihkan backup e-AKHA pendua dalam browser untuk kosongkan storage. Jangan refresh semasa proses. Teruskan?');
+    if(!okConfirm)return false;
+    try{
+      // 1) Save candidate outside localStorage first, so we can safely delete duplicate keys.
+      download('eAKHA_SELECTED_BACKUP_'+String(c.key||'backup').replace(/[^a-z0-9_\-]+/gi,'_').slice(0,80)+'_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json',{exportedAt:new Date().toISOString(),selected:{key:c.key,score:c.score,members:c.members,filled:c.filled,savedAt:c.savedAt,raw:c.raw}});
+      // 2) Load to memory immediately.
+      try{D=clone(c.D)}catch(e){}
+      try{if(c.snap&&c.snap.AUDIT_STATE)AUDIT_STATE=clone(c.snap.AUDIT_STATE)}catch(e){}
+      try{if(c.snap&&Array.isArray(c.snap.MC_DATA))MC_DATA=clone(c.snap.MC_DATA)}catch(e){}
+      try{if(c.snap&&Array.isArray(c.snap.HRMIS_DATA))HRMIS_DATA=clone(c.snap.HRMIS_DATA); if(Array.isArray(HRMIS_DATA))NS.set.call(localStorage,'eakha_hrmis_runtime',JSON.stringify(HRMIS_DATA))}catch(e){}
+      renderNow();
+      // 3) Free localStorage aggressively. Candidate is already in memory and downloaded.
+      var freed=freeSpaceAggressive();
+      var y=yNow(), m=mNow();
+      var rawD=JSON.stringify(c.D), master=JSON.stringify(makeMasterPayload(c)), dataset=JSON.stringify(makeDatasetPayload(c));
+      var saved=[];
+      // 4) Save minimum first: master month + current eakha_data. These are what app needs to load April.
+      var r1=tryNativeSet(masterKey(y,m), master); if(r1.ok)saved.push(masterKey(y,m));
+      var r2=tryNativeSet('eakha_data', rawD); if(r2.ok)saved.push('eakha_data');
+      tryNativeSet('eakha_data_version','v5.10.24');
+      tryNativeSet('eakha_active_year',String(y)); tryNativeSet('eakha_active_month',String(m));
+      // 5) Optional dataset if enough room. If quota hits, skip it — master+eakha_data is enough.
+      var r3=tryNativeSet(datasetKey(y,m), dataset); if(r3.ok){saved.push(datasetKey(y,m)); tryNativeSet('eakha_last_dataset_key',datasetKey(y,m));}
+      else {tryNativeSet('eakha_last_dataset_key',masterKey(y,m));}
+      if(c.snap&&c.snap.AUDIT_STATE)tryNativeSet(auditKey(y,m),JSON.stringify(c.snap.AUDIT_STATE));
+      if(c.snap&&Array.isArray(c.snap.MC_DATA))tryNativeSet('eakha_mc',JSON.stringify(c.snap.MC_DATA));
+      if(c.snap&&Array.isArray(c.snap.HRMIS_DATA))tryNativeSet('eakha_hrmis',JSON.stringify(c.snap.HRMIS_DATA));
+      renderNow();
+      var msg='Pulih paksa selesai. Dibuang '+freed.removed+' backup pendua ('+Math.round(freed.freed/1024)+'KB). Disimpan: '+saved.join(', ')+'.';
+      if(!r1.ok&&!r2.ok){msg='Paparan sudah dipulihkan, tetapi simpan localStorage masih gagal. Backup terpilih sudah diexport. Jangan refresh; ambil Snapshot Bos/PDF dulu.'; try{toast(msg,'warn')}catch(e){alert(msg)}; return false;}
+      try{toast(msg,'ok')}catch(e){alert(msg)}
+      return true;
+    }catch(e){var msg='Pulih paksa gagal: '+(e&&e.message?e.message:e); if(isQuota(e))msg+=' — storage masih penuh.'; console.error('[e-AKHA '+PATCH+'] force restore failed',e); try{toast(msg,'err')}catch(x){alert(msg)} return false;}
+  }
+  function normalRestore(c){
+    // Better default: use force restore because user's storage has already hit quota.
+    return forceRestore(c);
+  }
+  function cleanupOnly(){
+    var ok=confirm('Ini akan export semua backup dahulu, kemudian buang backup e-AKHA pendua untuk kosongkan storage. Teruskan?'); if(!ok)return;
+    exportAll(); setTimeout(function(){var f=freeSpaceAggressive(); alert('Ruang dibersihkan: '+f.removed+' key, lebih kurang '+Math.round(f.freed/1024)+'KB. Sekarang pilih backup daripada export jika perlu atau upload semula data.');},400);
   }
   function panel(){
     var old=document.getElementById('eakha-rescue-panel'); if(old)old.remove(); var arr=scan();
-    var ov=document.createElement('div'); ov.id='eakha-rescue-panel'; ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px';
-    var rows=arr.map(function(c,i){return '<tr><td style="color:#f0b429;font-weight:800">'+(i+1)+'</td><td style="word-break:break-all">'+c.key+'</td><td>'+c.score+'</td><td>'+c.members+'</td><td>'+c.filled+'</td><td style="font-size:10px;color:#93c5fd">'+(c.savedAt||'-')+'</td><td><button data-i="'+i+'" class="res-one" style="font-size:10px;padding:5px 9px;border-radius:5px;border:1px solid #34d399;background:rgba(5,150,105,.18);color:#34d399;font-weight:800">Pulih</button></td></tr>'}).join('');
-    ov.innerHTML='<div style="width:min(920px,96vw);max-height:92vh;overflow:auto;background:#0f1f3d;border:1px solid rgba(240,180,41,.45);border-radius:10px;color:#e5e7eb;font-family:Arial,sans-serif;box-shadow:0 20px 70px rgba(0,0,0,.6)">'+
-      '<div style="position:sticky;top:0;background:#102449;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;z-index:2"><b style="color:#f0b429">e-AKHA Rescue Data April — Quota Safe</b><button id="res-close" style="margin-left:auto;padding:5px 10px;border-radius:5px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff">Tutup</button></div>'+ 
-      '<div style="padding:12px 16px;font-size:11px;line-height:1.5;color:#cbd5e1"><b>Jangan clear cache/storage.</b> Error quota berlaku sebab backup terlalu banyak. Tekan <b>Export Semua Backup</b> dahulu, kemudian pilih skor tertinggi. Versi ini akan buang backup pendua sahaja untuk beri ruang simpan data utama.</div>'+ 
-      '<div style="padding:0 16px 12px;display:flex;gap:6px;flex-wrap:wrap"><button id="res-best" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #f0b429;background:rgba(200,150,10,.25);color:#f0b429;font-weight:800">Pulih Skor Tertinggi</button><button id="res-export" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #93c5fd;background:rgba(37,99,235,.18);color:#93c5fd;font-weight:700">Export Semua Backup</button><button id="res-clean" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #fca5a5;background:rgba(220,38,38,.14);color:#fca5a5;font-weight:700">Bersihkan Backup Pendua</button><span style="font-size:10px;color:#94a3b8;align-self:center">Calon dijumpai: '+arr.length+'</span></div>'+ 
-      '<div style="padding:0 16px 16px"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:rgba(0,0,0,.28)"><th style="padding:8px;text-align:left">#</th><th style="padding:8px;text-align:left">Key</th><th>Score</th><th>Anggota</th><th>Filled Cell</th><th>Saved</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    var ov=document.createElement('div'); ov.id='eakha-rescue-panel'; ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px';
+    var rows=arr.map(function(c,i){return '<tr><td style="color:#f0b429;font-weight:800">'+(i+1)+'</td><td style="word-break:break-all">'+c.key+'</td><td>'+c.score+'</td><td>'+c.members+'</td><td>'+c.filled+'</td><td>'+Math.round((c.bytes||0)/1024)+'KB</td><td style="font-size:10px;color:#93c5fd">'+(c.savedAt||'-')+'</td><td><button data-i="'+i+'" class="res-one" style="font-size:10px;padding:5px 9px;border-radius:5px;border:1px solid #34d399;background:rgba(5,150,105,.18);color:#34d399;font-weight:800">Pulih Paksa</button></td></tr>'}).join('');
+    ov.innerHTML='<div style="width:min(960px,96vw);max-height:92vh;overflow:auto;background:#0f1f3d;border:1px solid rgba(240,180,41,.55);border-radius:10px;color:#e5e7eb;font-family:Arial,sans-serif;box-shadow:0 20px 70px rgba(0,0,0,.6)">'+
+      '<div style="position:sticky;top:0;background:#102449;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;z-index:2"><b style="color:#f0b429">e-AKHA Rescue Data April — Force Quota Restore v5.10.24</b><button id="res-close" style="margin-left:auto;padding:5px 10px;border-radius:5px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff">Tutup</button></div>'+ 
+      '<div style="padding:12px 16px;font-size:11px;line-height:1.55;color:#cbd5e1"><b>Masalah sekarang:</b> backup ada, tapi localStorage penuh. Gunakan <b>Pulih Paksa Skor Tertinggi</b>. Sistem akan download backup dipilih dahulu, kemudian buang backup pendua dan simpan semula Master April.</div>'+ 
+      '<div style="padding:0 16px 12px;display:flex;gap:6px;flex-wrap:wrap"><button id="res-best" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #f0b429;background:rgba(200,150,10,.25);color:#f0b429;font-weight:800">Pulih Paksa Skor Tertinggi</button><button id="res-export" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #93c5fd;background:rgba(37,99,235,.18);color:#93c5fd;font-weight:700">Export Semua Backup</button><button id="res-clean" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #fca5a5;background:rgba(220,38,38,.14);color:#fca5a5;font-weight:700">Export + Bersih Ruang</button><span style="font-size:10px;color:#94a3b8;align-self:center">Calon: '+arr.length+'</span></div>'+ 
+      '<div style="padding:0 16px 16px"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:rgba(0,0,0,.28)"><th style="padding:8px;text-align:left">#</th><th style="padding:8px;text-align:left">Key</th><th>Score</th><th>Anggota</th><th>Filled</th><th>Saiz</th><th>Saved</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
     document.body.appendChild(ov);
     document.getElementById('res-close').onclick=function(){ov.remove()};
     document.getElementById('res-export').onclick=exportAll;
-    document.getElementById('res-clean').onclick=cleanupDuplicates;
-    document.getElementById('res-best').onclick=function(){restoreCandidate(arr[0]);};
-    Array.prototype.forEach.call(ov.querySelectorAll('.res-one'),function(b){b.onclick=function(){restoreCandidate(arr[+b.getAttribute('data-i')]);};});
+    document.getElementById('res-clean').onclick=cleanupOnly;
+    document.getElementById('res-best').onclick=function(){normalRestore(arr[0]);};
+    Array.prototype.forEach.call(ov.querySelectorAll('.res-one'),function(b){b.onclick=function(){normalRestore(arr[+b.getAttribute('data-i')]);};});
   }
   function injectButtons(){
     try{
+      var b=document.getElementById('eakha-rescue-login-btn');
       var auth=document.querySelector('#auth-wall div');
-      if(auth&&!document.getElementById('eakha-rescue-login-btn')){var b=document.createElement('button'); b.id='eakha-rescue-login-btn'; b.type='button'; b.textContent='🛟 Rescue / Pulih Data Lama'; b.onclick=panel; b.style.cssText='margin-top:8px;width:100%;justify-content:center;font-size:10px;padding:8px;border-radius:7px;border:1px solid rgba(240,180,41,.45);background:rgba(200,150,10,.18);color:#f0b429;font-weight:800;cursor:pointer'; auth.appendChild(b);}
+      if(!b&&auth){b=document.createElement('button'); b.id='eakha-rescue-login-btn'; b.type='button'; auth.appendChild(b);}
+      if(b){b.textContent='🛟 Rescue Force / Pulih Data Lama'; b.onclick=panel; b.style.cssText='margin-top:8px;width:100%;justify-content:center;font-size:10px;padding:8px;border-radius:7px;border:1px solid rgba(240,180,41,.55);background:rgba(200,150,10,.22);color:#f0b429;font-weight:800;cursor:pointer';}
+      var t=document.getElementById('eakha-rescue-top-btn');
       var bar=document.querySelector('.topbar > div[style*="margin-left:auto"]');
-      if(bar&&!document.getElementById('eakha-rescue-top-btn')){var t=document.createElement('button'); t.id='eakha-rescue-top-btn'; t.className='btn btn-sm'; t.textContent='🛟 Rescue Data'; t.style.fontSize='7.5px'; t.onclick=panel; bar.appendChild(t);}
+      if(!t&&bar){t=document.createElement('button'); t.id='eakha-rescue-top-btn'; t.className='btn btn-sm'; bar.appendChild(t);}
+      if(t){t.textContent='🛟 Rescue Force'; t.style.fontSize='7.5px'; t.onclick=panel;}
     }catch(e){}
   }
   window.eakhaOpenRescuePanel=panel;
-  window.eakhaRestoreBestBackup=function(){var a=scan(); return restoreCandidate(a[0]);};
-  document.addEventListener('DOMContentLoaded',injectButtons); setTimeout(injectButtons,300); setTimeout(injectButtons,1200); setInterval(injectButtons,2500);
-  try{document.title='e-AKHA Vsavage v5.10.23 QUOTA RESTORE SAFE'; console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+  window.eakhaRestoreBestBackup=function(){var a=scan(); return normalRestore(a[0]);};
+  window.eakhaForceRestoreBestBackup=window.eakhaRestoreBestBackup;
+  document.addEventListener('DOMContentLoaded',injectButtons); setTimeout(injectButtons,200); setTimeout(injectButtons,800); setInterval(injectButtons,2500);
+  try{document.title='e-AKHA Vsavage v5.10.24 FORCE RESTORE SAFE'; console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 </script>
 
