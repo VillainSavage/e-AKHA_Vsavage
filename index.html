@@ -3,53 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.22 DATA RESCUE SAFE</title>
+  <title>e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script id="eakha-v51022-early-storage-guard">
-/* e-AKHA v5.10.22 EARLY DATA RESCUE GUARD */
-(function(){
-  'use strict';
-  if(window.__EAKHA_V51022_EARLY_GUARD) return;
-  window.__EAKHA_V51022_EARLY_GUARD = true;
-  var nativeSet=Storage.prototype.setItem, nativeGet=Storage.prototype.getItem, nativeRemove=Storage.prototype.removeItem;
-  window.__EAKHA_NATIVE_STORAGE__={set:nativeSet,get:nativeGet,remove:nativeRemove};
-  function parse(raw){try{return JSON.parse(raw||'');}catch(e){return null;}}
-  function stamp(){return new Date().toISOString().replace(/[:.]/g,'-')}
-  function extractD(o){
-    if(!o||typeof o!=='object')return null;
-    if(o.D&&typeof o.D==='object')return o.D;
-    if(o.snap&&o.snap.D&&typeof o.snap.D==='object')return o.snap.D;
-    if(o.data&&o.data.D&&typeof o.data.D==='object')return o.data.D;
-    var ks=Object.keys(o), nums=ks.filter(function(k){return /^\d+$/.test(k)}).length;
-    return nums>=3?o:null;
-  }
-  function cellScore(c){
-    if(!c||typeof c!=='object')return 0; var n=0;
-    ['kzp','kzk','tc_in','tc_out','hrmis','note','pengganti','pengganti_nama','ot','tc_shift','mc','audit','status','tc_problem'].forEach(function(k){var v=c[k]; if(v!==undefined&&v!==null&&String(v).trim()!==''&&String(v).trim()!=='-')n++;});
-    if(c.tc_all&&c.tc_all.length)n+=Math.min(5,c.tc_all.length); if(c._mc||c.mc_)n+=3; if(c._hrmis_rec||c.hrmis_rec)n+=3;
-    return n;
-  }
-  function scoreD(d){
-    if(!d||typeof d!=='object')return 0; var total=0,cells=0,members=0;
-    Object.keys(d).forEach(function(b){var row=d[b]||{}, has=false; Object.keys(row).forEach(function(day){var sc=cellScore(row[day]); if(sc>0){cells++; total+=sc; has=true;}}); if(has)members++;});
-    return total+cells+(members*3);
-  }
-  function cand(k,raw){var o=parse(raw),d=extractD(o); if(!d)return null; var s=scoreD(d); return s>0?{key:k,raw:raw,score:s}:null;}
-  function watch(k){k=String(k||'');return k==='eakha_data'||/^eakha_dataset_/.test(k)||/^eakha_master_/.test(k)||/^eakha_snapshot_/.test(k)||/^eakha_guard_/.test(k)||/^eakha_rescue_/.test(k)||k==='eakha_boot_predeploy_backup';}
-  function scan(){var out=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i); if(!watch(k))continue; var c=cand(k,nativeGet.call(localStorage,k)); if(c)out.push(c);}}catch(e){} out.sort(function(a,b){return b.score-a.score}); return out;}
-  try{var a=scan(); if(a[0]&&a[0].score>=40){nativeSet.call(localStorage,'eakha_rescue_preload_best_'+stamp(),a[0].raw); nativeSet.call(localStorage,'eakha_rescue_preload_index',JSON.stringify({savedAt:new Date().toISOString(),bestKey:a[0].key,bestScore:a[0].score,count:a.length}));}}catch(e){}
-  Storage.prototype.setItem=function(k,v){
-    try{if(watch(k)){var oldC=cand(k,nativeGet.call(this,k)), newC=cand(k,v); var oldS=oldC?oldC.score:0, newS=newC?newC.score:0; if(oldS>=40&&newS>0&&newS<oldS*0.60){nativeSet.call(this,'eakha_rescue_blocked_'+String(k).replace(/\W+/g,'_')+'_'+stamp(),oldC.raw); console.warn('[e-AKHA v5.10.22] blocked low-score overwrite',k,oldS,newS); return;} if(newS>=40)nativeSet.call(this,'eakha_rescue_last_good_'+String(k).replace(/\W+/g,'_'),v);}}catch(e){}
-    return nativeSet.apply(this,arguments);
-  };
-  window.eakhaRescueScanEarly=scan;
-})();
-
-</script>
   <style>
 
 :root{--navy:#0a1628;--navy2:#0f1f3d;--navy3:#162040;--gold:#c8960a;--gold2:#f0b429;--red:#dc2626;--green:#059669;--blue:#2563eb}
@@ -256,7 +215,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input class="finp2" id="l-id" type="text" placeholder="ID Pengguna" style="width:100%;margin-bottom:8px">
     <input class="finp2" id="l-pw" type="password" placeholder="Kata Laluan" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-gold" id="l-btn" style="width:100%;justify-content:center;font-size:10px;padding:9px" onclick="doLogin()">Log Masuk</button>
-    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.10.22 DATA RESCUE SAFE · 2026</div>
+    <div style="font-size:7.5px;color:rgba(255,255,255,.2);margin-top:14px">v5.10.17 FULL52 SMOOTH RESTORE · 2026</div>
   </div>
 </div>
 
@@ -8590,7 +8549,7 @@ try{
   };
 }catch(e){ console.warn('[v5.10.9 hakiki image fix]', e); }
 
-try{document.title='e-AKHA Vsavage v5.10.22 DATA RESCUE SAFE';console.log('[e-AKHA v5.10.22 DATA RESCUE SAFE + login stable + hakiki] loaded')}catch(e){}
+try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('[e-AKHA v5.10.17 FULL52 SMOOTH RESTORE + login stable + hakiki] loaded')}catch(e){}
 })();
 </script>
 
@@ -8981,13 +8940,13 @@ try{document.title='e-AKHA Vsavage v5.10.22 DATA RESCUE SAFE';console.log('[e-AK
     },2500);
   });
 
-  try{ document.title='e-AKHA Vsavage v5.10.22 DATA RESCUE SAFE'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
+  try{ document.title='e-AKHA Vsavage v5.10.21 LOGIN OK + SNAPSHOT PROTECT'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
 })();
 </script>
 
 
 
-<!-- v5.10.22 DATA RESCUE SAFE RESTORE: protects edited April snapshot from low-score overwrite -->
+<!-- v5.10.21 LOGIN OK + SNAPSHOT PROTECT RESTORE: protects edited April snapshot from low-score overwrite -->
 <script>
 (function(){
   'use strict';
@@ -9278,15 +9237,16 @@ try{document.title='e-AKHA Vsavage v5.10.22 DATA RESCUE SAFE';console.log('[e-AK
   [800,2200,4800,8000].forEach(function(ms){ setTimeout(bootProtect,ms); });
   document.addEventListener('DOMContentLoaded',function(){ setTimeout(bootProtect,1200); setTimeout(bindButtons,2600); });
 
-  try{ document.title='e-AKHA Vsavage v5.10.22 DATA RESCUE SAFE RESTORE'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
+  try{ document.title='e-AKHA Vsavage v5.10.21 LOGIN OK + SNAPSHOT PROTECT RESTORE'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
 })();
 </script>
 
-<script id="eakha-v51022-rescue-ui">
-/* e-AKHA v5.10.22 RESCUE PANEL */
+<script id="eakha-v51023-quota-rescue-ui">
+/* e-AKHA v5.10.23 QUOTA RESTORE SAFE — rescue panel without overfilling localStorage. */
 (function(){
   'use strict';
-  if(window.__EAKHA_V51022_RESCUE_UI)return; window.__EAKHA_V51022_RESCUE_UI=true;
+  if(window.__EAKHA_V51023_QUOTA_RESCUE_UI)return; window.__EAKHA_V51023_QUOTA_RESCUE_UI=true;
+  var PATCH='v5.10.23-quota-rescue';
   var NS=window.__EAKHA_NATIVE_STORAGE__||{set:Storage.prototype.setItem,get:Storage.prototype.getItem,remove:Storage.prototype.removeItem};
   function parse(raw,fb){try{return JSON.parse(raw||'');}catch(e){return fb===undefined?null:fb}}
   function clone(x){return parse(JSON.stringify(x),x)}
@@ -9294,22 +9254,180 @@ try{document.title='e-AKHA Vsavage v5.10.22 DATA RESCUE SAFE';console.log('[e-AK
   function stamp(){return new Date().toISOString().replace(/[:.]/g,'-')}
   function yNow(){try{return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}catch(e){return 2026}}
   function mNow(){try{return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}catch(e){return 4}}
-  function extractD(o){if(!o||typeof o!=='object')return null; if(o.D&&typeof o.D==='object')return o.D; if(o.snap&&o.snap.D&&typeof o.snap.D==='object')return o.snap.D; if(o.data&&o.data.D&&typeof o.data.D==='object')return o.data.D; if(o.payload&&o.payload.D&&typeof o.payload.D==='object')return o.payload.D; var ks=Object.keys(o),nums=ks.filter(function(k){return /^\d+$/.test(k)}).length; return nums>=3?o:null;}
-  function cellScore(c){if(!c||typeof c!=='object')return 0;var n=0;['kzp','kzk','tc_in','tc_out','hrmis','note','pengganti','pengganti_nama','ot','tc_shift','mc','audit','status','tc_problem'].forEach(function(k){var v=c[k];if(v!==undefined&&v!==null&&String(v).trim()!==''&&String(v).trim()!=='-')n++;}); if(c.tc_all&&c.tc_all.length)n+=Math.min(5,c.tc_all.length); if(c._mc||c.mc_)n+=3; if(c._hrmis_rec||c.hrmis_rec)n+=3; return n;}
-  function scoreD(d){if(!d||typeof d!=='object')return 0;var total=0,cells=0,members=0;Object.keys(d).forEach(function(b){var row=d[b]||{},has=false;Object.keys(row).forEach(function(day){var sc=cellScore(row[day]);if(sc>0){cells++;total+=sc;has=true}});if(has)members++});return total+cells+(members*3);}
-  function statsD(d){var members=0,cells=0,filled=0;if(!d||typeof d!=='object')return{members:0,cells:0,filled:0};Object.keys(d).forEach(function(b){var row=d[b]||{},has=false;Object.keys(row).forEach(function(day){cells++;if(cellScore(row[day])>0){filled++;has=true}});if(has)members++});return{members:members,cells:cells,filled:filled};}
-  function candidate(k,raw){var o=parse(raw,null),d=extractD(o);if(!d)return null;var s=scoreD(d);if(s<=0)return null;var snap=(o&&o.D)?o:(o&&o.snap&&o.snap.D?o.snap:null),st=statsD(d);return{key:k,raw:raw,obj:o,D:d,snap:snap,score:s,members:st.members,filled:st.filled,cells:st.cells,savedAt:(snap&&snap.savedAt)||(o&&o.savedAt)||(o&&o.time)||(o&&o.createdAt)||''};}
-  function watched(k){k=String(k||'');return k==='eakha_data'||/^eakha_dataset_/.test(k)||/^eakha_master_/.test(k)||/^eakha_snapshot_/.test(k)||/^eakha_guard_/.test(k)||/^eakha_rescue_/.test(k)||k==='eakha_boot_predeploy_backup'||k==='eakha_last_dataset_key';}
-  function scan(){var out=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(!k)continue;if(k==='eakha_last_dataset_key'){var lk=NS.get.call(localStorage,k),c0=candidate(lk,NS.get.call(localStorage,lk));if(c0)out.push(c0);continue}if(!watched(k))continue;var c=candidate(k,NS.get.call(localStorage,k));if(c)out.push(c)}}catch(e){}var seen={};out=out.filter(function(c){var id=c.key+'|'+c.score+'|'+c.members+'|'+c.filled;if(seen[id])return false;seen[id]=1;return true});out.sort(function(a,b){var ap=/protected|manual|snapshot_manual|rescue_preload|guard_last_good/.test(a.key)?30:0,bp=/protected|manual|snapshot_manual|rescue_preload|guard_last_good/.test(b.key)?30:0;return(b.score+bp)-(a.score+ap)});return out;}
-  function keys(y,m){return{dataset:'eakha_dataset_'+y+'_'+m,master:'eakha_master_'+y+'_'+m,latest:'eakha_snapshot_latest_'+y+'_'+pad(m),manual:'eakha_snapshot_manual_'+y+'_'+pad(m),protected:'eakha_snapshot_protected_'+y+'_'+pad(m),auto:'eakha_snapshot_auto_'+y+'_'+pad(m)}}
-  function makeSnap(c){var s=c.snap?clone(c.snap):{};s.D=clone(c.D);s.tahun=s.tahun||yNow();s.bulan=s.bulan||mNow();s.savedAt=new Date().toISOString();s.reason='RESCUE RESTORE FROM '+c.key;s.manual=true;s.protected=true;s.score=c.score;if(!s.AUDIT_STATE){try{s.AUDIT_STATE=clone(AUDIT_STATE||{})}catch(e){}}if(!s.MC_DATA){try{s.MC_DATA=clone(MC_DATA||parse(localStorage.getItem('eakha_mc'),[]))}catch(e){}}if(!s.HRMIS_DATA)s.HRMIS_DATA=parse(localStorage.getItem('eakha_hrmis'),[]);return s;}
-  function restore(c){if(!c)return false;try{var y=yNow(),m=mNow(),k=keys(y,m),snap=makeSnap(c),rawSnap=JSON.stringify(snap);NS.set.call(localStorage,'eakha_data',JSON.stringify(c.D));NS.set.call(localStorage,k.dataset,rawSnap);NS.set.call(localStorage,k.master,rawSnap);NS.set.call(localStorage,k.latest,rawSnap);NS.set.call(localStorage,k.manual,rawSnap);NS.set.call(localStorage,k.protected,rawSnap);NS.set.call(localStorage,'eakha_last_dataset_key',k.dataset);NS.set.call(localStorage,'eakha_rescue_restored_'+stamp(),rawSnap);if(snap.AUDIT_STATE)NS.set.call(localStorage,'eakha_audit_state',JSON.stringify(snap.AUDIT_STATE));if(Array.isArray(snap.MC_DATA))NS.set.call(localStorage,'eakha_mc',JSON.stringify(snap.MC_DATA));if(Array.isArray(snap.HRMIS_DATA))NS.set.call(localStorage,'eakha_hrmis',JSON.stringify(snap.HRMIS_DATA));try{D=clone(c.D)}catch(e){}try{if(snap.AUDIT_STATE)AUDIT_STATE=clone(snap.AUDIT_STATE)}catch(e){}try{if(Array.isArray(snap.MC_DATA))MC_DATA=clone(snap.MC_DATA)}catch(e){}try{if(typeof renderMaster==='function')renderMaster(null);if(typeof renderDash==='function')renderDash();if(typeof renderOutput==='function')renderOutput('');if(typeof updFlags==='function')updFlags()}catch(e){}try{toast('Data dipulihkan dari '+c.key+' ✓','ok')}catch(e){alert('Data dipulihkan dari '+c.key)}return true}catch(e){try{toast('Restore gagal: '+e.message,'err')}catch(x){alert('Restore gagal: '+e.message)}return false}}
-  function exportAll(){try{var data={exportedAt:new Date().toISOString(),location:location.href,candidates:scan().map(function(c){return{key:c.key,score:c.score,members:c.members,filled:c.filled,savedAt:c.savedAt,raw:c.raw}}),allKeys:{}};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^eakha_/.test(k||''))data.allKeys[k]=NS.get.call(localStorage,k)}var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='eAKHA_LOCALSTORAGE_RESCUE_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}catch(e){alert('Export gagal: '+e.message)}}
-  function panel(){var old=document.getElementById('eakha-rescue-panel');if(old)old.remove();var arr=scan(),ov=document.createElement('div');ov.id='eakha-rescue-panel';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px';var box=document.createElement('div');box.style.cssText='width:min(760px,96vw);max-height:88vh;overflow:auto;background:#0f1f3d;border:1px solid rgba(240,180,41,.45);border-radius:12px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;box-shadow:0 20px 80px rgba(0,0,0,.7)';var rows=arr.map(function(c,i){return '<tr style="border-bottom:1px solid rgba(255,255,255,.08)"><td style="padding:6px;font-size:11px;color:#f0b429;font-weight:700">'+(i+1)+'</td><td style="padding:6px;font-size:10px;word-break:break-all">'+c.key+'</td><td style="padding:6px;font-size:10px;text-align:right">'+Math.round(c.score)+'</td><td style="padding:6px;font-size:10px;text-align:right">'+c.members+'</td><td style="padding:6px;font-size:10px;text-align:right">'+c.filled+'</td><td style="padding:6px;font-size:10px;color:#93c5fd">'+(c.savedAt||'-')+'</td><td style="padding:6px"><button data-i="'+i+'" class="res-pilih" style="font-size:10px;padding:5px 9px;border-radius:5px;border:1px solid #34d399;background:rgba(5,150,105,.22);color:#34d399;font-weight:700">Pulih</button></td></tr>'}).join('');box.innerHTML='<div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px"><div style="font-size:15px;font-weight:800;color:#f0b429">e-AKHA Rescue Data April</div><button id="res-close" style="margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:6px;padding:5px 9px">Tutup</button></div><div style="padding:12px 16px;font-size:11px;line-height:1.5;color:#cbd5e1"><b>Jangan clear cache/storage.</b> Pilih backup dengan skor tertinggi atau key manual/protected/rescue_preload/guard_last_good.</div><div style="padding:0 16px 12px;display:flex;gap:6px;flex-wrap:wrap"><button id="res-best" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #f0b429;background:rgba(200,150,10,.25);color:#f0b429;font-weight:800">Pulih Skor Tertinggi</button><button id="res-export" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #93c5fd;background:rgba(37,99,235,.18);color:#93c5fd;font-weight:700">Export Semua Backup</button><span style="font-size:10px;color:#94a3b8;align-self:center">Calon dijumpai: '+arr.length+'</span></div><div style="padding:0 12px 14px"><table style="width:100%;border-collapse:collapse;background:rgba(0,0,0,.2);border-radius:7px;overflow:hidden"><thead><tr style="background:rgba(0,0,0,.35);color:#94a3b8"><th style="padding:6px;text-align:left;font-size:10px">#</th><th style="padding:6px;text-align:left;font-size:10px">Key</th><th style="padding:6px;text-align:right;font-size:10px">Score</th><th style="padding:6px;text-align:right;font-size:10px">Anggota</th><th style="padding:6px;text-align:right;font-size:10px">Filled Cell</th><th style="padding:6px;text-align:left;font-size:10px">Saved</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="7" style="padding:18px;text-align:center;color:#fca5a5;font-size:12px">Tiada backup eakha ditemui dalam browser ini.</td></tr>')+'</tbody></table></div>';ov.appendChild(box);document.body.appendChild(ov);document.getElementById('res-close').onclick=function(){ov.remove()};document.getElementById('res-export').onclick=exportAll;document.getElementById('res-best').onclick=function(){var a=scan();if(a[0])restore(a[0])};Array.prototype.forEach.call(box.querySelectorAll('.res-pilih'),function(btn){btn.onclick=function(){var a=scan(),c=a[+btn.getAttribute('data-i')];if(c)restore(c)}})}
-  function inject(){try{var auth=document.querySelector('#auth-wall > div');if(auth&&!document.getElementById('eakha-rescue-login-btn')){var b=document.createElement('button');b.id='eakha-rescue-login-btn';b.type='button';b.textContent='🛟 Rescue / Pulih Data Lama';b.onclick=panel;b.style.cssText='margin-top:8px;width:100%;justify-content:center;font-size:10px;padding:8px;border-radius:7px;border:1px solid rgba(240,180,41,.45);background:rgba(200,150,10,.18);color:#f0b429;font-weight:800;cursor:pointer';auth.appendChild(b)}var bar=document.querySelector('#topbar > div[style*="margin-left:auto"]');if(bar&&!document.getElementById('eakha-rescue-top-btn')){var t=document.createElement('button');t.id='eakha-rescue-top-btn';t.className='btn btn-sm';t.textContent='🛟 Rescue Data';t.style.fontSize='7.5px';t.onclick=panel;bar.appendChild(t)}}catch(e){}}
-  window.eakhaOpenRescuePanel=panel;window.eakhaRestoreBestBackup=function(){panel();return false};window.manualRestoreSnapshot=function(){panel();return false};document.addEventListener('DOMContentLoaded',inject);setTimeout(inject,300);setTimeout(inject,1200);setInterval(inject,2500);try{document.title='e-AKHA Vsavage v5.10.22 DATA RESCUE SAFE'}catch(e){}
+  function isQuota(e){return /Quota|exceeded|NS_ERROR_DOM_QUOTA/i.test((e&&((e.name||'')+' '+(e.message||'')))||'')}
+  function extractD(o){
+    if(!o||typeof o!=='object')return null;
+    if(o.D&&typeof o.D==='object')return o.D;
+    if(o.snap&&o.snap.D&&typeof o.snap.D==='object')return o.snap.D;
+    if(o.data&&o.data.D&&typeof o.data.D==='object')return o.data.D;
+    if(o.payload&&o.payload.D&&typeof o.payload.D==='object')return o.payload.D;
+    var ks=Object.keys(o), nums=ks.filter(function(k){return /^\d+$/.test(k)}).length;
+    return nums>=3?o:null;
+  }
+  function cellScore(c){
+    if(!c||typeof c!=='object')return 0; var n=0;
+    ['kzp','kzk','tc_in','tc_out','hrmis','note','pengganti','pengganti_nama','ot','tc_shift','mc','audit','status','tc_problem'].forEach(function(k){var v=c[k]; if(v!==undefined&&v!==null&&String(v).trim()!==''&&String(v).trim()!=='-')n++;});
+    if(c.tc_all&&c.tc_all.length)n+=Math.min(5,c.tc_all.length); if(c._mc||c.mc_)n+=3; if(c._hrmis_rec||c.hrmis_rec)n+=3;
+    return n;
+  }
+  function scoreD(d){
+    if(!d||typeof d!=='object')return 0; var total=0,cells=0,members=0;
+    Object.keys(d).forEach(function(b){var row=d[b]||{}, has=false; Object.keys(row).forEach(function(day){var sc=cellScore(row[day]); if(sc>0){cells++; total+=sc; has=true}}); if(has)members++});
+    return total+cells+(members*3);
+  }
+  function statsD(d){
+    var members=0,cells=0,filled=0; if(!d||typeof d!=='object')return {members:0,cells:0,filled:0};
+    Object.keys(d).forEach(function(b){var row=d[b]||{}, has=false; Object.keys(row).forEach(function(day){cells++; if(cellScore(row[day])>0){filled++;has=true}}); if(has)members++});
+    return {members:members,cells:cells,filled:filled};
+  }
+  function candidate(k,raw){
+    var o=parse(raw,null), d=extractD(o); if(!d)return null;
+    var s=scoreD(d); if(s<=0)return null;
+    var snap=(o&&o.D)?o:(o&&o.snap&&o.snap.D?o.snap:null);
+    var st=statsD(d);
+    return {key:k,raw:raw,obj:o,D:d,snap:snap,score:s,members:st.members,filled:st.filled,cells:st.cells,savedAt:(snap&&snap.savedAt)||(o&&o.savedAt)||(o&&o.time)||(o&&o.createdAt)||''};
+  }
+  function watched(k){k=String(k||''); return k==='eakha_data'||/^eakha_dataset_/.test(k)||/^eakha_master_/.test(k)||/^eakha_snapshot_/.test(k)||/^eakha_guard_/.test(k)||/^eakha_rescue_/.test(k)||k==='eakha_boot_predeploy_backup'||k==='eakha_last_dataset_key';}
+  function scan(){
+    var out=[];
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i); if(!k)continue;
+        if(k==='eakha_last_dataset_key'){var lk=NS.get.call(localStorage,k); var c0=candidate(lk,NS.get.call(localStorage,lk)); if(c0)out.push(c0); continue;}
+        if(!watched(k))continue;
+        var c=candidate(k,NS.get.call(localStorage,k)); if(c)out.push(c);
+      }
+    }catch(e){console.warn('[e-AKHA '+PATCH+'] scan',e)}
+    var seen={}; out=out.filter(function(c){var id=c.key+'|'+c.score+'|'+c.members+'|'+c.filled; if(seen[id])return false; seen[id]=1; return true});
+    out.sort(function(a,b){
+      var ap=/protected|manual|snapshot_manual|rescue_preload|guard_last_good|beforeunload|boot_predeploy/.test(a.key)?40:0;
+      var bp=/protected|manual|snapshot_manual|rescue_preload|guard_last_good|beforeunload|boot_predeploy/.test(b.key)?40:0;
+      return (b.score+bp)-(a.score+ap);
+    });
+    return out;
+  }
+  function monthlyKeys(y,m){return {dataset:'eakha_dataset_'+y+'_'+m, protected:'eakha_snapshot_protected_'+y+'_'+pad(m)}}
+  function makeSnap(c){
+    var s=c.snap?clone(c.snap):{}; s.D=clone(c.D); s.tahun=s.tahun||yNow(); s.bulan=s.bulan||mNow(); s.savedAt=new Date().toISOString(); s.reason='QUOTA SAFE RESCUE RESTORE FROM '+c.key; s.manual=true; s.protected=true; s.score=c.score;
+    if(!s.AUDIT_STATE){try{s.AUDIT_STATE=clone(AUDIT_STATE||{})}catch(e){}}
+    if(!s.MC_DATA){try{s.MC_DATA=clone(MC_DATA||parse(localStorage.getItem('eakha_mc'),[]))}catch(e){}}
+    if(!s.HRMIS_DATA){s.HRMIS_DATA=parse(localStorage.getItem('eakha_hrmis'),[])}
+    try{if(!s.RAYA_DATA)s.RAYA_DATA=clone(RAYA_DATA||[])}catch(e){}
+    try{if(!s.CTR_DATA)s.CTR_DATA=clone(CTR_DATA||[])}catch(e){}
+    try{if(!s.STAGING)s.STAGING=clone(STAGING||{})}catch(e){}
+    return s;
+  }
+  function pruneForQuota(keepKey){
+    var list=[]; var keep=String(keepKey||'');
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i)||''; if(!/^eakha_/.test(k)||k===keep)continue;
+        var raw=NS.get.call(localStorage,k)||''; var pri=5;
+        if(/rescue_restored|rescue_blocked|guard_backup|boot_predeploy|guard_beforeunload|rescue_preload_best|rescue_last_good/i.test(k))pri=1;
+        if(/snapshot_auto|snapshot_latest|master_2026_|dataset_2026_/i.test(k))pri=2;
+        if(k==='eakha_data')pri=7;
+        if(/snapshot_manual|snapshot_protected/i.test(k))pri=8;
+        var c=candidate(k,raw); list.push({k:k,len:raw.length,pri:pri,score:c?c.score:0});
+      }
+      list.sort(function(a,b){if(a.pri!==b.pri)return a.pri-b.pri; if(a.score!==b.score)return a.score-b.score; return b.len-a.len});
+      var removed=0, freed=0;
+      for(var j=0;j<list.length;j++){
+        var it=list[j]; if(it.pri>=8)continue;
+        try{NS.remove.call(localStorage,it.k); removed++; freed+=it.len;}catch(e){}
+        if(freed>2200000)break;
+      }
+      return {removed:removed,freed:freed};
+    }catch(e){return {removed:0,freed:0,error:e.message}}
+  }
+  function trySetQuota(k,v,keepKey){
+    try{NS.set.call(localStorage,k,v); return {ok:true};}
+    catch(e){
+      if(!isQuota(e))return {ok:false,error:e};
+      var p=pruneForQuota(keepKey);
+      try{NS.set.call(localStorage,k,v); return {ok:true,pruned:p};}
+      catch(e2){return {ok:false,error:e2,pruned:p};}
+    }
+  }
+  function restoreCandidate(c){
+    if(!c)return false;
+    var y=yNow(), m=mNow(), keys=monthlyKeys(y,m), snap=makeSnap(c), rawD=JSON.stringify(c.D), rawSnap=JSON.stringify(snap), notes=[];
+    try{
+      try{D=clone(c.D)}catch(e){}
+      try{if(snap.AUDIT_STATE)AUDIT_STATE=clone(snap.AUDIT_STATE)}catch(e){}
+      try{if(Array.isArray(snap.MC_DATA))MC_DATA=clone(snap.MC_DATA)}catch(e){}
+      try{if(Array.isArray(snap.HRMIS_DATA))HRMIS_DATA=clone(snap.HRMIS_DATA)}catch(e){}
+      try{if(typeof loadMonthData==='function'){} }catch(e){}
+      try{if(typeof renderMaster==='function')renderMaster(null); if(typeof renderDash==='function')renderDash(); if(typeof renderOutput==='function')renderOutput(''); if(typeof updFlags==='function')updFlags();}catch(e){}
+      var r=trySetQuota('eakha_data',rawD,c.key);
+      if(r.pruned&&r.pruned.removed)notes.push('ruang dibersihkan: '+r.pruned.removed+' backup pendua');
+      if(!r.ok){
+        var p=pruneForQuota(c.key); if(p.removed)notes.push('retry bersih: '+p.removed+' backup');
+        r=trySetQuota('eakha_data',rawD,c.key);
+      }
+      if(r.ok){
+        try{NS.set.call(localStorage,'eakha_data_version','v5.1')}catch(e){}
+        try{NS.set.call(localStorage,'eakha_last_dataset_key',keys.dataset)}catch(e){}
+        trySetQuota(keys.protected,rawSnap,c.key);
+        trySetQuota(keys.dataset,rawSnap,c.key);
+        if(snap.AUDIT_STATE)trySetQuota('eakha_audit_state',JSON.stringify(snap.AUDIT_STATE),c.key);
+        if(Array.isArray(snap.MC_DATA))trySetQuota('eakha_mc',JSON.stringify(snap.MC_DATA),c.key);
+        if(Array.isArray(snap.HRMIS_DATA))trySetQuota('eakha_hrmis',JSON.stringify(snap.HRMIS_DATA),c.key);
+        var msg='Data dipulihkan & disimpan dari '+c.key+' ✓'; if(notes.length)msg+=' ('+notes.join(', ')+')';
+        try{toast(msg,'ok')}catch(e){alert(msg)}
+        return true;
+      }else{
+        var msg2='Data dipulihkan pada paparan sahaja, tapi storage masih penuh. Tekan Export Semua Backup dahulu, jangan refresh.';
+        if(r.error&&r.error.message)msg2+=' Error: '+r.error.message;
+        try{toast(msg2,'warn')}catch(e){alert(msg2)}
+        return false;
+      }
+    }catch(e){
+      var msg='Restore gagal: '+(e&&e.message?e.message:e); if(isQuota(e))msg+=' — storage penuh. Tekan Export Semua Backup kemudian cuba Pulih semula.';
+      console.error('[e-AKHA '+PATCH+'] restore failed',e); try{toast(msg,'err')}catch(x){alert(msg)} return false;
+    }
+  }
+  function exportAll(){
+    try{
+      var data={exportedAt:new Date().toISOString(), location:location.href, candidates:scan().map(function(c){return {key:c.key,score:c.score,members:c.members,filled:c.filled,savedAt:c.savedAt,raw:c.raw}}), allKeys:{}};
+      for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i); if(/^eakha_/.test(k||''))data.allKeys[k]=NS.get.call(localStorage,k)}
+      var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='eAKHA_LOCALSTORAGE_RESCUE_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json'; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+    }catch(e){alert('Export gagal: '+e.message)}
+  }
+  function cleanupDuplicates(){
+    var arr=scan(); var best=arr[0]; if(!best){alert('Tiada backup dijumpai');return}
+    var p=pruneForQuota(best.key); alert('Backup pendua dibersihkan: '+p.removed+' key. Backup terbaik dikekalkan: '+best.key);
+    panel();
+  }
+  function panel(){
+    var old=document.getElementById('eakha-rescue-panel'); if(old)old.remove(); var arr=scan();
+    var ov=document.createElement('div'); ov.id='eakha-rescue-panel'; ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px';
+    var rows=arr.map(function(c,i){return '<tr><td style="color:#f0b429;font-weight:800">'+(i+1)+'</td><td style="word-break:break-all">'+c.key+'</td><td>'+c.score+'</td><td>'+c.members+'</td><td>'+c.filled+'</td><td style="font-size:10px;color:#93c5fd">'+(c.savedAt||'-')+'</td><td><button data-i="'+i+'" class="res-one" style="font-size:10px;padding:5px 9px;border-radius:5px;border:1px solid #34d399;background:rgba(5,150,105,.18);color:#34d399;font-weight:800">Pulih</button></td></tr>'}).join('');
+    ov.innerHTML='<div style="width:min(920px,96vw);max-height:92vh;overflow:auto;background:#0f1f3d;border:1px solid rgba(240,180,41,.45);border-radius:10px;color:#e5e7eb;font-family:Arial,sans-serif;box-shadow:0 20px 70px rgba(0,0,0,.6)">'+
+      '<div style="position:sticky;top:0;background:#102449;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;z-index:2"><b style="color:#f0b429">e-AKHA Rescue Data April — Quota Safe</b><button id="res-close" style="margin-left:auto;padding:5px 10px;border-radius:5px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff">Tutup</button></div>'+ 
+      '<div style="padding:12px 16px;font-size:11px;line-height:1.5;color:#cbd5e1"><b>Jangan clear cache/storage.</b> Error quota berlaku sebab backup terlalu banyak. Tekan <b>Export Semua Backup</b> dahulu, kemudian pilih skor tertinggi. Versi ini akan buang backup pendua sahaja untuk beri ruang simpan data utama.</div>'+ 
+      '<div style="padding:0 16px 12px;display:flex;gap:6px;flex-wrap:wrap"><button id="res-best" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #f0b429;background:rgba(200,150,10,.25);color:#f0b429;font-weight:800">Pulih Skor Tertinggi</button><button id="res-export" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #93c5fd;background:rgba(37,99,235,.18);color:#93c5fd;font-weight:700">Export Semua Backup</button><button id="res-clean" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #fca5a5;background:rgba(220,38,38,.14);color:#fca5a5;font-weight:700">Bersihkan Backup Pendua</button><span style="font-size:10px;color:#94a3b8;align-self:center">Calon dijumpai: '+arr.length+'</span></div>'+ 
+      '<div style="padding:0 16px 16px"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:rgba(0,0,0,.28)"><th style="padding:8px;text-align:left">#</th><th style="padding:8px;text-align:left">Key</th><th>Score</th><th>Anggota</th><th>Filled Cell</th><th>Saved</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    document.body.appendChild(ov);
+    document.getElementById('res-close').onclick=function(){ov.remove()};
+    document.getElementById('res-export').onclick=exportAll;
+    document.getElementById('res-clean').onclick=cleanupDuplicates;
+    document.getElementById('res-best').onclick=function(){restoreCandidate(arr[0]);};
+    Array.prototype.forEach.call(ov.querySelectorAll('.res-one'),function(b){b.onclick=function(){restoreCandidate(arr[+b.getAttribute('data-i')]);};});
+  }
+  function injectButtons(){
+    try{
+      var auth=document.querySelector('#auth-wall div');
+      if(auth&&!document.getElementById('eakha-rescue-login-btn')){var b=document.createElement('button'); b.id='eakha-rescue-login-btn'; b.type='button'; b.textContent='🛟 Rescue / Pulih Data Lama'; b.onclick=panel; b.style.cssText='margin-top:8px;width:100%;justify-content:center;font-size:10px;padding:8px;border-radius:7px;border:1px solid rgba(240,180,41,.45);background:rgba(200,150,10,.18);color:#f0b429;font-weight:800;cursor:pointer'; auth.appendChild(b);}
+      var bar=document.querySelector('.topbar > div[style*="margin-left:auto"]');
+      if(bar&&!document.getElementById('eakha-rescue-top-btn')){var t=document.createElement('button'); t.id='eakha-rescue-top-btn'; t.className='btn btn-sm'; t.textContent='🛟 Rescue Data'; t.style.fontSize='7.5px'; t.onclick=panel; bar.appendChild(t);}
+    }catch(e){}
+  }
+  window.eakhaOpenRescuePanel=panel;
+  window.eakhaRestoreBestBackup=function(){var a=scan(); return restoreCandidate(a[0]);};
+  document.addEventListener('DOMContentLoaded',injectButtons); setTimeout(injectButtons,300); setTimeout(injectButtons,1200); setInterval(injectButtons,2500);
+  try{document.title='e-AKHA Vsavage v5.10.23 QUOTA RESTORE SAFE'; console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
-
 </script>
+
 </body>
 </html>
