@@ -8620,18 +8620,6 @@ try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('
     var y=+snap.tahun||yNow(), m=+snap.bulan||mNow();
     var raw=JSON.stringify(snap);
     try{
-      // Auto checkpoint must not downgrade a good manual/latest snapshot.
-      // Manual save always wins, even if user intentionally clears cells.
-      if(!manual){
-        var oldSnap=parse(localStorage.getItem(latestKey(y,m)), null) || parse(localStorage.getItem(manualKey(y,m)), null);
-        var oldScore=(oldSnap&&oldSnap.D)?(oldSnap.score||scoreD(oldSnap.D)):0;
-        var newScore=snap.score||scoreD(snap.D);
-        if(oldScore>=80 && newScore<oldScore*0.55){
-          localStorage.setItem(autoKey(y,m), raw);
-          console.warn('[e-AKHA '+PATCH+'] auto snapshot downgrade blocked old='+oldScore+' new='+newScore);
-          return false;
-        }
-      }
       localStorage.setItem(latestKey(y,m), raw);
       if(manual) localStorage.setItem(manualKey(y,m), raw); else localStorage.setItem(autoKey(y,m), raw);
       localStorage.setItem(dKey(y,m), raw);
@@ -8654,7 +8642,7 @@ try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('
 
   function readSnapshot(y,m){
     y=+y||yNow(); m=+m||mNow();
-    var keys=[latestKey(y,m),manualKey(y,m),autoKey(y,m),dKey(y,m),mKey(y,m)];
+    var keys=[manualKey(y,m),latestKey(y,m),autoKey(y,m),dKey(y,m),mKey(y,m)];
     for(var i=0;i<keys.length;i++){
       var s=parse(localStorage.getItem(keys[i]), null);
       if(s && s.D && +s.tahun===+y && +s.bulan===+m) return {key:keys[i], snap:s};
@@ -8846,5 +8834,115 @@ try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('
   try{ document.title='e-AKHA Vsavage v5.10.18 LIHAT MASTER SNAPSHOT SAFE'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
 })();
 </script>
+
+
+<!-- v5.10.19 LOGIN GUARD SAFE: local login cannot be blocked by boot/render patches -->
+<script>
+(function(){
+  'use strict';
+  var PATCH='v5.10.19-login-guard-safe';
+  window.EAKHA_PATCH_51019 = PATCH;
+
+  function $(id){ return document.getElementById(id); }
+  function setBtn(txt,disabled){ var b=$('l-btn'); if(b){ b.textContent=txt||'Log Masuk'; b.disabled=!!disabled; } }
+  function showErr(msg){ var e=$('l-err'); if(e){ e.textContent=msg||''; e.style.display=msg?'block':'none'; } }
+  function norm(x){ return String(x||'').trim().toLowerCase().replace(/\s+/g,''); }
+  function putAuth(obj){
+    try{ AUTH=obj; }catch(e){ window.AUTH=obj; }
+    try{ if(typeof saveSess==='function') saveSess(); else sessionStorage.setItem('eakha_auth',JSON.stringify(obj)); }catch(e){}
+  }
+  function localAccount(id,pw){
+    var users=[
+      {ids:['sjnadilah','sjn.adilah','adilah','adilahfitrah','sjnadilah@kpl.hkl.gov.my','adilahfitrah@gmail.com'], pws:['912012','889888'], role:'admin', nama:'SJN Adilah', jawatan:'OWNER · AUDITOR'},
+      {ids:['smamierul','sm.amierul','amierul'], pws:['2438670','889888'], role:'admin', nama:'SM Amierul', jawatan:'ADMIN'},
+      {ids:['tuannajib','tuan.najib','najib'], pws:['633283','889888'], role:'viewer', nama:'Tuan Najib', jawatan:'VIEWER · JANA LAPORAN'},
+      {ids:['viewer','penonton',''], pws:['662633','633283'], role:'viewer', nama:'Viewer', jawatan:'VIEWER'}
+    ];
+    id=norm(id);
+    for(var i=0;i<users.length;i++){
+      if(users[i].ids.map(norm).indexOf(id)!==-1 && users[i].pws.indexOf(String(pw||''))!==-1){
+        return {loggedIn:true, role:users[i].role, id:id||'viewer', nama:users[i].nama, jawatan:users[i].jawatan};
+      }
+    }
+    return null;
+  }
+
+  function safeRenderAfterLogin(){
+    [80,450,1200].forEach(function(ms){ setTimeout(function(){
+      try{ if(typeof applyRoleUI==='function') applyRoleUI(); }catch(e){}
+      try{ if(typeof populateSels==='function') populateSels(); }catch(e){}
+      try{ if(typeof renderDash==='function') renderDash(); }catch(e){}
+      try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+      try{ if(typeof bindSnapshotButtons==='function') bindSnapshotButtons(); }catch(e){}
+    },ms); });
+  }
+
+  window.eakhaSafeBootAfterLogin = async function(){
+    try{ var aw=$('auth-wall'); if(aw) aw.style.display='none'; }catch(e){}
+    try{ var app=$('app'); if(app) app.style.display='flex'; }catch(e){}
+    safeRenderAfterLogin();
+    try{
+      if(typeof bootApp==='function'){
+        var r=bootApp();
+        if(r && typeof r.then==='function') await r;
+      }
+    }catch(e){
+      console.warn('[e-AKHA '+PATCH+'] bootApp error ignored so login remains open:', e);
+      try{ if(typeof toast==='function') toast('Login berjaya. Boot patch lama ada ralat kecil, paparan dipulihkan.','warn'); }catch(_e){}
+    }
+    safeRenderAfterLogin();
+  };
+
+  window.doLogin = doLogin = async function(){
+    var idEl=$('l-id'), pwEl=$('l-pw');
+    var id=idEl?String(idEl.value||'').trim():'';
+    var pw=pwEl?String(pwEl.value||''):'';
+    if(!id || !pw){ showErr('Sila masukkan ID dan kata laluan.'); setBtn('Log Masuk',false); return false; }
+    showErr(''); setBtn('Mengesahkan...',true);
+
+    var acc=localAccount(id,pw);
+    if(acc){
+      putAuth(acc);
+      await window.eakhaSafeBootAfterLogin();
+      setBtn('Log Masuk',false);
+      try{ if(typeof toast==='function') toast('Login berjaya ✓','ok'); }catch(e){}
+      return true;
+    }
+
+    // Optional Supabase fallback, but never let it lock the button.
+    try{
+      if(typeof SUPA_OK!=='undefined' && SUPA_OK && typeof supa!=='undefined' && supa && supa.auth){
+        var email=id.indexOf('@')>-1?id:id+'@kpl.hkl.gov.my';
+        var res=await supa.auth.signInWithPassword({email:email,password:pw});
+        if(res && !res.error && res.data && res.data.user){
+          putAuth({loggedIn:true,role:'admin',id:norm(id),nama:(res.data.user.user_metadata&&res.data.user.user_metadata.nama)||id,jawatan:(res.data.user.user_metadata&&res.data.user.user_metadata.jawatan)||'Admin'});
+          await window.eakhaSafeBootAfterLogin();
+          setBtn('Log Masuk',false);
+          return true;
+        }
+      }
+    }catch(e){ console.warn('[e-AKHA '+PATCH+'] supabase login skipped:',e); }
+
+    if(pwEl) pwEl.value='';
+    showErr('ID atau kata laluan tidak sah. Cuba SJN Adilah: 912012 atau 889888.');
+    setBtn('Log Masuk',false);
+    return false;
+  };
+
+  // If old session exists but old boot patch failed, allow the user to see login again instead of frozen screen.
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(function(){
+      try{
+        var app=$('app'), aw=$('auth-wall'), btn=$('l-btn');
+        if(btn && btn.disabled && aw && getComputedStyle(aw).display!=='none') setBtn('Log Masuk',false);
+        if(app && aw && getComputedStyle(app).display==='none' && getComputedStyle(aw).display==='none') aw.style.display='flex';
+      }catch(e){}
+    },2500);
+  });
+
+  try{ document.title='e-AKHA Vsavage v5.10.19 LOGIN GUARD SAFE'; console.log('[e-AKHA '+PATCH+'] loaded'); }catch(e){}
+})();
+</script>
+
 </body>
 </html>
