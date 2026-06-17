@@ -9477,5 +9477,307 @@ try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 </script>
 
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.26 QUOTA-SAFE TC RULE + IDB SNAPSHOT
+   - Fix button Kemas Kini TC Rule Final failing because localStorage quota is full.
+   - Save repaired April state to IndexedDB fallback, not localStorage.
+   - Manual snapshot/restore uses IndexedDB first, so edited data is not lost by quota.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.26 QUOTA-SAFE TC RULE + IDB SNAPSHOT';
+window.__EAKHA_V51026_QUOTA_SAFE__=true;
+
+function toastSafe(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function yNow(){try{return typeof ACTIVE_YEAR!=='undefined'?+ACTIVE_YEAR:2026}catch(e){return 2026}}
+function mNow(){try{return typeof ACTIVE_MONTH!=='undefined'?+ACTIVE_MONTH:4}catch(e){return 4}}
+function pad(n){return String(+n||0).padStart(2,'0')}
+function clone(x){try{return JSON.parse(JSON.stringify(x))}catch(e){return x}}
+function scoreD(d){
+  var s=0; if(!d||typeof d!=='object')return 0;
+  Object.keys(d).forEach(function(b){var row=d[b]||{};Object.keys(row).forEach(function(dd){var c=row[dd]||{};
+    ['kzp','kzk','tc_in','tc_out','tc_shift','hrmis','note','pengganti_nama'].forEach(function(k){var v=c[k]; if(v!==undefined&&v!==null&&String(v).trim()&&String(v).trim()!=='-'&&String(v).trim()!=='—')s++;});
+    if(c.pengganti)s++; if(c.tc_all&&c.tc_all.length)s+=Math.min(4,c.tc_all.length); if(c._mc)s+=3; if(c._hrmis_rec)s+=3;
+  })}); return s;
+}
+function stateId(){return 'safe_snapshot_'+yNow()+'_'+pad(mNow())}
+function tcId(){return 'tc_rule_final_'+yNow()+'_'+pad(mNow())}
+
+function currentState(reason){
+  var y=yNow(), m=mNow();
+  return {
+    id: stateId(), patch: PATCH, tahun:y, bulan:m, reason:reason||'SAFE SNAPSHOT',
+    savedAt:new Date().toISOString(), score:(typeof D!=='undefined')?scoreD(D):0,
+    D:(typeof D!=='undefined')?clone(D):{},
+    AUDIT_STATE:(typeof AUDIT_STATE!=='undefined')?clone(AUDIT_STATE):{},
+    MC_DATA:(typeof MC_DATA!=='undefined')?clone(MC_DATA):[],
+    HRMIS_DATA:(function(){try{return JSON.parse(localStorage.getItem('eakha_hrmis')||'[]')}catch(e){return []}})(),
+    RAYA_DATA:(typeof RAYA_DATA!=='undefined')?clone(RAYA_DATA):[],
+    CTR_DATA:(typeof CTR_DATA!=='undefined')?clone(CTR_DATA):[],
+    STAGING:(typeof STAGING!=='undefined')?clone(STAGING):{},
+    BAKI_CUTI:(typeof BAKI_CUTI!=='undefined')?clone(BAKI_CUTI):{},
+    CUSTOM_ANGGOTA:(typeof CUSTOM_ANGGOTA!=='undefined')?clone(CUSTOM_ANGGOTA):[],
+    ANGGOTA_LAIN:(typeof ANGGOTA_LAIN!=='undefined')?clone(ANGGOTA_LAIN):[]
+  };
+}
+
+function openDB(){
+  return new Promise(function(resolve,reject){
+    if(!window.indexedDB){reject(new Error('IndexedDB tidak disokong oleh browser ini'));return;}
+    var req=indexedDB.open('eakha_vsavage_safe_store',1);
+    req.onupgradeneeded=function(ev){var db=ev.target.result; if(!db.objectStoreNames.contains('snapshots'))db.createObjectStore('snapshots',{keyPath:'id'});};
+    req.onsuccess=function(){resolve(req.result)};
+    req.onerror=function(){reject(req.error||new Error('Gagal buka IndexedDB'))};
+  });
+}
+function idbPut(obj){
+  return openDB().then(function(db){return new Promise(function(resolve,reject){
+    var tx=db.transaction('snapshots','readwrite'); tx.objectStore('snapshots').put(obj);
+    tx.oncomplete=function(){try{db.close()}catch(e){} resolve(true)};
+    tx.onerror=function(){try{db.close()}catch(e){} reject(tx.error||new Error('Gagal simpan IndexedDB'))};
+  })});
+}
+function idbGet(id){
+  return openDB().then(function(db){return new Promise(function(resolve,reject){
+    var tx=db.transaction('snapshots','readonly'); var req=tx.objectStore('snapshots').get(id);
+    req.onsuccess=function(){try{db.close()}catch(e){} resolve(req.result||null)};
+    req.onerror=function(){try{db.close()}catch(e){} reject(req.error||new Error('Gagal baca IndexedDB'))};
+  })});
+}
+function idbList(){
+  return openDB().then(function(db){return new Promise(function(resolve,reject){
+    var tx=db.transaction('snapshots','readonly'); var req=tx.objectStore('snapshots').getAll();
+    req.onsuccess=function(){try{db.close()}catch(e){} resolve(req.result||[])};
+    req.onerror=function(){try{db.close()}catch(e){} reject(req.error||new Error('Gagal senarai IndexedDB'))};
+  })});
+}
+
+function replaceD(srcD){
+  if(typeof D==='undefined'||!srcD)return;
+  Object.keys(D).forEach(function(k){delete D[k]});
+  Object.keys(srcD).forEach(function(b){D[b]=clone(srcD[b]||{})});
+}
+function applyState(s,render){
+  if(!s||!s.D)return false;
+  try{
+    ACTIVE_YEAR=+s.tahun||yNow(); ACTIVE_MONTH=+s.bulan||mNow();
+    replaceD(s.D);
+    try{AUDIT_STATE=clone(s.AUDIT_STATE||{})}catch(e){}
+    try{MC_DATA=clone(s.MC_DATA||[])}catch(e){}
+    try{RAYA_DATA=clone(s.RAYA_DATA||[])}catch(e){}
+    try{CTR_DATA=clone(s.CTR_DATA||[])}catch(e){}
+    try{STAGING=clone(s.STAGING||{})}catch(e){}
+    try{BAKI_CUTI=clone(s.BAKI_CUTI||{})}catch(e){}
+    try{CUSTOM_ANGGOTA=clone(s.CUSTOM_ANGGOTA||[])}catch(e){}
+    try{ANGGOTA_LAIN=clone(s.ANGGOTA_LAIN||[])}catch(e){}
+    try{localStorage.setItem('eakha_active_year',String(ACTIVE_YEAR));localStorage.setItem('eakha_active_month',String(ACTIVE_MONTH));}catch(e){}
+    if(render!==false){
+      try{document.querySelectorAll('.month-item').forEach(function(el){el.classList.toggle('on',+el.dataset.bulan===+ACTIVE_MONTH)})}catch(e){}
+      try{var badge=document.getElementById('active-month-badge'); if(badge)badge.textContent=(typeof MONTHS_MS!=='undefined'?MONTHS_MS[ACTIVE_MONTH]:'Bulan '+ACTIVE_MONTH)+' '+ACTIVE_YEAR;}catch(e){}
+      try{if(typeof populateSels==='function')populateSels()}catch(e){}
+      try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}
+      try{if(typeof renderDash==='function')renderDash()}catch(e){}
+      try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}
+      try{if(typeof updFlags==='function')updFlags()}catch(e){}
+    }
+    return true;
+  }catch(e){console.warn('[51026 applyState]',e); return false;}
+}
+
+window.eakhaSaveSafeIDBSnapshot = async function(reason){
+  var s=currentState(reason||'SAFE IDB SNAPSHOT'); s.id=stateId(); s.score=scoreD(s.D);
+  await idbPut(s);
+  var tc=clone(s); tc.id=tcId(); tc.reason='TC RULE FINAL SAFE COPY'; await idbPut(tc);
+  try{localStorage.setItem('eakha_safe_idb_pointer',s.id)}catch(e){}
+  return s;
+};
+window.eakhaRestoreSafeIDBSnapshot = async function(){
+  var ids=[stateId(),tcId()];
+  var best=null;
+  for(var i=0;i<ids.length;i++){try{var s=await idbGet(ids[i]); if(s&&s.D&&(!best||(+s.score||0)>(+best.score||0)))best=s;}catch(e){}}
+  if(!best){
+    var list=[]; try{list=await idbList()}catch(e){}
+    list=list.filter(function(x){return +x.tahun===yNow()&&+x.bulan===mNow()&&x.D});
+    list.sort(function(a,b){return (+b.score||0)-(+a.score||0)}); best=list[0]||null;
+  }
+  if(!best){toastSafe('Tiada snapshot selamat dalam IndexedDB.','warn'); return false;}
+  var ok=applyState(best,true);
+  toastSafe(ok?'Pulih Snapshot Selamat berjaya ✓ score '+(best.score||scoreD(best.D)):'Gagal pulih Snapshot Selamat', ok?'ok':'err');
+  return ok;
+};
+
+var oldManualSave=window.manualSaveSnapshot;
+window.manualSaveSnapshot = async function(){
+  try{
+    var s=await window.eakhaSaveSafeIDBSnapshot('MANUAL SAFE SNAPSHOT - INDEXEDDB');
+    // Cuba juga simpan cara lama, tapi kegagalan quota tidak dianggap gagal.
+    try{ if(typeof oldManualSave==='function') oldManualSave(); }catch(e){ console.warn('[51026 old manual save quota ignored]',e); }
+    toastSafe('Snapshot selamat disimpan ✓ (IndexedDB, tidak kena quota localStorage) score '+s.score,'ok');
+    return true;
+  }catch(e){toastSafe('Gagal simpan Snapshot Selamat: '+e.message,'err'); return false;}
+};
+try{manualSaveSnapshot=window.manualSaveSnapshot}catch(e){}
+
+var oldManualRestore=window.manualRestoreSnapshot;
+window.manualRestoreSnapshot = async function(){
+  var ok=false; try{ok=await window.eakhaRestoreSafeIDBSnapshot()}catch(e){console.warn(e)}
+  if(ok)return true;
+  try{ if(typeof oldManualRestore==='function')return oldManualRestore(); }catch(e){}
+  return false;
+};
+try{manualRestoreSnapshot=window.manualRestoreSnapshot}catch(e){}
+
+function bindButtons51026(){
+  try{var b=document.getElementById('btn-snapshot-save'); if(b){b.onclick=window.manualSaveSnapshot; b.textContent='Simpan Snapshot Selamat'; b.title='Simpan ke IndexedDB, bukan localStorage yang penuh';}}catch(e){}
+  try{var r=document.getElementById('btn-snapshot-restore'); if(r){r.onclick=window.manualRestoreSnapshot; r.textContent='Pulih Snapshot Selamat'; r.title='Pulih daripada IndexedDB dahulu';}}catch(e){}
+  try{
+    var bar=document.querySelector('#page-master > div[style*="display:flex"]'); if(bar && !document.getElementById('btn-restore-idb-51026')){
+      var rb=document.createElement('button'); rb.id='btn-restore-idb-51026'; rb.className='btn btn-bl btn-sm'; rb.textContent='Pulih Snapshot Selamat'; rb.onclick=window.manualRestoreSnapshot; bar.appendChild(rb);
+    }
+  }catch(e){}
+  try{
+    var btn=document.getElementById('btn-rule-final-51025'); if(btn){btn.textContent='Kemas Kini TC Rule Final SAFE'; btn.onclick=window.eakhaSimpanRuleFinalTC; btn.title='Kira & simpan ke IndexedDB, elak quota localStorage';}
+  }catch(e){}
+}
+
+window.eakhaSimpanRuleFinalTC = async function(){
+  try{
+    var n=0;
+    if(typeof window.eakhaRecalcAllTCFinal==='function') n=window.eakhaRecalcAllTCFinal({forceManual:false});
+    if(typeof renderMaster==='function') renderMaster(null);
+    if(typeof updFlags==='function') updFlags();
+    var s=await window.eakhaSaveSafeIDBSnapshot('TC RULE FINAL 51026 - QUOTA SAFE');
+    toastSafe('TC Rule Final siap & disimpan selamat ✓ '+n+' sel. Score '+s.score+'. Tidak guna localStorage penuh.','ok');
+    return true;
+  }catch(e){
+    console.warn('[51026 TC final safe failed]',e);
+    toastSafe('Gagal simpan safe TC rule: '+e.message,'err');
+    return false;
+  }
+};
+
+// If user already saved safe snapshot, auto-apply it only when current page is much weaker.
+async function autoProtect(){
+  bindButtons51026();
+  try{
+    var s=await idbGet(stateId());
+    if(s&&s.D&&typeof D!=='undefined'){
+      var cur=scoreD(D), old=+s.score||scoreD(s.D);
+      if(old>=80 && cur>0 && cur<old*0.60){applyState(s,true); toastSafe('Snapshot Selamat dipulihkan automatik kerana data semasa kurang lengkap','warn');}
+    }
+  }catch(e){}
+}
+[700,1800,4200].forEach(function(ms){setTimeout(autoProtect,ms)});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(autoProtect,900);setTimeout(bindButtons51026,2500)});
+try{document.title='e-AKHA Vsavage v5.10.27 STRICT MC + TC NIGHT';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.27 STRICT MC OWNER + FINAL NIGHT TC
+   - MC_PRELOAD bil ialah nombor senarai borang, BUKAN bil Master.
+   - MC hanya link jika nama pesakit/anggota match Master dengan confidence tinggi.
+   - Tarikh MC ikut tarikh sebenar MC dan route ikut bulan aktif.
+   - M shift: IN 2200-2305 SAH, selepas 2305 LEWAT; OUT esok 0700-0800 SAH.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.27 STRICT MC OWNER + FINAL NIGHT TC';
+window.__EAKHA_V51027_STRICT_MC_TC__=true;
+function toastSafe(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function pad(n){return String(+n).padStart(2,'0')}
+function yNow(){try{return typeof ACTIVE_YEAR!=='undefined'?+ACTIVE_YEAR:2026}catch(e){return 2026}}
+function mNow(){try{return typeof ACTIVE_MONTH!=='undefined'?+ACTIVE_MONTH:4}catch(e){return 4}}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():new Date(yNow(),mNow(),0).getDate()}catch(e){return 30}}
+function clone(o){try{return JSON.parse(JSON.stringify(o))}catch(e){return o}}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function normName(v){
+  return String(v||'').toUpperCase()
+    .replace(/\b(KPL|LKPL|KONST|PEL|PB|SJN|SM|DSP|TUAN|PUAN|ENCIK|CIK)\b/g,' ')
+    .replace(/[^A-Z0-9@\/ ]+/g,' ')
+    .replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHAMAD').replace(/\bMOHD\b/g,'MOHAMAD')
+    .replace(/\bALLIF\b/g,'ALIFF').replace(/\bHAIKAL\b/g,'HAIQAL').replace(/\bBT\b/g,'BINTI')
+    .replace(/\s+/g,' ').trim();
+}
+function toks(v){
+  var stop={'BIN':1,'BINTI':1,'BT':1,'A/L':1,'A/P':1,'AL':1,'MOHAMAD':1,'MUHAMAD':1,'MUHAMMAD':1,'MOHD':1,'MUHD':1,'@':1};
+  return normName(v).split(' ').filter(function(t){return t.length>2&&!stop[t]});
+}
+function scoreName(raw,memName){
+  var a=normName(raw), b=normName(memName); if(!a||!b)return 0; if(a===b)return 100;
+  if(a.indexOf(b)>=0||b.indexOf(a)>=0)return 94;
+  var ta=toks(a), tb=toks(b); if(!ta.length||!tb.length)return 0;
+  var hit=0; ta.forEach(function(x){if(tb.indexOf(x)>=0)hit++;});
+  var core=0; ['ALIFF','ALIF','NASARUDDIN','MOHTAR','HAIQAL','RESDI','HAZLAN','BADRI','RASIDI','SYUHADA','FATHIYYAH','ANASHATOL','SUHAIRI','LUKMAN','FARRAH','YUSRI','AALIYA'].forEach(function(x){if(ta.indexOf(x)>=0&&tb.indexOf(x)>=0)core++;});
+  return Math.round((hit/Math.max(ta.length,tb.length))*85 + Math.min(core*5,15));
+}
+function kompFull(k){var s=String(k||'').toUpperCase().trim();return {'A':'ALPHA','B':'BRAVO','C':'CHARLIE','D':'DELTA'}[s]||s}
+function parseDate(v){
+  var s=String(v||'').trim(); if(!s)return null; var p;
+  if(/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/.test(s)){p=s.split(/[-\/]/);return new Date(+p[0],+p[1]-1,+p[2])}
+  if(/^\d{1,2}[\.\-\/]\d{1,2}([\.\-\/]\d{2,4})?$/.test(s)){p=s.split(/[\.\-\/]/);var yy=p[2]?+p[2]:yNow();if(yy<100)yy+=2000;return new Date(yy,+p[1]-1,+p[0])}
+  var d=new Date(s);return isNaN(d.getTime())?null:d;
+}
+function fmtDate(d){return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()}
+function activeDays(rec,y,m){
+  var a=parseDate(rec&&(rec.dari||rec.tarikh)), b=parseDate(rec&&(rec.hingga||rec.dari||rec.tarikh)); if(!a||!b)return[]; if(b<a){var t=a;a=b;b=t}
+  var out=[],cur=new Date(a.getFullYear(),a.getMonth(),a.getDate()),guard=0; while(cur<=b&&guard<370){if(cur.getFullYear()===+y&&(cur.getMonth()+1)===+m)out.push(cur.getDate());cur.setDate(cur.getDate()+1);guard++;} return out;
+}
+function masterPool(){try{return (MASTER||[]).filter(function(m){return !m.pindah})}catch(e){return []}}
+function findMCMemberStrict(raw){
+  var name=raw&&String(raw.nama||raw.name||raw.raw_nama||raw._rawNama||''); if(!name)return null;
+  var pool=masterPool(); var best=null,sc=0; pool.forEach(function(m){var s=scoreName(name,m.nama); if(s>sc){sc=s;best=m}});
+  if(!best || sc<82) return {ok:false,score:sc,member:best,reason:'LOW_CONFIDENCE'};
+  var k=kompFull(raw.komp||raw.kompeni||'');
+  // Kompeni hanya amaran, bukan blok total kerana borang kadang-kadang guna format WP/roster lama.
+  var warn = (k && ['ALPHA','BRAVO','CHARLIE','DELTA'].indexOf(k)>=0 && best.komp && k!==best.komp);
+  return {ok:true,score:sc,member:best,warnKomp:warn,rawKomp:k};
+}
+function buildStrictMCForMonth(y,m){
+  var good=[], review=[];
+  function addRaw(raw,source){
+    if(!raw)return; var rawName=raw.nama||raw.name||raw.raw_nama||raw._rawNama||''; var days=activeDays(raw,y,m);
+    if(!days.length) return; // route ikut tarikh sebenar MC sahaja
+    var mt=findMCMemberStrict(raw);
+    if(!mt||!mt.ok){review.push({source:source||raw.source||'unknown',raw_nama:rawName,dari:raw.dari||raw.tarikh||'',hingga:raw.hingga||raw.dari||raw.tarikh||'',klinik:raw.klinik||'',no_mc:raw.no_mc||raw.siri||'',score:mt?mt.score:0,reason:mt?mt.reason:'NO_NAME'});return;}
+    var mem=mt.member, a=parseDate(raw.dari||raw.tarikh), b=parseDate(raw.hingga||raw.dari||raw.tarikh)||a;
+    good.push({bil:+mem.bil,nama:mem.nama,jab:mem.jab,komp:mem.komp,raw_nama:rawName,source:source||raw.source||'MC_PRELOAD_STRICT',source_bil:raw.bil||raw.source_bil||'',match_score:mt.score,match_warning:mt.warnKomp?('Kompeni borang '+mt.rawKomp+' ≠ Master '+mem.komp):'',tarikh:a?fmtDate(a):(raw.tarikh||''),dari:a?fmtDate(a):(raw.dari||raw.tarikh||''),hingga:b?fmtDate(b):(raw.hingga||raw.dari||raw.tarikh||''),d:+days[0],m:+m,y:+y,mc_type:raw.mc_type||raw.jenis||'MC',jenis:'Bulan Ini',klinik:raw.klinik||'',no_mc:raw.no_mc||raw.siri||'',siri:raw.siri||raw.no_mc||'',hari:+raw.hari||days.length||1,bulanLabel:'Bulan Ini',_days:days});
+  }
+  try{if(typeof MC_PRELOAD!=='undefined'&&Array.isArray(MC_PRELOAD))MC_PRELOAD.forEach(function(r){addRaw(r,'MC_PRELOAD_STRICT')})}catch(e){}
+  // Bawa masuk hanya manual MC yang jelas bukan hasil preload lama.
+  try{if(Array.isArray(MC_DATA))MC_DATA.forEach(function(r){if(r&&(r.source==='manual'||r.source==='MANUAL'||r._manual)){addRaw(r,'MANUAL')}})}catch(e){}
+  var seen={}, out=[]; good.forEach(function(r){var k=[r.bil,r.dari,r.hingga,r.no_mc,r.klinik].join('|'); if(!seen[k]){seen[k]=1;out.push(r)}});
+  return {good:out,review:review};
+}
+function clearMCLinks(){try{if(typeof D==='undefined')return;Object.keys(D).forEach(function(b){Object.keys(D[b]||{}).forEach(function(d){if(D[b][d]){delete D[b][d]._mc; delete D[b][d].mc;}})})}catch(e){}}
+function linkMC(recs){try{clearMCLinks();(recs||[]).forEach(function(r){(r._days||activeDays(r,r.y||yNow(),r.m||mNow())).forEach(function(day){if(D&&D[r.bil]&&D[r.bil][day])D[r.bil][day]._mc=r})})}catch(e){}}
+window.eakhaBuildStrictMC51027=function(){var y=yNow(),m=mNow();var res=buildStrictMCForMonth(y,m);try{MC_DATA=res.good}catch(e){}window.EAKHA_MC_REVIEW_51027=res.review;linkMC(res.good);try{if(typeof renderMCCrossCheck==='function')renderMCCrossCheck()}catch(e){}return res};
+window.getMC=getMC=function(bil,d){
+  try{if(!Array.isArray(MC_DATA)||!MC_DATA.length)window.eakhaBuildStrictMC51027(); var bilN=+bil,dN=+d; for(var i=0;i<MC_DATA.length;i++){var r=MC_DATA[i]; if(+r.bil!==bilN)continue; var ds=r._days&&r._days.length?r._days:activeDays(r,r.y||yNow(),r.m||mNow()); if(ds.indexOf(dN)>=0){if(D&&D[bilN]&&D[bilN][dN])D[bilN][dN]._mc=r; return r;}}}catch(e){}
+  return null;
+};
+function minutes(t){var m=String(t||'').match(/(\d{1,2})[:\.](\d{2})/); if(!m)return null; return (+m[1])*60+(+m[2])}
+function parsePoint(v,day,src){var text=(typeof v==='object')?String(v.t||v.time||v.tc||v.value||''):String(v||'');var mm=minutes(text); if(mm===null)return null;var mt=text.match(/\d{1,2}[:\.]\d{2}/);return{t:mt[0].replace('.',':'),mins:mm,day:day||0,abs:mm+(day||0)*1440,src:src||''}}
+function shNorm(s){s=String(s||'').toUpperCase().trim(); if(/^(PG|PAGI|S|SIANG)$/.test(s))return'S'; if(/^(PT|PETANG|P)$/.test(s))return'P'; if(/^(M|MALAM)$/.test(s))return'M'; if(/^(O|OF|OFF|OFFDAY)$/.test(s))return'O'; return s}
+function cfg(sh){
+  if(sh==='S')return{start:420,end:900,inEarly:360,inOn:427,inLate:540,outStart:900,outEnd:960,label:'PG',time:'0700-1500'};
+  if(sh==='P')return{start:900,end:1380,inEarly:840,inOn:907,inLate:1080,outStart:1380,outEnd:1500,label:'PT',time:'1500-2300'};
+  if(sh==='M')return{start:1380,end:1860,inEarly:1320,inOn:1385,inLate:1439,outStart:1860,outEnd:1920,label:'M',time:'2300-0700'};
+  return null;
+}
+function collectPts(bil,d){var out=[],seen={};function add(p){if(!p)return;var k=p.abs+'|'+p.t;if(seen[k])return;seen[k]=1;out.push(p)}try{var c=D&&D[bil]&&D[bil][d]?D[bil][d]:{};if(Array.isArray(c.tc_all))c.tc_all.forEach(function(x){add(parsePoint(x,0,'tc_all'))});add(parsePoint(c.tc_in,0,'tc_in'));add(parsePoint(c.tc_out,0,'tc_out'));String(c.tc_ignored||c.tc_note||'').replace(/(\d{1,2}[:\.]\d{2})/g,function(x){add(parsePoint(x,0,'note'))});var n=D&&D[bil]&&D[bil][d+1]?D[bil][d+1]:{};if(Array.isArray(n.tc_all))n.tc_all.forEach(function(x){add(parsePoint(x,1,'next_all'))});add(parsePoint(n.tc_in,1,'next_in'));add(parsePoint(n.tc_out,1,'next_out'));String(n.tc_ignored||n.tc_note||'').replace(/(\d{1,2}[:\.]\d{2})/g,function(x){add(parsePoint(x,1,'next_note'))})}catch(e){}return out.sort(function(a,b){return a.abs-b.abs})}
+function pick(arr,target){return arr.length?arr.slice().sort(function(a,b){return Math.abs(a.abs-target)-Math.abs(b.abs-target)})[0]:null}
+window.eakhaRecalcTCFinal51027=function(bil,d){try{var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;if(!c||c.tc_problem)return false;var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c.tc_shift||''));if(sh==='O'||!sh)return false;var C=cfg(sh), pts=collectPts(bil,d);if(!C||!pts.length)return false;var ins=pts.filter(function(p){return p.day===0&&p.mins>=C.inEarly&&p.mins<=C.inLate});var outs=pts.filter(function(p){if(sh==='S')return p.day===0&&p.mins>=900&&p.mins<=960;if(sh==='P')return (p.day===0&&p.mins>=1380&&p.mins<=1439)||(p.day===1&&p.mins>=0&&p.mins<=60);if(sh==='M')return p.day===1&&p.mins>=420&&p.mins<=480;return false});var early=pts.filter(function(p){if(sh==='S')return p.day===0&&p.mins>=840&&p.mins<900;if(sh==='P')return p.day===0&&p.mins>=1320&&p.mins<1380;if(sh==='M')return p.day===1&&p.mins>=360&&p.mins<420;return false});var pin=pick(ins,C.start), pout=pick(outs,C.end)||pick(early,C.end);c.tc_in=pin?pin.t:'';c.tc_out=pout?pout.t:'';c.tc_out_nextday=!!(pout&&pout.day===1);c.tc_out_awal=!!(pout&&early.indexOf(pout)>=0);c.tc_shift=sh;c.tc_rule_version='51027';c.tc_ignored=pts.map(function(p){return(p.day?'+1 ':'')+p.t}).join(' · ');return true}catch(e){console.warn('[51027 TC]',e);return false}}
+window.eakhaRecalcAllTCFinal=function(opts){var n=0;try{(MASTER||[]).forEach(function(m){for(var d=1;d<=daysN();d++){if(window.eakhaRecalcTCFinal51027(m.bil,d))n++}})}catch(e){}return n};
+window.eakhaApplyStrictMCAndTC51027=async function(){try{var mc=window.eakhaBuildStrictMC51027();var n=window.eakhaRecalcAllTCFinal({});try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}try{if(typeof renderMCReg==='function')renderMCReg()}catch(e){}try{if(typeof updFlags==='function')updFlags()}catch(e){}try{if(typeof window.eakhaSaveSafeIDBSnapshot==='function')await window.eakhaSaveSafeIDBSnapshot('51027 STRICT MC + TC NIGHT')}catch(e){console.warn('[51027 idb save]',e)}toastSafe('Strict MC + TC malam siap ✓ TC '+n+' sel · MC sah '+mc.good.length+' · MC semak '+mc.review.length,'ok');return true}catch(e){toastSafe('Gagal Strict MC/TC: '+e.message,'err');return false}};
+function showMCReview(){var list=window.EAKHA_MC_REVIEW_51027||[];var html='<div style="position:fixed;inset:20px;z-index:99999;background:#0f1f3d;border:1px solid rgba(240,180,41,.5);border-radius:10px;overflow:auto;padding:14px;color:#fff"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="color:#f0b429">MC Meragukan / Tidak Dipaut ke Master</b><button class="btn btn-sm" onclick="this.closest(\'div[style*=fixed]\').remove()">Tutup</button></div><div style="font-size:8px;color:#93c5fd;margin-bottom:8px">Rekod ini TIDAK dimasukkan ke Master sehingga nama anggota disahkan.</div><table class="tbl"><thead><tr><th>Nama pada MC</th><th>Tarikh</th><th>Klinik</th><th>No MC</th><th>Score</th><th>Sebab</th></tr></thead><tbody>'+(list.length?list.map(function(r){return'<tr><td>'+esc(r.raw_nama)+'</td><td>'+esc(r.dari)+' - '+esc(r.hingga)+'</td><td>'+esc(r.klinik)+'</td><td>'+esc(r.no_mc)+'</td><td>'+esc(r.score)+'</td><td>'+esc(r.reason)+'</td></tr>'}).join(''):'<tr><td colspan="6">Tiada rekod meragukan.</td></tr>')+'</tbody></table></div>';document.body.insertAdjacentHTML('beforeend',html)}
+function bind(){try{var bar=document.querySelector('#page-master > div[style*="display:flex"]');if(bar&&!document.getElementById('btn-strict-mc-tc-51027')){var b=document.createElement('button');b.id='btn-strict-mc-tc-51027';b.className='btn btn-gold btn-sm';b.textContent='Semak MC Strict + TC Malam';b.title='MC link ikut nama pesakit sebenar; TC malam 2200-2305/0700-0800';b.onclick=window.eakhaApplyStrictMCAndTC51027;bar.appendChild(b);var r=document.createElement('button');r.id='btn-mc-review-51027';r.className='btn btn-sm';r.textContent='Lihat MC Meragukan';r.onclick=showMCReview;bar.appendChild(r)}}catch(e){}try{var btn=document.getElementById('btn-rule-final-51025');if(btn){btn.textContent='Kemas Kini TC Rule Final SAFE';btn.onclick=window.eakhaApplyStrictMCAndTC51027}}catch(e){}}
+[600,1800,3500].forEach(function(ms){setTimeout(bind,ms)});document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,900)});
+try{document.title='e-AKHA Vsavage v5.10.27 STRICT MC + TC';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
 </body>
 </html>
