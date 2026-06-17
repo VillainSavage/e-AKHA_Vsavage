@@ -3,16 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.24 FORCE RESTORE SAFE</title>
+  <title>e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script id="eakha-v51024-native-storage-capture">
-(function(){try{if(!window.__EAKHA_NATIVE_STORAGE__){window.__EAKHA_NATIVE_STORAGE__={set:Storage.prototype.setItem,get:Storage.prototype.getItem,remove:Storage.prototype.removeItem};}}catch(e){}})();
-</script>
-
   <style>
 
 :root{--navy:#0a1628;--navy2:#0f1f3d;--navy3:#162040;--gold:#c8960a;--gold2:#f0b429;--red:#dc2626;--green:#059669;--blue:#2563eb}
@@ -9245,194 +9241,239 @@ try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('
 })();
 </script>
 
-<script id="eakha-v51024-force-quota-restore">
-/* e-AKHA v5.10.24 FORCE RESTORE — restores from selected backup by freeing localStorage first. */
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.25 FINAL TIMECARD RULE SAFE
+   Tujuan:
+   - Kekalkan data rescue/snapshot sedia ada, JANGAN overwrite automatik.
+   - Betulkan kiraan TIMECARD supaya punch lewat tidak jadi TIADA IN.
+   - Rule final:
+     PG: IN 0600-0705, lewat selepas 0705, OUT 1500-1600
+     PT: IN 1400-1505, lewat selepas 1505, OUT 2300-0000/+1h
+     M : IN 2200-2305, lewat selepas 2305, OUT 0700-0800 esok
+   ══════════════════════════════════════════════════════════════ */
 (function(){
-  'use strict';
-  if(window.__EAKHA_V51024_FORCE_RESTORE)return; window.__EAKHA_V51024_FORCE_RESTORE=true;
-  var PATCH='v5.10.24-force-restore';
-  var NS=window.__EAKHA_NATIVE_STORAGE__||{set:Storage.prototype.setItem,get:Storage.prototype.getItem,remove:Storage.prototype.removeItem};
-  function parse(raw,fb){try{return JSON.parse(raw||'');}catch(e){return fb===undefined?null:fb}}
-  function clone(x){return parse(JSON.stringify(x),x)}
-  function pad(n){return String(n).padStart(2,'0')}
-  function yNow(){try{return (typeof ACTIVE_YEAR!=='undefined'&&ACTIVE_YEAR)?+ACTIVE_YEAR:2026}catch(e){return 2026}}
-  function mNow(){try{return (typeof ACTIVE_MONTH!=='undefined'&&ACTIVE_MONTH)?+ACTIVE_MONTH:4}catch(e){return 4}}
-  function masterKey(y,m){return 'eakha_master_'+(+y)+'_'+pad(m)}
-  function datasetKey(y,m){return 'eakha_dataset_'+(+y)+'_'+(+m)}
-  function auditKey(y,m){return 'eakha_audit_state_'+(+y)+'_'+pad(m)}
-  function isQuota(e){return /Quota|exceeded|NS_ERROR_DOM_QUOTA/i.test((e&&((e.name||'')+' '+(e.message||'')))||'')}
-  function extractD(o){
-    if(!o||typeof o!=='object')return null;
-    if(o.D&&typeof o.D==='object')return o.D;
-    if(o.snap&&o.snap.D&&typeof o.snap.D==='object')return o.snap.D;
-    if(o.data&&o.data.D&&typeof o.data.D==='object')return o.data.D;
-    if(o.payload&&o.payload.D&&typeof o.payload.D==='object')return o.payload.D;
-    var ks=Object.keys(o), nums=ks.filter(function(k){return /^\d+$/.test(k)}).length;
-    return nums>=3?o:null;
-  }
-  function has(v){return v!==undefined&&v!==null&&String(v).trim()!==''&&String(v).trim()!=='-'}
-  function cellScore(c){
-    if(!c||typeof c!=='object')return 0; var n=0;
-    ['kzp','kzk','tc_in','tc_out','hrmis','note','pengganti','pengganti_nama','ot','tc_shift','kzp_jam','kzk_pos','mc','audit','status','tc_problem'].forEach(function(k){if(has(c[k]))n++;});
-    if(c.tc_all&&c.tc_all.length)n+=Math.min(5,c.tc_all.length); if(c._mc||c.mc_)n+=3; if(c._hrmis_rec||c.hrmis_rec)n+=3;
-    return n;
-  }
-  function scoreD(d){
-    if(!d||typeof d!=='object')return 0; var total=0,cells=0,members=0;
-    Object.keys(d).forEach(function(b){var row=d[b]||{}, hasRow=false; Object.keys(row).forEach(function(day){var sc=cellScore(row[day]); if(sc>0){cells++; total+=sc; hasRow=true}}); if(hasRow)members++;});
-    return total+cells+(members*3);
-  }
-  function statsD(d){
-    var members=0,cells=0,filled=0; if(!d||typeof d!=='object')return {members:0,cells:0,filled:0};
-    Object.keys(d).forEach(function(b){var row=d[b]||{}, hasRow=false; Object.keys(row).forEach(function(day){cells++; if(cellScore(row[day])>0){filled++; hasRow=true}}); if(hasRow)members++;});
-    return {members:members,cells:cells,filled:filled};
-  }
-  function candidate(k,raw){
-    var o=parse(raw,null), d=extractD(o); if(!d)return null;
-    var snap=(o&&o.D)?o:(o&&o.snap&&o.snap.D?o.snap:null); var st=statsD(d), sc=scoreD(d);
-    if(sc<=0)return null;
-    return {key:k,raw:raw,obj:o,D:d,snap:snap,score:sc,members:st.members,filled:st.filled,cells:st.cells,savedAt:(snap&&snap.savedAt)||(o&&o.savedAt)||(o&&o.time)||(o&&o.createdAt)||'', bytes:(raw||'').length};
-  }
-  function watched(k){k=String(k||''); return k==='eakha_data'||/^eakha_dataset_/.test(k)||/^eakha_master_/.test(k)||/^eakha_snapshot_/.test(k)||/^eakha_guard_/.test(k)||/^eakha_rescue_/.test(k)||/^eakha_audit_state/.test(k)||/^eakha_mc/.test(k)||/^eakha_hrmis/.test(k)||k==='eakha_boot_predeploy_backup'||k==='eakha_last_dataset_key';}
-  function scan(){
-    var out=[];
-    try{
-      for(var i=0;i<localStorage.length;i++){
-        var k=localStorage.key(i); if(!k)continue;
-        if(k==='eakha_last_dataset_key'){
-          var lk=NS.get.call(localStorage,k); var c0=candidate(lk,NS.get.call(localStorage,lk)); if(c0)out.push(c0); continue;
-        }
-        if(!watched(k))continue;
-        var c=candidate(k,NS.get.call(localStorage,k)); if(c)out.push(c);
-      }
-    }catch(e){console.warn('[e-AKHA '+PATCH+'] scan',e)}
-    var seen={}; out=out.filter(function(c){var id=c.key+'|'+c.score+'|'+c.members+'|'+c.filled+'|'+c.bytes; if(seen[id])return false; seen[id]=1; return true});
-    out.sort(function(a,b){
-      var ap=/beforeunload|boot_predeploy|protected|manual|snapshot_manual|rescue_preload|guard_last_good/i.test(a.key)?80:0;
-      var bp=/beforeunload|boot_predeploy|protected|manual|snapshot_manual|rescue_preload|guard_last_good/i.test(b.key)?80:0;
-      return (b.score+bp)-(a.score+ap);
-    });
-    return out;
-  }
-  function download(name,data){
-    try{var blob=new Blob([typeof data==='string'?data:JSON.stringify(data,null,2)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove()},1000); return true;}catch(e){console.warn('[e-AKHA '+PATCH+'] download failed',e); return false;}
-  }
-  function exportAll(){
-    try{
-      var data={exportedAt:new Date().toISOString(),location:location.href,candidates:scan().map(function(c){return {key:c.key,score:c.score,members:c.members,filled:c.filled,bytes:c.bytes,savedAt:c.savedAt,raw:c.raw}}),allKeys:{}};
-      for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i); if(/^eakha_/.test(k||''))data.allKeys[k]=NS.get.call(localStorage,k)}
-      download('eAKHA_ALL_BACKUP_BEFORE_FORCE_RESTORE_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json',data);
-    }catch(e){alert('Export gagal: '+e.message)}
-  }
-  function listEakhaKeys(){
-    var arr=[]; try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i)||''; if(/^eakha_/.test(k)){var raw=NS.get.call(localStorage,k)||''; arr.push({k:k,len:raw.length});}}}catch(e){}
-    arr.sort(function(a,b){return b.len-a.len}); return arr;
-  }
-  function freeSpaceAggressive(){
-    var removed=0, freed=0, keys=listEakhaKeys();
-    keys.forEach(function(it){
-      var k=it.k;
-      // Keep only small UI month markers; all big e-AKHA data is already in memory/export before this runs.
-      if(k==='eakha_active_year'||k==='eakha_active_month'||k==='eakha_data_version')return;
-      try{NS.remove.call(localStorage,k); removed++; freed+=it.len;}catch(e){}
-    });
-    return {removed:removed,freed:freed};
-  }
-  function tryNativeSet(k,v){try{NS.set.call(localStorage,k,v); return {ok:true};}catch(e){return {ok:false,error:e}}}
-  function renderNow(){
-    try{if(typeof populateSels==='function')populateSels()}catch(e){}
-    try{if(typeof renderDash==='function')renderDash()}catch(e){}
-    try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}
-    try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}
-    try{if(typeof renderMCReg==='function')renderMCReg()}catch(e){}
-    try{if(typeof renderHRMISReg==='function')renderHRMISReg()}catch(e){}
-    try{if(typeof updFlags==='function')updFlags()}catch(e){}
-  }
-  function makeMasterPayload(c){
-    var y=yNow(), m=mNow(), snap=c.snap||{};
-    return {patch:PATCH,tahun:y,bulan:m,reason:'FORCE RESTORE FROM '+c.key,savedAt:new Date().toISOString(),score:c.score,D:clone(c.D),AUDIT_STATE:clone((snap&&snap.AUDIT_STATE)||parse(NS.get.call(localStorage,auditKey(y,m)),{})||{})};
-  }
-  function makeDatasetPayload(c){
-    var y=yNow(), m=mNow(), snap=c.snap||{};
-    return {patch:PATCH,tahun:y,bulan:m,version:'v5.10.24',reason:'FORCE DATASET RESTORE FROM '+c.key,savedAt:new Date().toISOString(),score:c.score,D:clone(c.D),AUDIT_STATE:clone((snap&&snap.AUDIT_STATE)||{}),MC_DATA:clone((snap&&snap.MC_DATA)||[]),HRMIS_DATA:clone((snap&&snap.HRMIS_DATA)||[]),RAYA_DATA:clone((snap&&snap.RAYA_DATA)||[]),CTR_DATA:clone((snap&&snap.CTR_DATA)||[]),STAGING:clone((snap&&snap.STAGING)||{}),BAKI_CUTI:clone((snap&&snap.BAKI_CUTI)||{}),CUSTOM_ANGGOTA:clone((snap&&snap.CUSTOM_ANGGOTA)||[]),ANGGOTA_LAIN:clone((snap&&snap.ANGGOTA_LAIN)||[])};
-  }
-  function forceRestore(c){
-    if(!c){alert('Tiada backup dipilih.');return false;}
-    var okConfirm=confirm('Pulih paksa akan EXPORT backup dipilih dan membersihkan backup e-AKHA pendua dalam browser untuk kosongkan storage. Jangan refresh semasa proses. Teruskan?');
-    if(!okConfirm)return false;
-    try{
-      // 1) Save candidate outside localStorage first, so we can safely delete duplicate keys.
-      download('eAKHA_SELECTED_BACKUP_'+String(c.key||'backup').replace(/[^a-z0-9_\-]+/gi,'_').slice(0,80)+'_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json',{exportedAt:new Date().toISOString(),selected:{key:c.key,score:c.score,members:c.members,filled:c.filled,savedAt:c.savedAt,raw:c.raw}});
-      // 2) Load to memory immediately.
-      try{D=clone(c.D)}catch(e){}
-      try{if(c.snap&&c.snap.AUDIT_STATE)AUDIT_STATE=clone(c.snap.AUDIT_STATE)}catch(e){}
-      try{if(c.snap&&Array.isArray(c.snap.MC_DATA))MC_DATA=clone(c.snap.MC_DATA)}catch(e){}
-      try{if(c.snap&&Array.isArray(c.snap.HRMIS_DATA))HRMIS_DATA=clone(c.snap.HRMIS_DATA); if(Array.isArray(HRMIS_DATA))NS.set.call(localStorage,'eakha_hrmis_runtime',JSON.stringify(HRMIS_DATA))}catch(e){}
-      renderNow();
-      // 3) Free localStorage aggressively. Candidate is already in memory and downloaded.
-      var freed=freeSpaceAggressive();
-      var y=yNow(), m=mNow();
-      var rawD=JSON.stringify(c.D), master=JSON.stringify(makeMasterPayload(c)), dataset=JSON.stringify(makeDatasetPayload(c));
-      var saved=[];
-      // 4) Save minimum first: master month + current eakha_data. These are what app needs to load April.
-      var r1=tryNativeSet(masterKey(y,m), master); if(r1.ok)saved.push(masterKey(y,m));
-      var r2=tryNativeSet('eakha_data', rawD); if(r2.ok)saved.push('eakha_data');
-      tryNativeSet('eakha_data_version','v5.10.24');
-      tryNativeSet('eakha_active_year',String(y)); tryNativeSet('eakha_active_month',String(m));
-      // 5) Optional dataset if enough room. If quota hits, skip it — master+eakha_data is enough.
-      var r3=tryNativeSet(datasetKey(y,m), dataset); if(r3.ok){saved.push(datasetKey(y,m)); tryNativeSet('eakha_last_dataset_key',datasetKey(y,m));}
-      else {tryNativeSet('eakha_last_dataset_key',masterKey(y,m));}
-      if(c.snap&&c.snap.AUDIT_STATE)tryNativeSet(auditKey(y,m),JSON.stringify(c.snap.AUDIT_STATE));
-      if(c.snap&&Array.isArray(c.snap.MC_DATA))tryNativeSet('eakha_mc',JSON.stringify(c.snap.MC_DATA));
-      if(c.snap&&Array.isArray(c.snap.HRMIS_DATA))tryNativeSet('eakha_hrmis',JSON.stringify(c.snap.HRMIS_DATA));
-      renderNow();
-      var msg='Pulih paksa selesai. Dibuang '+freed.removed+' backup pendua ('+Math.round(freed.freed/1024)+'KB). Disimpan: '+saved.join(', ')+'.';
-      if(!r1.ok&&!r2.ok){msg='Paparan sudah dipulihkan, tetapi simpan localStorage masih gagal. Backup terpilih sudah diexport. Jangan refresh; ambil Snapshot Bos/PDF dulu.'; try{toast(msg,'warn')}catch(e){alert(msg)}; return false;}
-      try{toast(msg,'ok')}catch(e){alert(msg)}
-      return true;
-    }catch(e){var msg='Pulih paksa gagal: '+(e&&e.message?e.message:e); if(isQuota(e))msg+=' — storage masih penuh.'; console.error('[e-AKHA '+PATCH+'] force restore failed',e); try{toast(msg,'err')}catch(x){alert(msg)} return false;}
-  }
-  function normalRestore(c){
-    // Better default: use force restore because user's storage has already hit quota.
-    return forceRestore(c);
-  }
-  function cleanupOnly(){
-    var ok=confirm('Ini akan export semua backup dahulu, kemudian buang backup e-AKHA pendua untuk kosongkan storage. Teruskan?'); if(!ok)return;
-    exportAll(); setTimeout(function(){var f=freeSpaceAggressive(); alert('Ruang dibersihkan: '+f.removed+' key, lebih kurang '+Math.round(f.freed/1024)+'KB. Sekarang pilih backup daripada export jika perlu atau upload semula data.');},400);
-  }
-  function panel(){
-    var old=document.getElementById('eakha-rescue-panel'); if(old)old.remove(); var arr=scan();
-    var ov=document.createElement('div'); ov.id='eakha-rescue-panel'; ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:100000;display:flex;align-items:center;justify-content:center;padding:12px';
-    var rows=arr.map(function(c,i){return '<tr><td style="color:#f0b429;font-weight:800">'+(i+1)+'</td><td style="word-break:break-all">'+c.key+'</td><td>'+c.score+'</td><td>'+c.members+'</td><td>'+c.filled+'</td><td>'+Math.round((c.bytes||0)/1024)+'KB</td><td style="font-size:10px;color:#93c5fd">'+(c.savedAt||'-')+'</td><td><button data-i="'+i+'" class="res-one" style="font-size:10px;padding:5px 9px;border-radius:5px;border:1px solid #34d399;background:rgba(5,150,105,.18);color:#34d399;font-weight:800">Pulih Paksa</button></td></tr>'}).join('');
-    ov.innerHTML='<div style="width:min(960px,96vw);max-height:92vh;overflow:auto;background:#0f1f3d;border:1px solid rgba(240,180,41,.55);border-radius:10px;color:#e5e7eb;font-family:Arial,sans-serif;box-shadow:0 20px 70px rgba(0,0,0,.6)">'+
-      '<div style="position:sticky;top:0;background:#102449;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;z-index:2"><b style="color:#f0b429">e-AKHA Rescue Data April — Force Quota Restore v5.10.24</b><button id="res-close" style="margin-left:auto;padding:5px 10px;border-radius:5px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff">Tutup</button></div>'+ 
-      '<div style="padding:12px 16px;font-size:11px;line-height:1.55;color:#cbd5e1"><b>Masalah sekarang:</b> backup ada, tapi localStorage penuh. Gunakan <b>Pulih Paksa Skor Tertinggi</b>. Sistem akan download backup dipilih dahulu, kemudian buang backup pendua dan simpan semula Master April.</div>'+ 
-      '<div style="padding:0 16px 12px;display:flex;gap:6px;flex-wrap:wrap"><button id="res-best" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #f0b429;background:rgba(200,150,10,.25);color:#f0b429;font-weight:800">Pulih Paksa Skor Tertinggi</button><button id="res-export" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #93c5fd;background:rgba(37,99,235,.18);color:#93c5fd;font-weight:700">Export Semua Backup</button><button id="res-clean" style="font-size:11px;padding:7px 11px;border-radius:6px;border:1px solid #fca5a5;background:rgba(220,38,38,.14);color:#fca5a5;font-weight:700">Export + Bersih Ruang</button><span style="font-size:10px;color:#94a3b8;align-self:center">Calon: '+arr.length+'</span></div>'+ 
-      '<div style="padding:0 16px 16px"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:rgba(0,0,0,.28)"><th style="padding:8px;text-align:left">#</th><th style="padding:8px;text-align:left">Key</th><th>Score</th><th>Anggota</th><th>Filled</th><th>Saiz</th><th>Saved</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-    document.body.appendChild(ov);
-    document.getElementById('res-close').onclick=function(){ov.remove()};
-    document.getElementById('res-export').onclick=exportAll;
-    document.getElementById('res-clean').onclick=cleanupOnly;
-    document.getElementById('res-best').onclick=function(){normalRestore(arr[0]);};
-    Array.prototype.forEach.call(ov.querySelectorAll('.res-one'),function(b){b.onclick=function(){normalRestore(arr[+b.getAttribute('data-i')]);};});
-  }
-  function injectButtons(){
-    try{
-      var b=document.getElementById('eakha-rescue-login-btn');
-      var auth=document.querySelector('#auth-wall div');
-      if(!b&&auth){b=document.createElement('button'); b.id='eakha-rescue-login-btn'; b.type='button'; auth.appendChild(b);}
-      if(b){b.textContent='🛟 Rescue Force / Pulih Data Lama'; b.onclick=panel; b.style.cssText='margin-top:8px;width:100%;justify-content:center;font-size:10px;padding:8px;border-radius:7px;border:1px solid rgba(240,180,41,.55);background:rgba(200,150,10,.22);color:#f0b429;font-weight:800;cursor:pointer';}
-      var t=document.getElementById('eakha-rescue-top-btn');
-      var bar=document.querySelector('.topbar > div[style*="margin-left:auto"]');
-      if(!t&&bar){t=document.createElement('button'); t.id='eakha-rescue-top-btn'; t.className='btn btn-sm'; bar.appendChild(t);}
-      if(t){t.textContent='🛟 Rescue Force'; t.style.fontSize='7.5px'; t.onclick=panel;}
-    }catch(e){}
-  }
-  window.eakhaOpenRescuePanel=panel;
-  window.eakhaRestoreBestBackup=function(){var a=scan(); return normalRestore(a[0]);};
-  window.eakhaForceRestoreBestBackup=window.eakhaRestoreBestBackup;
-  document.addEventListener('DOMContentLoaded',injectButtons); setTimeout(injectButtons,200); setTimeout(injectButtons,800); setInterval(injectButtons,2500);
-  try{document.title='e-AKHA Vsavage v5.10.24 FORCE RESTORE SAFE'; console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+'use strict';
+window.__EAKHA_V51025_FINAL_TC_RULE__ = true;
+var PATCH = 'v5.10.25 FINAL TIMECARD RULE SAFE';
+
+function toastSafe(msg,type){try{ if(typeof toast==='function') toast(msg,type||'ok'); else console.log(msg); }catch(e){ console.log(msg); }}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():30}catch(e){return 30}}
+function nowM(){try{return typeof ACTIVE_MONTH!=='undefined'?+ACTIVE_MONTH:4}catch(e){return 4}}
+function nowY(){try{return typeof ACTIVE_YEAR!=='undefined'?+ACTIVE_YEAR:2026}catch(e){return 2026}}
+function shNorm(s){s=String(s||'').toUpperCase().trim(); if(['PG','PAGI','S','SIANG'].indexOf(s)>=0)return'S'; if(['PT','PETANG','P'].indexOf(s)>=0)return'P'; if(['M','MALAM'].indexOf(s)>=0)return'M'; if(['O','OF','OFF','OFFDAY'].indexOf(s)>=0)return'O'; return s;}
+function mins(t){
+  var m=String(t||'').match(/(\d{1,2})[:\.](\d{2})/); if(!m)return null;
+  var h=+m[1], mi=+m[2]; if(isNaN(h)||isNaN(mi)||h>23||mi>59)return null; return h*60+mi;
+}
+function pt(raw,day,src){
+  var text = (typeof raw==='object') ? String(raw.t||raw.time||raw.tc||raw.value||'') : String(raw||'');
+  var m=mins(text); if(m===null)return null;
+  var d=(typeof raw==='object' && raw.nextDay)?1:(day||0);
+  return {t:text.match(/\d{1,2}[:\.]\d{2}/)[0].replace('.',':'), mins:m, day:d, abs:m+d*1440, src:src||''};
+}
+function addPoint(out,p){
+  if(!p)return; var key=p.abs+'|'+p.t; if(out._seen&&out._seen[key])return; if(!out._seen)out._seen={}; out._seen[key]=1; out.push(p);
+}
+function allPoints(bil,d){
+  var out=[];
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;
+    if(c){
+      if(Array.isArray(c.tc_all)) c.tc_all.forEach(function(x){addPoint(out,pt(x,0,'tc_all'))});
+      addPoint(out,pt(c.tc_in,0,'tc_in'));
+      addPoint(out,pt(c.tc_out,0,'tc_out'));
+      // Kadang-kadang restore lama simpan dua punch sebagai string dalam note/ignored.
+      String(c.tc_ignored||c.tc_note||'').replace(/(\d{1,2}[:\.]\d{2})/g,function(x){addPoint(out,pt(x,0,'note'))});
+    }
+    var n=D&&D[bil]&&D[bil][d+1]?D[bil][d+1]:null;
+    if(n){
+      if(Array.isArray(n.tc_all)) n.tc_all.forEach(function(x){addPoint(out,pt(x,1,'next_all'))});
+      addPoint(out,pt(n.tc_in,1,'next_in'));
+      addPoint(out,pt(n.tc_out,1,'next_out'));
+    }
+  }catch(e){}
+  delete out._seen;
+  return out.sort(function(a,b){return a.abs-b.abs});
+}
+function cfg(sh){
+  if(sh==='S')return {start:420,end:900,inEarly:360,inOn:425,inLate:540,outStart:900,outEnd:960,outEarly:840,label:'PG',time:'0700-1500'};
+  if(sh==='P')return {start:900,end:1380,inEarly:840,inOn:905,inLate:1080,outStart:1380,outEnd:1500,outEarly:1320,label:'PT',time:'1500-2300'}; // outEnd 1500 = 01:00 next day
+  if(sh==='M')return {start:1380,end:1860,inEarly:1320,inOn:1385,inLate:1439,outStart:1860,outEnd:1920,outEarly:1800,label:'M',time:'2300-0700'};
+  return null;
+}
+function inCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  if(sh==='P') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  if(sh==='M') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  return false;
+}
+function outCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=c.outStart && p.mins<=c.outEnd;
+  if(sh==='P') return (p.day===0 && p.mins>=1380 && p.mins<=1439) || (p.day===1 && p.mins>=0 && p.mins<=60);
+  if(sh==='M') return p.day===1 && p.mins>=420 && p.mins<=480;
+  return false;
+}
+function earlyOutCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=840 && p.mins<900;
+  if(sh==='P') return p.day===0 && p.mins>=1320 && p.mins<1380;
+  if(sh==='M') return p.day===1 && p.mins>=360 && p.mins<420;
+  return false;
+}
+function pick(arr,target){
+  if(!arr.length)return null;
+  return arr.slice().sort(function(a,b){return Math.abs(a.abs-target)-Math.abs(b.abs-target)})[0];
+}
+function lateMin(p,sh,c){
+  if(!p||!c)return 0;
+  var base=c.start;
+  if(sh==='M' && p.day===1) base+=1440;
+  return p.abs-base;
+}
+function outEarly(p,sh,c){
+  if(!p||!c)return false;
+  var end=c.end;
+  if(sh==='M') end=1860;
+  if(sh==='P' && p.day===1) return false;
+  return p.abs<end;
+}
+
+window.eakhaRecalcTCFinal = function(bil,d,opts){
+  opts=opts||{};
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null; if(!c||c.tc_problem)return false;
+    if(c.tc_manual && !opts.forceManual)return false;
+    var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c.tc_shift||'')); if(sh==='O'||!sh)return false;
+    var C=cfg(sh); if(!C)return false;
+    var pts=allPoints(bil,d); if(!pts.length)return false;
+    var ins=pts.filter(function(p){return inCandidate(p,sh,C)});
+    var outs=pts.filter(function(p){return outCandidate(p,sh,C)});
+    var early=pts.filter(function(p){return earlyOutCandidate(p,sh,C)});
+    var pin=pick(ins,C.start);
+    var pout=pick(outs,C.end);
+    var pe=pick(early,C.end);
+    if(!pout && pe){pout=pe; c.tc_out_awal=true;} else c.tc_out_awal=false;
+    c.tc_in = pin ? pin.t : '';
+    c.tc_out = pout ? pout.t : '';
+    c.tc_out_nextday = !!(pout && pout.day===1);
+    c.tc_shift = sh;
+    c.tc_rule_version = '51025';
+    c.tc_audit_done = true;
+    c.tc_ignored = pts.map(function(p){return (p.day?'+1 ':'')+p.t}).join(' · ');
+    return true;
+  }catch(e){console.warn('[51025 recalc]',e); return false;}
+};
+
+window.eakhaRecalcAllTCFinal = function(opts){
+  opts=opts||{}; var n=0;
+  try{
+    if(typeof MASTER==='undefined'||typeof D==='undefined')return 0;
+    MASTER.forEach(function(m){for(var d=1;d<=daysN();d++){if(window.eakhaRecalcTCFinal(m.bil,d,opts))n++;}});
+  }catch(e){console.warn('[51025 recalc all]',e)}
+  return n;
+};
+
+var oldTcAudit = window.tcAudit;
+window.tcAudit = tcAudit = function(bil,d){
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;
+    var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c&&c.tc_shift||''));
+    if(!c)return {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    if(c.tc_problem)return {txt:'TC BERMASALAH\nABAIKAN',cls:'tc-off',ok:true};
+    if(sh==='O')return (c.tc_in||c.tc_out)?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
+    if(c.kzp==='TT'||c.kzk==='TT')return {txt:'TAHAN TUGAS',cls:'tc-off',ok:true};
+    if(c.kzp==='TH'||c.kzk==='TH')return {txt:'TIDAK HADIR',cls:'tc-off',ok:true};
+    if(!c.tc_manual) window.eakhaRecalcTCFinal(bil,d,{});
+    var C=cfg(sh); if(!C)return oldTcAudit?oldTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    var lines=[], cls='tc-ok', ok=true;
+    var hasPunch=!!(c.tc_in||c.tc_out||String(c.tc_ignored||'').match(/\d{1,2}:\d{2}/));
+    if(!c.tc_in && !c.tc_out){
+      var cutiK=(typeof isCuti==='function')&&(isCuti(c.kzp)||isCuti(c.kzk));
+      if(cutiK)return {txt:'TIADA PUNCH\n(CUTI '+(c.kzp||c.kzk)+')',cls:'tc-off',ok:true};
+      if(!hasPunch && !(c.kzp||c.kzk))return {txt:'—',cls:'tc-bp',ok:false};
+      return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+    }
+    if(c.tc_in){
+      var pin=pt(c.tc_in,0,'tc_in');
+      var lm=lateMin(pin,sh,C);
+      if(lm>5){lines.push('LEWAT');lines.push('IN '+c.tc_in+' (+'+lm+'min)');cls='tc-lw';ok=false;}
+      else lines.push('✓ IN '+c.tc_in);
+    }
+    if(c.tc_out){
+      var day=c.tc_out_nextday?1:0, pout=pt(c.tc_out,day,'tc_out');
+      var txt='OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'');
+      if(c.tc_out_awal || outEarly(pout,sh,C)){lines.push('OUT AWAL'); lines.push(txt); cls='tc-lw'; ok=false;}
+      else lines.push((c.tc_in?'✓ ':'')+txt);
+    }
+    if(!c.tc_in && c.tc_out){
+      if(lines[0]==='OUT AWAL') lines.splice(1,0,'TIADA IN'); else lines.unshift('TIADA IN');
+      if(cls==='tc-ok')cls='tc-warn'; ok=false;
+    }
+    if(c.tc_in && !c.tc_out){
+      if(sh==='M'){lines.push('SEMAK ESOK'); if(cls==='tc-ok')cls='tc-warn';}
+      else {lines.push('TIADA OUT'); if(cls==='tc-ok')cls='tc-warn'; ok=false;}
+    }
+    return {txt:lines.join('\n'),cls:cls,ok:ok};
+  }catch(e){console.warn('[51025 tcAudit]',e); return oldTcAudit?oldTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};}
+};
+
+var oldAudit = window.auditFinal;
+window.auditFinal = auditFinal = function(bil,d){
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:{};
+    // Hari timcard problem April tetap abaikan, jangan timbulkan semula isu 27-30/04.
+    if(nowY()===2026 && nowM()===4 && [27,28,29,30].indexOf(+d)>=0){
+      if(typeof getMC==='function'&&getMC(bil,d))return {txt:'MC SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
+      if(typeof hasHR==='function'&&hasHR(c))return {txt:'HRMIS SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
+      return {txt:'TC BERMASALAH\nABAIKAN AUDIT 27-30/04',cls:'af-sah',inc:false};
+    }
+    var tc=window.tcAudit(bil,d);
+    var kzp=String(c.kzp||'').toUpperCase(), kzk=String(c.kzk||'').toUpperCase();
+    // Pastikan punch lewat yang sah tidak turun status menjadi TIADA IN.
+    if(tc && tc.txt && tc.txt.indexOf('LEWAT')>=0){
+      if(kzp==='MC'||kzk==='MC')return oldAudit?oldAudit.apply(this,arguments):{txt:'LEWAT',cls:'af-lw'};
+      return {txt:(kzp==='L'||kzk==='L')?'LEWAT\n(KZ & TC sahkan)':'LEWAT',cls:'af-lw'};
+    }
+    return oldAudit?oldAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+  }catch(e){console.warn('[51025 audit]',e); return oldAudit?oldAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};}
+};
+
+// Render wrapper: kira dalam memory sahaja. Tidak tulis localStorage supaya snapshot lama tidak terbuang.
+function recalcVisible(){try{window.eakhaRecalcAllTCFinal({forceManual:false});}catch(e){}}
+var oldRM=window.renderMaster;
+if(typeof oldRM==='function' && !oldRM.__v51025){
+  window.renderMaster = renderMaster = function(){recalcVisible(); return oldRM.apply(this,arguments);};
+  window.renderMaster.__v51025=true;
+}
+var oldRO=window.renderOutput;
+if(typeof oldRO==='function' && !oldRO.__v51025){
+  window.renderOutput = renderOutput = function(){recalcVisible(); return oldRO.apply(this,arguments);};
+  window.renderOutput.__v51025=true;
+}
+window.eakhaSimpanRuleFinalTC = function(){
+  try{
+    var n=window.eakhaRecalcAllTCFinal({forceManual:false});
+    localStorage.setItem('eakha_data',JSON.stringify(D));
+    if(typeof saveDataset==='function')try{saveDataset('TC RULE FINAL 51025')}catch(e){}
+    if(typeof renderMaster==='function')renderMaster(null);
+    if(typeof updFlags==='function')updFlags();
+    toastSafe('TC/Audit rule final dikemas kini: '+n+' sel. Sekarang tekan Simpan Snapshot kalau paparan sudah betul.','ok');
+  }catch(e){toastSafe('Gagal simpan rule final: '+e.message,'err');}
+};
+function addBtn(){
+  try{
+    var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+    if(!bar||document.getElementById('btn-rule-final-51025'))return;
+    var b=document.createElement('button'); b.id='btn-rule-final-51025'; b.className='btn btn-gold btn-sm'; b.textContent='Kemas Kini TC Rule Final';
+    b.onclick=window.eakhaSimpanRuleFinalTC; bar.appendChild(b);
+  }catch(e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){recalcVisible();addBtn();},800);});
+else setTimeout(function(){recalcVisible();addBtn();},500);
+try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 </script>
 
