@@ -544,13 +544,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div id="upload-wrap">
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:12px">
             <div class="panel" style="margin:0"><div class="ph" style="background:rgba(5,150,105,.25)"><span class="ph-title">&#x1F4C4; KZ Penyelia</span><span style="font-size:7px;color:rgba(255,255,255,.4)">Lapisan 2</span></div><div class="pb"><div class="uzone" id="uz-kzp" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'kzp',this)"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls" multiple onchange="fsel(this,'kzp')"><div class="uz-ic">&#x1F4C4;</div><div class="uz-t">KZ Penyelia</div><div class="uz-s">XLSX · PDF · JPG/PNG</div><div class="uz-fn" id="fn-kzp"></div></div><div class="pbar"><div class="pfill" id="pf-kzp" style="width:0"></div></div><div class="pmsg" id="pm-kzp"></div></div></div>
-            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(5,150,105,.18)"><span class="ph-title">&#x1F4AC; KZ Koperal</span><span style="font-size:7px;color:rgba(255,255,255,.4)">Lapisan 3</span></div><div class="pb"><div class="uzone" id="uz-kzk" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'kzk',this)"><input type="file" accept=".txt,.zip,.pdf,.notes" multiple onchange="fsel(this,'kzk')"><div class="uz-ic">&#x1F4AC;</div><div class="uz-t">KZ Koperal (WhatsApp)</div><div class="uz-s">.zip · .txt · PDF</div><div class="uz-fn" id="fn-kzk"></div></div><div class="pbar"><div class="pfill" id="pf-kzk" style="width:0"></div></div><div class="pmsg" id="pm-kzk"></div></div></div>
+            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(5,150,105,.18)"><span class="ph-title">&#x1F4AC; KZ Koperal</span><span style="font-size:7px;color:rgba(255,255,255,.4)">Lapisan 3</span></div><div class="pb"><div class="uzone" id="uz-kzk" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'kzk',this)"><input type="file" accept=".xlsx,.xls,.csv,.txt,.zip,.pdf,.notes" multiple onchange="fsel(this,'kzk')"><div class="uz-ic">&#x1F4AC;</div><div class="uz-t">KZ Koperal (WhatsApp/Excel)</div><div class="uz-s">XLSX · ZIP · TXT · PDF</div><div class="uz-fn" id="fn-kzk"></div></div><div class="pbar"><div class="pfill" id="pf-kzk" style="width:0"></div></div><div class="pmsg" id="pm-kzk"></div></div></div>
             <div class="panel" style="margin:0"><div class="ph" style="background:rgba(124,58,237,.3)"><span class="ph-title">&#x23F1; TIMECARD</span><span style="font-size:7px;color:rgba(255,255,255,.4)">Lapisan 4</span></div><div class="pb"><div class="uzone" id="uz-tc" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'tc',this)"><input type="file" accept=".pdf,.xlsx,.csv,.jpg,.jpeg,.png" multiple onchange="fsel(this,'tc')"><div class="uz-ic">&#x23F1;</div><div class="uz-t">TIMECARD (Punch IN/OUT)</div><div class="uz-s">PDF · Excel · CSV</div><div class="uz-fn" id="fn-tc"></div></div><div class="pbar"><div class="pfill" id="pf-tc" style="width:0"></div></div><div class="pmsg" id="pm-tc"></div></div></div>
-            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(217,119,6,.25)"><span class="ph-title">&#x1F3E5; MC Hard Copy</span><span style="font-size:7px;color:rgba(255,255,255,.4)">Lapisan 5</span></div><div class="pb"><div class="uzone" id="uz-mc" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'mc',this)"><input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="fsel(this,'mc')"><div class="uz-ic">&#x1F3E5;</div><div class="uz-t">Borang Semakan MC</div><div class="uz-s">PDF · JPG · PNG</div><div class="uz-fn" id="fn-mc"></div></div><div class="pbar"><div class="pfill" id="pf-mc" style="width:0"></div></div><div class="pmsg" id="pm-mc"></div></div></div>
-            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(37,99,235,.25)"><span class="ph-title">&#x1F4D1; Cuti HRMIS</span><span style="font-size:7px;color:rgba(255,255,255,.4)">Lapisan 6</span></div><div class="pb"><div class="uzone" id="uz-hr" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'hr',this)"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx" multiple onchange="fsel(this,'hr')"><div class="uz-ic">&#x1F4D1;</div><div class="uz-t">Cuti HRMIS</div><div class="uz-s">PDF · Screenshot</div><div class="uz-fn" id="fn-hr"></div></div><div class="pbar"><div class="pfill" id="pf-hr" style="width:0"></div></div><div class="pmsg" id="pm-hr"></div></div></div>
-            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(30,41,59,.6)"><span class="ph-title">&#x1F4CA; Baki Cuti</span></div><div class="pb"><div class="uzone" id="uz-baki-up" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'baki-up',this)"><input type="file" accept=".pdf,.xlsx,.csv" onchange="fsel(this,'baki-up')"><div class="uz-ic">&#x1F4CA;</div><div class="uz-t">Baki Cuti</div><div class="uz-s">PDF · Excel · CSV</div><div class="uz-fn" id="fn-baki-up"></div></div></div></div>
-            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(75,0,130,.5)"><span class="ph-title">&#x1F54C; CTR Raya Haji</span><span style="font-size:7px;color:rgba(255,255,255,.4)">28/05</span></div><div class="pb"><div class="uzone" id="uz-ctr-up" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'ctr-up',this)"><input type="file" accept=".pdf,.xlsx,.csv,.txt" multiple onchange="fsel(this,'ctr-up')"><div class="uz-ic">&#x1F54C;</div><div class="uz-t">Senarai CTR Raya Haji</div><div class="uz-s">PDF · Excel · CSV</div><div class="uz-fn" id="fn-ctr-up"></div></div></div></div>
-            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(30,27,75,.7)"><span class="ph-title">&#x1F4DD; Dokumen Manual</span></div><div class="pb"><div class="uzone" id="uz-man" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'man',this)"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.txt,.xlsx,.csv" multiple onchange="fsel(this,'man')"><div class="uz-ic">&#x1F4DD;</div><div class="uz-t">Dokumen Manual</div><div class="uz-s">Apa sahaja · Auto-OCR</div><div class="uz-fn" id="fn-man"></div></div><div class="pbar"><div class="pfill" id="pf-man" style="width:0;background:#7c3aed"></div></div><div class="pmsg" id="pm-man"></div></div></div>
+            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(217,119,6,.25)"><span class="ph-title">&#x1F3E5; MC Hard Copy</span><span style="font-size:7px;color:rgba(255,255,255,.4)">Lapisan 5</span></div><div class="pb"><div class="uzone" id="uz-mc" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'mc',this)"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv" multiple onchange="fsel(this,'mc')"><div class="uz-ic">&#x1F3E5;</div><div class="uz-t">Borang Semakan MC</div><div class="uz-s">XLSX · PDF · JPG · PNG</div><div class="uz-fn" id="fn-mc"></div></div><div class="pbar"><div class="pfill" id="pf-mc" style="width:0"></div></div><div class="pmsg" id="pm-mc"></div></div></div>
+            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(37,99,235,.25)"><span class="ph-title">&#x1F4D1; Cuti HRMIS</span><span style="font-size:7px;color:rgba(255,255,255,.4)">Lapisan 6</span></div><div class="pb"><div class="uzone" id="uz-hr" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'hr',this)"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv" multiple onchange="fsel(this,'hr')"><div class="uz-ic">&#x1F4D1;</div><div class="uz-t">Cuti HRMIS</div><div class="uz-s">XLSX · PDF · Screenshot</div><div class="uz-fn" id="fn-hr"></div></div><div class="pbar"><div class="pfill" id="pf-hr" style="width:0"></div></div><div class="pmsg" id="pm-hr"></div></div></div>
+            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(30,41,59,.6)"><span class="ph-title">&#x1F4CA; Baki Cuti</span></div><div class="pb"><div class="uzone" id="uz-baki-up" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'baki-up',this)"><input type="file" accept=".pdf,.xlsx,.xls,.csv" onchange="fsel(this,'baki-up')"><div class="uz-ic">&#x1F4CA;</div><div class="uz-t">Baki Cuti</div><div class="uz-s">XLSX · PDF · CSV</div><div class="uz-fn" id="fn-baki-up"></div></div></div></div>
+            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(75,0,130,.5)"><span class="ph-title">&#x1F54C; CTR Raya Haji</span><span style="font-size:7px;color:rgba(255,255,255,.4)">28/05</span></div><div class="pb"><div class="uzone" id="uz-ctr-up" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'ctr-up',this)"><input type="file" accept=".pdf,.xlsx,.xls,.csv,.txt" multiple onchange="fsel(this,'ctr-up')"><div class="uz-ic">&#x1F54C;</div><div class="uz-t">Senarai CTR Raya Haji</div><div class="uz-s">XLSX · PDF · CSV</div><div class="uz-fn" id="fn-ctr-up"></div></div></div></div>
+            <div class="panel" style="margin:0"><div class="ph" style="background:rgba(30,27,75,.7)"><span class="ph-title">&#x1F4DD; Dokumen Manual</span></div><div class="pb"><div class="uzone" id="uz-man" ondragover="dov(event,this)" ondragleave="dlv(this)" ondrop="dropF(event,'man',this)"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.txt,.xlsx,.xls,.csv" multiple onchange="fsel(this,'man')"><div class="uz-ic">&#x1F4DD;</div><div class="uz-t">Dokumen Manual</div><div class="uz-s">XLSX/PDF/imej · Auto-OCR</div><div class="uz-fn" id="fn-man"></div></div><div class="pbar"><div class="pfill" id="pf-man" style="width:0;background:#7c3aed"></div></div><div class="pmsg" id="pm-man"></div></div></div>
           </div>
           <div class="panel">
             <div class="ph"><span class="ph-title">Proses &amp; Kemaskini Master File</span></div>
@@ -741,7 +741,7 @@ const MASTER = [
   {bil:3, jab:'IKTAR',komp:'DELTA', nama:'RIMA BINTI OTHMAN', mykad:'760815017252', staff_id:'05761'},
   {bil:4, jab:'IKTAR',komp:'ALPHA', nama:'ABDULLAH BIN BAHUDIN', mykad:'830725106017', staff_id:'05601'},
   {bil:5, jab:'IKTAR',komp:'DELTA', nama:'MOHAMAD ALIFF HAIQAL BIN JAMIL', mykad:'920815015257', staff_id:'05529'},
-  {bil:6, jab:'IKTAR',komp:'ALPHA', nama:'MOHAMAD IRWAN BIN AHMAD TERMIZY', mykad:'830509086111', staff_id:'05609'},
+  {bil:6, jab:'IKTAR',komp:'BRAVO', nama:'MUHAMMAD ASREE BIN HAZIR', mykad:'', staff_id:'', note:'TAHAN TUGAS', nt:'th'},
   {bil:7, jab:'IKTAR',komp:'ALPHA', nama:'MOHD AMINUDIN BIN DAUD', mykad:'901116095055', staff_id:'05506', note:'TIDAK HADIR', nt:'th'},
   {bil:8, jab:'IKTAR',komp:'DELTA', nama:'MOHAMMAD FITHRI BIN AB LATIF @ ABD LATIF', mykad:'830621105749', staff_id:'05603'},
   {bil:9, jab:'IKTAR',komp:'CHARLIE', nama:'MUHAMMAD ASHLEY BIN BASHIR', mykad:'970223105051', staff_id:'05477'},
@@ -3377,7 +3377,452 @@ function expPDF(){
       '<td style="text-align:center">'+r.h+'</td><td style="text-align:center;color:#8B5E00">'+(r.mc||'')+'</td>'+
       '<td style="text-align:center;color:#1e40af">'+(r.cr||'')+'</td><td style="text-align:center;color:#991b1b;font-weight:bold">'+(r.ab||'')+'</td>'+
       '<td style="text-align:center;color:#9a3412">'+(r.lw||'')+'</td></tr>').join('')+
-    '</tbody></table></body></html>');
+    '</tbody></table><script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.25 FINAL TIMECARD RULE SAFE
+   Tujuan:
+   - Kekalkan data rescue/snapshot sedia ada, JANGAN overwrite automatik.
+   - Betulkan kiraan TIMECARD supaya punch lewat tidak jadi TIADA IN.
+   - Rule final:
+     PG: IN 0600-0705, lewat selepas 0705, OUT 1500-1600
+     PT: IN 1400-1505, lewat selepas 1505, OUT 2300-0000/+1h
+     M : IN 2200-2305, lewat selepas 2305, OUT 0700-0800 esok
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+window.__EAKHA_V51025_FINAL_TC_RULE__ = true;
+var PATCH = 'v5.10.25 FINAL TIMECARD RULE SAFE';
+
+function toastSafe(msg,type){try{ if(typeof toast==='function') toast(msg,type||'ok'); else console.log(msg); }catch(e){ console.log(msg); }}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():30}catch(e){return 30}}
+function nowM(){try{return typeof ACTIVE_MONTH!=='undefined'?+ACTIVE_MONTH:4}catch(e){return 4}}
+function nowY(){try{return typeof ACTIVE_YEAR!=='undefined'?+ACTIVE_YEAR:2026}catch(e){return 2026}}
+function shNorm(s){s=String(s||'').toUpperCase().trim(); if(['PG','PAGI','S','SIANG'].indexOf(s)>=0)return'S'; if(['PT','PETANG','P'].indexOf(s)>=0)return'P'; if(['M','MALAM'].indexOf(s)>=0)return'M'; if(['O','OF','OFF','OFFDAY'].indexOf(s)>=0)return'O'; return s;}
+function mins(t){
+  var m=String(t||'').match(/(\d{1,2})[:\.](\d{2})/); if(!m)return null;
+  var h=+m[1], mi=+m[2]; if(isNaN(h)||isNaN(mi)||h>23||mi>59)return null; return h*60+mi;
+}
+function pt(raw,day,src){
+  var text = (typeof raw==='object') ? String(raw.t||raw.time||raw.tc||raw.value||'') : String(raw||'');
+  var m=mins(text); if(m===null)return null;
+  var d=(typeof raw==='object' && raw.nextDay)?1:(day||0);
+  return {t:text.match(/\d{1,2}[:\.]\d{2}/)[0].replace('.',':'), mins:m, day:d, abs:m+d*1440, src:src||''};
+}
+function addPoint(out,p){
+  if(!p)return; var key=p.abs+'|'+p.t; if(out._seen&&out._seen[key])return; if(!out._seen)out._seen={}; out._seen[key]=1; out.push(p);
+}
+function allPoints(bil,d){
+  var out=[];
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;
+    if(c){
+      if(Array.isArray(c.tc_all)) c.tc_all.forEach(function(x){addPoint(out,pt(x,0,'tc_all'))});
+      addPoint(out,pt(c.tc_in,0,'tc_in'));
+      addPoint(out,pt(c.tc_out,0,'tc_out'));
+      // Kadang-kadang restore lama simpan dua punch sebagai string dalam note/ignored.
+      String(c.tc_ignored||c.tc_note||'').replace(/(\d{1,2}[:\.]\d{2})/g,function(x){addPoint(out,pt(x,0,'note'))});
+    }
+    var n=D&&D[bil]&&D[bil][d+1]?D[bil][d+1]:null;
+    if(n){
+      if(Array.isArray(n.tc_all)) n.tc_all.forEach(function(x){addPoint(out,pt(x,1,'next_all'))});
+      addPoint(out,pt(n.tc_in,1,'next_in'));
+      addPoint(out,pt(n.tc_out,1,'next_out'));
+    }
+  }catch(e){}
+  delete out._seen;
+  return out.sort(function(a,b){return a.abs-b.abs});
+}
+function cfg(sh){
+  if(sh==='S')return {start:420,end:900,inEarly:360,inOn:425,inLate:540,outStart:900,outEnd:960,outEarly:840,label:'PG',time:'0700-1500'};
+  if(sh==='P')return {start:900,end:1380,inEarly:840,inOn:905,inLate:1080,outStart:1380,outEnd:1500,outEarly:1320,label:'PT',time:'1500-2300'}; // outEnd 1500 = 01:00 next day
+  if(sh==='M')return {start:1380,end:1860,inEarly:1320,inOn:1385,inLate:1439,outStart:1860,outEnd:1920,outEarly:1800,label:'M',time:'2300-0700'};
+  return null;
+}
+function inCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  if(sh==='P') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  if(sh==='M') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  return false;
+}
+function outCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=c.outStart && p.mins<=c.outEnd;
+  if(sh==='P') return (p.day===0 && p.mins>=1380 && p.mins<=1439) || (p.day===1 && p.mins>=0 && p.mins<=60);
+  if(sh==='M') return p.day===1 && p.mins>=420 && p.mins<=480;
+  return false;
+}
+function earlyOutCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=840 && p.mins<900;
+  if(sh==='P') return p.day===0 && p.mins>=1320 && p.mins<1380;
+  if(sh==='M') return p.day===1 && p.mins>=360 && p.mins<420;
+  return false;
+}
+function pick(arr,target){
+  if(!arr.length)return null;
+  return arr.slice().sort(function(a,b){return Math.abs(a.abs-target)-Math.abs(b.abs-target)})[0];
+}
+function lateMin(p,sh,c){
+  if(!p||!c)return 0;
+  var base=c.start;
+  if(sh==='M' && p.day===1) base+=1440;
+  return p.abs-base;
+}
+function outEarly(p,sh,c){
+  if(!p||!c)return false;
+  var end=c.end;
+  if(sh==='M') end=1860;
+  if(sh==='P' && p.day===1) return false;
+  return p.abs<end;
+}
+
+window.eakhaRecalcTCFinal = function(bil,d,opts){
+  opts=opts||{};
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null; if(!c||c.tc_problem)return false;
+    if(c.tc_manual && !opts.forceManual)return false;
+    var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c.tc_shift||'')); if(sh==='O'||!sh)return false;
+    var C=cfg(sh); if(!C)return false;
+    var pts=allPoints(bil,d); if(!pts.length)return false;
+    var ins=pts.filter(function(p){return inCandidate(p,sh,C)});
+    var outs=pts.filter(function(p){return outCandidate(p,sh,C)});
+    var early=pts.filter(function(p){return earlyOutCandidate(p,sh,C)});
+    var pin=pick(ins,C.start);
+    var pout=pick(outs,C.end);
+    var pe=pick(early,C.end);
+    if(!pout && pe){pout=pe; c.tc_out_awal=true;} else c.tc_out_awal=false;
+    c.tc_in = pin ? pin.t : '';
+    c.tc_out = pout ? pout.t : '';
+    c.tc_out_nextday = !!(pout && pout.day===1);
+    c.tc_shift = sh;
+    c.tc_rule_version = '51025';
+    c.tc_audit_done = true;
+    c.tc_ignored = pts.map(function(p){return (p.day?'+1 ':'')+p.t}).join(' · ');
+    return true;
+  }catch(e){console.warn('[51025 recalc]',e); return false;}
+};
+
+window.eakhaRecalcAllTCFinal = function(opts){
+  opts=opts||{}; var n=0;
+  try{
+    if(typeof MASTER==='undefined'||typeof D==='undefined')return 0;
+    MASTER.forEach(function(m){for(var d=1;d<=daysN();d++){if(window.eakhaRecalcTCFinal(m.bil,d,opts))n++;}});
+  }catch(e){console.warn('[51025 recalc all]',e)}
+  return n;
+};
+
+var oldTcAudit = window.tcAudit;
+window.tcAudit = tcAudit = function(bil,d){
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;
+    var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c&&c.tc_shift||''));
+    if(!c)return {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    if(c.tc_problem)return {txt:'TC BERMASALAH\nABAIKAN',cls:'tc-off',ok:true};
+    if(sh==='O')return (c.tc_in||c.tc_out)?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
+    if(c.kzp==='TT'||c.kzk==='TT')return {txt:'TAHAN TUGAS',cls:'tc-off',ok:true};
+    if(c.kzp==='TH'||c.kzk==='TH')return {txt:'TIDAK HADIR',cls:'tc-off',ok:true};
+    if(!c.tc_manual) window.eakhaRecalcTCFinal(bil,d,{});
+    var C=cfg(sh); if(!C)return oldTcAudit?oldTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    var lines=[], cls='tc-ok', ok=true;
+    var hasPunch=!!(c.tc_in||c.tc_out||String(c.tc_ignored||'').match(/\d{1,2}:\d{2}/));
+    if(!c.tc_in && !c.tc_out){
+      var cutiK=(typeof isCuti==='function')&&(isCuti(c.kzp)||isCuti(c.kzk));
+      if(cutiK)return {txt:'TIADA PUNCH\n(CUTI '+(c.kzp||c.kzk)+')',cls:'tc-off',ok:true};
+      if(!hasPunch && !(c.kzp||c.kzk))return {txt:'—',cls:'tc-bp',ok:false};
+      return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+    }
+    if(c.tc_in){
+      var pin=pt(c.tc_in,0,'tc_in');
+      var lm=lateMin(pin,sh,C);
+      if(lm>5){lines.push('LEWAT');lines.push('IN '+c.tc_in+' (+'+lm+'min)');cls='tc-lw';ok=false;}
+      else lines.push('✓ IN '+c.tc_in);
+    }
+    if(c.tc_out){
+      var day=c.tc_out_nextday?1:0, pout=pt(c.tc_out,day,'tc_out');
+      var txt='OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'');
+      if(c.tc_out_awal || outEarly(pout,sh,C)){lines.push('OUT AWAL'); lines.push(txt); cls='tc-lw'; ok=false;}
+      else lines.push((c.tc_in?'✓ ':'')+txt);
+    }
+    if(!c.tc_in && c.tc_out){
+      if(lines[0]==='OUT AWAL') lines.splice(1,0,'TIADA IN'); else lines.unshift('TIADA IN');
+      if(cls==='tc-ok')cls='tc-warn'; ok=false;
+    }
+    if(c.tc_in && !c.tc_out){
+      if(sh==='M'){lines.push('SEMAK ESOK'); if(cls==='tc-ok')cls='tc-warn';}
+      else {lines.push('TIADA OUT'); if(cls==='tc-ok')cls='tc-warn'; ok=false;}
+    }
+    return {txt:lines.join('\n'),cls:cls,ok:ok};
+  }catch(e){console.warn('[51025 tcAudit]',e); return oldTcAudit?oldTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};}
+};
+
+var oldAudit = window.auditFinal;
+window.auditFinal = auditFinal = function(bil,d){
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:{};
+    // Hari timcard problem April tetap abaikan, jangan timbulkan semula isu 27-30/04.
+    if(nowY()===2026 && nowM()===4 && [27,28,29,30].indexOf(+d)>=0){
+      if(typeof getMC==='function'&&getMC(bil,d))return {txt:'MC SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
+      if(typeof hasHR==='function'&&hasHR(c))return {txt:'HRMIS SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
+      return {txt:'TC BERMASALAH\nABAIKAN AUDIT 27-30/04',cls:'af-sah',inc:false};
+    }
+    var tc=window.tcAudit(bil,d);
+    var kzp=String(c.kzp||'').toUpperCase(), kzk=String(c.kzk||'').toUpperCase();
+    // Pastikan punch lewat yang sah tidak turun status menjadi TIADA IN.
+    if(tc && tc.txt && tc.txt.indexOf('LEWAT')>=0){
+      if(kzp==='MC'||kzk==='MC')return oldAudit?oldAudit.apply(this,arguments):{txt:'LEWAT',cls:'af-lw'};
+      return {txt:(kzp==='L'||kzk==='L')?'LEWAT\n(KZ & TC sahkan)':'LEWAT',cls:'af-lw'};
+    }
+    return oldAudit?oldAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+  }catch(e){console.warn('[51025 audit]',e); return oldAudit?oldAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};}
+};
+
+// Render wrapper: kira dalam memory sahaja. Tidak tulis localStorage supaya snapshot lama tidak terbuang.
+function recalcVisible(){try{window.eakhaRecalcAllTCFinal({forceManual:false});}catch(e){}}
+var oldRM=window.renderMaster;
+if(typeof oldRM==='function' && !oldRM.__v51025){
+  window.renderMaster = renderMaster = function(){recalcVisible(); return oldRM.apply(this,arguments);};
+  window.renderMaster.__v51025=true;
+}
+var oldRO=window.renderOutput;
+if(typeof oldRO==='function' && !oldRO.__v51025){
+  window.renderOutput = renderOutput = function(){recalcVisible(); return oldRO.apply(this,arguments);};
+  window.renderOutput.__v51025=true;
+}
+window.eakhaSimpanRuleFinalTC = function(){
+  try{
+    var n=window.eakhaRecalcAllTCFinal({forceManual:false});
+    localStorage.setItem('eakha_data',JSON.stringify(D));
+    if(typeof saveDataset==='function')try{saveDataset('TC RULE FINAL 51025')}catch(e){}
+    if(typeof renderMaster==='function')renderMaster(null);
+    if(typeof updFlags==='function')updFlags();
+    toastSafe('TC/Audit rule final dikemas kini: '+n+' sel. Sekarang tekan Simpan Snapshot kalau paparan sudah betul.','ok');
+  }catch(e){toastSafe('Gagal simpan rule final: '+e.message,'err');}
+};
+function addBtn(){
+  try{
+    var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+    if(!bar||document.getElementById('btn-rule-final-51025'))return;
+    var b=document.createElement('button'); b.id='btn-rule-final-51025'; b.className='btn btn-gold btn-sm'; b.textContent='Kemas Kini TC Rule Final';
+    b.onclick=window.eakhaSimpanRuleFinalTC; bar.appendChild(b);
+  }catch(e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){recalcVisible();addBtn();},800);});
+else setTimeout(function(){recalcVisible();addBtn();},500);
+try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.29 AUDIT RULE ALL + MC TRUST
+   Confirmed by SJN Adilah:
+   - Rule ABS/MC/SAH applies to semua anggota, bukan Irwan sahaja.
+   - KZP/KZK tiada makluman/kosong + TIMECARD ada IN & OUT sah => Audit Final SAH.
+   - KZP/KZK ABS/TM/tiada makluman + tiada thumb + tiada MC/HRMIS => ABS - SILA MOHON CUTI.
+   - MC dates supplied are treated as valid dates; remove wording "MC Meragukan".
+   - MC sah overrides KZ tiada makluman/ABS if MC belongs to same member/date.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.29 AUDIT RULE ALL + MC TRUST';
+window.__EAKHA_V51029_AUDIT_ALL_MC_TRUST__=true;
+function toastSafe(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function escSafe(s){try{return typeof esc==='function'?esc(s):String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}catch(e){return String(s||'')}}
+function up(v){return String(v==null?'':v).toUpperCase().replace(/\s+/g,' ').trim()}
+function val(v){return String(v==null?'':v).trim()}
+function isOff(sh){sh=up(sh);return sh==='O'||sh==='OF'||sh==='OFF'||sh==='OFFDAY'||sh==='REHAT'}
+function shOf(bil,d,c){try{return typeof gSh==='function'?gSh(bil,d):(c&&c.tc_shift)||''}catch(e){return (c&&c.tc_shift)||''}}
+function isTT(k){k=up(k);return k==='TT'||k.indexOf('TAHAN TUGAS')>=0}
+function isTH(k){k=up(k);return k==='TH'}
+function isNoInfo(k){k=up(k);return !k||k==='TM'||k==='TIADA MAKLUMAN'||k==='TIADA MAKLUMAT'||k==='NO INFO'||k==='TIDAK MAKLUM'||k==='TIDAK DIMAKLUMKAN'||k==='TIDAK DIMAKLUM'}
+function isAbsLike(k){k=up(k);return k==='ABS'||k==='TDK HADIR'||k==='TIDAK HADIR'||k==='TIDAK HADIR TUGAS'||isNoInfo(k)}
+function isLateKZ(k){k=up(k);return k==='L'||k==='LEWAT'||k.indexOf('LEWAT')>=0}
+function isCutiCode(k){k=up(k);return ['MC','CR','EL','CTR','CB','CBR','K/P','KP','K','BER'].indexOf(k)>=0}
+function hrOK(c){try{return typeof hasHR==='function'?hasHR(c):!!(c&&(c.hrmis||c._hrmis||c.hr))}catch(e){return !!(c&&(c.hrmis||c._hrmis||c.hr))}}
+function hasAnyThumb(c){return !!(c&&(val(c.tc_in)||val(c.tc_out)||(Array.isArray(c.tc_all)&&c.tc_all.length)))}
+function hasFullThumb(c){return !!(c&&val(c.tc_in)&&val(c.tc_out))}
+function mcFor(bil,d){try{return typeof getMC==='function'?getMC(bil,d):(D&&D[bil]&&D[bil][d]&&(D[bil][d]._mc||D[bil][d].mc))}catch(e){return null}}
+
+// Re-override auditFinal with final global rules. Applies to every anggota/date.
+var prevAudit=window.auditFinal;
+window.auditFinal = auditFinal = function(bil,d){
+  try{
+    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:null;
+    if(!c) return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+    var sh=up(shOf(bil,d,c));
+    var kzp=up(c.kzp), kzk=up(c.kzk);
+    var mc=mcFor(bil,d);
+    var hr=hrOK(c);
+    var fullThumb=hasFullThumb(c);
+    var anyThumb=hasAnyThumb(c);
+
+    if(isOff(sh)){
+      return anyThumb?{txt:'OFFDAY / OT - ABAIKAN',cls:'af-off',inc:false}:{txt:'OFFDAY',cls:'af-off',inc:false};
+    }
+    if(isTT(kzp)||isTT(kzk)) return {txt:'TT - TAHAN TUGAS',cls:'af-tt',inc:false};
+    if(isTH(kzp)||isTH(kzk)) return {txt:'TH - TIDAK HADIR TUGAS',cls:'af-th',inc:false};
+
+    // MC confirmed: if MC exists for this same member/date, audit is MC SAH even if KZ says ABS/TM/tiada makluman.
+    if(mc){
+      if(anyThumb) return {txt:'MC SAH\n(ADA THUMB - SEMAK SHIFT)',cls:'af-mc',inc:false};
+      return {txt:'MC SAH',cls:'af-mc',inc:false};
+    }
+
+    // HRMIS/cuti approval confirmed.
+    if(hr && (isCutiCode(kzp)||isCutiCode(kzk)||isAbsLike(kzp)||isAbsLike(kzk))) return {txt:'HRMIS SAH',cls:'af-cr',inc:false};
+
+    // Confirmed by user: KZP/KZK no makluman/kosong, but TC has valid IN & OUT => SAH.
+    if(fullThumb && (isNoInfo(kzp)||isNoInfo(kzk)||(!kzp&&!kzk))){
+      return {txt:'SAH\n(TC ada IN & OUT)',cls:'af-sah',inc:false};
+    }
+
+    // If KZ reports late and TC also has thumb, preserve late indicator.
+    if(anyThumb && (isLateKZ(kzp)||isLateKZ(kzk))){
+      return {txt:'LEWAT\n(KZ & TC sahkan)',cls:'af-warn',inc:false};
+    }
+
+    // If there is no thumb at all + no MC + no HRMIS, KZ ABS/TM/no info = ABS, not LEWAT.
+    if(!anyThumb && !mc && !hr && (isAbsLike(kzp)||isAbsLike(kzk))){
+      return {txt:'ABS - SILA MOHON CUTI',cls:'af-abs',inc:false};
+    }
+
+    return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+  }catch(e){console.warn('[51029 audit]',e);return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};}
+};
+
+// Make TIMECARD audit stop calling blank/no thumb as LEWAT.
+var prevTc=window.tcAudit;
+window.tcAudit = tcAudit = function(bil,d){
+  try{
+    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:{};
+    var sh=up(shOf(bil,d,c)); var kzp=up(c.kzp), kzk=up(c.kzk);
+    if(!hasAnyThumb(c) && !isOff(sh) && !isTT(kzp) && !isTT(kzk) && !isTH(kzp) && !isTH(kzk)){
+      if(isCutiCode(kzp)||isCutiCode(kzk)) return {txt:'TIADA PUNCH\n(CUTI '+(kzp||kzk)+')',cls:'tc-off',ok:true};
+      if(!kzp&&!kzk) return {txt:'—',cls:'tc-bp',ok:false};
+      return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+    }
+  }catch(e){}
+  return prevTc?prevTc.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+};
+
+// Remove "MC Meragukan" wording. It is now "MC belum dipaut/semak nama" only, not doubtful dates.
+function showMCStatus(){
+  var list=window.EAKHA_MC_REVIEW_51027||[];
+  var good=[]; try{if(Array.isArray(MC_DATA))good=MC_DATA.slice()}catch(e){}
+  var html='<div style="position:fixed;inset:20px;z-index:99999;background:#0f1f3d;border:1px solid rgba(240,180,41,.5);border-radius:10px;overflow:auto;padding:14px;color:#fff">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="color:#f0b429">Senarai MC / Semak Pautan Nama</b><button class="btn btn-sm" onclick="this.closest(\'div[style*=fixed]\').remove()">Tutup</button></div>'+
+    '<div style="font-size:8px;color:#93c5fd;margin-bottom:8px">Tarikh MC dianggap tepat seperti dokumen. Paparan ini hanya semak pautan nama anggota supaya MC tidak masuk kepada orang yang salah.</div>'+
+    '<div style="font-size:9px;color:#34d399;margin:6px 0">MC dipaut ke Master: '+good.length+'</div>'+
+    '<table class="tbl"><thead><tr><th>Nama anggota</th><th>Tarikh</th><th>Klinik</th><th>No MC</th><th>Score</th></tr></thead><tbody>'+
+    (good.length?good.map(function(r){return '<tr><td>'+escSafe(r.nama||r.raw_nama)+'</td><td>'+escSafe((r.dari||r.tarikh||'')+' - '+(r.hingga||r.dari||r.tarikh||''))+'</td><td>'+escSafe(r.klinik)+'</td><td>'+escSafe(r.no_mc||r.siri)+'</td><td>'+escSafe(r.match_score||'')+'</td></tr>'}).join(''):'<tr><td colspan="5">Tiada MC dipaut.</td></tr>')+
+    '</tbody></table>'+
+    '<div style="font-size:9px;color:#fbbf24;margin:10px 0 6px">MC belum dipaut nama: '+list.length+'</div>'+
+    '<table class="tbl"><thead><tr><th>Nama pada MC</th><th>Tarikh</th><th>Klinik</th><th>No MC</th><th>Score</th><th>Status</th></tr></thead><tbody>'+
+    (list.length?list.map(function(r){return '<tr><td>'+escSafe(r.raw_nama)+'</td><td>'+escSafe((r.dari||'')+' - '+(r.hingga||''))+'</td><td>'+escSafe(r.klinik)+'</td><td>'+escSafe(r.no_mc)+'</td><td>'+escSafe(r.score)+'</td><td>Semak ejaan/nama anggota</td></tr>'}).join(''):'<tr><td colspan="6">Tiada. Semua MC sudah dipaut.</td></tr>')+
+    '</tbody></table></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+window.eakhaShowMCStatus51029=showMCStatus;
+
+function applyFix(){
+  try{if(typeof window.eakhaBuildStrictMC51027==='function')window.eakhaBuildStrictMC51027()}catch(e){}
+  try{if(typeof window.eakhaRecalcAllTCFinal==='function')window.eakhaRecalcAllTCFinal({forceManual:false})}catch(e){}
+  try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}
+  try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}
+  try{if(typeof updFlags==='function')updFlags()}catch(e){}
+  try{if(typeof window.eakhaSaveSafeIDBSnapshot==='function')window.eakhaSaveSafeIDBSnapshot('51029 AUDIT ALL MC TRUST').catch(function(){})}catch(e){}
+  toastSafe('Audit dikemas kini: TC ada IN/OUT = SAH; tiada thumb+tiada MC = ABS; MC sah ikut tarikh dokumen.','ok');
+}
+window.eakhaApplyAuditAllMCTrust51029=applyFix;
+function bind(){try{
+  var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+  if(bar&&!document.getElementById('btn-audit-all-mc-trust-51029')){
+    var b=document.createElement('button'); b.id='btn-audit-all-mc-trust-51029'; b.className='btn btn-gold btn-sm'; b.textContent='Kemas Kini Audit Final 51029'; b.title='Global: TC IN/OUT sah; tiada thumb+tiada MC jadi ABS; MC sah ikut tarikh dokumen'; b.onclick=applyFix; bar.appendChild(b);
+  }
+  var old=document.getElementById('btn-mc-review-51027'); if(old){old.textContent='Lihat Senarai MC'; old.title='Tarikh MC tepat; semak pautan nama sahaja'; old.onclick=showMCStatus;}
+  var old2=document.getElementById('btn-audit-mc-abs-51028'); if(old2){old2.textContent='Kemas Kini Audit Final 51029'; old2.onclick=applyFix;}
+}catch(e){}}
+[500,1500,3000,5000].forEach(function(ms){setTimeout(bind,ms)});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,900)});
+try{document.title='e-AKHA Vsavage v5.10.29 AUDIT RULE ALL MC TRUST';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+
+
+<script>
+/* e-AKHA Vsavage v5.10.32 — MASTER ROSTER IRWAN CLEAN
+   - Official IKTAR Alpha: only IRWAN SYAMIR BIN MOHD ZAINAL.
+   - Removed duplicate MOHAMAD IRWAN BIN AHMAD TERMIZY from focus Master; bil 6 is ASREE.
+   - Exact TERMIZY/TERMI rejected from auto-match to avoid corrupting Irwan Syamir.
+   - Cleanup button archives old bil6 data if restored backup still carries duplicate Irwan rows.
+*/
+(function(){
+'use strict';
+var PATCH='v5.10.32 MASTER ROSTER CLEAN';
+function up(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();}
+function byBil(b){try{return (MASTER||[]).find(function(m){return +m.bil===+b;})||null;}catch(e){return null;}}
+function toast(msg,type){try{ if(typeof showToast==='function') showToast(msg,type||'ok'); else alert(msg); }catch(e){}}
+function isTermizyText(s){s=up(s);return s.includes('MOHAMAD IRWAN BIN AHMAD TERMIZY')||s.includes('MOHAMAD IRWAN BIN AHMAD TERMIZI')||s.includes('AHMAD TERMIZY')||s.includes('AHMAD TERMIZI')||s.includes('TERMIZY')||s.includes('TERMIZI');}
+function normIrwanSyamir(){
+  try{
+    var m6=byBil(6); if(m6){m6.jab='IKTAR';m6.komp='BRAVO';m6.nama='MUHAMMAD ASREE BIN HAZIR';m6.note='TAHAN TUGAS';m6.nt='th';}
+    var m19=byBil(19); if(m19){m19.jab='IKTAR';m19.komp='ALPHA';m19.nama='IRWAN SYAMIR BIN MOHD ZAINAL';}
+    if(typeof BK!=='undefined'){BK[6]='BRAVO';BK[19]='ALPHA';}
+  }catch(e){}
+}
+var oldBM=(typeof window.bestMatch==='function'?window.bestMatch:(typeof bestMatch==='function'?bestMatch:null));
+window.bestMatch=bestMatch=function(ctx){
+  var n=up(ctx);
+  if(isTermizyText(n)) return null;
+  if(n.includes('IRWAN')) return byBil(19);
+  return oldBM?oldBM.apply(this,arguments):null;
+};
+var oldBWR=(typeof window.bestMatchWithRef==='function'?window.bestMatchWithRef:(typeof bestMatchWithRef==='function'?bestMatchWithRef:null));
+window.bestMatchWithRef=bestMatchWithRef=function(ctx,kompHint){
+  var n=up(ctx);
+  if(isTermizyText(n)) return null;
+  if(n.includes('IRWAN')) return byBil(19);
+  return oldBWR?oldBWR.apply(this,arguments):null;
+};
+function cleanup(){
+  normIrwanSyamir();
+  try{
+    var c6=(typeof D!=='undefined' && D && D[6])?D[6]:null;
+    if(c6){
+      try{localStorage.setItem('eakha_archive_removed_duplicate_irwan_bil6_'+Date.now(), JSON.stringify(c6));}catch(e){}
+      // Delete old duplicate Irwan/Termizy data from bil 6 so it will not appear under ASREE.
+      D[6]={};
+    }
+    // Ensure all future generic IRWAN records go to bil19 only.
+    if(typeof renderMaster==='function') renderMaster(null);
+    if(typeof renderDash==='function') renderDash();
+    if(typeof updFlags==='function') updFlags();
+    toast('Roster dibersihkan: IRWAN SYAMIR hanya 1 rekod; bil 6 kini ASREE. Data lama bil6 diarkib/dikosongkan.', 'ok');
+  }catch(e){toast('Cleanup error: '+(e&&e.message?e.message:e),'err');}
+}
+window.eakhaCleanIrwanRoster51032=cleanup;
+function bind(){try{
+  normIrwanSyamir();
+  var bar=document.querySelector('#page-master > div[style*="display:flex"]')||document.querySelector('#page-master .ph')||document.getElementById('page-master');
+  if(bar && !document.getElementById('btn-clean-irwan-51032')){
+    var b=document.createElement('button'); b.id='btn-clean-irwan-51032'; b.className='btn btn-rd btn-sm';
+    b.textContent='Bersih Duplicate Irwan 51032';
+    b.title='Buang duplicate MOHAMAD IRWAN TERMIZY daripada Master fokus; kekalkan IRWAN SYAMIR sahaja';
+    b.onclick=cleanup; bar.appendChild(b);
+  }
+  var mi=document.getElementById('master-info'); if(mi) mi.textContent=(mi.textContent||'').replace(/51 anggota/g,'52 anggota');
+}catch(e){}}
+[400,1000,2500,5000].forEach(function(ms){setTimeout(bind,ms);});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,800);});
+try{document.title='e-AKHA Vsavage v5.10.32 MASTER ROSTER IRWAN CLEAN';console.log('[e-AKHA '+PATCH+'] loaded');}catch(e){}
+})();
+</script>
+
+</body></html>');
   w.document.close(); setTimeout(()=>w.print(),500);
 }
 
@@ -7773,7 +8218,381 @@ window.eakhaSnapshotBosLive=function(jab){
     var styles=qsa('style').map(function(s){return s.textContent||''}).join('\n');
     var override='html,body{margin:0!important;padding:0!important;background:#0a1628!important;color:#fff!important;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif!important;overflow:auto!important;height:auto!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.snap-head{background:#0f1f3d!important;border-bottom:1px solid rgba(200,150,10,.25)!important;padding:7px 10px!important;display:flex!important;justify-content:space-between!important;gap:10px!important}.snap-title{font-size:12px!important;font-weight:900!important;color:#f0b429!important}.snap-meta{font-size:7px!important;color:rgba(255,255,255,.65)!important;text-align:right!important}.snap-content{padding:7px!important}.mg-wrap,.tscroll{overflow:visible!important;max-width:none!important}.gh,.gh-nm,.gh-lyr,.ntd,.ltd{position:static!important;left:auto!important;z-index:auto!important}.ntd,.gh-nm{min-width:132px!important;max-width:132px!important;width:132px!important}.ltd,.gh-lyr{min-width:82px!important;max-width:82px!important;width:82px!important}.dc,.gh-d{min-width:56px!important;width:56px!important;max-width:56px!important}.nn{font-size:6.8px!important;line-height:1.05!important}.nm{font-size:5.5px!important}.e510-off,.tc-off,.af-off,.kz-bp{font-size:5px!important;line-height:.95!important;letter-spacing:-.3px!important;padding:1px!important}.dc{font-size:6px!important}@page{size:A3 landscape;margin:5mm}@media print{.snap-head{padding:4px 7px!important}.snap-title{font-size:10px!important}.snap-meta{font-size:6px!important}.snap-content{padding:4px!important}.snap-grid{zoom:.60}.panel,.notif{display:none!important}}';
     var w=window.open('','_blank');
-    var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Snapshot Bos '+esc(monthName(mNow()))+' '+yNow()+'</title><style>'+styles+'\n'+override+'</style></head><body><div class="snap-head"><div><div class="snap-title">e-AKHA VSAVAGE - SNAPSHOT BOS</div><div style="font-size:7px;color:rgba(255,255,255,.45)">Layout sama seperti paparan live Master File</div></div><div class="snap-meta">Bulan Audit: '+esc(monthName(mNow()))+' '+yNow()+'<br>Jabatan: '+esc(jab||'SEMUA IKTAR/MHKL/RT')+'<br>Tarikh Jana: '+esc(new Date().toLocaleString('ms-MY'))+'</div></div><div class="snap-content"><div class="snap-grid">'+holder.innerHTML+'</div></div></body></html>';
+    var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Snapshot Bos '+esc(monthName(mNow()))+' '+yNow()+'</title><style>'+styles+'\n'+override+'</style></head><body><div class="snap-head"><div><div class="snap-title">e-AKHA VSAVAGE - SNAPSHOT BOS</div><div style="font-size:7px;color:rgba(255,255,255,.45)">Layout sama seperti paparan live Master File</div></div><div class="snap-meta">Bulan Audit: '+esc(monthName(mNow()))+' '+yNow()+'<br>Jabatan: '+esc(jab||'SEMUA IKTAR/MHKL/RT')+'<br>Tarikh Jana: '+esc(new Date().toLocaleString('ms-MY'))+'</div></div><div class="snap-content"><div class="snap-grid">'+holder.innerHTML+'</div></div><script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.25 FINAL TIMECARD RULE SAFE
+   Tujuan:
+   - Kekalkan data rescue/snapshot sedia ada, JANGAN overwrite automatik.
+   - Betulkan kiraan TIMECARD supaya punch lewat tidak jadi TIADA IN.
+   - Rule final:
+     PG: IN 0600-0705, lewat selepas 0705, OUT 1500-1600
+     PT: IN 1400-1505, lewat selepas 1505, OUT 2300-0000/+1h
+     M : IN 2200-2305, lewat selepas 2305, OUT 0700-0800 esok
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+window.__EAKHA_V51025_FINAL_TC_RULE__ = true;
+var PATCH = 'v5.10.25 FINAL TIMECARD RULE SAFE';
+
+function toastSafe(msg,type){try{ if(typeof toast==='function') toast(msg,type||'ok'); else console.log(msg); }catch(e){ console.log(msg); }}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():30}catch(e){return 30}}
+function nowM(){try{return typeof ACTIVE_MONTH!=='undefined'?+ACTIVE_MONTH:4}catch(e){return 4}}
+function nowY(){try{return typeof ACTIVE_YEAR!=='undefined'?+ACTIVE_YEAR:2026}catch(e){return 2026}}
+function shNorm(s){s=String(s||'').toUpperCase().trim(); if(['PG','PAGI','S','SIANG'].indexOf(s)>=0)return'S'; if(['PT','PETANG','P'].indexOf(s)>=0)return'P'; if(['M','MALAM'].indexOf(s)>=0)return'M'; if(['O','OF','OFF','OFFDAY'].indexOf(s)>=0)return'O'; return s;}
+function mins(t){
+  var m=String(t||'').match(/(\d{1,2})[:\.](\d{2})/); if(!m)return null;
+  var h=+m[1], mi=+m[2]; if(isNaN(h)||isNaN(mi)||h>23||mi>59)return null; return h*60+mi;
+}
+function pt(raw,day,src){
+  var text = (typeof raw==='object') ? String(raw.t||raw.time||raw.tc||raw.value||'') : String(raw||'');
+  var m=mins(text); if(m===null)return null;
+  var d=(typeof raw==='object' && raw.nextDay)?1:(day||0);
+  return {t:text.match(/\d{1,2}[:\.]\d{2}/)[0].replace('.',':'), mins:m, day:d, abs:m+d*1440, src:src||''};
+}
+function addPoint(out,p){
+  if(!p)return; var key=p.abs+'|'+p.t; if(out._seen&&out._seen[key])return; if(!out._seen)out._seen={}; out._seen[key]=1; out.push(p);
+}
+function allPoints(bil,d){
+  var out=[];
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;
+    if(c){
+      if(Array.isArray(c.tc_all)) c.tc_all.forEach(function(x){addPoint(out,pt(x,0,'tc_all'))});
+      addPoint(out,pt(c.tc_in,0,'tc_in'));
+      addPoint(out,pt(c.tc_out,0,'tc_out'));
+      // Kadang-kadang restore lama simpan dua punch sebagai string dalam note/ignored.
+      String(c.tc_ignored||c.tc_note||'').replace(/(\d{1,2}[:\.]\d{2})/g,function(x){addPoint(out,pt(x,0,'note'))});
+    }
+    var n=D&&D[bil]&&D[bil][d+1]?D[bil][d+1]:null;
+    if(n){
+      if(Array.isArray(n.tc_all)) n.tc_all.forEach(function(x){addPoint(out,pt(x,1,'next_all'))});
+      addPoint(out,pt(n.tc_in,1,'next_in'));
+      addPoint(out,pt(n.tc_out,1,'next_out'));
+    }
+  }catch(e){}
+  delete out._seen;
+  return out.sort(function(a,b){return a.abs-b.abs});
+}
+function cfg(sh){
+  if(sh==='S')return {start:420,end:900,inEarly:360,inOn:425,inLate:540,outStart:900,outEnd:960,outEarly:840,label:'PG',time:'0700-1500'};
+  if(sh==='P')return {start:900,end:1380,inEarly:840,inOn:905,inLate:1080,outStart:1380,outEnd:1500,outEarly:1320,label:'PT',time:'1500-2300'}; // outEnd 1500 = 01:00 next day
+  if(sh==='M')return {start:1380,end:1860,inEarly:1320,inOn:1385,inLate:1439,outStart:1860,outEnd:1920,outEarly:1800,label:'M',time:'2300-0700'};
+  return null;
+}
+function inCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  if(sh==='P') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  if(sh==='M') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  return false;
+}
+function outCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=c.outStart && p.mins<=c.outEnd;
+  if(sh==='P') return (p.day===0 && p.mins>=1380 && p.mins<=1439) || (p.day===1 && p.mins>=0 && p.mins<=60);
+  if(sh==='M') return p.day===1 && p.mins>=420 && p.mins<=480;
+  return false;
+}
+function earlyOutCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=840 && p.mins<900;
+  if(sh==='P') return p.day===0 && p.mins>=1320 && p.mins<1380;
+  if(sh==='M') return p.day===1 && p.mins>=360 && p.mins<420;
+  return false;
+}
+function pick(arr,target){
+  if(!arr.length)return null;
+  return arr.slice().sort(function(a,b){return Math.abs(a.abs-target)-Math.abs(b.abs-target)})[0];
+}
+function lateMin(p,sh,c){
+  if(!p||!c)return 0;
+  var base=c.start;
+  if(sh==='M' && p.day===1) base+=1440;
+  return p.abs-base;
+}
+function outEarly(p,sh,c){
+  if(!p||!c)return false;
+  var end=c.end;
+  if(sh==='M') end=1860;
+  if(sh==='P' && p.day===1) return false;
+  return p.abs<end;
+}
+
+window.eakhaRecalcTCFinal = function(bil,d,opts){
+  opts=opts||{};
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null; if(!c||c.tc_problem)return false;
+    if(c.tc_manual && !opts.forceManual)return false;
+    var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c.tc_shift||'')); if(sh==='O'||!sh)return false;
+    var C=cfg(sh); if(!C)return false;
+    var pts=allPoints(bil,d); if(!pts.length)return false;
+    var ins=pts.filter(function(p){return inCandidate(p,sh,C)});
+    var outs=pts.filter(function(p){return outCandidate(p,sh,C)});
+    var early=pts.filter(function(p){return earlyOutCandidate(p,sh,C)});
+    var pin=pick(ins,C.start);
+    var pout=pick(outs,C.end);
+    var pe=pick(early,C.end);
+    if(!pout && pe){pout=pe; c.tc_out_awal=true;} else c.tc_out_awal=false;
+    c.tc_in = pin ? pin.t : '';
+    c.tc_out = pout ? pout.t : '';
+    c.tc_out_nextday = !!(pout && pout.day===1);
+    c.tc_shift = sh;
+    c.tc_rule_version = '51025';
+    c.tc_audit_done = true;
+    c.tc_ignored = pts.map(function(p){return (p.day?'+1 ':'')+p.t}).join(' · ');
+    return true;
+  }catch(e){console.warn('[51025 recalc]',e); return false;}
+};
+
+window.eakhaRecalcAllTCFinal = function(opts){
+  opts=opts||{}; var n=0;
+  try{
+    if(typeof MASTER==='undefined'||typeof D==='undefined')return 0;
+    MASTER.forEach(function(m){for(var d=1;d<=daysN();d++){if(window.eakhaRecalcTCFinal(m.bil,d,opts))n++;}});
+  }catch(e){console.warn('[51025 recalc all]',e)}
+  return n;
+};
+
+var oldTcAudit = window.tcAudit;
+window.tcAudit = tcAudit = function(bil,d){
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;
+    var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c&&c.tc_shift||''));
+    if(!c)return {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    if(c.tc_problem)return {txt:'TC BERMASALAH\nABAIKAN',cls:'tc-off',ok:true};
+    if(sh==='O')return (c.tc_in||c.tc_out)?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
+    if(c.kzp==='TT'||c.kzk==='TT')return {txt:'TAHAN TUGAS',cls:'tc-off',ok:true};
+    if(c.kzp==='TH'||c.kzk==='TH')return {txt:'TIDAK HADIR',cls:'tc-off',ok:true};
+    if(!c.tc_manual) window.eakhaRecalcTCFinal(bil,d,{});
+    var C=cfg(sh); if(!C)return oldTcAudit?oldTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    var lines=[], cls='tc-ok', ok=true;
+    var hasPunch=!!(c.tc_in||c.tc_out||String(c.tc_ignored||'').match(/\d{1,2}:\d{2}/));
+    if(!c.tc_in && !c.tc_out){
+      var cutiK=(typeof isCuti==='function')&&(isCuti(c.kzp)||isCuti(c.kzk));
+      if(cutiK)return {txt:'TIADA PUNCH\n(CUTI '+(c.kzp||c.kzk)+')',cls:'tc-off',ok:true};
+      if(!hasPunch && !(c.kzp||c.kzk))return {txt:'—',cls:'tc-bp',ok:false};
+      return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+    }
+    if(c.tc_in){
+      var pin=pt(c.tc_in,0,'tc_in');
+      var lm=lateMin(pin,sh,C);
+      if(lm>5){lines.push('LEWAT');lines.push('IN '+c.tc_in+' (+'+lm+'min)');cls='tc-lw';ok=false;}
+      else lines.push('✓ IN '+c.tc_in);
+    }
+    if(c.tc_out){
+      var day=c.tc_out_nextday?1:0, pout=pt(c.tc_out,day,'tc_out');
+      var txt='OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'');
+      if(c.tc_out_awal || outEarly(pout,sh,C)){lines.push('OUT AWAL'); lines.push(txt); cls='tc-lw'; ok=false;}
+      else lines.push((c.tc_in?'✓ ':'')+txt);
+    }
+    if(!c.tc_in && c.tc_out){
+      if(lines[0]==='OUT AWAL') lines.splice(1,0,'TIADA IN'); else lines.unshift('TIADA IN');
+      if(cls==='tc-ok')cls='tc-warn'; ok=false;
+    }
+    if(c.tc_in && !c.tc_out){
+      if(sh==='M'){lines.push('SEMAK ESOK'); if(cls==='tc-ok')cls='tc-warn';}
+      else {lines.push('TIADA OUT'); if(cls==='tc-ok')cls='tc-warn'; ok=false;}
+    }
+    return {txt:lines.join('\n'),cls:cls,ok:ok};
+  }catch(e){console.warn('[51025 tcAudit]',e); return oldTcAudit?oldTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};}
+};
+
+var oldAudit = window.auditFinal;
+window.auditFinal = auditFinal = function(bil,d){
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:{};
+    // Hari timcard problem April tetap abaikan, jangan timbulkan semula isu 27-30/04.
+    if(nowY()===2026 && nowM()===4 && [27,28,29,30].indexOf(+d)>=0){
+      if(typeof getMC==='function'&&getMC(bil,d))return {txt:'MC SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
+      if(typeof hasHR==='function'&&hasHR(c))return {txt:'HRMIS SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
+      return {txt:'TC BERMASALAH\nABAIKAN AUDIT 27-30/04',cls:'af-sah',inc:false};
+    }
+    var tc=window.tcAudit(bil,d);
+    var kzp=String(c.kzp||'').toUpperCase(), kzk=String(c.kzk||'').toUpperCase();
+    // Pastikan punch lewat yang sah tidak turun status menjadi TIADA IN.
+    if(tc && tc.txt && tc.txt.indexOf('LEWAT')>=0){
+      if(kzp==='MC'||kzk==='MC')return oldAudit?oldAudit.apply(this,arguments):{txt:'LEWAT',cls:'af-lw'};
+      return {txt:(kzp==='L'||kzk==='L')?'LEWAT\n(KZ & TC sahkan)':'LEWAT',cls:'af-lw'};
+    }
+    return oldAudit?oldAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+  }catch(e){console.warn('[51025 audit]',e); return oldAudit?oldAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};}
+};
+
+// Render wrapper: kira dalam memory sahaja. Tidak tulis localStorage supaya snapshot lama tidak terbuang.
+function recalcVisible(){try{window.eakhaRecalcAllTCFinal({forceManual:false});}catch(e){}}
+var oldRM=window.renderMaster;
+if(typeof oldRM==='function' && !oldRM.__v51025){
+  window.renderMaster = renderMaster = function(){recalcVisible(); return oldRM.apply(this,arguments);};
+  window.renderMaster.__v51025=true;
+}
+var oldRO=window.renderOutput;
+if(typeof oldRO==='function' && !oldRO.__v51025){
+  window.renderOutput = renderOutput = function(){recalcVisible(); return oldRO.apply(this,arguments);};
+  window.renderOutput.__v51025=true;
+}
+window.eakhaSimpanRuleFinalTC = function(){
+  try{
+    var n=window.eakhaRecalcAllTCFinal({forceManual:false});
+    localStorage.setItem('eakha_data',JSON.stringify(D));
+    if(typeof saveDataset==='function')try{saveDataset('TC RULE FINAL 51025')}catch(e){}
+    if(typeof renderMaster==='function')renderMaster(null);
+    if(typeof updFlags==='function')updFlags();
+    toastSafe('TC/Audit rule final dikemas kini: '+n+' sel. Sekarang tekan Simpan Snapshot kalau paparan sudah betul.','ok');
+  }catch(e){toastSafe('Gagal simpan rule final: '+e.message,'err');}
+};
+function addBtn(){
+  try{
+    var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+    if(!bar||document.getElementById('btn-rule-final-51025'))return;
+    var b=document.createElement('button'); b.id='btn-rule-final-51025'; b.className='btn btn-gold btn-sm'; b.textContent='Kemas Kini TC Rule Final';
+    b.onclick=window.eakhaSimpanRuleFinalTC; bar.appendChild(b);
+  }catch(e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){recalcVisible();addBtn();},800);});
+else setTimeout(function(){recalcVisible();addBtn();},500);
+try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.29 AUDIT RULE ALL + MC TRUST
+   Confirmed by SJN Adilah:
+   - Rule ABS/MC/SAH applies to semua anggota, bukan Irwan sahaja.
+   - KZP/KZK tiada makluman/kosong + TIMECARD ada IN & OUT sah => Audit Final SAH.
+   - KZP/KZK ABS/TM/tiada makluman + tiada thumb + tiada MC/HRMIS => ABS - SILA MOHON CUTI.
+   - MC dates supplied are treated as valid dates; remove wording "MC Meragukan".
+   - MC sah overrides KZ tiada makluman/ABS if MC belongs to same member/date.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.29 AUDIT RULE ALL + MC TRUST';
+window.__EAKHA_V51029_AUDIT_ALL_MC_TRUST__=true;
+function toastSafe(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function escSafe(s){try{return typeof esc==='function'?esc(s):String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}catch(e){return String(s||'')}}
+function up(v){return String(v==null?'':v).toUpperCase().replace(/\s+/g,' ').trim()}
+function val(v){return String(v==null?'':v).trim()}
+function isOff(sh){sh=up(sh);return sh==='O'||sh==='OF'||sh==='OFF'||sh==='OFFDAY'||sh==='REHAT'}
+function shOf(bil,d,c){try{return typeof gSh==='function'?gSh(bil,d):(c&&c.tc_shift)||''}catch(e){return (c&&c.tc_shift)||''}}
+function isTT(k){k=up(k);return k==='TT'||k.indexOf('TAHAN TUGAS')>=0}
+function isTH(k){k=up(k);return k==='TH'}
+function isNoInfo(k){k=up(k);return !k||k==='TM'||k==='TIADA MAKLUMAN'||k==='TIADA MAKLUMAT'||k==='NO INFO'||k==='TIDAK MAKLUM'||k==='TIDAK DIMAKLUMKAN'||k==='TIDAK DIMAKLUM'}
+function isAbsLike(k){k=up(k);return k==='ABS'||k==='TDK HADIR'||k==='TIDAK HADIR'||k==='TIDAK HADIR TUGAS'||isNoInfo(k)}
+function isLateKZ(k){k=up(k);return k==='L'||k==='LEWAT'||k.indexOf('LEWAT')>=0}
+function isCutiCode(k){k=up(k);return ['MC','CR','EL','CTR','CB','CBR','K/P','KP','K','BER'].indexOf(k)>=0}
+function hrOK(c){try{return typeof hasHR==='function'?hasHR(c):!!(c&&(c.hrmis||c._hrmis||c.hr))}catch(e){return !!(c&&(c.hrmis||c._hrmis||c.hr))}}
+function hasAnyThumb(c){return !!(c&&(val(c.tc_in)||val(c.tc_out)||(Array.isArray(c.tc_all)&&c.tc_all.length)))}
+function hasFullThumb(c){return !!(c&&val(c.tc_in)&&val(c.tc_out))}
+function mcFor(bil,d){try{return typeof getMC==='function'?getMC(bil,d):(D&&D[bil]&&D[bil][d]&&(D[bil][d]._mc||D[bil][d].mc))}catch(e){return null}}
+
+// Re-override auditFinal with final global rules. Applies to every anggota/date.
+var prevAudit=window.auditFinal;
+window.auditFinal = auditFinal = function(bil,d){
+  try{
+    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:null;
+    if(!c) return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+    var sh=up(shOf(bil,d,c));
+    var kzp=up(c.kzp), kzk=up(c.kzk);
+    var mc=mcFor(bil,d);
+    var hr=hrOK(c);
+    var fullThumb=hasFullThumb(c);
+    var anyThumb=hasAnyThumb(c);
+
+    if(isOff(sh)){
+      return anyThumb?{txt:'OFFDAY / OT - ABAIKAN',cls:'af-off',inc:false}:{txt:'OFFDAY',cls:'af-off',inc:false};
+    }
+    if(isTT(kzp)||isTT(kzk)) return {txt:'TT - TAHAN TUGAS',cls:'af-tt',inc:false};
+    if(isTH(kzp)||isTH(kzk)) return {txt:'TH - TIDAK HADIR TUGAS',cls:'af-th',inc:false};
+
+    // MC confirmed: if MC exists for this same member/date, audit is MC SAH even if KZ says ABS/TM/tiada makluman.
+    if(mc){
+      if(anyThumb) return {txt:'MC SAH\n(ADA THUMB - SEMAK SHIFT)',cls:'af-mc',inc:false};
+      return {txt:'MC SAH',cls:'af-mc',inc:false};
+    }
+
+    // HRMIS/cuti approval confirmed.
+    if(hr && (isCutiCode(kzp)||isCutiCode(kzk)||isAbsLike(kzp)||isAbsLike(kzk))) return {txt:'HRMIS SAH',cls:'af-cr',inc:false};
+
+    // Confirmed by user: KZP/KZK no makluman/kosong, but TC has valid IN & OUT => SAH.
+    if(fullThumb && (isNoInfo(kzp)||isNoInfo(kzk)||(!kzp&&!kzk))){
+      return {txt:'SAH\n(TC ada IN & OUT)',cls:'af-sah',inc:false};
+    }
+
+    // If KZ reports late and TC also has thumb, preserve late indicator.
+    if(anyThumb && (isLateKZ(kzp)||isLateKZ(kzk))){
+      return {txt:'LEWAT\n(KZ & TC sahkan)',cls:'af-warn',inc:false};
+    }
+
+    // If there is no thumb at all + no MC + no HRMIS, KZ ABS/TM/no info = ABS, not LEWAT.
+    if(!anyThumb && !mc && !hr && (isAbsLike(kzp)||isAbsLike(kzk))){
+      return {txt:'ABS - SILA MOHON CUTI',cls:'af-abs',inc:false};
+    }
+
+    return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+  }catch(e){console.warn('[51029 audit]',e);return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};}
+};
+
+// Make TIMECARD audit stop calling blank/no thumb as LEWAT.
+var prevTc=window.tcAudit;
+window.tcAudit = tcAudit = function(bil,d){
+  try{
+    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:{};
+    var sh=up(shOf(bil,d,c)); var kzp=up(c.kzp), kzk=up(c.kzk);
+    if(!hasAnyThumb(c) && !isOff(sh) && !isTT(kzp) && !isTT(kzk) && !isTH(kzp) && !isTH(kzk)){
+      if(isCutiCode(kzp)||isCutiCode(kzk)) return {txt:'TIADA PUNCH\n(CUTI '+(kzp||kzk)+')',cls:'tc-off',ok:true};
+      if(!kzp&&!kzk) return {txt:'—',cls:'tc-bp',ok:false};
+      return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+    }
+  }catch(e){}
+  return prevTc?prevTc.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+};
+
+// Remove "MC Meragukan" wording. It is now "MC belum dipaut/semak nama" only, not doubtful dates.
+function showMCStatus(){
+  var list=window.EAKHA_MC_REVIEW_51027||[];
+  var good=[]; try{if(Array.isArray(MC_DATA))good=MC_DATA.slice()}catch(e){}
+  var html='<div style="position:fixed;inset:20px;z-index:99999;background:#0f1f3d;border:1px solid rgba(240,180,41,.5);border-radius:10px;overflow:auto;padding:14px;color:#fff">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="color:#f0b429">Senarai MC / Semak Pautan Nama</b><button class="btn btn-sm" onclick="this.closest(\'div[style*=fixed]\').remove()">Tutup</button></div>'+
+    '<div style="font-size:8px;color:#93c5fd;margin-bottom:8px">Tarikh MC dianggap tepat seperti dokumen. Paparan ini hanya semak pautan nama anggota supaya MC tidak masuk kepada orang yang salah.</div>'+
+    '<div style="font-size:9px;color:#34d399;margin:6px 0">MC dipaut ke Master: '+good.length+'</div>'+
+    '<table class="tbl"><thead><tr><th>Nama anggota</th><th>Tarikh</th><th>Klinik</th><th>No MC</th><th>Score</th></tr></thead><tbody>'+
+    (good.length?good.map(function(r){return '<tr><td>'+escSafe(r.nama||r.raw_nama)+'</td><td>'+escSafe((r.dari||r.tarikh||'')+' - '+(r.hingga||r.dari||r.tarikh||''))+'</td><td>'+escSafe(r.klinik)+'</td><td>'+escSafe(r.no_mc||r.siri)+'</td><td>'+escSafe(r.match_score||'')+'</td></tr>'}).join(''):'<tr><td colspan="5">Tiada MC dipaut.</td></tr>')+
+    '</tbody></table>'+
+    '<div style="font-size:9px;color:#fbbf24;margin:10px 0 6px">MC belum dipaut nama: '+list.length+'</div>'+
+    '<table class="tbl"><thead><tr><th>Nama pada MC</th><th>Tarikh</th><th>Klinik</th><th>No MC</th><th>Score</th><th>Status</th></tr></thead><tbody>'+
+    (list.length?list.map(function(r){return '<tr><td>'+escSafe(r.raw_nama)+'</td><td>'+escSafe((r.dari||'')+' - '+(r.hingga||''))+'</td><td>'+escSafe(r.klinik)+'</td><td>'+escSafe(r.no_mc)+'</td><td>'+escSafe(r.score)+'</td><td>Semak ejaan/nama anggota</td></tr>'}).join(''):'<tr><td colspan="6">Tiada. Semua MC sudah dipaut.</td></tr>')+
+    '</tbody></table></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+window.eakhaShowMCStatus51029=showMCStatus;
+
+function applyFix(){
+  try{if(typeof window.eakhaBuildStrictMC51027==='function')window.eakhaBuildStrictMC51027()}catch(e){}
+  try{if(typeof window.eakhaRecalcAllTCFinal==='function')window.eakhaRecalcAllTCFinal({forceManual:false})}catch(e){}
+  try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}
+  try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}
+  try{if(typeof updFlags==='function')updFlags()}catch(e){}
+  try{if(typeof window.eakhaSaveSafeIDBSnapshot==='function')window.eakhaSaveSafeIDBSnapshot('51029 AUDIT ALL MC TRUST').catch(function(){})}catch(e){}
+  toastSafe('Audit dikemas kini: TC ada IN/OUT = SAH; tiada thumb+tiada MC = ABS; MC sah ikut tarikh dokumen.','ok');
+}
+window.eakhaApplyAuditAllMCTrust51029=applyFix;
+function bind(){try{
+  var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+  if(bar&&!document.getElementById('btn-audit-all-mc-trust-51029')){
+    var b=document.createElement('button'); b.id='btn-audit-all-mc-trust-51029'; b.className='btn btn-gold btn-sm'; b.textContent='Kemas Kini Audit Final 51029'; b.title='Global: TC IN/OUT sah; tiada thumb+tiada MC jadi ABS; MC sah ikut tarikh dokumen'; b.onclick=applyFix; bar.appendChild(b);
+  }
+  var old=document.getElementById('btn-mc-review-51027'); if(old){old.textContent='Lihat Senarai MC'; old.title='Tarikh MC tepat; semak pautan nama sahaja'; old.onclick=showMCStatus;}
+  var old2=document.getElementById('btn-audit-mc-abs-51028'); if(old2){old2.textContent='Kemas Kini Audit Final 51029'; old2.onclick=applyFix;}
+}catch(e){}}
+[500,1500,3000,5000].forEach(function(ms){setTimeout(bind,ms)});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,900)});
+try{document.title='e-AKHA Vsavage v5.10.29 AUDIT RULE ALL MC TRUST';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+</body></html>';
     w.document.open();
     w.document.write(html);
     w.document.close();
@@ -9243,6 +10062,978 @@ try{document.title='e-AKHA Vsavage v5.10.17 FULL52 SMOOTH RESTORE';console.log('
 
 <script>
 /* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.25 FINAL TIMECARD RULE SAFE
+   Tujuan:
+   - Kekalkan data rescue/snapshot sedia ada, JANGAN overwrite automatik.
+   - Betulkan kiraan TIMECARD supaya punch lewat tidak jadi TIADA IN.
+   - Rule final:
+     PG: IN 0600-0705, lewat selepas 0705, OUT 1500-1600
+     PT: IN 1400-1505, lewat selepas 1505, OUT 2300-0000/+1h
+     M : IN 2200-2305, lewat selepas 2305, OUT 0700-0800 esok
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+window.__EAKHA_V51025_FINAL_TC_RULE__ = true;
+var PATCH = 'v5.10.25 FINAL TIMECARD RULE SAFE';
+
+function toastSafe(msg,type){try{ if(typeof toast==='function') toast(msg,type||'ok'); else console.log(msg); }catch(e){ console.log(msg); }}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():30}catch(e){return 30}}
+function nowM(){try{return typeof ACTIVE_MONTH!=='undefined'?+ACTIVE_MONTH:4}catch(e){return 4}}
+function nowY(){try{return typeof ACTIVE_YEAR!=='undefined'?+ACTIVE_YEAR:2026}catch(e){return 2026}}
+function shNorm(s){s=String(s||'').toUpperCase().trim(); if(['PG','PAGI','S','SIANG'].indexOf(s)>=0)return'S'; if(['PT','PETANG','P'].indexOf(s)>=0)return'P'; if(['M','MALAM'].indexOf(s)>=0)return'M'; if(['O','OF','OFF','OFFDAY'].indexOf(s)>=0)return'O'; return s;}
+function mins(t){
+  var m=String(t||'').match(/(\d{1,2})[:\.](\d{2})/); if(!m)return null;
+  var h=+m[1], mi=+m[2]; if(isNaN(h)||isNaN(mi)||h>23||mi>59)return null; return h*60+mi;
+}
+function pt(raw,day,src){
+  var text = (typeof raw==='object') ? String(raw.t||raw.time||raw.tc||raw.value||'') : String(raw||'');
+  var m=mins(text); if(m===null)return null;
+  var d=(typeof raw==='object' && raw.nextDay)?1:(day||0);
+  return {t:text.match(/\d{1,2}[:\.]\d{2}/)[0].replace('.',':'), mins:m, day:d, abs:m+d*1440, src:src||''};
+}
+function addPoint(out,p){
+  if(!p)return; var key=p.abs+'|'+p.t; if(out._seen&&out._seen[key])return; if(!out._seen)out._seen={}; out._seen[key]=1; out.push(p);
+}
+function allPoints(bil,d){
+  var out=[];
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;
+    if(c){
+      if(Array.isArray(c.tc_all)) c.tc_all.forEach(function(x){addPoint(out,pt(x,0,'tc_all'))});
+      addPoint(out,pt(c.tc_in,0,'tc_in'));
+      addPoint(out,pt(c.tc_out,0,'tc_out'));
+      // Kadang-kadang restore lama simpan dua punch sebagai string dalam note/ignored.
+      String(c.tc_ignored||c.tc_note||'').replace(/(\d{1,2}[:\.]\d{2})/g,function(x){addPoint(out,pt(x,0,'note'))});
+    }
+    var n=D&&D[bil]&&D[bil][d+1]?D[bil][d+1]:null;
+    if(n){
+      if(Array.isArray(n.tc_all)) n.tc_all.forEach(function(x){addPoint(out,pt(x,1,'next_all'))});
+      addPoint(out,pt(n.tc_in,1,'next_in'));
+      addPoint(out,pt(n.tc_out,1,'next_out'));
+    }
+  }catch(e){}
+  delete out._seen;
+  return out.sort(function(a,b){return a.abs-b.abs});
+}
+function cfg(sh){
+  if(sh==='S')return {start:420,end:900,inEarly:360,inOn:425,inLate:540,outStart:900,outEnd:960,outEarly:840,label:'PG',time:'0700-1500'};
+  if(sh==='P')return {start:900,end:1380,inEarly:840,inOn:905,inLate:1080,outStart:1380,outEnd:1500,outEarly:1320,label:'PT',time:'1500-2300'}; // outEnd 1500 = 01:00 next day
+  if(sh==='M')return {start:1380,end:1860,inEarly:1320,inOn:1385,inLate:1439,outStart:1860,outEnd:1920,outEarly:1800,label:'M',time:'2300-0700'};
+  return null;
+}
+function inCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  if(sh==='P') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  if(sh==='M') return p.day===0 && p.mins>=c.inEarly && p.mins<=c.inLate;
+  return false;
+}
+function outCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=c.outStart && p.mins<=c.outEnd;
+  if(sh==='P') return (p.day===0 && p.mins>=1380 && p.mins<=1439) || (p.day===1 && p.mins>=0 && p.mins<=60);
+  if(sh==='M') return p.day===1 && p.mins>=420 && p.mins<=480;
+  return false;
+}
+function earlyOutCandidate(p,sh,c){
+  if(!c)return false;
+  if(sh==='S') return p.day===0 && p.mins>=840 && p.mins<900;
+  if(sh==='P') return p.day===0 && p.mins>=1320 && p.mins<1380;
+  if(sh==='M') return p.day===1 && p.mins>=360 && p.mins<420;
+  return false;
+}
+function pick(arr,target){
+  if(!arr.length)return null;
+  return arr.slice().sort(function(a,b){return Math.abs(a.abs-target)-Math.abs(b.abs-target)})[0];
+}
+function lateMin(p,sh,c){
+  if(!p||!c)return 0;
+  var base=c.start;
+  if(sh==='M' && p.day===1) base+=1440;
+  return p.abs-base;
+}
+function outEarly(p,sh,c){
+  if(!p||!c)return false;
+  var end=c.end;
+  if(sh==='M') end=1860;
+  if(sh==='P' && p.day===1) return false;
+  return p.abs<end;
+}
+
+window.eakhaRecalcTCFinal = function(bil,d,opts){
+  opts=opts||{};
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null; if(!c||c.tc_problem)return false;
+    if(c.tc_manual && !opts.forceManual)return false;
+    var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c.tc_shift||'')); if(sh==='O'||!sh)return false;
+    var C=cfg(sh); if(!C)return false;
+    var pts=allPoints(bil,d); if(!pts.length)return false;
+    var ins=pts.filter(function(p){return inCandidate(p,sh,C)});
+    var outs=pts.filter(function(p){return outCandidate(p,sh,C)});
+    var early=pts.filter(function(p){return earlyOutCandidate(p,sh,C)});
+    var pin=pick(ins,C.start);
+    var pout=pick(outs,C.end);
+    var pe=pick(early,C.end);
+    if(!pout && pe){pout=pe; c.tc_out_awal=true;} else c.tc_out_awal=false;
+    c.tc_in = pin ? pin.t : '';
+    c.tc_out = pout ? pout.t : '';
+    c.tc_out_nextday = !!(pout && pout.day===1);
+    c.tc_shift = sh;
+    c.tc_rule_version = '51025';
+    c.tc_audit_done = true;
+    c.tc_ignored = pts.map(function(p){return (p.day?'+1 ':'')+p.t}).join(' · ');
+    return true;
+  }catch(e){console.warn('[51025 recalc]',e); return false;}
+};
+
+window.eakhaRecalcAllTCFinal = function(opts){
+  opts=opts||{}; var n=0;
+  try{
+    if(typeof MASTER==='undefined'||typeof D==='undefined')return 0;
+    MASTER.forEach(function(m){for(var d=1;d<=daysN();d++){if(window.eakhaRecalcTCFinal(m.bil,d,opts))n++;}});
+  }catch(e){console.warn('[51025 recalc all]',e)}
+  return n;
+};
+
+var oldTcAudit = window.tcAudit;
+window.tcAudit = tcAudit = function(bil,d){
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;
+    var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c&&c.tc_shift||''));
+    if(!c)return {txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    if(c.tc_problem)return {txt:'TC BERMASALAH\nABAIKAN',cls:'tc-off',ok:true};
+    if(sh==='O')return (c.tc_in||c.tc_out)?{txt:'OFFDAY / OT\nABAIKAN',cls:'tc-off',ok:true}:{txt:'OFFDAY',cls:'tc-off',ok:true};
+    if(c.kzp==='TT'||c.kzk==='TT')return {txt:'TAHAN TUGAS',cls:'tc-off',ok:true};
+    if(c.kzp==='TH'||c.kzk==='TH')return {txt:'TIDAK HADIR',cls:'tc-off',ok:true};
+    if(!c.tc_manual) window.eakhaRecalcTCFinal(bil,d,{});
+    var C=cfg(sh); if(!C)return oldTcAudit?oldTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+    var lines=[], cls='tc-ok', ok=true;
+    var hasPunch=!!(c.tc_in||c.tc_out||String(c.tc_ignored||'').match(/\d{1,2}:\d{2}/));
+    if(!c.tc_in && !c.tc_out){
+      var cutiK=(typeof isCuti==='function')&&(isCuti(c.kzp)||isCuti(c.kzk));
+      if(cutiK)return {txt:'TIADA PUNCH\n(CUTI '+(c.kzp||c.kzk)+')',cls:'tc-off',ok:true};
+      if(!hasPunch && !(c.kzp||c.kzk))return {txt:'—',cls:'tc-bp',ok:false};
+      return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+    }
+    if(c.tc_in){
+      var pin=pt(c.tc_in,0,'tc_in');
+      var lm=lateMin(pin,sh,C);
+      if(lm>5){lines.push('LEWAT');lines.push('IN '+c.tc_in+' (+'+lm+'min)');cls='tc-lw';ok=false;}
+      else lines.push('✓ IN '+c.tc_in);
+    }
+    if(c.tc_out){
+      var day=c.tc_out_nextday?1:0, pout=pt(c.tc_out,day,'tc_out');
+      var txt='OUT '+c.tc_out+(c.tc_out_nextday?' (ESOK)':'');
+      if(c.tc_out_awal || outEarly(pout,sh,C)){lines.push('OUT AWAL'); lines.push(txt); cls='tc-lw'; ok=false;}
+      else lines.push((c.tc_in?'✓ ':'')+txt);
+    }
+    if(!c.tc_in && c.tc_out){
+      if(lines[0]==='OUT AWAL') lines.splice(1,0,'TIADA IN'); else lines.unshift('TIADA IN');
+      if(cls==='tc-ok')cls='tc-warn'; ok=false;
+    }
+    if(c.tc_in && !c.tc_out){
+      if(sh==='M'){lines.push('SEMAK ESOK'); if(cls==='tc-ok')cls='tc-warn';}
+      else {lines.push('TIADA OUT'); if(cls==='tc-ok')cls='tc-warn'; ok=false;}
+    }
+    return {txt:lines.join('\n'),cls:cls,ok:ok};
+  }catch(e){console.warn('[51025 tcAudit]',e); return oldTcAudit?oldTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};}
+};
+
+var oldAudit = window.auditFinal;
+window.auditFinal = auditFinal = function(bil,d){
+  try{
+    var c=D&&D[bil]&&D[bil][d]?D[bil][d]:{};
+    // Hari timcard problem April tetap abaikan, jangan timbulkan semula isu 27-30/04.
+    if(nowY()===2026 && nowM()===4 && [27,28,29,30].indexOf(+d)>=0){
+      if(typeof getMC==='function'&&getMC(bil,d))return {txt:'MC SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
+      if(typeof hasHR==='function'&&hasHR(c))return {txt:'HRMIS SAH\n(27-30/04 TC PROBLEM - TIDAK FLAG)',cls:'af-sah',inc:false};
+      return {txt:'TC BERMASALAH\nABAIKAN AUDIT 27-30/04',cls:'af-sah',inc:false};
+    }
+    var tc=window.tcAudit(bil,d);
+    var kzp=String(c.kzp||'').toUpperCase(), kzk=String(c.kzk||'').toUpperCase();
+    // Pastikan punch lewat yang sah tidak turun status menjadi TIADA IN.
+    if(tc && tc.txt && tc.txt.indexOf('LEWAT')>=0){
+      if(kzp==='MC'||kzk==='MC')return oldAudit?oldAudit.apply(this,arguments):{txt:'LEWAT',cls:'af-lw'};
+      return {txt:(kzp==='L'||kzk==='L')?'LEWAT\n(KZ & TC sahkan)':'LEWAT',cls:'af-lw'};
+    }
+    return oldAudit?oldAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+  }catch(e){console.warn('[51025 audit]',e); return oldAudit?oldAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};}
+};
+
+// Render wrapper: kira dalam memory sahaja. Tidak tulis localStorage supaya snapshot lama tidak terbuang.
+function recalcVisible(){try{window.eakhaRecalcAllTCFinal({forceManual:false});}catch(e){}}
+var oldRM=window.renderMaster;
+if(typeof oldRM==='function' && !oldRM.__v51025){
+  window.renderMaster = renderMaster = function(){recalcVisible(); return oldRM.apply(this,arguments);};
+  window.renderMaster.__v51025=true;
+}
+var oldRO=window.renderOutput;
+if(typeof oldRO==='function' && !oldRO.__v51025){
+  window.renderOutput = renderOutput = function(){recalcVisible(); return oldRO.apply(this,arguments);};
+  window.renderOutput.__v51025=true;
+}
+window.eakhaSimpanRuleFinalTC = function(){
+  try{
+    var n=window.eakhaRecalcAllTCFinal({forceManual:false});
+    localStorage.setItem('eakha_data',JSON.stringify(D));
+    if(typeof saveDataset==='function')try{saveDataset('TC RULE FINAL 51025')}catch(e){}
+    if(typeof renderMaster==='function')renderMaster(null);
+    if(typeof updFlags==='function')updFlags();
+    toastSafe('TC/Audit rule final dikemas kini: '+n+' sel. Sekarang tekan Simpan Snapshot kalau paparan sudah betul.','ok');
+  }catch(e){toastSafe('Gagal simpan rule final: '+e.message,'err');}
+};
+function addBtn(){
+  try{
+    var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+    if(!bar||document.getElementById('btn-rule-final-51025'))return;
+    var b=document.createElement('button'); b.id='btn-rule-final-51025'; b.className='btn btn-gold btn-sm'; b.textContent='Kemas Kini TC Rule Final';
+    b.onclick=window.eakhaSimpanRuleFinalTC; bar.appendChild(b);
+  }catch(e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){recalcVisible();addBtn();},800);});
+else setTimeout(function(){recalcVisible();addBtn();},500);
+try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.26 QUOTA-SAFE TC RULE + IDB SNAPSHOT
+   - Fix button Kemas Kini TC Rule Final failing because localStorage quota is full.
+   - Save repaired April state to IndexedDB fallback, not localStorage.
+   - Manual snapshot/restore uses IndexedDB first, so edited data is not lost by quota.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.26 QUOTA-SAFE TC RULE + IDB SNAPSHOT';
+window.__EAKHA_V51026_QUOTA_SAFE__=true;
+
+function toastSafe(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function yNow(){try{return typeof ACTIVE_YEAR!=='undefined'?+ACTIVE_YEAR:2026}catch(e){return 2026}}
+function mNow(){try{return typeof ACTIVE_MONTH!=='undefined'?+ACTIVE_MONTH:4}catch(e){return 4}}
+function pad(n){return String(+n||0).padStart(2,'0')}
+function clone(x){try{return JSON.parse(JSON.stringify(x))}catch(e){return x}}
+function scoreD(d){
+  var s=0; if(!d||typeof d!=='object')return 0;
+  Object.keys(d).forEach(function(b){var row=d[b]||{};Object.keys(row).forEach(function(dd){var c=row[dd]||{};
+    ['kzp','kzk','tc_in','tc_out','tc_shift','hrmis','note','pengganti_nama'].forEach(function(k){var v=c[k]; if(v!==undefined&&v!==null&&String(v).trim()&&String(v).trim()!=='-'&&String(v).trim()!=='—')s++;});
+    if(c.pengganti)s++; if(c.tc_all&&c.tc_all.length)s+=Math.min(4,c.tc_all.length); if(c._mc)s+=3; if(c._hrmis_rec)s+=3;
+  })}); return s;
+}
+function stateId(){return 'safe_snapshot_'+yNow()+'_'+pad(mNow())}
+function tcId(){return 'tc_rule_final_'+yNow()+'_'+pad(mNow())}
+
+function currentState(reason){
+  var y=yNow(), m=mNow();
+  return {
+    id: stateId(), patch: PATCH, tahun:y, bulan:m, reason:reason||'SAFE SNAPSHOT',
+    savedAt:new Date().toISOString(), score:(typeof D!=='undefined')?scoreD(D):0,
+    D:(typeof D!=='undefined')?clone(D):{},
+    AUDIT_STATE:(typeof AUDIT_STATE!=='undefined')?clone(AUDIT_STATE):{},
+    MC_DATA:(typeof MC_DATA!=='undefined')?clone(MC_DATA):[],
+    HRMIS_DATA:(function(){try{return JSON.parse(localStorage.getItem('eakha_hrmis')||'[]')}catch(e){return []}})(),
+    RAYA_DATA:(typeof RAYA_DATA!=='undefined')?clone(RAYA_DATA):[],
+    CTR_DATA:(typeof CTR_DATA!=='undefined')?clone(CTR_DATA):[],
+    STAGING:(typeof STAGING!=='undefined')?clone(STAGING):{},
+    BAKI_CUTI:(typeof BAKI_CUTI!=='undefined')?clone(BAKI_CUTI):{},
+    CUSTOM_ANGGOTA:(typeof CUSTOM_ANGGOTA!=='undefined')?clone(CUSTOM_ANGGOTA):[],
+    ANGGOTA_LAIN:(typeof ANGGOTA_LAIN!=='undefined')?clone(ANGGOTA_LAIN):[]
+  };
+}
+
+function openDB(){
+  return new Promise(function(resolve,reject){
+    if(!window.indexedDB){reject(new Error('IndexedDB tidak disokong oleh browser ini'));return;}
+    var req=indexedDB.open('eakha_vsavage_safe_store',1);
+    req.onupgradeneeded=function(ev){var db=ev.target.result; if(!db.objectStoreNames.contains('snapshots'))db.createObjectStore('snapshots',{keyPath:'id'});};
+    req.onsuccess=function(){resolve(req.result)};
+    req.onerror=function(){reject(req.error||new Error('Gagal buka IndexedDB'))};
+  });
+}
+function idbPut(obj){
+  return openDB().then(function(db){return new Promise(function(resolve,reject){
+    var tx=db.transaction('snapshots','readwrite'); tx.objectStore('snapshots').put(obj);
+    tx.oncomplete=function(){try{db.close()}catch(e){} resolve(true)};
+    tx.onerror=function(){try{db.close()}catch(e){} reject(tx.error||new Error('Gagal simpan IndexedDB'))};
+  })});
+}
+function idbGet(id){
+  return openDB().then(function(db){return new Promise(function(resolve,reject){
+    var tx=db.transaction('snapshots','readonly'); var req=tx.objectStore('snapshots').get(id);
+    req.onsuccess=function(){try{db.close()}catch(e){} resolve(req.result||null)};
+    req.onerror=function(){try{db.close()}catch(e){} reject(req.error||new Error('Gagal baca IndexedDB'))};
+  })});
+}
+function idbList(){
+  return openDB().then(function(db){return new Promise(function(resolve,reject){
+    var tx=db.transaction('snapshots','readonly'); var req=tx.objectStore('snapshots').getAll();
+    req.onsuccess=function(){try{db.close()}catch(e){} resolve(req.result||[])};
+    req.onerror=function(){try{db.close()}catch(e){} reject(req.error||new Error('Gagal senarai IndexedDB'))};
+  })});
+}
+
+function replaceD(srcD){
+  if(typeof D==='undefined'||!srcD)return;
+  Object.keys(D).forEach(function(k){delete D[k]});
+  Object.keys(srcD).forEach(function(b){D[b]=clone(srcD[b]||{})});
+}
+function applyState(s,render){
+  if(!s||!s.D)return false;
+  try{
+    ACTIVE_YEAR=+s.tahun||yNow(); ACTIVE_MONTH=+s.bulan||mNow();
+    replaceD(s.D);
+    try{AUDIT_STATE=clone(s.AUDIT_STATE||{})}catch(e){}
+    try{MC_DATA=clone(s.MC_DATA||[])}catch(e){}
+    try{RAYA_DATA=clone(s.RAYA_DATA||[])}catch(e){}
+    try{CTR_DATA=clone(s.CTR_DATA||[])}catch(e){}
+    try{STAGING=clone(s.STAGING||{})}catch(e){}
+    try{BAKI_CUTI=clone(s.BAKI_CUTI||{})}catch(e){}
+    try{CUSTOM_ANGGOTA=clone(s.CUSTOM_ANGGOTA||[])}catch(e){}
+    try{ANGGOTA_LAIN=clone(s.ANGGOTA_LAIN||[])}catch(e){}
+    try{localStorage.setItem('eakha_active_year',String(ACTIVE_YEAR));localStorage.setItem('eakha_active_month',String(ACTIVE_MONTH));}catch(e){}
+    if(render!==false){
+      try{document.querySelectorAll('.month-item').forEach(function(el){el.classList.toggle('on',+el.dataset.bulan===+ACTIVE_MONTH)})}catch(e){}
+      try{var badge=document.getElementById('active-month-badge'); if(badge)badge.textContent=(typeof MONTHS_MS!=='undefined'?MONTHS_MS[ACTIVE_MONTH]:'Bulan '+ACTIVE_MONTH)+' '+ACTIVE_YEAR;}catch(e){}
+      try{if(typeof populateSels==='function')populateSels()}catch(e){}
+      try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}
+      try{if(typeof renderDash==='function')renderDash()}catch(e){}
+      try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}
+      try{if(typeof updFlags==='function')updFlags()}catch(e){}
+    }
+    return true;
+  }catch(e){console.warn('[51026 applyState]',e); return false;}
+}
+
+window.eakhaSaveSafeIDBSnapshot = async function(reason){
+  var s=currentState(reason||'SAFE IDB SNAPSHOT'); s.id=stateId(); s.score=scoreD(s.D);
+  await idbPut(s);
+  var tc=clone(s); tc.id=tcId(); tc.reason='TC RULE FINAL SAFE COPY'; await idbPut(tc);
+  try{localStorage.setItem('eakha_safe_idb_pointer',s.id)}catch(e){}
+  return s;
+};
+window.eakhaRestoreSafeIDBSnapshot = async function(){
+  var ids=[stateId(),tcId()];
+  var best=null;
+  for(var i=0;i<ids.length;i++){try{var s=await idbGet(ids[i]); if(s&&s.D&&(!best||(+s.score||0)>(+best.score||0)))best=s;}catch(e){}}
+  if(!best){
+    var list=[]; try{list=await idbList()}catch(e){}
+    list=list.filter(function(x){return +x.tahun===yNow()&&+x.bulan===mNow()&&x.D});
+    list.sort(function(a,b){return (+b.score||0)-(+a.score||0)}); best=list[0]||null;
+  }
+  if(!best){toastSafe('Tiada snapshot selamat dalam IndexedDB.','warn'); return false;}
+  var ok=applyState(best,true);
+  toastSafe(ok?'Pulih Snapshot Selamat berjaya ✓ score '+(best.score||scoreD(best.D)):'Gagal pulih Snapshot Selamat', ok?'ok':'err');
+  return ok;
+};
+
+var oldManualSave=window.manualSaveSnapshot;
+window.manualSaveSnapshot = async function(){
+  try{
+    var s=await window.eakhaSaveSafeIDBSnapshot('MANUAL SAFE SNAPSHOT - INDEXEDDB');
+    // Cuba juga simpan cara lama, tapi kegagalan quota tidak dianggap gagal.
+    try{ if(typeof oldManualSave==='function') oldManualSave(); }catch(e){ console.warn('[51026 old manual save quota ignored]',e); }
+    toastSafe('Snapshot selamat disimpan ✓ (IndexedDB, tidak kena quota localStorage) score '+s.score,'ok');
+    return true;
+  }catch(e){toastSafe('Gagal simpan Snapshot Selamat: '+e.message,'err'); return false;}
+};
+try{manualSaveSnapshot=window.manualSaveSnapshot}catch(e){}
+
+var oldManualRestore=window.manualRestoreSnapshot;
+window.manualRestoreSnapshot = async function(){
+  var ok=false; try{ok=await window.eakhaRestoreSafeIDBSnapshot()}catch(e){console.warn(e)}
+  if(ok)return true;
+  try{ if(typeof oldManualRestore==='function')return oldManualRestore(); }catch(e){}
+  return false;
+};
+try{manualRestoreSnapshot=window.manualRestoreSnapshot}catch(e){}
+
+function bindButtons51026(){
+  try{var b=document.getElementById('btn-snapshot-save'); if(b){b.onclick=window.manualSaveSnapshot; b.textContent='Simpan Snapshot Selamat'; b.title='Simpan ke IndexedDB, bukan localStorage yang penuh';}}catch(e){}
+  try{var r=document.getElementById('btn-snapshot-restore'); if(r){r.onclick=window.manualRestoreSnapshot; r.textContent='Pulih Snapshot Selamat'; r.title='Pulih daripada IndexedDB dahulu';}}catch(e){}
+  try{
+    var bar=document.querySelector('#page-master > div[style*="display:flex"]'); if(bar && !document.getElementById('btn-restore-idb-51026')){
+      var rb=document.createElement('button'); rb.id='btn-restore-idb-51026'; rb.className='btn btn-bl btn-sm'; rb.textContent='Pulih Snapshot Selamat'; rb.onclick=window.manualRestoreSnapshot; bar.appendChild(rb);
+    }
+  }catch(e){}
+  try{
+    var btn=document.getElementById('btn-rule-final-51025'); if(btn){btn.textContent='Kemas Kini TC Rule Final SAFE'; btn.onclick=window.eakhaSimpanRuleFinalTC; btn.title='Kira & simpan ke IndexedDB, elak quota localStorage';}
+  }catch(e){}
+}
+
+window.eakhaSimpanRuleFinalTC = async function(){
+  try{
+    var n=0;
+    if(typeof window.eakhaRecalcAllTCFinal==='function') n=window.eakhaRecalcAllTCFinal({forceManual:false});
+    if(typeof renderMaster==='function') renderMaster(null);
+    if(typeof updFlags==='function') updFlags();
+    var s=await window.eakhaSaveSafeIDBSnapshot('TC RULE FINAL 51026 - QUOTA SAFE');
+    toastSafe('TC Rule Final siap & disimpan selamat ✓ '+n+' sel. Score '+s.score+'. Tidak guna localStorage penuh.','ok');
+    return true;
+  }catch(e){
+    console.warn('[51026 TC final safe failed]',e);
+    toastSafe('Gagal simpan safe TC rule: '+e.message,'err');
+    return false;
+  }
+};
+
+// If user already saved safe snapshot, auto-apply it only when current page is much weaker.
+async function autoProtect(){
+  bindButtons51026();
+  try{
+    var s=await idbGet(stateId());
+    if(s&&s.D&&typeof D!=='undefined'){
+      var cur=scoreD(D), old=+s.score||scoreD(s.D);
+      if(old>=80 && cur>0 && cur<old*0.60){applyState(s,true); toastSafe('Snapshot Selamat dipulihkan automatik kerana data semasa kurang lengkap','warn');}
+    }
+  }catch(e){}
+}
+[700,1800,4200].forEach(function(ms){setTimeout(autoProtect,ms)});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(autoProtect,900);setTimeout(bindButtons51026,2500)});
+try{document.title='e-AKHA Vsavage v5.10.27 STRICT MC + TC NIGHT';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.27 STRICT MC OWNER + FINAL NIGHT TC
+   - MC_PRELOAD bil ialah nombor senarai borang, BUKAN bil Master.
+   - MC hanya link jika nama pesakit/anggota match Master dengan confidence tinggi.
+   - Tarikh MC ikut tarikh sebenar MC dan route ikut bulan aktif.
+   - M shift: IN 2200-2305 SAH, selepas 2305 LEWAT; OUT esok 0700-0800 SAH.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.27 STRICT MC OWNER + FINAL NIGHT TC';
+window.__EAKHA_V51027_STRICT_MC_TC__=true;
+function toastSafe(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function pad(n){return String(+n).padStart(2,'0')}
+function yNow(){try{return typeof ACTIVE_YEAR!=='undefined'?+ACTIVE_YEAR:2026}catch(e){return 2026}}
+function mNow(){try{return typeof ACTIVE_MONTH!=='undefined'?+ACTIVE_MONTH:4}catch(e){return 4}}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():new Date(yNow(),mNow(),0).getDate()}catch(e){return 30}}
+function clone(o){try{return JSON.parse(JSON.stringify(o))}catch(e){return o}}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function normName(v){
+  return String(v||'').toUpperCase()
+    .replace(/\b(KPL|LKPL|KONST|PEL|PB|SJN|SM|DSP|TUAN|PUAN|ENCIK|CIK)\b/g,' ')
+    .replace(/[^A-Z0-9@\/ ]+/g,' ')
+    .replace(/\bMUHAMMAD\b/g,'MOHAMAD').replace(/\bMOHAMMAD\b/g,'MOHAMAD').replace(/\bMUHD\b/g,'MOHAMAD').replace(/\bMOHD\b/g,'MOHAMAD')
+    .replace(/\bALLIF\b/g,'ALIFF').replace(/\bHAIKAL\b/g,'HAIQAL').replace(/\bBT\b/g,'BINTI')
+    .replace(/\s+/g,' ').trim();
+}
+function toks(v){
+  var stop={'BIN':1,'BINTI':1,'BT':1,'A/L':1,'A/P':1,'AL':1,'MOHAMAD':1,'MUHAMAD':1,'MUHAMMAD':1,'MOHD':1,'MUHD':1,'@':1};
+  return normName(v).split(' ').filter(function(t){return t.length>2&&!stop[t]});
+}
+function scoreName(raw,memName){
+  var a=normName(raw), b=normName(memName); if(!a||!b)return 0; if(a===b)return 100;
+  if(a.indexOf(b)>=0||b.indexOf(a)>=0)return 94;
+  var ta=toks(a), tb=toks(b); if(!ta.length||!tb.length)return 0;
+  var hit=0; ta.forEach(function(x){if(tb.indexOf(x)>=0)hit++;});
+  var core=0; ['ALIFF','ALIF','NASARUDDIN','MOHTAR','HAIQAL','RESDI','HAZLAN','BADRI','RASIDI','SYUHADA','FATHIYYAH','ANASHATOL','SUHAIRI','LUKMAN','FARRAH','YUSRI','AALIYA'].forEach(function(x){if(ta.indexOf(x)>=0&&tb.indexOf(x)>=0)core++;});
+  return Math.round((hit/Math.max(ta.length,tb.length))*85 + Math.min(core*5,15));
+}
+function kompFull(k){var s=String(k||'').toUpperCase().trim();return {'A':'ALPHA','B':'BRAVO','C':'CHARLIE','D':'DELTA'}[s]||s}
+function parseDate(v){
+  var s=String(v||'').trim(); if(!s)return null; var p;
+  if(/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/.test(s)){p=s.split(/[-\/]/);return new Date(+p[0],+p[1]-1,+p[2])}
+  if(/^\d{1,2}[\.\-\/]\d{1,2}([\.\-\/]\d{2,4})?$/.test(s)){p=s.split(/[\.\-\/]/);var yy=p[2]?+p[2]:yNow();if(yy<100)yy+=2000;return new Date(yy,+p[1]-1,+p[0])}
+  var d=new Date(s);return isNaN(d.getTime())?null:d;
+}
+function fmtDate(d){return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()}
+function activeDays(rec,y,m){
+  var a=parseDate(rec&&(rec.dari||rec.tarikh)), b=parseDate(rec&&(rec.hingga||rec.dari||rec.tarikh)); if(!a||!b)return[]; if(b<a){var t=a;a=b;b=t}
+  var out=[],cur=new Date(a.getFullYear(),a.getMonth(),a.getDate()),guard=0; while(cur<=b&&guard<370){if(cur.getFullYear()===+y&&(cur.getMonth()+1)===+m)out.push(cur.getDate());cur.setDate(cur.getDate()+1);guard++;} return out;
+}
+function masterPool(){try{return (MASTER||[]).filter(function(m){return !m.pindah})}catch(e){return []}}
+function findMCMemberStrict(raw){
+  var name=raw&&String(raw.nama||raw.name||raw.raw_nama||raw._rawNama||''); if(!name)return null;
+  var pool=masterPool(); var best=null,sc=0; pool.forEach(function(m){var s=scoreName(name,m.nama); if(s>sc){sc=s;best=m}});
+  if(!best || sc<82) return {ok:false,score:sc,member:best,reason:'LOW_CONFIDENCE'};
+  var k=kompFull(raw.komp||raw.kompeni||'');
+  // Kompeni hanya amaran, bukan blok total kerana borang kadang-kadang guna format WP/roster lama.
+  var warn = (k && ['ALPHA','BRAVO','CHARLIE','DELTA'].indexOf(k)>=0 && best.komp && k!==best.komp);
+  return {ok:true,score:sc,member:best,warnKomp:warn,rawKomp:k};
+}
+function buildStrictMCForMonth(y,m){
+  var good=[], review=[];
+  function addRaw(raw,source){
+    if(!raw)return; var rawName=raw.nama||raw.name||raw.raw_nama||raw._rawNama||''; var days=activeDays(raw,y,m);
+    if(!days.length) return; // route ikut tarikh sebenar MC sahaja
+    var mt=findMCMemberStrict(raw);
+    if(!mt||!mt.ok){review.push({source:source||raw.source||'unknown',raw_nama:rawName,dari:raw.dari||raw.tarikh||'',hingga:raw.hingga||raw.dari||raw.tarikh||'',klinik:raw.klinik||'',no_mc:raw.no_mc||raw.siri||'',score:mt?mt.score:0,reason:mt?mt.reason:'NO_NAME'});return;}
+    var mem=mt.member, a=parseDate(raw.dari||raw.tarikh), b=parseDate(raw.hingga||raw.dari||raw.tarikh)||a;
+    good.push({bil:+mem.bil,nama:mem.nama,jab:mem.jab,komp:mem.komp,raw_nama:rawName,source:source||raw.source||'MC_PRELOAD_STRICT',source_bil:raw.bil||raw.source_bil||'',match_score:mt.score,match_warning:mt.warnKomp?('Kompeni borang '+mt.rawKomp+' ≠ Master '+mem.komp):'',tarikh:a?fmtDate(a):(raw.tarikh||''),dari:a?fmtDate(a):(raw.dari||raw.tarikh||''),hingga:b?fmtDate(b):(raw.hingga||raw.dari||raw.tarikh||''),d:+days[0],m:+m,y:+y,mc_type:raw.mc_type||raw.jenis||'MC',jenis:'Bulan Ini',klinik:raw.klinik||'',no_mc:raw.no_mc||raw.siri||'',siri:raw.siri||raw.no_mc||'',hari:+raw.hari||days.length||1,bulanLabel:'Bulan Ini',_days:days});
+  }
+  try{if(typeof MC_PRELOAD!=='undefined'&&Array.isArray(MC_PRELOAD))MC_PRELOAD.forEach(function(r){addRaw(r,'MC_PRELOAD_STRICT')})}catch(e){}
+  // Bawa masuk hanya manual MC yang jelas bukan hasil preload lama.
+  try{if(Array.isArray(MC_DATA))MC_DATA.forEach(function(r){if(r&&(r.source==='manual'||r.source==='MANUAL'||r._manual)){addRaw(r,'MANUAL')}})}catch(e){}
+  var seen={}, out=[]; good.forEach(function(r){var k=[r.bil,r.dari,r.hingga,r.no_mc,r.klinik].join('|'); if(!seen[k]){seen[k]=1;out.push(r)}});
+  return {good:out,review:review};
+}
+function clearMCLinks(){try{if(typeof D==='undefined')return;Object.keys(D).forEach(function(b){Object.keys(D[b]||{}).forEach(function(d){if(D[b][d]){delete D[b][d]._mc; delete D[b][d].mc;}})})}catch(e){}}
+function linkMC(recs){try{clearMCLinks();(recs||[]).forEach(function(r){(r._days||activeDays(r,r.y||yNow(),r.m||mNow())).forEach(function(day){if(D&&D[r.bil]&&D[r.bil][day])D[r.bil][day]._mc=r})})}catch(e){}}
+window.eakhaBuildStrictMC51027=function(){var y=yNow(),m=mNow();var res=buildStrictMCForMonth(y,m);try{MC_DATA=res.good}catch(e){}window.EAKHA_MC_REVIEW_51027=res.review;linkMC(res.good);try{if(typeof renderMCCrossCheck==='function')renderMCCrossCheck()}catch(e){}return res};
+window.getMC=getMC=function(bil,d){
+  try{if(!Array.isArray(MC_DATA)||!MC_DATA.length)window.eakhaBuildStrictMC51027(); var bilN=+bil,dN=+d; for(var i=0;i<MC_DATA.length;i++){var r=MC_DATA[i]; if(+r.bil!==bilN)continue; var ds=r._days&&r._days.length?r._days:activeDays(r,r.y||yNow(),r.m||mNow()); if(ds.indexOf(dN)>=0){if(D&&D[bilN]&&D[bilN][dN])D[bilN][dN]._mc=r; return r;}}}catch(e){}
+  return null;
+};
+function minutes(t){var m=String(t||'').match(/(\d{1,2})[:\.](\d{2})/); if(!m)return null; return (+m[1])*60+(+m[2])}
+function parsePoint(v,day,src){var text=(typeof v==='object')?String(v.t||v.time||v.tc||v.value||''):String(v||'');var mm=minutes(text); if(mm===null)return null;var mt=text.match(/\d{1,2}[:\.]\d{2}/);return{t:mt[0].replace('.',':'),mins:mm,day:day||0,abs:mm+(day||0)*1440,src:src||''}}
+function shNorm(s){s=String(s||'').toUpperCase().trim(); if(/^(PG|PAGI|S|SIANG)$/.test(s))return'S'; if(/^(PT|PETANG|P)$/.test(s))return'P'; if(/^(M|MALAM)$/.test(s))return'M'; if(/^(O|OF|OFF|OFFDAY)$/.test(s))return'O'; return s}
+function cfg(sh){
+  if(sh==='S')return{start:420,end:900,inEarly:360,inOn:427,inLate:540,outStart:900,outEnd:960,label:'PG',time:'0700-1500'};
+  if(sh==='P')return{start:900,end:1380,inEarly:840,inOn:907,inLate:1080,outStart:1380,outEnd:1500,label:'PT',time:'1500-2300'};
+  if(sh==='M')return{start:1380,end:1860,inEarly:1320,inOn:1385,inLate:1439,outStart:1860,outEnd:1920,label:'M',time:'2300-0700'};
+  return null;
+}
+function collectPts(bil,d){var out=[],seen={};function add(p){if(!p)return;var k=p.abs+'|'+p.t;if(seen[k])return;seen[k]=1;out.push(p)}try{var c=D&&D[bil]&&D[bil][d]?D[bil][d]:{};if(Array.isArray(c.tc_all))c.tc_all.forEach(function(x){add(parsePoint(x,0,'tc_all'))});add(parsePoint(c.tc_in,0,'tc_in'));add(parsePoint(c.tc_out,0,'tc_out'));String(c.tc_ignored||c.tc_note||'').replace(/(\d{1,2}[:\.]\d{2})/g,function(x){add(parsePoint(x,0,'note'))});var n=D&&D[bil]&&D[bil][d+1]?D[bil][d+1]:{};if(Array.isArray(n.tc_all))n.tc_all.forEach(function(x){add(parsePoint(x,1,'next_all'))});add(parsePoint(n.tc_in,1,'next_in'));add(parsePoint(n.tc_out,1,'next_out'));String(n.tc_ignored||n.tc_note||'').replace(/(\d{1,2}[:\.]\d{2})/g,function(x){add(parsePoint(x,1,'next_note'))})}catch(e){}return out.sort(function(a,b){return a.abs-b.abs})}
+function pick(arr,target){return arr.length?arr.slice().sort(function(a,b){return Math.abs(a.abs-target)-Math.abs(b.abs-target)})[0]:null}
+window.eakhaRecalcTCFinal51027=function(bil,d){try{var c=D&&D[bil]&&D[bil][d]?D[bil][d]:null;if(!c||c.tc_problem)return false;var sh=shNorm(typeof gSh==='function'?gSh(bil,d):(c.tc_shift||''));if(sh==='O'||!sh)return false;var C=cfg(sh), pts=collectPts(bil,d);if(!C||!pts.length)return false;var ins=pts.filter(function(p){return p.day===0&&p.mins>=C.inEarly&&p.mins<=C.inLate});var outs=pts.filter(function(p){if(sh==='S')return p.day===0&&p.mins>=900&&p.mins<=960;if(sh==='P')return (p.day===0&&p.mins>=1380&&p.mins<=1439)||(p.day===1&&p.mins>=0&&p.mins<=60);if(sh==='M')return p.day===1&&p.mins>=420&&p.mins<=480;return false});var early=pts.filter(function(p){if(sh==='S')return p.day===0&&p.mins>=840&&p.mins<900;if(sh==='P')return p.day===0&&p.mins>=1320&&p.mins<1380;if(sh==='M')return p.day===1&&p.mins>=360&&p.mins<420;return false});var pin=pick(ins,C.start), pout=pick(outs,C.end)||pick(early,C.end);c.tc_in=pin?pin.t:'';c.tc_out=pout?pout.t:'';c.tc_out_nextday=!!(pout&&pout.day===1);c.tc_out_awal=!!(pout&&early.indexOf(pout)>=0);c.tc_shift=sh;c.tc_rule_version='51027';c.tc_ignored=pts.map(function(p){return(p.day?'+1 ':'')+p.t}).join(' · ');return true}catch(e){console.warn('[51027 TC]',e);return false}}
+window.eakhaRecalcAllTCFinal=function(opts){var n=0;try{(MASTER||[]).forEach(function(m){for(var d=1;d<=daysN();d++){if(window.eakhaRecalcTCFinal51027(m.bil,d))n++}})}catch(e){}return n};
+window.eakhaApplyStrictMCAndTC51027=async function(){try{var mc=window.eakhaBuildStrictMC51027();var n=window.eakhaRecalcAllTCFinal({});try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}try{if(typeof renderMCReg==='function')renderMCReg()}catch(e){}try{if(typeof updFlags==='function')updFlags()}catch(e){}try{if(typeof window.eakhaSaveSafeIDBSnapshot==='function')await window.eakhaSaveSafeIDBSnapshot('51027 STRICT MC + TC NIGHT')}catch(e){console.warn('[51027 idb save]',e)}toastSafe('Strict MC + TC malam siap ✓ TC '+n+' sel · MC sah '+mc.good.length+' · MC semak '+mc.review.length,'ok');return true}catch(e){toastSafe('Gagal Strict MC/TC: '+e.message,'err');return false}};
+function showMCReview(){var list=window.EAKHA_MC_REVIEW_51027||[];var html='<div style="position:fixed;inset:20px;z-index:99999;background:#0f1f3d;border:1px solid rgba(240,180,41,.5);border-radius:10px;overflow:auto;padding:14px;color:#fff"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="color:#f0b429">MC Meragukan / Tidak Dipaut ke Master</b><button class="btn btn-sm" onclick="this.closest(\'div[style*=fixed]\').remove()">Tutup</button></div><div style="font-size:8px;color:#93c5fd;margin-bottom:8px">Rekod ini TIDAK dimasukkan ke Master sehingga nama anggota disahkan.</div><table class="tbl"><thead><tr><th>Nama pada MC</th><th>Tarikh</th><th>Klinik</th><th>No MC</th><th>Score</th><th>Sebab</th></tr></thead><tbody>'+(list.length?list.map(function(r){return'<tr><td>'+esc(r.raw_nama)+'</td><td>'+esc(r.dari)+' - '+esc(r.hingga)+'</td><td>'+esc(r.klinik)+'</td><td>'+esc(r.no_mc)+'</td><td>'+esc(r.score)+'</td><td>'+esc(r.reason)+'</td></tr>'}).join(''):'<tr><td colspan="6">Tiada rekod meragukan.</td></tr>')+'</tbody></table></div>';document.body.insertAdjacentHTML('beforeend',html)}
+function bind(){try{var bar=document.querySelector('#page-master > div[style*="display:flex"]');if(bar&&!document.getElementById('btn-strict-mc-tc-51027')){var b=document.createElement('button');b.id='btn-strict-mc-tc-51027';b.className='btn btn-gold btn-sm';b.textContent='Semak MC Strict + TC Malam';b.title='MC link ikut nama pesakit sebenar; TC malam 2200-2305/0700-0800';b.onclick=window.eakhaApplyStrictMCAndTC51027;bar.appendChild(b);var r=document.createElement('button');r.id='btn-mc-review-51027';r.className='btn btn-sm';r.textContent='Lihat MC Meragukan';r.onclick=showMCReview;bar.appendChild(r)}}catch(e){}try{var btn=document.getElementById('btn-rule-final-51025');if(btn){btn.textContent='Kemas Kini TC Rule Final SAFE';btn.onclick=window.eakhaApplyStrictMCAndTC51027}}catch(e){}}
+[600,1800,3500].forEach(function(ms){setTimeout(bind,ms)});document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,900)});
+try{document.title='e-AKHA Vsavage v5.10.27 STRICT MC + TC';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.28 AUDIT MC/ABS RULE FIX
+   Final rules confirmed by SJN Adilah:
+   1) Shift Malam IN 2200-2305 sah; selepas 2305 lewat; OUT esok 0700-0800 sah.
+   2) MC sah only if MC belongs to same member/date; if KZP/KZK tiada makluman but MC is valid -> Audit Final = MC SAH.
+   3) If no valid thumb + no MC + no HRMIS and KZ shows ABS/TDK HADIR/TM/TIADA MAKLUMAN -> Audit Final = ABS - SILA MOHON CUTI, not LEWAT.
+   4) TIMECARD must not label a day as LEWAT when there is no tc_in/tc_out at all.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.28 AUDIT MC/ABS RULE FIX';
+window.__EAKHA_V51028_AUDIT_MC_ABS__=true;
+function toastSafe(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function up(v){return String(v==null?'':v).toUpperCase().replace(/\s+/g,' ').trim()}
+function hasTC(c){return !!(c&&(String(c.tc_in||'').trim()||String(c.tc_out||'').trim()))}
+function shOf(bil,d,c){try{return typeof gSh==='function'?gSh(bil,d):(c&&c.tc_shift)||''}catch(e){return (c&&c.tc_shift)||''}}
+function isOff(sh){sh=up(sh);return sh==='O'||sh==='OF'||sh==='OFF'||sh==='OFFDAY'}
+function isTT(k){k=up(k);return k==='TT'||k.indexOf('TAHAN TUGAS')>=0}
+function isTH(k){k=up(k);return k==='TH'}
+function isNoInfo(k){k=up(k);return k==='TM'||k==='TIADA MAKLUMAN'||k==='TIADA MAKLUMAT'||k==='NO INFO'||k==='TIDAK MAKLUM'||k==='TIDAK DIMAKLUMKAN'}
+function isAbsLike(k){k=up(k);return k==='ABS'||k==='TDK HADIR'||k==='TIDAK HADIR'||k==='TIDAK HADIR TUGAS'||isNoInfo(k)}
+function isCutiCode(k){k=up(k);return ['MC','CR','EL','CTR','CB','CBR','K/P','KP','K'].indexOf(k)>=0}
+function hrOK(c){try{return typeof hasHR==='function'?hasHR(c):!!(c&&c.hrmis)}catch(e){return !!(c&&c.hrmis)}}
+
+var prevTcAudit=window.tcAudit;
+window.tcAudit = tcAudit = function(bil,d){
+  var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:{};
+  var kzp=up(c.kzp), kzk=up(c.kzk);
+  var sh=up(shOf(bil,d,c));
+  // Confirmed rule: kalau tiada thumb langsung, TC tidak boleh jadi LEWAT.
+  // LEWAT hanya wujud bila ada actual punch IN selepas tetingkap.
+  if(!hasTC(c) && !isOff(sh) && !isTT(kzp) && !isTT(kzk) && !isTH(kzp) && !isTH(kzk)){
+    if(isCutiCode(kzp)||isCutiCode(kzk)) return {txt:'TIADA PUNCH\n(CUTI '+(kzp||kzk)+')',cls:'tc-off',ok:true};
+    if(!kzp&&!kzk) return {txt:'—',cls:'tc-bp',ok:false};
+    return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+  }
+  return prevTcAudit?prevTcAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+};
+
+var prevAuditFinal=window.auditFinal;
+window.auditFinal = auditFinal = function(bil,d){
+  try{
+    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:null;
+    if(!c) return prevAuditFinal?prevAuditFinal.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+    var sh=up(shOf(bil,d,c));
+    var kzp=up(c.kzp), kzk=up(c.kzk);
+    var mc=(typeof getMC==='function')?getMC(bil,d):null;
+    var hr=hrOK(c);
+    var thumb=hasTC(c);
+
+    if(isOff(sh)) return thumb?{txt:'OFFDAY / OT - ABAIKAN',cls:'af-off',inc:false}:{txt:'OFFDAY',cls:'af-off',inc:false};
+    if(isTT(kzp)||isTT(kzk)) return {txt:'TT - TAHAN TUGAS',cls:'af-tt',inc:false};
+    if(isTH(kzp)||isTH(kzk)) return {txt:'TH - TIDAK HADIR TUGAS',cls:'af-th',inc:false};
+
+    // MC SAH mesti override KZ tiada makluman / ABS / kosong, selagi MC strict match anggota & tarikh.
+    if(mc){
+      if(thumb) return {txt:'MC SAH\n(ADA THUMB - SEMAK SHIFT)',cls:'af-mc',inc:false};
+      return {txt:'MC SAH',cls:'af-mc',inc:false};
+    }
+
+    // HRMIS sah override ABS/no thumb untuk cuti bukan MC.
+    if(hr && (isCutiCode(kzp)||isCutiCode(kzk)||isAbsLike(kzp)||isAbsLike(kzk))){
+      return {txt:'HRMIS SAH',cls:'af-cr',inc:false};
+    }
+
+    // Confirmed: Tiada thumb + tiada MC => ABS, bukan LEWAT, bila KZ memang ABS/TDK HADIR/TM.
+    if(!thumb && !mc && !hr && (isAbsLike(kzp)||isAbsLike(kzk))){
+      return {txt:'ABS - SILA MOHON CUTI',cls:'af-abs',inc:false};
+    }
+
+    // Jika KZ tiada makluman dan TC pun tiada thumb, bukan LEWAT.
+    if(!thumb && !mc && !hr && (isNoInfo(kzp)||isNoInfo(kzk))){
+      return {txt:'ABS - SILA MOHON CUTI',cls:'af-abs',inc:false};
+    }
+
+    return prevAuditFinal?prevAuditFinal.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+  }catch(e){console.warn('[51028 audit override]',e);return prevAuditFinal?prevAuditFinal.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};}
+};
+
+function applyFix(){
+  try{if(typeof window.eakhaBuildStrictMC51027==='function')window.eakhaBuildStrictMC51027()}catch(e){}
+  try{if(typeof window.eakhaRecalcAllTCFinal==='function')window.eakhaRecalcAllTCFinal({forceManual:false})}catch(e){}
+  try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}
+  try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}
+  try{if(typeof updFlags==='function')updFlags()}catch(e){}
+  try{if(typeof window.eakhaSaveSafeIDBSnapshot==='function')window.eakhaSaveSafeIDBSnapshot('51028 AUDIT MC ABS RULE').catch(function(){})}catch(e){}
+  toastSafe('Audit rule dikemas kini: MC sah override KZ tiada makluman; tiada thumb + tiada MC = ABS','ok');
+}
+window.eakhaApplyAuditMCABS51028=applyFix;
+function bind(){try{
+  var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+  if(bar&&!document.getElementById('btn-audit-mc-abs-51028')){
+    var b=document.createElement('button');b.id='btn-audit-mc-abs-51028';b.className='btn btn-gold btn-sm';b.textContent='Kemas Kini Audit MC/ABS';b.title='MC sah jika match anggota/tarikh; tiada thumb+tiada MC=ABS';b.onclick=applyFix;bar.appendChild(b);
+  }
+}catch(e){}}
+[600,1800,3600].forEach(function(ms){setTimeout(bind,ms)});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,900)});
+try{document.title='e-AKHA Vsavage v5.10.29 AUDIT RULE ALL + MC TRUST';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage v5.10.29 AUDIT RULE ALL + MC TRUST
+   Confirmed by SJN Adilah:
+   - Rule ABS/MC/SAH applies to semua anggota, bukan Irwan sahaja.
+   - KZP/KZK tiada makluman/kosong + TIMECARD ada IN & OUT sah => Audit Final SAH.
+   - KZP/KZK ABS/TM/tiada makluman + tiada thumb + tiada MC/HRMIS => ABS - SILA MOHON CUTI.
+   - MC dates supplied are treated as valid dates; remove wording "MC Meragukan".
+   - MC sah overrides KZ tiada makluman/ABS if MC belongs to same member/date.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.29 AUDIT RULE ALL + MC TRUST';
+window.__EAKHA_V51029_AUDIT_ALL_MC_TRUST__=true;
+function toastSafe(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function escSafe(s){try{return typeof esc==='function'?esc(s):String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}catch(e){return String(s||'')}}
+function up(v){return String(v==null?'':v).toUpperCase().replace(/\s+/g,' ').trim()}
+function val(v){return String(v==null?'':v).trim()}
+function isOff(sh){sh=up(sh);return sh==='O'||sh==='OF'||sh==='OFF'||sh==='OFFDAY'||sh==='REHAT'}
+function shOf(bil,d,c){try{return typeof gSh==='function'?gSh(bil,d):(c&&c.tc_shift)||''}catch(e){return (c&&c.tc_shift)||''}}
+function isTT(k){k=up(k);return k==='TT'||k.indexOf('TAHAN TUGAS')>=0}
+function isTH(k){k=up(k);return k==='TH'}
+function isNoInfo(k){k=up(k);return !k||k==='TM'||k==='TIADA MAKLUMAN'||k==='TIADA MAKLUMAT'||k==='NO INFO'||k==='TIDAK MAKLUM'||k==='TIDAK DIMAKLUMKAN'||k==='TIDAK DIMAKLUM'}
+function isAbsLike(k){k=up(k);return k==='ABS'||k==='TDK HADIR'||k==='TIDAK HADIR'||k==='TIDAK HADIR TUGAS'||isNoInfo(k)}
+function isLateKZ(k){k=up(k);return k==='L'||k==='LEWAT'||k.indexOf('LEWAT')>=0}
+function isCutiCode(k){k=up(k);return ['MC','CR','EL','CTR','CB','CBR','K/P','KP','K','BER'].indexOf(k)>=0}
+function hrOK(c){try{return typeof hasHR==='function'?hasHR(c):!!(c&&(c.hrmis||c._hrmis||c.hr))}catch(e){return !!(c&&(c.hrmis||c._hrmis||c.hr))}}
+function hasAnyThumb(c){return !!(c&&(val(c.tc_in)||val(c.tc_out)||(Array.isArray(c.tc_all)&&c.tc_all.length)))}
+function hasFullThumb(c){return !!(c&&val(c.tc_in)&&val(c.tc_out))}
+function mcFor(bil,d){try{return typeof getMC==='function'?getMC(bil,d):(D&&D[bil]&&D[bil][d]&&(D[bil][d]._mc||D[bil][d].mc))}catch(e){return null}}
+
+// Re-override auditFinal with final global rules. Applies to every anggota/date.
+var prevAudit=window.auditFinal;
+window.auditFinal = auditFinal = function(bil,d){
+  try{
+    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:null;
+    if(!c) return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+    var sh=up(shOf(bil,d,c));
+    var kzp=up(c.kzp), kzk=up(c.kzk);
+    var mc=mcFor(bil,d);
+    var hr=hrOK(c);
+    var fullThumb=hasFullThumb(c);
+    var anyThumb=hasAnyThumb(c);
+
+    if(isOff(sh)){
+      return anyThumb?{txt:'OFFDAY / OT - ABAIKAN',cls:'af-off',inc:false}:{txt:'OFFDAY',cls:'af-off',inc:false};
+    }
+    if(isTT(kzp)||isTT(kzk)) return {txt:'TT - TAHAN TUGAS',cls:'af-tt',inc:false};
+    if(isTH(kzp)||isTH(kzk)) return {txt:'TH - TIDAK HADIR TUGAS',cls:'af-th',inc:false};
+
+    // MC confirmed: if MC exists for this same member/date, audit is MC SAH even if KZ says ABS/TM/tiada makluman.
+    if(mc){
+      if(anyThumb) return {txt:'MC SAH\n(ADA THUMB - SEMAK SHIFT)',cls:'af-mc',inc:false};
+      return {txt:'MC SAH',cls:'af-mc',inc:false};
+    }
+
+    // HRMIS/cuti approval confirmed.
+    if(hr && (isCutiCode(kzp)||isCutiCode(kzk)||isAbsLike(kzp)||isAbsLike(kzk))) return {txt:'HRMIS SAH',cls:'af-cr',inc:false};
+
+    // Confirmed by user: KZP/KZK no makluman/kosong, but TC has valid IN & OUT => SAH.
+    if(fullThumb && (isNoInfo(kzp)||isNoInfo(kzk)||(!kzp&&!kzk))){
+      return {txt:'SAH\n(TC ada IN & OUT)',cls:'af-sah',inc:false};
+    }
+
+    // If KZ reports late and TC also has thumb, preserve late indicator.
+    if(anyThumb && (isLateKZ(kzp)||isLateKZ(kzk))){
+      return {txt:'LEWAT\n(KZ & TC sahkan)',cls:'af-warn',inc:false};
+    }
+
+    // If there is no thumb at all + no MC + no HRMIS, KZ ABS/TM/no info = ABS, not LEWAT.
+    if(!anyThumb && !mc && !hr && (isAbsLike(kzp)||isAbsLike(kzk))){
+      return {txt:'ABS - SILA MOHON CUTI',cls:'af-abs',inc:false};
+    }
+
+    return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};
+  }catch(e){console.warn('[51029 audit]',e);return prevAudit?prevAudit.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'};}
+};
+
+// Make TIMECARD audit stop calling blank/no thumb as LEWAT.
+var prevTc=window.tcAudit;
+window.tcAudit = tcAudit = function(bil,d){
+  try{
+    var c=(typeof D!=='undefined'&&D[bil]&&D[bil][d])?D[bil][d]:{};
+    var sh=up(shOf(bil,d,c)); var kzp=up(c.kzp), kzk=up(c.kzk);
+    if(!hasAnyThumb(c) && !isOff(sh) && !isTT(kzp) && !isTT(kzk) && !isTH(kzp) && !isTH(kzk)){
+      if(isCutiCode(kzp)||isCutiCode(kzk)) return {txt:'TIADA PUNCH\n(CUTI '+(kzp||kzk)+')',cls:'tc-off',ok:true};
+      if(!kzp&&!kzk) return {txt:'—',cls:'tc-bp',ok:false};
+      return {txt:'TIADA PUNCH\n(SEMAK)',cls:'tc-abs',ok:false};
+    }
+  }catch(e){}
+  return prevTc?prevTc.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'tc-bp',ok:false};
+};
+
+// Remove "MC Meragukan" wording. It is now "MC belum dipaut/semak nama" only, not doubtful dates.
+function showMCStatus(){
+  var list=window.EAKHA_MC_REVIEW_51027||[];
+  var good=[]; try{if(Array.isArray(MC_DATA))good=MC_DATA.slice()}catch(e){}
+  var html='<div style="position:fixed;inset:20px;z-index:99999;background:#0f1f3d;border:1px solid rgba(240,180,41,.5);border-radius:10px;overflow:auto;padding:14px;color:#fff">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="color:#f0b429">Senarai MC / Semak Pautan Nama</b><button class="btn btn-sm" onclick="this.closest(\'div[style*=fixed]\').remove()">Tutup</button></div>'+
+    '<div style="font-size:8px;color:#93c5fd;margin-bottom:8px">Tarikh MC dianggap tepat seperti dokumen. Paparan ini hanya semak pautan nama anggota supaya MC tidak masuk kepada orang yang salah.</div>'+
+    '<div style="font-size:9px;color:#34d399;margin:6px 0">MC dipaut ke Master: '+good.length+'</div>'+
+    '<table class="tbl"><thead><tr><th>Nama anggota</th><th>Tarikh</th><th>Klinik</th><th>No MC</th><th>Score</th></tr></thead><tbody>'+
+    (good.length?good.map(function(r){return '<tr><td>'+escSafe(r.nama||r.raw_nama)+'</td><td>'+escSafe((r.dari||r.tarikh||'')+' - '+(r.hingga||r.dari||r.tarikh||''))+'</td><td>'+escSafe(r.klinik)+'</td><td>'+escSafe(r.no_mc||r.siri)+'</td><td>'+escSafe(r.match_score||'')+'</td></tr>'}).join(''):'<tr><td colspan="5">Tiada MC dipaut.</td></tr>')+
+    '</tbody></table>'+
+    '<div style="font-size:9px;color:#fbbf24;margin:10px 0 6px">MC belum dipaut nama: '+list.length+'</div>'+
+    '<table class="tbl"><thead><tr><th>Nama pada MC</th><th>Tarikh</th><th>Klinik</th><th>No MC</th><th>Score</th><th>Status</th></tr></thead><tbody>'+
+    (list.length?list.map(function(r){return '<tr><td>'+escSafe(r.raw_nama)+'</td><td>'+escSafe((r.dari||'')+' - '+(r.hingga||''))+'</td><td>'+escSafe(r.klinik)+'</td><td>'+escSafe(r.no_mc)+'</td><td>'+escSafe(r.score)+'</td><td>Semak ejaan/nama anggota</td></tr>'}).join(''):'<tr><td colspan="6">Tiada. Semua MC sudah dipaut.</td></tr>')+
+    '</tbody></table></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+window.eakhaShowMCStatus51029=showMCStatus;
+
+function applyFix(){
+  try{if(typeof window.eakhaBuildStrictMC51027==='function')window.eakhaBuildStrictMC51027()}catch(e){}
+  try{if(typeof window.eakhaRecalcAllTCFinal==='function')window.eakhaRecalcAllTCFinal({forceManual:false})}catch(e){}
+  try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}
+  try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}
+  try{if(typeof updFlags==='function')updFlags()}catch(e){}
+  try{if(typeof window.eakhaSaveSafeIDBSnapshot==='function')window.eakhaSaveSafeIDBSnapshot('51029 AUDIT ALL MC TRUST').catch(function(){})}catch(e){}
+  toastSafe('Audit dikemas kini: TC ada IN/OUT = SAH; tiada thumb+tiada MC = ABS; MC sah ikut tarikh dokumen.','ok');
+}
+window.eakhaApplyAuditAllMCTrust51029=applyFix;
+function bind(){try{
+  var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+  if(bar&&!document.getElementById('btn-audit-all-mc-trust-51029')){
+    var b=document.createElement('button'); b.id='btn-audit-all-mc-trust-51029'; b.className='btn btn-gold btn-sm'; b.textContent='Kemas Kini Audit Final 51029'; b.title='Global: TC IN/OUT sah; tiada thumb+tiada MC jadi ABS; MC sah ikut tarikh dokumen'; b.onclick=applyFix; bar.appendChild(b);
+  }
+  var old=document.getElementById('btn-mc-review-51027'); if(old){old.textContent='Lihat Senarai MC'; old.title='Tarikh MC tepat; semak pautan nama sahaja'; old.onclick=showMCStatus;}
+  var old2=document.getElementById('btn-audit-mc-abs-51028'); if(old2){old2.textContent='Kemas Kini Audit Final 51029'; old2.onclick=applyFix;}
+}catch(e){}}
+[500,1500,3000,5000].forEach(function(ms){setTimeout(bind,ms)});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,900)});
+try{document.title='e-AKHA Vsavage v5.10.29 AUDIT RULE ALL MC TRUST';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+
+<script>
+/* e-AKHA Vsavage v5.10.30 — ALIAS LOCK + KZK NO-BLANK + AUDIT ALL RULE FIX
+   - IRWAN: generic IRWAN maps to IRWAN SYAMIR only; AHMAD TERMIZY only exact/TERMIZY.
+   - TARMIZI ABDULLAH and TARMIZI SAZALI are locked as different members.
+   - Blank KZ rows display as TM / TIADA MAKLUMAN, not empty.
+   - Audit final global rules: MC wins by exact date, TC valid IN/OUT = SAH even if KZ no makluman, no thumb+no MC/HR = ABS.
+*/
+(function(){
+'use strict';
+var PATCH='v5.10.30 ALIAS KZK AUDIT';
+function up(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9@ ]+/g,' ').replace(/\s+/g,' ').trim();}
+function hasWord(s,w){return new RegExp('(^| )'+w+'( |$)').test(s);} 
+function byBil(b){try{return (MASTER||[]).find(function(m){return +m.bil===+b;})||null;}catch(e){return null;}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function cellObj(b,d){try{return D&&D[b]&&D[b][d]?D[b][d]:null;}catch(e){return null;}}
+function isOffCode(s){s=up(s);return s==='O'||s==='OF'||s==='OFF'||s==='OFFDAY'||s==='REHAT';}
+function isNoInfoCode(s){s=up(s);return !s||s==='TM'||s==='TIADA MAKLUMAN'||s==='TIDAK MAKLUM'||s==='NO INFO'||s==='N/A'||s==='-'||s==='—';}
+function isHadirCode(s){s=up(s);return s==='✓'||s==='HADIR'||s==='PRESENT'||s==='/'||s==='V'||s==='OB'||s==='BERTUGAS LUAR';}
+function isLateCode(s){s=up(s);return s==='L'||s==='LEWAT'||s==='LL'||s==='LAPOR LEWAT';}
+function isAbsCode(s){s=up(s);return s==='ABS'||s==='X'||s==='TDK HADIR'||s==='TIDAK HADIR'||s==='TH'||s==='TM'||s==='TIADA MAKLUMAN'||s==='';}
+function isMCCode(s){s=up(s);return s==='MC'||s==='SAKIT';}
+function isCutiCode30(s){s=up(s);return ['CR','EL','CTR','CB','CBR','K/P','KP'].indexOf(s)>=0;}
+function hasHR30(c){try{return !!(c&&((c.hrmis&&String(c.hrmis).trim())||c._hrmis_rec));}catch(e){return false;}}
+function anyThumb(c){return !!(c&&(c.tc_in||c.tc_out||(Array.isArray(c.tc_all)&&c.tc_all.length)));}
+function tcGood(c,b,d){
+  try{
+    var tc=(typeof tcAudit==='function')?tcAudit(b,d):null;
+    var t=up(tc&&tc.txt||'');
+    var bad=t.includes('TIADA IN')||t.includes('TIADA OUT')||t.includes('SINGLE PUNCH')||t.includes('TIADA PUNCH');
+    if(tc&&tc.ok&&!bad&&anyThumb(c)) return true;
+    if(c&&c.tc_in&&c.tc_out&&!bad) return true;
+    if(c&&Array.isArray(c.tc_all)&&c.tc_all.length>=2&&!bad) return true;
+  }catch(e){}
+  return false;
+}
+function tcLate30(b,d){try{var t=up((tcAudit(b,d)||{}).txt||'');return t.includes('LEWAT');}catch(e){return false;}}
+
+// ----- Alias lock -----
+function specialMember(ctx,kompHint){
+  var n=up(ctx); if(!n) return null;
+  // Tarmizi: never allow generic TARMIZI to jump between Abdullah/Sazali/Nazira.
+  if(n.includes('TARMIZI')){
+    if(n.includes('SAZALI')) return byBil(44); // RT Delta - MUHAMMAD TARMIZI BIN SAZALI
+    if(n.includes('ABDULLAH')) return byBil(22); // IKTAR Alpha - MUHAMMAD TARMIZI BIN ABDULLAH
+    if(n.includes('NOR AINA')||n.includes('NOR ANA')||n.includes('NAZIRA')) return byBil(20); // NOR AINA NAZIRA ... MOHD TARMIZI
+    // Ambiguous raw “TARMIZI” alone: do not auto-merge.
+    return null;
+  }
+  // Irwan: official IKTAR focus roster has only IRWAN SYAMIR. TERMIZY is excluded from 3-jabatan Master.
+  if(n.includes('IRWAN')){
+    if(n.includes('TERMIZY')||n.includes('TERMIZI')||n.includes('AHMAD TERMI')) return false; // blocked: not IKTAR focus Master for this audit
+    if(n.includes('SYAMIR')||n.includes('SHAMIR')||n.includes('MOHD ZAINAL')||hasWord(n,'IRWAN')) return byBil(19); // IRWAN SYAMIR BIN MOHD ZAINAL
+  }
+  return null;
+}
+var oldBest=(typeof window.bestMatch==='function'?window.bestMatch:(typeof bestMatch==='function'?bestMatch:null));
+window.bestMatch=bestMatch=function(ctx){
+  var sm=specialMember(ctx,'');
+  if(sm===false) return null;
+  if(sm) return sm;
+  var n=up(ctx);
+  if(n==='TARMIZI'||n==='MUHAMMAD TARMIZI'||n==='MOHD TARMIZI') return null;
+  return oldBest?oldBest.apply(this,arguments):null;
+};
+var oldBWR=(typeof window.bestMatchWithRef==='function'?window.bestMatchWithRef:(typeof bestMatchWithRef==='function'?bestMatchWithRef:null));
+window.bestMatchWithRef=bestMatchWithRef=function(ctx,kompHint){
+  var sm=specialMember(ctx,kompHint||'');
+  if(sm===false) return null;
+  if(sm) return sm;
+  var n=up(ctx);
+  if(n==='TARMIZI'||n==='MUHAMMAD TARMIZI'||n==='MOHD TARMIZI') return null;
+  return oldBWR?oldBWR.apply(this,arguments):null;
+};
+
+// ----- Show blank KZ as TM, not empty/click-only -----
+var oldKzLabel=(typeof window.kzLabel==='function'?window.kzLabel:(typeof kzLabel==='function'?kzLabel:null));
+window.kzLabel=kzLabel=function(v){
+  var s=up(v);
+  if(!s||s==='TM'||s==='TIADA MAKLUMAN'||s==='TIDAK MAKLUM'){
+    return 'TM<br><span style="font-size:5.5px;opacity:.8">TIADA MAKLUMAN</span>';
+  }
+  return oldKzLabel?oldKzLabel.apply(this,arguments):esc(v||'');
+};
+var oldKzCls=(typeof window.kzCls==='function'?window.kzCls:(typeof kzCls==='function'?kzCls:null));
+window.kzCls=kzCls=function(v){
+  var s=up(v);
+  if(!s||s==='TM'||s==='TIADA MAKLUMAN'||s==='TIDAK MAKLUM') return 'kz-bp';
+  return oldKzCls?oldKzCls.apply(this,arguments):'kz-bp';
+};
+
+// Keep data readable: convert active-day empty KZK/KZP to explicit TM only when there is other evidence/status.
+function markTMNoBlank(){
+  var count=0;
+  try{(MASTER||[]).forEach(function(m){
+    for(var d=1; d<=((typeof daysInActiveMonth==='function')?daysInActiveMonth():31); d++){
+      var c=cellObj(m.bil,d); if(!c) continue;
+      var sh=(typeof gSh==='function')?gSh(m.bil,d):'';
+      if(isOffCode(sh)) continue;
+      var evidence=anyThumb(c)||c.kzp||c.kzk||c.hrmis||c._hrmis_rec||((typeof getMC==='function')&&getMC(m.bil,d));
+      if(!evidence) continue;
+      if(!c.kzp){c.kzp='TM'; count++;}
+      if(!c.kzk){c.kzk='TM'; count++;}
+    }
+  });}catch(e){console.warn('[e-AKHA '+PATCH+'] markTM failed',e)}
+  return count;
+}
+window.eakhaMarkTMNoBlank51030=markTMNoBlank;
+
+// ----- Final global audit rule override -----
+var oldAudit30=(typeof window.auditFinal==='function'?window.auditFinal:(typeof auditFinal==='function'?auditFinal:null));
+window.auditFinal=auditFinal=function(bil,d){
+  try{
+    var c=cellObj(bil,d)||{};
+    var sh=(typeof gSh==='function')?gSh(bil,d):'';
+    var kzp=c.kzp||'', kzk=c.kzk||'';
+    var mc=(typeof getMC==='function')?getMC(bil,d):null;
+    var hr=hasHR30(c);
+    var thumb=anyThumb(c);
+    var full=tcGood(c,bil,d);
+    var late=tcLate30(bil,d);
+
+    if(isOffCode(sh)) return thumb?{txt:'OFFDAY / OT - ABAIKAN',cls:'af-off',inc:false}:{txt:'OFFDAY',cls:'af-off',inc:false};
+    if(up(kzp)==='TT'||up(kzk)==='TT') return {txt:'TT - TAHAN TUGAS',cls:'af-tt',inc:false};
+    if(up(kzp)==='TH'||up(kzk)==='TH') return {txt:'TH - TIDAK HADIR TUGAS',cls:'af-th',inc:false};
+
+    // MC date/name has been uploaded by user and must win globally.
+    if(mc) return {txt:'MC SAH',cls:'af-mc',inc:false};
+
+    // HRMIS leave wins when no MC.
+    if(hr && (isCutiCode30(kzp)||isCutiCode30(kzk)||!thumb)) return {txt:'HRMIS SAH',cls:'af-cr',inc:false};
+
+    // Bertugas luar: KZ source is enough; thumb may be absent.
+    if(up(kzp)==='OB'||up(kzk)==='OB') return {txt:'OB SAH\n(BERTUGAS LUAR)',cls:'af-sah',inc:false};
+
+    // KZ no makluman/blank/TM but Timecard has valid IN & OUT => SAH.
+    if(full && (isNoInfoCode(kzp)||isNoInfoCode(kzk)||(!kzp&&!kzk))){
+      if(isLateCode(kzp)||isLateCode(kzk)||late) return {txt:'LEWAT\n(TC sahkan)',cls:'af-warn',inc:false};
+      return {txt:'SAH\n(TC ada IN & OUT)',cls:'af-sah',inc:false};
+    }
+
+    // Both KZ report hadir and TC is complete => SAH.
+    if(full && (isHadirCode(kzp)||isHadirCode(kzk)) && !late){
+      return {txt:'SAH',cls:'af-sah',inc:false};
+    }
+    if(full && (isHadirCode(kzp)||isHadirCode(kzk)) && late){
+      return {txt:'LEWAT\n(TC sahkan)',cls:'af-warn',inc:false};
+    }
+
+    // No thumb + no MC + no HRMIS = ABS for ABS/TM/no makluman/late/no info. Not LEWAT.
+    if(!thumb && !mc && !hr){
+      if(isMCCode(kzp)||isMCCode(kzk)) return {txt:'MOHON HANTAR MC',cls:'af-warn',inc:false};
+      if(isCutiCode30(kzp)||isCutiCode30(kzk)) return {txt:'SILA MOHON HRMIS',cls:'af-warn',inc:false};
+      if(isAbsCode(kzp)||isAbsCode(kzk)||isLateCode(kzp)||isLateCode(kzk)||isNoInfoCode(kzp)||isNoInfoCode(kzk)){
+        return {txt:'ABS - SILA MOHON CUTI',cls:'af-abs',inc:false};
+      }
+    }
+
+    // KZ says late: only late if TC also late or no clear TC contradicts. If TC valid and not late => SAH with note.
+    if(isLateCode(kzp)||isLateCode(kzk)){
+      if(full && !late) return {txt:'SAH\n(KZ lapor L — semak TC)',cls:'af-sah',inc:false};
+      if(full && late) return {txt:'LEWAT\n(KZ & TC sahkan)',cls:'af-warn',inc:false};
+      if(!thumb) return {txt:'ABS - SILA MOHON CUTI',cls:'af-abs',inc:false};
+    }
+  }catch(e){console.warn('[e-AKHA '+PATCH+'] audit override failed',e)}
+  return oldAudit30?oldAudit30.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp',inc:true};
+};
+
+function apply51030(){
+  var tm=markTMNoBlank();
+  try{ if(typeof window.eakhaBuildStrictMC51027==='function') window.eakhaBuildStrictMC51027(); }catch(e){}
+  try{ if(typeof window.eakhaRecalcAllTCFinal==='function') window.eakhaRecalcAllTCFinal({forceManual:false}); }catch(e){}
+  try{ if(typeof renderMaster==='function') renderMaster(null); }catch(e){}
+  try{ if(typeof renderOutput==='function') renderOutput(''); }catch(e){}
+  try{ if(typeof updFlags==='function') updFlags(); }catch(e){}
+  try{ if(typeof window.eakhaSaveSafeIDBSnapshot==='function') window.eakhaSaveSafeIDBSnapshot('51030 ALIAS KZK AUDIT').catch(function(){}); }catch(e){}
+  try{ if(typeof toast==='function') toast('Rule 51030 siap: KZ kosong jadi TM, alias Irwan/Tarmizi dikunci, audit global dikemas kini. TM '+tm+' sel.','ok'); }catch(e){}
+}
+window.eakhaApply51030AliasKZKAudit=apply51030;
+function bind51030(){try{
+  var bar=document.querySelector('#page-master > div[style*="display:flex"]');
+  if(bar&&!document.getElementById('btn-51030-alias-kzk-audit')){
+    var b=document.createElement('button'); b.id='btn-51030-alias-kzk-audit'; b.className='btn btn-gold btn-sm'; b.textContent='Kemas Kini Alias + KZK/Audit 51030'; b.title='Irwan/Tarmizi alias lock; KZ kosong jadi TM; audit final ikut rule global'; b.onclick=apply51030; bar.appendChild(b);
+  }
+}catch(e){}}
+[400,1200,2500,4500].forEach(function(ms){setTimeout(bind51030,ms);});
+document.addEventListener('DOMContentLoaded',function(){setTimeout(bind51030,800);});
+try{document.title='e-AKHA Vsavage v5.10.30 ALIAS KZK AUDIT';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
+
+
+
+<script>
+/* ══════════════════════════════════════════════════════════════
    e-AKHA Vsavage v5.10.31 CONSOLIDATED RULE ENGINE
    Tujuan: selesaikan bug berulang tanpa freeze sistem.
    - Manual edit tidak dipadam oleh auto-recalc.
@@ -9438,7 +11229,123 @@ try{document.title='e-AKHA Vsavage v5.10.31 CONSOLIDATED RULE ENGINE';console.lo
 })();
 </script>
 
-</body>
-</html>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   e-AKHA Vsavage PATCH v5.10.33 — UPLOAD XLSX SEMUA + KZK TAB CLEAN
+   - Semua kad Upload Dokumen boleh pilih .xlsx/.xls.
+   - readFile() boleh convert XLSX/XLS/CSV kepada teks supaya parser sedia ada boleh baca.
+   - KZ Koperal XLSX dari Upload Dokumen auto masuk staging KZK melalui reader Excel.
+   - Butang rosak dalam tab KZ Koperal dibuang/hide: Upload KZ Koperal Excel, Upload Excel Gabungan KZ, Kemaskini ke Master File, Reset Staging.
+══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+var PATCH='v5.10.33-UPLOAD-XLSX-ALL-KZK-TAB-CLEAN';
+function qs(s,r){return (r||document).querySelector(s)}
+function qsa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function toast33(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else console.log(msg)}catch(e){console.log(msg)}}
+function isExcelName(n){return /\.(xlsx|xls)$/i.test(String(n||''));}
+function isCsvName(n){return /\.csv$/i.test(String(n||''));}
+async function excelFileToText(file,logFn){
+  if(typeof XLSX==='undefined') throw new Error('Library Excel belum loaded');
+  var ab=await file.arrayBuffer();
+  var wb=XLSX.read(ab,{type:'array',cellDates:false,raw:false});
+  var parts=[];
+  wb.SheetNames.forEach(function(sn){
+    var ws=wb.Sheets[sn];
+    if(!ws)return;
+    var csv=XLSX.utils.sheet_to_csv(ws,{FS:'\t',RS:'\n',blankrows:false});
+    parts.push('### SHEET: '+sn+' ###\n'+csv);
+  });
+  var txt=parts.join('\n\n');
+  try{ if(logFn)logFn('Excel dibaca sebagai teks: '+file.name+' ('+wb.SheetNames.length+' sheet, '+txt.length+' chars)','ok'); }catch(e){}
+  return txt;
+}
+// Override readFile supaya semua parser boleh terima Excel/CSV sebagai teks.
+var oldReadFile=window.readFile;
+if(typeof oldReadFile==='function'&&!oldReadFile.__v51033){
+  window.readFile=async function(file,logFn){
+    var name=file&&file.name?file.name:'';
+    try{
+      if(isExcelName(name)) return await excelFileToText(file,logFn);
+      if(isCsvName(name)){var t=await file.text();try{if(logFn)logFn('CSV dibaca: '+name+' ('+t.length+' chars)','ok')}catch(e){}return t;}
+    }catch(e){try{if(logFn)logFn('Gagal baca Excel/CSV '+name+': '+e.message,'err')}catch(_){}}
+    return oldReadFile.apply(this,arguments);
+  };
+  window.readFile.__v51033=true;
+  try{ readFile=window.readFile; }catch(e){}
+}
+function setUploadAccepts(){
+  var rules={
+    'uz-kzp':{accept:'.xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png',sub:'XLSX · PDF · JPG/PNG'},
+    'uz-kzk':{accept:'.xlsx,.xls,.csv,.zip,.txt,.pdf,.notes',sub:'XLSX · ZIP · TXT · PDF'},
+    'uz-tc':{accept:'.xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png',sub:'XLSX · PDF · CSV'},
+    'uz-mc':{accept:'.xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png',sub:'XLSX · PDF · JPG/PNG'},
+    'uz-hr':{accept:'.xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png',sub:'XLSX · PDF · Screenshot'},
+    'uz-baki-up':{accept:'.xlsx,.xls,.csv,.pdf',sub:'XLSX · PDF · CSV'},
+    'uz-ctr-up':{accept:'.xlsx,.xls,.csv,.pdf,.txt',sub:'XLSX · PDF · CSV'},
+    'uz-man':{accept:'.xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.txt',sub:'XLSX/PDF/imej · Auto-OCR'}
+  };
+  Object.keys(rules).forEach(function(id){
+    var z=qs('#'+id); if(!z)return;
+    var inp=qs('input[type=file]',z); if(inp)inp.setAttribute('accept',rules[id].accept);
+    var sub=qs('.uz-s',z); if(sub)sub.textContent=rules[id].sub;
+    if(id==='uz-kzk'){var t=qs('.uz-t',z); if(t)t.textContent='KZ Koperal (WhatsApp/Excel)'}
+  });
+}
+// KZK tab: hide/remove broken controls only, keep semak/staging table.
+function cleanKZKTab(){
+  var page=qs('#page-kzk-staging'); if(!page)return;
+  qsa('label,button',page).forEach(function(el){
+    var tx=(el.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();
+    if(tx==='UPLOAD KZ KOPERAL EXCEL'||tx==='UPLOAD EXCEL GABUNGAN KZ'||tx==='KEMASKINI KE MASTER FILE'||tx==='RESET STAGING'||tx==='RESET BULAN INI'){
+      el.remove();
+    }
+  });
+  qsa('.notif',page).forEach(function(n){
+    var tx=(n.textContent||'').toUpperCase();
+    if(tx.includes('FLOW BETUL')||tx.includes('FLOW DISAHKAN')||tx.includes('EXCEL GABUNGAN')){
+      n.innerHTML='<div><b>KZ Koperal:</b> Upload XLSX/WhatsApp dibuat melalui tab <b>Upload Dokumen</b> sahaja. Panel ini untuk semakan staging/padanan, bukan untuk proses import manual.</div>';
+      n.className='notif n-info';
+    }
+  });
+}
+// If KZK Excel uploaded through Upload Dokumen, auto-send to existing KZK Excel reader/staging.
+var oldFsel=window.fsel;
+if(typeof oldFsel==='function'&&!oldFsel.__v51033){
+  window.fsel=async function(inp,k){
+    var files=inp&&inp.files?Array.prototype.slice.call(inp.files):[];
+    var ret=await oldFsel.apply(this,arguments);
+    try{
+      if(k==='kzk'){
+        files.filter(function(f){return isExcelName(f.name)}).forEach(function(f){
+          if(typeof window.eakhaV5105ImportKZ==='function'){
+            window.eakhaV5105ImportKZ('kzk',f);
+            toast33('KZ Koperal XLSX dihantar ke staging: '+f.name,'ok');
+          }
+        });
+      }
+      setTimeout(function(){setUploadAccepts();cleanKZKTab();},250);
+    }catch(e){console.warn('[v5.10.33 fsel]',e)}
+    return ret;
+  };
+  window.fsel.__v51033=true;
+  try{ fsel=window.fsel; }catch(e){}
+}
+// Patch buttons that can appear after nav/render.
+function boot33(){setUploadAccepts();cleanKZKTab();}
+['nav','renderMaster','setMonth'].forEach(function(fn){
+  var old=window[fn];
+  if(typeof old==='function'&&!old['__v51033']){
+    window[fn]=function(){var r=old.apply(this,arguments);setTimeout(boot33,220);setTimeout(boot33,900);return r;};
+    window[fn]['__v51033']=true;
+    try{eval(fn+'=window[fn]')}catch(e){}
+  }
+});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[200,800,1800,3500,6000].forEach(function(ms){setTimeout(boot33,ms)})});
+else [100,600,1600,3200,6000].forEach(function(ms){setTimeout(boot33,ms)});
+try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+</script>
 </body>
 </html>
