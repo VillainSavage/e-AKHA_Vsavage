@@ -11347,5 +11347,131 @@ else [100,600,1600,3200,6000].forEach(function(ms){setTimeout(boot33,ms)});
 try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 </script>
+
+
+<script>
+/* e-AKHA Vsavage v5.10.34 — FORCE ONE IRWAN MASTER CLEAN
+   Confirmed roster: IKTAR has only one IRWAN SYAMIR BIN MOHD ZAINAL.
+   Bil 6 is MUHAMMAD ASREE BIN HAZIR (IKTAR BRAVO, TH), Bil 19 is IRWAN SYAMIR.
+   This patch removes stale browser CUSTOM_ANGGOTA overrides that kept showing MOHAMAD IRWAN/TERMIZY as a second Irwan.
+*/
+(function(){
+'use strict';
+var PATCH='v5.10.34 IRWAN ONE MASTER FORCE CLEAN';
+var CLEAN_KEY_BASE='eakha_irwan_one_master_clean_51034_';
+function up(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();}
+function isBadIrwanName(s){s=up(s);return s.indexOf('MOHAMAD IRWAN BIN AHMAD TERMIZ')>=0||s.indexOf('MOHAMMAD IRWAN BIN AHMAD TERMIZ')>=0||s.indexOf('AHMAD TERMIZ')>=0||s.indexOf('TERMIZ')>=0;}
+function isIrwanGeneric(s){s=up(s);return /\bIRWAN\b/.test(s) && s.indexOf('IRWAN SYAMIR BIN MOHD ZAINAL')<0;}
+function toast34(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else if(typeof showToast==='function')showToast(msg,type||'ok');else console.log(msg);}catch(e){console.log(msg)}}
+function byBil(b){try{return (MASTER||[]).find(function(m){return +m.bil===+b})||null;}catch(e){return null}}
+function monthKey(){try{return String((typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026))+'_'+String((typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:4));}catch(e){return '2026_4'}}
+function normaliseMasterRoster(){
+  try{
+    var m6=byBil(6);
+    if(m6){m6.jab='IKTAR';m6.komp='BRAVO';m6.nama='MUHAMMAD ASREE BIN HAZIR';m6.mykad=m6.mykad||'';m6.staff_id=m6.staff_id||'';m6.note='TAHAN TUGAS';m6.nt='th';delete m6.pindah;}
+    var m19=byBil(19);
+    if(m19){m19.jab='IKTAR';m19.komp='ALPHA';m19.nama='IRWAN SYAMIR BIN MOHD ZAINAL';m19.note='5x LEWAT';m19.nt='w';delete m19.pindah;}
+    if(typeof BK!=='undefined'){BK[6]='BRAVO';BK[19]='ALPHA';}
+  }catch(e){console.warn('[51034 normaliseMasterRoster]',e)}
+}
+function cleanCustomArrays(){
+  var touched=false, badBil6=false;
+  try{
+    if(typeof CUSTOM_ANGGOTA==='undefined'||!Array.isArray(CUSTOM_ANGGOTA)) window.CUSTOM_ANGGOTA=CUSTOM_ANGGOTA=[];
+    var next=[];
+    (CUSTOM_ANGGOTA||[]).forEach(function(x){
+      if(!x)return;
+      var b=+x.bil, nm=x.nama||'';
+      if(b===6){
+        if(isBadIrwanName(nm)||isIrwanGeneric(nm)||up(nm).indexOf('IRWAN')>=0){badBil6=true;touched=true;return;}
+        // Bil 6 must follow official roster; remove stale custom override even if name differs.
+        touched=true;return;
+      }
+      if(b===19){
+        var y=Object.assign({},x,{bil:19,nama:'IRWAN SYAMIR BIN MOHD ZAINAL',jab:'IKTAR',komp:'ALPHA'}); next.push(y); touched=true; return;
+      }
+      if(isBadIrwanName(nm)){touched=true;return;}
+      next.push(x);
+    });
+    if(touched){CUSTOM_ANGGOTA.length=0;next.forEach(function(x){CUSTOM_ANGGOTA.push(x)});window.CUSTOM_ANGGOTA=CUSTOM_ANGGOTA;}
+  }catch(e){console.warn('[51034 cleanCustomArrays]',e)}
+  // Clean both legacy and current storage keys so duplicate does not return after refresh.
+  try{
+    var lain=(typeof ANGGOTA_LAIN!=='undefined'&&Array.isArray(ANGGOTA_LAIN))?ANGGOTA_LAIN:[];
+    var clean=(typeof CUSTOM_ANGGOTA!=='undefined'&&Array.isArray(CUSTOM_ANGGOTA))?CUSTOM_ANGGOTA:[];
+    try{localStorage.setItem('eakha_custom_anggota',JSON.stringify(clean));}catch(e){try{localStorage.removeItem('eakha_custom_anggota');localStorage.setItem('eakha_custom_anggota',JSON.stringify(clean));}catch(_){}}
+    try{localStorage.setItem('eakha_anggota_custom',JSON.stringify({custom:clean,lain:lain}));}catch(e){try{localStorage.removeItem('eakha_anggota_custom');localStorage.setItem('eakha_anggota_custom',JSON.stringify({custom:clean,lain:lain}));}catch(_){}}
+  }catch(e){}
+  return badBil6||touched;
+}
+function archiveAndClearBil6IfNeeded(reason,force){
+  try{
+    var key=CLEAN_KEY_BASE+monthKey();
+    var already=localStorage.getItem(key)==='done';
+    if(!force && already) return false;
+    if(typeof D==='undefined'||!D) return false;
+    var hasD=!!D[6] && Object.keys(D[6]||{}).length>0;
+    if(hasD){
+      try{localStorage.setItem('eakha_archive_bil6_old_duplicate_irwan_'+Date.now(),JSON.stringify({reason:reason||PATCH,month:monthKey(),data:D[6]}));}catch(e){}
+      D[6]={};
+    }
+    try{localStorage.setItem(key,'done');}catch(e){}
+    return hasD;
+  }catch(e){console.warn('[51034 archiveAndClearBil6]',e);return false;}
+}
+function patchMatchers(){
+  try{
+    if(window.__EAKHA_51034_MATCH_PATCHED__)return;
+    window.__EAKHA_51034_MATCH_PATCHED__=true;
+    var oldBM=(typeof window.bestMatch==='function'?window.bestMatch:(typeof bestMatch==='function'?bestMatch:null));
+    window.bestMatch=bestMatch=function(ctx){var n=up(ctx);if(isBadIrwanName(n))return null;if(/\bIRWAN\b/.test(n))return byBil(19);return oldBM?oldBM.apply(this,arguments):null;};
+    var oldBWR=(typeof window.bestMatchWithRef==='function'?window.bestMatchWithRef:(typeof bestMatchWithRef==='function'?bestMatchWithRef:null));
+    window.bestMatchWithRef=bestMatchWithRef=function(ctx,kompHint){var n=up(ctx);if(isBadIrwanName(n))return null;if(/\bIRWAN\b/.test(n))return byBil(19);return oldBWR?oldBWR.apply(this,arguments):null;};
+    var oldFind=(typeof window.findMember==='function'?window.findMember:null);
+    if(oldFind){window.findMember=function(name,jab,komp,bil){var n=up(name);if(isBadIrwanName(n))return null;if(/\bIRWAN\b/.test(n))return {m:byBil(19),score:100,by:'irwan-lock-51034'};return oldFind.apply(this,arguments);};try{findMember=window.findMember;}catch(e){}}
+    var oldMatch=(typeof window.matchMember==='function'?window.matchMember:null);
+    if(oldMatch){window.matchMember=function(raw,jab,komp){var n=up(raw);if(isBadIrwanName(n))return null;if(/\bIRWAN\b/.test(n))return byBil(19);return oldMatch.apply(this,arguments);};try{matchMember=window.matchMember;}catch(e){}}
+  }catch(e){console.warn('[51034 patchMatchers]',e)}
+}
+function countIrwanRows(){try{return (MASTER||[]).filter(function(m){return /\bIRWAN\b/i.test(m.nama||'')&&!m.pindah}).length;}catch(e){return 0}}
+function cleanAll(force){
+  normaliseMasterRoster();
+  var customTouched=cleanCustomArrays();
+  patchMatchers();
+  var cleared=false;
+  // Clear stale bil6 data only when forced or when bad custom/old duplicate was detected.
+  if(force||customTouched){cleared=archiveAndClearBil6IfNeeded(force?'manual force clean':'bad custom duplicate detected',force);}
+  try{if(typeof saveAnggotaStore==='function')saveAnggotaStore();}catch(e){}
+  try{if(force&&typeof saveDataset==='function')saveDataset();}catch(e){}
+  try{if(typeof renderMaster==='function')renderMaster(null);}catch(e){}
+  try{if(typeof renderDash==='function')renderDash();}catch(e){}
+  try{if(typeof updFlags==='function')updFlags();}catch(e){}
+  return {custom:customTouched,cleared:cleared,irwan:countIrwanRows()};
+}
+window.eakhaForceOneIrwan51034=function(){
+  var r=cleanAll(true);
+  toast34('Selesai: IRWAN SYAMIR dikunci 1 rekod sahaja. Bil 6 = ASREE. '+(r.cleared?'Data lama bil6 telah diarkib & dikosongkan.':'Tiada data lama bil6 perlu dikosongkan.'),'ok');
+};
+function bind(){
+  try{
+    normaliseMasterRoster(); cleanCustomArrays(); patchMatchers();
+    var bar=document.querySelector('#page-master > div[style*="display:flex"]')||document.querySelector('#page-master .ph')||document.getElementById('page-master');
+    if(bar&&!document.getElementById('btn-force-one-irwan-51034')){
+      var b=document.createElement('button');b.id='btn-force-one-irwan-51034';b.className='btn btn-rd btn-sm';
+      b.textContent='Force 1 Irwan 51034';
+      b.title='Kekalkan IRWAN SYAMIR BIN MOHD ZAINAL sahaja; buang override/browser data duplicate MOHAMAD IRWAN/TERMIZY';
+      b.onclick=window.eakhaForceOneIrwan51034;bar.appendChild(b);
+    }
+    var mi=document.getElementById('master-info'); if(mi)mi.textContent=(mi.textContent||'').replace(/51 anggota/g,'52 anggota');
+  }catch(e){console.warn('[51034 bind]',e)}
+}
+['renderMaster','renderMiniGrid','renderAngFull','setMonth','nav','loadMonthData'].forEach(function(fn){
+  try{var old=window[fn];if(typeof old==='function'&&!old.__v51034){window[fn]=function(){normaliseMasterRoster();cleanCustomArrays();patchMatchers();var r=old.apply(this,arguments);setTimeout(bind,100);setTimeout(bind,600);return r;};window[fn].__v51034=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}
+});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[150,600,1400,3000,6000].forEach(function(ms){setTimeout(function(){cleanAll(false);bind();},ms)})});
+else [100,500,1200,2800,5500].forEach(function(ms){setTimeout(function(){cleanAll(false);bind();},ms)});
+try{document.title='e-AKHA Vsavage v5.10.34 IRWAN ONE MASTER FORCE CLEAN';console.log('[e-AKHA '+PATCH+'] loaded');}catch(e){}
+})();
+</script>
 </body>
 </html>
