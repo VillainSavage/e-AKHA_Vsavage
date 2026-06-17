@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.39 FINAL LIVE SAFE</title>
+  <title>e-AKHA Vsavage v5.10.41 FINAL LIVE</title>
   <style>
     body{margin:0;background:#0a1628;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center}
     .box{max-width:520px;padding:28px;border:1px solid rgba(200,150,10,.35);border-radius:14px;background:#0f1f3d;box-shadow:0 20px 60px rgba(0,0,0,.35)}
@@ -473,7 +473,7 @@ try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 <\/script>
 
 <script id="eakha-v51039-final-live-guard">
-/* e-AKHA Vsavage v5.10.39 FINAL LIVE SAFE
+/* e-AKHA Vsavage v5.10.41 FINAL LIVE
    Guard tambahan atas index33/v5.10.38:
    - Pastikan login SJN Adilah kekal sebagai ADMIN/OWNER dan tidak tersekat upload.
    - Pastikan ASREE/Bil 6 dibersihkan semula selepas render/load bulan.
@@ -591,9 +591,144 @@ function boot39(){
 });
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[250,1000,2500,5000,8000].forEach(function(ms){setTimeout(boot39,ms)})});
 else [200,900,2200,4500,7500].forEach(function(ms){setTimeout(boot39,ms)});
-try{document.title='e-AKHA Vsavage v5.10.39 FINAL LIVE SAFE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+try{document.title='e-AKHA Vsavage v5.10.41 FINAL LIVE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 <\/script>
+
+<script id="eakha-v51040-hrmis-master-mc-night-final">
+/* e-AKHA Vsavage v5.10.41 FINAL LIVE
+   1) MC cross-check tidak flag OUT-only 07:00-08:00 jika hari sebelumnya shift malam.
+   2) Tambah Semak/Paut HRMIS ke Masterfile supaya cuti HRMIS tidak tertinggal.
+   3) Mansuhkan/hidden Import Gabungan KZP + KZK yang unused.
+*/
+(function(){
+'use strict';
+var PATCH='v5.10.40-HRMIS-MASTER-MC-NIGHT-FINAL';
+window.__EAKHA_V51040_FINAL__=true;
+function U(v){return String(v==null?'':v).trim().toUpperCase().replace(/MOHAMMAD/g,'MOHAMAD').replace(/MOHAMED/g,'MOHAMAD').replace(/MUHAMMAD/g,'MUHAMAD').replace(/MUHD\b/g,'MOHD').replace(/MOHD\./g,'MOHD').replace(/HAIKAL/g,'HAIQAL').replace(/[^A-Z0-9@\/ ]+/g,' ').replace(/\s+/g,' ')}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast40(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else if(typeof showToast==='function')showToast(msg,type||'ok');else console.log('[e-AKHA '+PATCH+'] '+msg)}catch(e){console.log(msg)}}
+function yNow(){try{return +(typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026)||2026}catch(e){return 2026}}
+function mNow(){try{return +(typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:4)||4}catch(e){return 4}}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():new Date(yNow(),mNow(),0).getDate()}catch(e){return 31}}
+function master(){try{return Array.isArray(MASTER)?MASTER:[]}catch(e){return []}}
+function byBil(b){try{return master().find(function(m){return +m.bil===+b})||null}catch(e){return null}}
+function getCell(b,d){try{return (typeof D!=='undefined'&&D[b]&&D[b][d])?D[b][d]:null}catch(e){return null}}
+function cell(b,d){try{if(typeof D==='undefined')return null;if(!D[b])D[b]={};if(!D[b][d])D[b][d]={};return D[b][d]}catch(e){return null}}
+function pad(n){return String(+n).padStart(2,'0')}
+function fmtTime(t){var m=String(t||'').match(/(\d{1,2})[:.]?(\d{2})/);if(!m)return '';var h=+m[1],mi=+m[2];if(h<0||h>23||mi<0||mi>59)return '';return pad(h)+':'+pad(mi)}
+function minOf(t){t=fmtTime(t);if(!t)return null;return +t.slice(0,2)*60 + +t.slice(3,5)}
+function timesFor(c){var out=[],seen={};function add(x){var t=fmtTime(typeof x==='object'?(x.t||x.time||x.jam||''):x);if(t&&!seen[t]){seen[t]=1;out.push(t)}};if(!c)return out;(c.tc_all||[]).forEach(add);add(c.tc_in);add(c.tc_out);return out.sort(function(a,b){return minOf(a)-minOf(b)})}
+function hasAnyPunch(c){return timesFor(c).length>0 || !!(c&&(c.tc_in||c.tc_out))}
+function shCode(b,d){try{var s=(typeof gSh==='function'?gSh(b,d):'');s=U(s);if(['M','MLM','MALAM','NIGHT'].indexOf(s)>=0)return 'M';if(['P','PT','PETANG'].indexOf(s)>=0)return 'P';if(['S','PG','PAGI','SIANG'].indexOf(s)>=0)return 'S';if(['O','OF','OFF','OFFDAY'].indexOf(s)>=0)return 'O';return s}catch(e){return ''}}
+function prevCellLooksNight(c){if(!c)return false;var st=U(c.tc_shift||c.shift||'');if(st==='M'||st.indexOf('MALAM')>=0)return true;var ts=timesFor(c);return ts.some(function(t){var m=minOf(t);return m>=1320&&m<=1439})}
+function prevIsNight(b,d){if(+d<=1)return false;return shCode(b,+d-1)==='M'||prevCellLooksNight(getCell(b,+d-1))}
+function onlyMorningOut(c){var ts=timesFor(c);if(!ts.length)return false;return ts.every(function(t){var m=minOf(t);return m>=420&&m<=480})}
+function isPrevNightOut(b,d,c){return !!(c&&onlyMorningOut(c)&&prevIsNight(b,d))}
+function hasMCBiometricConflict(b,d,c){return hasAnyPunch(c)&&!isPrevNightOut(b,d,c)}
+function validMC(b,d){try{if(typeof window.eakhaGetValidMC51038==='function')return window.eakhaGetValidMC51038(b,d);if(typeof getMC==='function')return getMC(b,d);return null}catch(e){return null}}
+function normStatus(v){var s=U(v);if(!s)return '';var M={'/':'HADIR','✓':'HADIR','✔':'HADIR','√':'HADIR','TICK':'HADIR','HADIR':'HADIR','PRESENT':'HADIR','MC':'MC','CR':'CR','EL':'EL','CTR':'CTR','CB':'CB','CBR':'CBR','TH':'TH','TT':'TT','TM':'TM','TIADA MAKLUMAN':'TM','L':'L','LEWAT':'L','LL':'LL','ABS':'ABS','OF':'OF','OFF':'OF','OFFDAY':'OF'};return M[s]||s}
+function isKZHadir(v){return normStatus(v)==='HADIR'}
+function punchSummary(c){var ts=timesFor(c);return ts.length?ts.join(' · '):'Tiada punch'}
+function patchMCAudit(){
+  var oldAF=window.auditFinal;
+  if(typeof oldAF==='function'&&!oldAF.__v51040){
+    window.auditFinal=function(b,d){var c=getCell(b,d),mc=validMC(b,d);if(mc){if(isPrevNightOut(b,d,c)){return {txt:'MC / ABSENCE\nOUT 07:xx = OUT shift malam sebelumnya\nABAIKAN PUNCH',cls:'af-mc',inc:false,ok:true,mc:true}}if(hasMCBiometricConflict(b,d,c)){return {txt:'MC / ABSENCE\nMC ADA THUMB / SEMAK',cls:'af-warn',inc:false,ok:false,mc:true}}if(c&&(isKZHadir(c.kzp)||isKZHadir(c.kzk))){return {txt:'MC / ABSENCE\nMC ADA KZ HADIR',cls:'af-warn',inc:false,ok:false,mc:true}}}return oldAF.apply(this,arguments)};
+    window.auditFinal.__v51040=true;try{auditFinal=window.auditFinal}catch(e){}
+  }
+}
+function buildMCCrossChecks40(){var rows=[];try{master().forEach(function(m){for(var d=1;d<=daysN();d++){var mc=validMC(m.bil,d),c=getCell(m.bil,d);if(!mc)continue;if(isPrevNightOut(m.bil,d,c))continue;if(hasMCBiometricConflict(m.bil,d,c))rows.push({cat:'MC ADA THUMB',m:m,d:d,detail:punchSummary(c)});if(c&&(isKZHadir(c.kzp)||isKZHadir(c.kzk)))rows.push({cat:'MC ADA KZ HADIR',m:m,d:d,detail:'KZ PNY: '+(c.kzp||'')+' · KZ KPL: '+(c.kzk||'')});}});var old=typeof window.eakhaMCCrossChecks51038==='function'?window.eakhaMCCrossChecks51038():[];(old||[]).forEach(function(r){if(!r)return;if(String(r.cat||'').indexOf('OUT-ONLY')>=0)return;if((r.cat==='MC ADA THUMB'||r.cat==='MC ADA KZ HADIR')&&r.m&&isPrevNightOut(r.m.bil,r.d,getCell(r.m.bil,r.d)))return;if(['MC DUPLICATE','MC OWNER LOW CONFIDENCE'].indexOf(r.cat)>=0)rows.push(r);});}catch(e){console.warn('[51040 MC cross]',e)}var seen={},out=[];rows.forEach(function(r){var k=(r.cat||'')+'|'+(r.m&&r.m.bil||'')+'|'+r.d+'|'+(r.detail||'');if(!seen[k]){seen[k]=1;out.push(r)}});return out.sort(function(a,b){return String(a.cat).localeCompare(String(b.cat))||(+a.d)-(+b.d)})}
+window.eakhaMCCrossChecks51040=buildMCCrossChecks40;
+function showMCCross40(){var rows=buildMCCrossChecks40(),host=document.getElementById('v51040-mc-cross-panel');if(!host){var pm=document.getElementById('page-master')||document.querySelector('.page.on')||document.body;host=document.createElement('div');host.id='v51040-mc-cross-panel';host.className='panel';pm.insertBefore(host,pm.firstChild.nextSibling||pm.firstChild)}var html='<div class="ph"><div class="ph-title">Cross-Check MC vs Punch Biometrik — v5.10.40</div></div><div class="pb">';html+='<div class="notif '+(rows.length?'n-warn':'n-ok')+'"><div><b>'+rows.length+' isu perlu semak.</b><br>OUT sahaja 07:00–08:00 yang berkait shift malam hari sebelumnya telah diabaikan daripada MC ADA THUMB.</div></div>';if(rows.length){html+='<div style="max-height:360px;overflow:auto"><table class="tbl"><thead><tr><th>Kategori</th><th>Nama</th><th>Tarikh</th><th>Butiran</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td><b>'+esc(r.cat||'')+'</b></td><td>'+esc((r.m&&r.m.nama)||'')+'</td><td>'+esc(r.d+'/'+pad(mNow())+'/'+yNow())+'</td><td>'+esc(r.detail||'')+'</td></tr>'}).join('')+'</tbody></table></div>'}html+='</div>';host.innerHTML=html;return rows.length}
+function parseDate(s){if(!s)return null;var str=String(s).trim(),m;if((m=str.match(/^(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})/)))return {y:+m[1],m:+m[2],d:+m[3]};if((m=str.match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/))){var y=+m[3];if(y<100)y+=2000;return {d:+m[1],m:+m[2],y:y}}return null}
+function dateRange(a,b){var s=parseDate(a),e=parseDate(b)||s;if(!s)return [];if(!e||s.m!==e.m||s.y!==e.y)return [s];var out=[];for(var d=s.d;d<=e.d&&d<=31;d++)out.push({d:d,m:s.m,y:s.y});return out}
+function sig(n){return U(n).split(' ').filter(function(w){return w.length>=4&&!/^(BIN|BINTI|BT|BTE|MOHD|MOHAMAD|MUHAMAD|SJN|KPL|PB|KP1|PENAMA|A L)$/.test(w)})}
+function nameScore(a,b){var A=U(a),B=U(b);if(!A||!B)return 0;if(A===B)return 100;if(A.indexOf(B)>=0||B.indexOf(A)>=0)return 96;var aw=sig(A),bw=sig(B);if(!aw.length||!bw.length)return 0;var h=0;aw.forEach(function(w){if(B.indexOf(w)>=0)h++});var sc=Math.round(h/Math.max(aw.length,bw.length)*100);if(aw[0]&&bw[0]&&aw[0]===bw[0])sc+=8;if(aw[aw.length-1]&&bw[bw.length-1]&&aw[aw.length-1]===bw[bw.length-1])sc+=8;return Math.min(100,sc)}
+function readJSON(raw,fb){try{var x=JSON.parse(raw||'');return x==null?fb:x}catch(e){return fb}}
+function loadHRMIS(){var rows=[];function add(arr,src){if(!Array.isArray(arr))return;arr.forEach(function(r){if(!r||typeof r!=='object')return;var nm=r.nama||r.name||r.pemohon||r.applicant||r.owner||r.staff_name||r.nama_pemohon||'';var a=r.dari||r.tarikh_mula||r.start||r.start_date||r.date_from||r.tarikh||r.leave_date||r.tkh_mula||'';var b=r.hingga||r.tarikh_akhir||r.end||r.end_date||r.date_to||r.tarikh||r.leave_date||r.tkh_akhir||a;var jenis=r.jenis||r.type||r.leave_type||r.kod||r.status||r.cuti||r.sebab||'HRMIS';if(nm||a||r.bil)rows.push(Object.assign({},r,{_src:src,_nama:nm,_dari:a,_hingga:b,_jenis:jenis}))})}try{['HRMIS_DATA','HRMIS','HRMIS_LIST','CUTI_HRMIS','CUTI_HRMIS_DATA','HR_DATA','HRMIS_REG'].forEach(function(k){if(Array.isArray(window[k]))add(window[k],k)})}catch(e){}try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(!/hrmis/i.test(k||''))continue;var v=readJSON(localStorage.getItem(k),null);if(Array.isArray(v))add(v,'localStorage:'+k);else if(v&&typeof v==='object'){Object.keys(v).forEach(function(x){if(Array.isArray(v[x]))add(v[x],'localStorage:'+k+'/'+x)})}}}catch(e){}var seen={},out=[];rows.forEach(function(r){var key=U((r.bil||'')+'|'+(r._nama||'')+'|'+(r._dari||'')+'|'+(r._hingga||'')+'|'+(r._jenis||''));if(!seen[key]){seen[key]=1;out.push(r)}});return out}
+function matchMemberHR(r){if(r&&r.bil&&byBil(r.bil))return {m:byBil(r.bil),score:100};var rn=r&&r._nama||'';var best=null,sc=0;master().forEach(function(m){var s=nameScore(rn,m.nama);if(s>sc){sc=s;best=m}});return {m:sc>=78?best:null,score:sc}}
+function hrDates(r){var ds=dateRange(r._dari,r._hingga);if(!ds.length&&r.d)ds=[{d:+r.d,m:+(r.m||mNow()),y:+(r.y||yNow())}];return ds.filter(function(x){return +x.m===mNow()&&+x.y===yNow()&&x.d>=1&&x.d<=daysN()})}
+function hrLabel(r){var s=U(r&&r._jenis||'HRMIS');if(/CUTI REHAT|\bCR\b/.test(s))return 'CR';if(/KECEMASAN|\bEL\b/.test(s))return 'EL';if(/TANPA REKOD|\bCTR\b/.test(s))return 'CTR';if(/GANTI|\bCG\b/.test(s))return 'CG';if(/MC|SAKIT/.test(s))return 'MC';return (r&&r._jenis)||'HRMIS'}
+function buildHRMISIssues(){var issues=[],recs=loadHRMIS(),mapped={};recs.forEach(function(r){var mt=matchMemberHR(r),ds=hrDates(r);if(!mt.m){issues.push({cat:'HRMIS NAMA TAK PADAN',nama:r._nama||'',d:'-',detail:'Score '+mt.score+' · '+(r._src||'')});return}if(!ds.length)return;ds.forEach(function(x){var c=getCell(mt.m.bil,x.d),lbl=hrLabel(r);mapped[mt.m.bil+'|'+x.d]=1;if(!c||!String(c.hrmis||'').trim())issues.push({cat:'HRMIS BELUM PAUT MASTER',m:mt.m,d:x.d,rec:r,detail:lbl+' · '+(r._src||'')});});});master().forEach(function(m){for(var d=1;d<=daysN();d++){var c=getCell(m.bil,d);if(!c)continue;var kz=normStatus(c.kzp),kk=normStatus(c.kzk);var need=['CR','EL','CTR','CB','CBR'].indexOf(kz)>=0||['CR','EL','CTR','CB','CBR'].indexOf(kk)>=0;if(need&&!String(c.hrmis||'').trim()&&!mapped[m.bil+'|'+d])issues.push({cat:'KZ CUTI TANPA HRMIS',m:m,d:d,detail:'KZ PNY '+(c.kzp||'-')+' · KZ KPL '+(c.kzk||'-')});}}});return issues}
+function linkHRMIS(){var recs=loadHRMIS(),n=0,low=0;recs.forEach(function(r){var mt=matchMemberHR(r),ds=hrDates(r);if(!mt.m){low++;return}ds.forEach(function(x){var c=cell(mt.m.bil,x.d);if(!c)return;c.hrmis=hrLabel(r);c._hrmis_rec=r;c.hrmis_src_51040=r._src||PATCH;c.hrmis_linked_51040=true;n++;});});try{if(typeof D!=='undefined')localStorage.setItem('eakha_data',JSON.stringify(D));if(typeof saveDataset==='function')saveDataset('PAUT HRMIS MASTER '+PATCH)}catch(e){}try{if(typeof renderMaster==='function')renderMaster(null);if(typeof updFlags==='function')updFlags()}catch(e){}showHRMISPanel();toast40('HRMIS dipaut ke Masterfile: '+n+' sel'+(low?' · '+low+' nama belum padan':''),'ok');return n}
+function showHRMISPanel(){var issues=buildHRMISIssues(),recs=loadHRMIS(),host=document.getElementById('v51040-hrmis-panel');if(!host){var pm=document.getElementById('page-master')||document.querySelector('.page.on')||document.body;host=document.createElement('div');host.id='v51040-hrmis-panel';host.className='panel';pm.insertBefore(host,pm.firstChild.nextSibling||pm.firstChild)}var html='<div class="ph"><div class="ph-title">Semak Cuti HRMIS ↔ Masterfile — v5.10.40</div></div><div class="pb"><div class="notif '+(issues.length?'n-warn':'n-ok')+'"><div><b>'+issues.length+' isu / '+recs.length+' rekod HRMIS ditemui.</b><br>Butang ini semak HRMIS yang belum masuk Masterfile dan KZ cuti yang belum ada HRMIS.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><button class="btn btn-gn btn-sm" onclick="window.eakhaV51040LinkHRMIS()">Paut Semua HRMIS Sah ke Masterfile</button><button class="btn btn-sm" onclick="window.eakhaV51040ShowHRMIS()">Refresh Semakan HRMIS</button></div>';if(issues.length){html+='<div style="max-height:360px;overflow:auto"><table class="tbl"><thead><tr><th>Isu</th><th>Nama</th><th>Tarikh</th><th>Butiran</th></tr></thead><tbody>'+issues.map(function(x){return '<tr><td><b>'+esc(x.cat)+'</b></td><td>'+esc((x.m&&x.m.nama)||x.nama||'')+'</td><td>'+esc(x.d==='-'?'-':(x.d+'/'+pad(mNow())+'/'+yNow()))+'</td><td>'+esc(x.detail||'')+'</td></tr>'}).join('')+'</tbody></table></div>'}html+='</div>';host.innerHTML=html;return issues.length}
+window.eakhaV51040ShowHRMIS=showHRMISPanel;window.eakhaV51040LinkHRMIS=linkHRMIS;window.eakhaV51040ShowMCCross=showMCCross40;
+function hideUnusedImport(){try{var bad=['IMPORT GABUNGAN KZP + KZK','UPLOAD EXCEL GABUNGAN KZ'];document.querySelectorAll('.panel,button,label').forEach(function(el){var t=U(el.textContent||'');if(bad.some(function(x){return t.indexOf(x)>=0})){if(el.id==='v51040-hrmis-panel'||el.id==='v51040-mc-cross-panel')return;el.style.display='none'}});var p=document.getElementById('v5105-master-kz-panel');if(p)p.style.display='none'}catch(e){}}
+function bindButtons(){try{var bar=document.querySelector('#page-master > div[style*="display:flex"]')||document.querySelector('#page-master .ph')||document.getElementById('page-master');if(bar&&!document.getElementById('btn-v51040-mc-cross')){var b=document.createElement('button');b.id='btn-v51040-mc-cross';b.className='btn btn-gold btn-sm';b.textContent='Semak MC Final 51040';b.onclick=showMCCross40;bar.appendChild(b)}if(bar&&!document.getElementById('btn-v51040-hrmis-semak')){var h=document.createElement('button');h.id='btn-v51040-hrmis-semak';h.className='btn btn-bl btn-sm';h.textContent='Semak HRMIS ↔ Master';h.onclick=showHRMISPanel;bar.appendChild(h)}if(bar&&!document.getElementById('btn-v51040-hrmis-paut')){var p=document.createElement('button');p.id='btn-v51040-hrmis-paut';p.className='btn btn-gn btn-sm';p.textContent='Paut HRMIS ke Masterfile';p.onclick=linkHRMIS;bar.appendChild(p)}document.querySelectorAll('button').forEach(function(btn){var t=U(btn.textContent||'');if(t.indexOf('SEMAK MC STRICT')>=0||t.indexOf('SEMAK MC')>=0&&t.indexOf('TC MALAM')>=0){btn.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()}showMCCross40();return false}}})}catch(e){}}
+function rerender(){try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}try{if(typeof renderDash==='function')renderDash()}catch(e){}try{if(typeof updFlags==='function')updFlags()}catch(e){}}
+function boot(){patchMCAudit();hideUnusedImport();bindButtons();}
+['renderMaster','renderOutput','setMonth','loadMonthData','nav','renderDash','renderMCReg'].forEach(function(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__v51040){window[fn]=function(){boot();var r=old.apply(this,arguments);setTimeout(function(){boot();},150);return r};window[fn].__v51040=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[300,1200,3000,6000,9000].forEach(function(ms){setTimeout(boot,ms)})});else [200,1000,2500,5500,8500].forEach(function(ms){setTimeout(boot,ms)});
+try{document.title='e-AKHA Vsavage v5.10.41 FINAL LIVE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+<\/script>
+<script id="eakha-v51041-night-window-final">
+/* e-AKHA Vsavage v5.10.41 FINAL NIGHT WINDOW GUARD
+   Fix sebenar untuk kes KZ=L tetapi TC menunjukkan shift malam sah:
+   - IN 22:00-23:05 = SAH, bukan lewat.
+   - OUT 07:00-08:00 = SAH esok hari.
+   - Jika KZ tulis L tetapi TC dalam tetingkap, Audit Final = SAH.
+   - Output Perhatian / Flag LEWAT palsu untuk kes ini dibuang.
+*/
+(function(){
+'use strict';
+var PATCH='v5.10.41-NIGHT-WINDOW-KZ-L-GUARD';
+window.__EAKHA_V51041_NIGHT_FINAL__=true;
+function U(v){return String(v==null?'':v).trim().toUpperCase().replace(/\s+/g,' ')}
+function toast41(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else if(typeof showToast==='function')showToast(msg,type||'ok');else console.log('[e-AKHA '+PATCH+'] '+msg)}catch(e){console.log(msg)}}
+function yNow(){try{return +(typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026)||2026}catch(e){return 2026}}
+function mNow(){try{return +(typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:4)||4}catch(e){return 4}}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():new Date(yNow(),mNow(),0).getDate()}catch(e){return 31}}
+function master(){try{return Array.isArray(MASTER)?MASTER:[]}catch(e){return []}}
+function byBil(b){try{return master().find(function(m){return +m.bil===+b})||null}catch(e){return null}}
+function getCell(b,d){try{return (typeof D!=='undefined'&&D[b]&&D[b][d])?D[b][d]:null}catch(e){return null}}
+function cell(b,d){try{if(typeof D==='undefined')return null;if(!D[b])D[b]={};if(!D[b][d])D[b][d]={};return D[b][d]}catch(e){return null}}
+function pad(n){return String(+n).padStart(2,'0')}
+function fmtTime(t){var m=String(t||'').match(/(\d{1,2})[:.]?(\d{2})/);if(!m)return '';var h=+m[1],mi=+m[2];if(h<0||h>23||mi<0||mi>59)return '';return pad(h)+':'+pad(mi)}
+function minOf(t){t=fmtTime(t);if(!t)return null;return +t.slice(0,2)*60 + +t.slice(3,5)}
+function addTime(out,seen,x){var t=fmtTime(typeof x==='object'?(x.t||x.time||x.jam||''):x);if(t&&!seen[t]){seen[t]=1;out.push(t)}}
+function timesFor(c){var out=[],seen={};if(!c)return out;(c.tc_all||[]).forEach(function(x){addTime(out,seen,x)});addTime(out,seen,c.tc_in);addTime(out,seen,c.tc_out);return out.sort(function(a,b){return minOf(a)-minOf(b)})}
+function shCode(b,d){try{var s=(typeof gSh==='function'?gSh(b,d):'');s=U(s);if(['M','MLM','MALAM','NIGHT'].indexOf(s)>=0)return 'M';if(['P','PT','PETANG'].indexOf(s)>=0)return 'P';if(['S','PG','PAGI','SIANG'].indexOf(s)>=0)return 'S';if(['O','OF','OFF','OFFDAY'].indexOf(s)>=0)return 'O';return s}catch(e){return ''}}
+function hasNightIn(c){return timesFor(c).some(function(t){var m=minOf(t);return m>=1320&&m<=1385})} // 22:00-23:05
+function nightInTime(c){var arr=timesFor(c).filter(function(t){var m=minOf(t);return m>=1320&&m<=1385});return arr.length?arr[0]:''}
+function hasNightOut(c){return timesFor(c).some(function(t){var m=minOf(t);return m>=420&&m<=480})} // 07:00-08:00
+function nightOutTime(c){var arr=timesFor(c).filter(function(t){var m=minOf(t);return m>=420&&m<=480});return arr.length?arr[0]:''}
+function onlyMorningOut(c){var ts=timesFor(c);return ts.length>0 && ts.every(function(t){var m=minOf(t);return m>=420&&m<=480})}
+function nextDayOut(b,d){var n=getCell(b,+d+1);return onlyMorningOut(n)?nightOutTime(n):''}
+function isNightDay(b,d,c){c=c||getCell(b,d);var st=U(c&&c.tc_shift||'');return shCode(b,d)==='M'||st==='M'||st.indexOf('MALAM')>=0||hasNightIn(c)}
+function validNight(b,d){var c=getCell(b,d);if(!c||!isNightDay(b,d,c))return false;var inn=nightInTime(c);var out=nightOutTime(c)||nextDayOut(b,d);return !!(inn&&out)}
+function validNightInfo(b,d){var c=getCell(b,d)||{};return {inT:nightInTime(c),outT:nightOutTime(c)||nextDayOut(b,d),sameDayOut:!!nightOutTime(c)}}
+function markNightValid(){var n=0;try{master().forEach(function(m){for(var d=1;d<=daysN();d++){if(!validNight(m.bil,d))continue;var c=cell(m.bil,d);if(!c)continue;var inf=validNightInfo(m.bil,d);c.tc_shift='M';c.tc_in=inf.inT||c.tc_in;c.tc_out=inf.outT||c.tc_out;c.tc_rule_51041='MALAM_SAH_2200_2305_OUT_0700_0800';c.tc_late=false;c.late=false;c.lewat=false;c.tc_status_51041='SAH';c.audit_override_51041='SAH_TC_MALAM';n++;}});try{localStorage.setItem('eakha_data',JSON.stringify(D))}catch(e){}}catch(e){console.warn('[51041 markNightValid]',e)}return n}
+function patchAudit(){
+  var oldTC=window.tcAudit;
+  if(typeof oldTC==='function'&&!oldTC.__v51041){
+    window.tcAudit=function(b,d){if(validNight(b,d)){var inf=validNightInfo(b,d);return {txt:'SHIFT M (2200-0700)\n✓ IN '+inf.inT+'\n✓ OUT '+inf.outT+' (ESOK - SAH)',cls:'tc-ok',ok:true,night:true}}return oldTC.apply(this,arguments)};
+    window.tcAudit.__v51041=true;try{tcAudit=window.tcAudit}catch(e){}
+  }
+  var oldAF=window.auditFinal;
+  if(typeof oldAF==='function'&&!oldAF.__v51041){
+    window.auditFinal=function(b,d){if(validNight(b,d)){return {txt:'SAH\n(TC malam dalam tetingkap)',cls:'af-sah',inc:false,ok:true,night:true}}var r=oldAF.apply(this,arguments);try{if(r&&/LEWAT/i.test(r.txt||'')&&validNight(b,d)){return {txt:'SAH\n(TC malam dalam tetingkap)',cls:'af-sah',inc:false,ok:true,night:true}}}catch(e){}return r};
+    window.auditFinal.__v51041=true;try{auditFinal=window.auditFinal}catch(e){}
+  }
+}
+function itemDay(it){if(!it)return 0;if(it.d||it.day)return +(it.d||it.day);var s=String(it.tarikh||it.date||'');var m=s.match(/(\d{1,2})[\/.-]/);return m?+m[1]:0}
+function itemTxt(it){try{return String((it.af&&it.af.txt)||it.txt||it.status||it.audit||'')}catch(e){return ''}}
+function patchFlags(){
+  var old=window.getAllFlags;
+  if(typeof old==='function'&&!old.__v51041){
+    window.getAllFlags=function(){markNightValid();var arr=old.apply(this,arguments)||[];var out=[];arr.forEach(function(g){try{var m=g&&g.m?g.m:g;var bil=(m&&m.bil)||(g&&g.bil);if(Array.isArray(g.items)){var items=g.items.filter(function(it){var d=itemDay(it);var txt=itemTxt(it);return !(bil&&d&&validNight(bil,d)&&/LEWAT/i.test(txt));});if(items.length){var ng=Object.assign({},g);ng.items=items;out.push(ng)}}else{var d=itemDay(g),txt=itemTxt(g);if(!(bil&&d&&validNight(bil,d)&&/LEWAT/i.test(txt)))out.push(g)}}catch(e){out.push(g)}});return out};
+    window.getAllFlags.__v51041=true;try{getAllFlags=window.getAllFlags}catch(e){}
+  }
+}
+function sanitizeOutputDOM(){try{document.querySelectorAll('#output-list tr,#output-list .fitem,#output-list li,#output-list .flag-row').forEach(function(el){var t=el.textContent||'';if(/LEWAT/i.test(t)&&/\[M\]/i.test(t)&&/IN\s+22[:.]\d{2}/i.test(t)&&/OUT\s+07[:.]\d{2}/i.test(t)){el.style.display='none';el.setAttribute('data-v51041-hidden','valid-night')}})}catch(e){}}
+function bindBtn(){try{var bar=document.querySelector('#page-master > div[style*="display:flex"]')||document.querySelector('#page-master .ph')||document.getElementById('page-master');if(bar&&!document.getElementById('btn-v51041-night')){var b=document.createElement('button');b.id='btn-v51041-night';b.className='btn btn-gold btn-sm';b.textContent='Kemas Kini Rule Malam 51041';b.title='Buang LEWAT palsu untuk IN 2200-2305 dan OUT 0700-0800';b.onclick=function(){patchAudit();patchFlags();var n=markNightValid();try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}try{if(typeof renderOutput==='function')renderOutput('')}catch(e){}setTimeout(sanitizeOutputDOM,200);toast41('Rule malam 51041 siap: '+n+' sel shift malam disahkan.','ok')};bar.appendChild(b)}}catch(e){}}
+function boot(){patchAudit();patchFlags();markNightValid();bindBtn();setTimeout(sanitizeOutputDOM,250)}
+['renderMaster','renderOutput','setMonth','loadMonthData','nav','renderDash','updFlags'].forEach(function(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__v51041){window[fn]=function(){boot();var r=old.apply(this,arguments);setTimeout(boot,150);setTimeout(sanitizeOutputDOM,350);return r};window[fn].__v51041=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[250,900,1800,3500,6500,9500].forEach(function(ms){setTimeout(boot,ms)})});else [150,700,1600,3200,6000,9000].forEach(function(ms){setTimeout(boot,ms)});
+try{document.title='e-AKHA Vsavage v5.10.41 FINAL LIVE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+<\/script>
+
 `;
 function decodeB64(b64){
   b64=String(b64||'').replace(/\s+/g,'');
@@ -609,7 +744,7 @@ function fail(e){
 fetch(API_URL,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('GitHub API '+r.status);return r.json()}).then(function(j){
   var html=decodeB64(j.content||'');
   if(!html||html.indexOf('</html>')<0)throw new Error('Index asas tidak lengkap.');
-  html=html.replace(/<title>[^<]*<\/title>/i,'<title>e-AKHA Vsavage v5.10.39 FINAL LIVE SAFE</title>');
+  html=html.replace(/<title>[^<]*<\/title>/i,'<title>e-AKHA Vsavage v5.10.41 FINAL LIVE</title>');
   if(html.indexOf('eakha-v51037-asree-owner-night-final')<0){
     html=html.replace(/<\/body>\s*<\/html>\s*$/i,HOTFIX+'\n</body>\n</html>');
   }
