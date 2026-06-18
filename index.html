@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.44 FINAL STABLE</title>
+  <title>e-AKHA Vsavage v5.10.41 FINAL LIVE</title>
   <style>
     body{margin:0;background:#0a1628;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center}
     .box{max-width:520px;padding:28px;border:1px solid rgba(200,150,10,.35);border-radius:14px;background:#0f1f3d;box-shadow:0 20px 60px rgba(0,0,0,.35)}
@@ -13,8 +13,8 @@
 <body>
 <div class="box">
   <h1>e-AKHA Vsavage</h1>
-  <p>Memuatkan index semasa dan memasang patch FINAL LIVE v5.10.44...</p>
-  <p style="font-size:10px;color:rgba(255,255,255,.4)">OWNER/PENTADBIR aktif · Data Recovery · Import Gabungan dimansuh · HRMIS ↔ Master · Shift Malam sah</p>
+  <p>Memuatkan index semasa dan memasang patch FINAL LIVE v5.10.41...</p>
+  <p style="font-size:10px;color:rgba(255,255,255,.4)">ASREE TH · SJN Adilah Owner/Admin · Shift Malam 2200–2305 sah · MC vs Timecard</p>
   <div id="err" class="err"></div>
 </div>
 <script>
@@ -473,7 +473,7 @@ try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 <\/script>
 
 <script id="eakha-v51039-final-live-guard">
-/* e-AKHA Vsavage v5.10.44 FINAL STABLE
+/* e-AKHA Vsavage v5.10.41 FINAL LIVE
    Guard tambahan atas index33/v5.10.38:
    - Pastikan login SJN Adilah kekal sebagai ADMIN/OWNER dan tidak tersekat upload.
    - Pastikan ASREE/Bil 6 dibersihkan semula selepas render/load bulan.
@@ -591,12 +591,12 @@ function boot39(){
 });
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[250,1000,2500,5000,8000].forEach(function(ms){setTimeout(boot39,ms)})});
 else [200,900,2200,4500,7500].forEach(function(ms){setTimeout(boot39,ms)});
-try{document.title='e-AKHA Vsavage v5.10.44 FINAL STABLE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+try{document.title='e-AKHA Vsavage v5.10.41 FINAL LIVE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 <\/script>
 
 <script id="eakha-v51040-hrmis-master-mc-night-final">
-/* e-AKHA Vsavage v5.10.44 FINAL STABLE
+/* e-AKHA Vsavage v5.10.41 FINAL LIVE
    1) MC cross-check tidak flag OUT-only 07:00-08:00 jika hari sebelumnya shift malam.
    2) Tambah Semak/Paut HRMIS ke Masterfile supaya cuti HRMIS tidak tertinggal.
    3) Mansuhkan/hidden Import Gabungan KZP + KZK yang unused.
@@ -659,7 +659,7 @@ function rerender(){try{if(typeof renderMaster==='function')renderMaster(null)}c
 function boot(){patchMCAudit();hideUnusedImport();bindButtons();}
 ['renderMaster','renderOutput','setMonth','loadMonthData','nav','renderDash','renderMCReg'].forEach(function(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__v51040){window[fn]=function(){boot();var r=old.apply(this,arguments);setTimeout(function(){boot();},150);return r};window[fn].__v51040=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[300,1200,3000,6000,9000].forEach(function(ms){setTimeout(boot,ms)})});else [200,1000,2500,5500,8500].forEach(function(ms){setTimeout(boot,ms)});
-try{document.title='e-AKHA Vsavage v5.10.44 FINAL STABLE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+try{document.title='e-AKHA Vsavage v5.10.41 FINAL LIVE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 <\/script>
 <script id="eakha-v51041-night-window-final">
@@ -725,297 +725,7 @@ function bindBtn(){try{var bar=document.querySelector('#page-master > div[style*
 function boot(){patchAudit();patchFlags();markNightValid();bindBtn();setTimeout(sanitizeOutputDOM,250)}
 ['renderMaster','renderOutput','setMonth','loadMonthData','nav','renderDash','updFlags'].forEach(function(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__v51041){window[fn]=function(){boot();var r=old.apply(this,arguments);setTimeout(boot,150);setTimeout(sanitizeOutputDOM,350);return r};window[fn].__v51041=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[250,900,1800,3500,6500,9500].forEach(function(ms){setTimeout(boot,ms)})});else [150,700,1600,3200,6000,9000].forEach(function(ms){setTimeout(boot,ms)});
-try{document.title='e-AKHA Vsavage v5.10.44 FINAL STABLE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
-})();
-<\/script>
-
-<script id="eakha-v51042-hrmis-master-visible-remove-import-final">
-/* e-AKHA Vsavage v5.10.44 FINAL STABLE
-   - Buang panel Import Gabungan KZP + KZK / Source Split yang unused.
-   - Paparkan fungsi HRMIS ↔ Masterfile secara jelas pada Master File.
-   - Kekalkan v5.10.37/38/40/41 sebelumnya.
-*/
-(function(){
-'use strict';
-var PATCH='v5.10.42-HRMIS-VISIBLE-REMOVE-KZ-GABUNGAN';
-window.__EAKHA_V51042_FINAL__=true;
-function U(v){return String(v==null?'':v).toUpperCase().replace(/\s+/g,' ').trim()}
-function toast42(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else if(typeof showToast==='function')showToast(msg,type||'ok');else console.log('[e-AKHA '+PATCH+'] '+msg)}catch(e){console.log(msg)}}
-function pageMaster(){return document.getElementById('page-master')||document.querySelector('.page.on')||document.body}
-function removeUnusedImport(){
-  try{
-    var kills=[];
-    document.querySelectorAll('.panel, .v5105-kz-holder, .v5105-kz-panel, #v5105-master-kz-panel').forEach(function(el){
-      if(!el || el.id==='v51042-hrmis-actions' || el.id==='v51040-hrmis-panel' || el.id==='v51040-mc-cross-panel')return;
-      var t=U(el.textContent||'');
-      var isImportPanel=(t.indexOf('IMPORT GABUNGAN KZP')>=0 && t.indexOf('SOURCE SPLIT')>=0) ||
-        (t.indexOf('UPLOAD EXCEL GABUNGAN KZ')>=0 && t.indexOf('KZ_JUN_2025')>=0) ||
-        (t.indexOf('KEMASKINI KZP + KZK KE MASTER')>=0 && t.indexOf('UPLOAD GABUNGAN HANYA DITERIMA')>=0);
-      if(isImportPanel)kills.push(el);
-    });
-    kills.sort(function(a,b){return (b.textContent||'').length-(a.textContent||'').length}).forEach(function(el){try{el.remove()}catch(e){el.style.display='none'}});
-    document.querySelectorAll('button,label').forEach(function(el){var t=U(el.textContent||'');if(t.indexOf('UPLOAD EXCEL GABUNGAN KZ')>=0||t.indexOf('KEMASKINI KZP + KZK KE MASTER')>=0){try{el.remove()}catch(e){el.style.display='none'}}});
-  }catch(e){console.warn('[51042 remove import]',e)}
-}
-function ensureHRMISActionPanel(){
-  try{
-    var pm=pageMaster(); if(!pm)return;
-    var old=document.getElementById('v51042-hrmis-actions');
-    if(old)return old;
-    var p=document.createElement('div');
-    p.id='v51042-hrmis-actions';
-    p.className='panel';
-    p.style.borderColor='rgba(52,211,153,.22)';
-    p.innerHTML='<div class="ph"><div class="ph-title">Semakan Cuti HRMIS ↔ Masterfile <span style="font-size:7px;color:#34d399">('+PATCH+')</span></div></div>'+
-      '<div class="pb">'+
-      '<div class="notif n-info"><div><b>Fungsi HRMIS aktif:</b> semak rekod cuti HRMIS yang belum masuk Masterfile dan pautkan rekod yang padan nama + tarikh ke bulan aktif. Import Gabungan KZP/KZK sudah dimansuhkan.</div></div>'+
-      '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
-      '<button class="btn btn-bl btn-sm" id="btn-v51042-hrmis-semak">Semak HRMIS ↔ Master</button>'+
-      '<button class="btn btn-gn btn-sm" id="btn-v51042-hrmis-paut">Paut HRMIS ke Masterfile</button>'+
-      '</div></div>';
-    pm.insertBefore(p, pm.firstChild);
-    var b1=document.getElementById('btn-v51042-hrmis-semak');
-    var b2=document.getElementById('btn-v51042-hrmis-paut');
-    if(b1)b1.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()}return showHRMIS42()};
-    if(b2)b2.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()}return linkHRMIS42()};
-    return p;
-  }catch(e){console.warn('[51042 panel]',e)}
-}
-function showHRMIS42(){
-  try{
-    removeUnusedImport(); ensureHRMISActionPanel();
-    if(typeof window.eakhaV51040ShowHRMIS==='function'){
-      var n=window.eakhaV51040ShowHRMIS();
-      var panel=document.getElementById('v51040-hrmis-panel'); if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
-      return n;
-    }
-    toast42('Fungsi semakan HRMIS belum ready. Tunggu 2 saat / refresh, kemudian tekan semula.','warn');
-  }catch(e){toast42('Ralat semak HRMIS: '+e.message,'err')}
-  return false;
-}
-function linkHRMIS42(){
-  try{
-    removeUnusedImport(); ensureHRMISActionPanel();
-    if(typeof window.eakhaV51040LinkHRMIS==='function'){
-      var n=window.eakhaV51040LinkHRMIS();
-      try{if(typeof renderMaster==='function')renderMaster(null); if(typeof updFlags==='function')updFlags()}catch(e){}
-      return n;
-    }
-    toast42('Fungsi paut HRMIS belum ready. Tunggu 2 saat / refresh, kemudian tekan semula.','warn');
-  }catch(e){toast42('Ralat paut HRMIS: '+e.message,'err')}
-  return false;
-}
-window.eakhaV51042ShowHRMIS=showHRMIS42;
-window.eakhaV51042LinkHRMIS=linkHRMIS42;
-function bindToolbarButtons(){
-  try{
-    var pm=pageMaster(); if(!pm)return;
-    var bars=[];
-    pm.querySelectorAll('div').forEach(function(d){var t=U(d.textContent||'');if(t.indexOf('SNAPSHOT BOS')>=0||t.indexOf('SEMAK MC')>=0||t.indexOf('FORCE 1 IRWAN')>=0||t.indexOf('SEMUA 52')>=0)bars.push(d)});
-    var bar=bars[0]||pm;
-    if(bar && !document.getElementById('btn-v51042-toolbar-hrmis-semak')){
-      var s=document.createElement('button');s.id='btn-v51042-toolbar-hrmis-semak';s.className='btn btn-bl btn-sm';s.textContent='Semak HRMIS ↔ Master';s.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()}return showHRMIS42()};bar.appendChild(s);
-    }
-    if(bar && !document.getElementById('btn-v51042-toolbar-hrmis-paut')){
-      var p=document.createElement('button');p.id='btn-v51042-toolbar-hrmis-paut';p.className='btn btn-gn btn-sm';p.textContent='Paut HRMIS ke Masterfile';p.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()}return linkHRMIS42()};bar.appendChild(p);
-    }
-  }catch(e){console.warn('[51042 toolbar]',e)}
-}
-function boot(){removeUnusedImport();ensureHRMISActionPanel();bindToolbarButtons()}
-['renderMaster','renderOutput','setMonth','loadMonthData','nav','renderDash','updFlags','renderHRMISReg'].forEach(function(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__v51042){window[fn]=function(){var r=old.apply(this,arguments);setTimeout(boot,60);setTimeout(boot,300);return r};window[fn].__v51042=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[100,350,900,1800,3500,6500,10000].forEach(function(ms){setTimeout(boot,ms)})});
-else [80,300,800,1600,3200,6000,9500].forEach(function(ms){setTimeout(boot,ms)});
-try{new MutationObserver(function(){setTimeout(boot,30)}).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}
-try{document.title='e-AKHA Vsavage v5.10.44 FINAL STABLE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
-})();
-<\/script>
-
-<script id="eakha-v51043-owner-upload-unlock-final">
-/* e-AKHA Vsavage v5.10.43 OWNER / UPLOAD UNLOCK FINAL */
-(function(){
-'use strict';
-var PATCH='v5.10.43-OWNER-UPLOAD-UNLOCK-FINAL';
-window.__EAKHA_V51043_OWNER_UPLOAD_UNLOCK__=true;
-function S(v){return String(v==null?'':v)}
-function U(v){return S(v).trim().toUpperCase().replace(/[^A-Z0-9@._ -]+/g,' ').replace(/\s+/g,' ')}
-function toast43(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else if(typeof showToast==='function')showToast(msg,type||'ok');else console.log('[e-AKHA '+PATCH+'] '+msg)}catch(e){console.log(msg)}}
-function readAuth(){try{return JSON.parse(sessionStorage.getItem('eakha_auth')||'null')||{}}catch(e){return {}}}
-function isNajibViewer(){try{var a=readAuth();var blob=[a.id,a.nama,a.name,a.jawatan,a.role,window.AUTH&&AUTH.id,window.AUTH&&AUTH.nama,window.CUR_USER&&CUR_USER.id,window.CUR_USER&&CUR_USER.nama,localStorage.getItem('eakha_user')].join(' ');blob=U(blob);if(/TUAN.?NAJIB|NAJIB/.test(blob))return true;if(/[?&]viewer=1\b/i.test(location.search))return true;}catch(e){}return false;}
-function ownerObj(){return {loggedIn:true,role:'admin',id:'sjnadilah',nama:'SJN Adilah',name:'SJN Adilah',jawatan:'OWNER · PENTADBIR · AUDITOR',akses:'owner',owner:true,admin:true,can_upload:true,canUpload:true,viewer:false}}
-function forceOwner(){if(isNajibViewer())return false;var u=ownerObj();try{window.AUTH=u;AUTH=u}catch(e){window.AUTH=u}try{window.CUR_USER=u;CUR_USER=u}catch(e){window.CUR_USER=u}try{window.AUTH_USER=u;AUTH_USER=u}catch(e){window.AUTH_USER=u}try{sessionStorage.setItem('eakha_auth',JSON.stringify(u))}catch(e){}try{localStorage.setItem('eakha_user','sjnadilah');localStorage.setItem('eakha_role','admin');localStorage.setItem('eakha_owner','SJN Adilah');localStorage.removeItem('eakha_viewer')}catch(e){}return true;}
-function replaceSmallText(){try{var walker=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,null,false), n;while((n=walker.nextNode())){var t=n.nodeValue||'';if(/Penonton\s+Sahaja/i.test(t)) n.nodeValue=t.replace(/Penonton\s+Sahaja/ig,'OWNER/PENTADBIR');if(/Mod\s+Tontonan/i.test(t)) n.nodeValue=t.replace(/Mod\s+Tontonan/ig,'Mod Pentadbir Aktif');if(/upload\s+hanya\s+untuk\s+pentadbir/i.test(t)) n.nodeValue=t.replace(/upload\s+hanya\s+untuk\s+pentadbir/ig,'upload dibuka untuk OWNER/PENTADBIR');}}catch(e){}}
-function unlockUI(){try{forceOwner()}catch(e){}try{document.documentElement.classList.add('eakha-owner-unlocked-51043');['role-badge','auth-role','user-role','top-role','mode-badge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='OWNER/PENTADBIR'});document.querySelectorAll('input[type=file],button,select,textarea,input').forEach(function(el){try{if(el && !/v-pw|l-pw/i.test(el.id||'')){el.disabled=false;el.removeAttribute('disabled');el.removeAttribute('aria-disabled');el.style.pointerEvents='auto';el.style.opacity='';el.classList.remove('disabled','is-disabled','viewer-disabled');}}catch(e){}});document.querySelectorAll('.uzone,.dropzone,.upload,.upload-zone,.card,.panel').forEach(function(el){try{el.style.pointerEvents='auto';el.style.opacity='';el.classList.remove('disabled','is-disabled','viewer-disabled')}catch(e){}});document.querySelectorAll('[style]').forEach(function(el){try{var t=U(el.textContent||'');if(t.indexOf('UPLOAD DOKUMEN')>=0||t.indexOf('KZ PENYELIA')>=0||t.indexOf('TIMECARD')>=0||t.indexOf('CUTI HRMIS')>=0){el.style.pointerEvents='auto';el.style.opacity=''}}catch(e){}});replaceSmallText();}catch(e){console.warn('[51043 unlockUI]',e)}}
-function patchAdminGate(){var ok=function(){forceOwner();return true};window.reqAdmin=ok;window.reqOwner=ok;window.canUpload=ok;window.isAdmin=ok;try{reqAdmin=window.reqAdmin;reqOwner=window.reqOwner;canUpload=window.canUpload;isAdmin=window.isAdmin}catch(e){}}
-function patchRoleUI(){try{var old=window.applyRoleUI;if(typeof old==='function'&&!old.__v51043){window.applyRoleUI=function(){var r;try{forceOwner();r=old.apply(this,arguments)}catch(e){console.warn('[51043 applyRoleUI old]',e)}setTimeout(unlockUI,0);setTimeout(unlockUI,120);return r};window.applyRoleUI.__v51043=true;try{applyRoleUI=window.applyRoleUI}catch(e){}}}catch(e){}}
-function patchLogin(){try{var old=window.doLogin;if(typeof old==='function'&&!old.__v51043){window.doLogin=function(){var id=(document.getElementById('l-id')||{}).value||'';var r=true;if(/sjn\.?adilah|adilahfitrah|^adilah$/i.test(id)){forceOwner();try{var aw=document.getElementById('auth-wall'),app=document.getElementById('app');if(aw)aw.style.display='none';if(app)app.style.display='flex'}catch(e){}try{if(typeof bootApp==='function')bootApp();else if(typeof init==='function')init()}catch(e){}setTimeout(function(){boot43(true);try{if(typeof renderDash==='function')renderDash();if(typeof renderMaster==='function')renderMaster(null)}catch(e){}},120);toast43('SJN Adilah disahkan sebagai OWNER/PENTADBIR. Upload dibuka.','ok');return true;}try{r=old.apply(this,arguments)}catch(e){console.warn('[51043 doLogin old]',e)}setTimeout(function(){forceOwner();boot43(true)},120);return r===undefined?true:r};window.doLogin.__v51043=true;try{doLogin=window.doLogin}catch(e){}}}catch(e){}}
-function patchUploadHandlers(){['fsel','procAll','recompareAll','procCTR','addMC','addHRMISRec','saveCTR','saveRaya'].forEach(function(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__v51043){window[fn]=function(){forceOwner();patchAdminGate();unlockUI();return old.apply(this,arguments)};window[fn].__v51043=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}})}
-function boot43(show){forceOwner();patchAdminGate();patchRoleUI();patchLogin();patchUploadHandlers();unlockUI();if(show)toast43('Mod OWNER/PENTADBIR aktif. Upload Dokumen telah dibuka.','ok')}
-['nav','renderUpload','renderMaster','renderDash','renderOutput','setMonth','loadMonthData','bootApp'].forEach(function(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__v51043){window[fn]=function(){boot43(false);var r=old.apply(this,arguments);setTimeout(unlockUI,80);setTimeout(unlockUI,350);return r};window[fn].__v51043=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}});
-try{var css=document.createElement('style');css.id='css-v51043-owner-unlock';css.textContent='.eakha-owner-unlocked-51043 input[type=file],.eakha-owner-unlocked-51043 button,.eakha-owner-unlocked-51043 .uzone{pointer-events:auto!important;opacity:1!important}.eakha-owner-unlocked-51043 .disabled,.eakha-owner-unlocked-51043 .viewer-disabled{pointer-events:auto!important;opacity:1!important;filter:none!important}';document.head.appendChild(css)}catch(e){}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[80,250,700,1500,3000,6000,10000].forEach(function(ms){setTimeout(function(){boot43(false)},ms)})});else [60,220,650,1400,2800,5600,9000].forEach(function(ms){setTimeout(function(){boot43(false)},ms)});
-try{new MutationObserver(function(){setTimeout(unlockUI,30)}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','class','style']})}catch(e){}
-try{document.title='e-AKHA Vsavage v5.10.44 FINAL STABLE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
-})();
-<\/script>
-
-
-<script id="eakha-v51044-final-stability-recovery">
-/* e-AKHA Vsavage v5.10.44 FINAL STABLE
-   - Paksa SJN Adilah sebagai OWNER/PENTADBIR; buang Mod Tontonan untuk owner.
-   - Pastikan Upload Dokumen aktif.
-   - Sembunyikan Import Gabungan KZP + KZK / Source Split di mana-mana halaman.
-   - Paparkan Semak HRMIS ↔ Master + Paut HRMIS ke Masterfile secara global dan di Master File.
-   - Pulih Data Selamat: cari backup/snapshot/localStorage paling lengkap sebelum anggap data hilang.
-*/
-(function(){
-'use strict';
-var PATCH='v5.10.44-FINAL-STABLE-RECOVERY';
-window.__EAKHA_V51044_FINAL_STABLE__=true;
-function S(v){return String(v==null?'':v)}
-function U(v){return S(v).trim().toUpperCase().replace(/[^A-Z0-9@._+\-\/ ]+/g,' ').replace(/\s+/g,' ')}
-function toast44(msg,type){try{if(typeof toast==='function')toast(msg,type||'ok');else if(typeof showToast==='function')showToast(msg,type||'ok');else console.log('[e-AKHA '+PATCH+'] '+msg)}catch(e){console.log(msg)}}
-function readJSON(raw,fb){try{return JSON.parse(raw)}catch(e){return fb}}
-function storageGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
-function storageSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-function ownerObj(){return {loggedIn:true,role:'admin',id:'sjnadilah',nama:'SJN Adilah',name:'SJN Adilah',jawatan:'OWNER · PENTADBIR · AUDITOR',akses:'owner',owner:true,admin:true,can_upload:true,canUpload:true,viewer:false}}
-function forceOwner(){
-  var u=ownerObj();
-  try{window.AUTH=u;AUTH=u}catch(e){window.AUTH=u}
-  try{window.CUR_USER=u;CUR_USER=u}catch(e){window.CUR_USER=u}
-  try{window.AUTH_USER=u;AUTH_USER=u}catch(e){window.AUTH_USER=u}
-  try{sessionStorage.setItem('eakha_auth',JSON.stringify(u))}catch(e){}
-  try{localStorage.setItem('eakha_user','sjnadilah');localStorage.setItem('eakha_role','admin');localStorage.setItem('eakha_owner','SJN Adilah');localStorage.removeItem('eakha_viewer');localStorage.removeItem('viewer');localStorage.removeItem('eakha_mode')}catch(e){}
-  return true;
-}
-function patchAdmin(){
-  var ok=function(){forceOwner();return true};
-  window.reqAdmin=ok;window.reqOwner=ok;window.canUpload=ok;window.isAdmin=ok;
-  try{reqAdmin=ok;reqOwner=ok;canUpload=ok;isAdmin=ok}catch(e){}
-}
-function replaceViewerText(){
-  try{
-    var walker=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,null,false),n;
-    while((n=walker.nextNode())){
-      var t=n.nodeValue||'';
-      if(/Penonton\s+Sahaja/i.test(t))t=t.replace(/Penonton\s+Sahaja/ig,'OWNER/PENTADBIR');
-      if(/Mod\s+Tontonan/i.test(t))t=t.replace(/Mod\s+Tontonan/ig,'Mod Pentadbir Aktif');
-      if(/upload\s+hanya\s+untuk\s+pentadbir/i.test(t))t=t.replace(/upload\s+hanya\s+untuk\s+pentadbir/ig,'upload dibuka untuk OWNER/PENTADBIR');
-      n.nodeValue=t;
-    }
-  }catch(e){}
-}
-function unlockUpload(){
-  forceOwner();patchAdmin();
-  try{document.documentElement.classList.add('eakha-v51044-owner');}catch(e){}
-  try{
-    document.querySelectorAll('input[type=file],button,select,textarea,input').forEach(function(el){
-      try{if(!/(v-pw|l-pw)/i.test(el.id||'')){el.disabled=false;el.removeAttribute('disabled');el.removeAttribute('aria-disabled');el.style.pointerEvents='auto';el.style.opacity='';el.classList.remove('disabled','is-disabled','viewer-disabled')}}catch(e){}
-    });
-    document.querySelectorAll('.uzone,.dropzone,.upload,.upload-zone,.card,.panel,[data-role="upload"]').forEach(function(el){try{el.style.pointerEvents='auto';el.style.opacity='';el.classList.remove('disabled','is-disabled','viewer-disabled')}catch(e){}});
-    ['role-badge','auth-role','user-role','top-role','mode-badge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='OWNER/PENTADBIR'});
-    replaceViewerText();
-  }catch(e){console.warn('[51044 unlockUpload]',e)}
-}
-function hideImportGabungan(){
-  try{
-    document.querySelectorAll('button,.btn').forEach(function(b){var t=U(b.textContent||'');if(t.indexOf('UPLOAD EXCEL GABUNGAN KZ')>=0||t.indexOf('KEMASKINI KZP KZK KE MASTER')>=0||t.indexOf('KEMASKINI KZP + KZK')>=0)b.style.display='none'});
-    document.querySelectorAll('.panel,section,fieldset,div').forEach(function(el){
-      if(!el||el===document.body||el===document.documentElement)return;
-      var t=U(el.textContent||'');
-      if(t.indexOf('IMPORT GABUNGAN KZP')>=0||t.indexOf('SOURCE SPLIT')>=0||t.indexOf('UPLOAD GABUNGAN HANYA DITERIMA')>=0){
-        var box=el.closest('.panel')||el; if(box&&box!==document.body)box.style.display='none';
-      }
-    });
-  }catch(e){console.warn('[51044 hideImport]',e)}
-}
-function topHost(){return document.querySelector('.topbar')||document.querySelector('.content')||document.querySelector('.main')||document.body}
-function showHRMIS(){
-  try{hideImportGabungan();ensureHRMISButtons();if(typeof window.eakhaV51040ShowHRMIS==='function')return window.eakhaV51040ShowHRMIS();if(typeof window.eakhaV51042ShowHRMIS==='function')return window.eakhaV51042ShowHRMIS();toast44('Fungsi HRMIS belum ready. Tunggu 2 saat kemudian tekan semula.','warn')}catch(e){toast44('Ralat HRMIS: '+e.message,'err')}
-}
-function linkHRMIS(){
-  try{hideImportGabungan();ensureHRMISButtons();if(typeof window.eakhaV51040LinkHRMIS==='function')return window.eakhaV51040LinkHRMIS();if(typeof window.eakhaV51042LinkHRMIS==='function')return window.eakhaV51042LinkHRMIS();toast44('Fungsi paut HRMIS belum ready. Tunggu 2 saat kemudian tekan semula.','warn')}catch(e){toast44('Ralat paut HRMIS: '+e.message,'err')}
-}
-window.eakhaV51044ShowHRMIS=showHRMIS;window.eakhaV51044LinkHRMIS=linkHRMIS;
-function ensureHRMISButtons(){
-  try{
-    var host=topHost(); if(host && !document.getElementById('btn-v51044-top-hrmis')){
-      var wrap=document.createElement('span');wrap.id='v51044-top-actions';wrap.style.cssText='display:inline-flex;gap:5px;flex-wrap:wrap;align-items:center;margin-left:6px';
-      wrap.innerHTML='<button id="btn-v51044-top-hrmis" class="btn btn-bl btn-sm" type="button">Semak HRMIS ↔ Master</button><button id="btn-v51044-top-paut" class="btn btn-gn btn-sm" type="button">Paut HRMIS ke Masterfile</button><button id="btn-v51044-recover" class="btn btn-gold btn-sm" type="button">Pulih Data Selamat</button>';
-      host.appendChild(wrap);
-      document.getElementById('btn-v51044-top-hrmis').onclick=function(e){e&&e.preventDefault();return showHRMIS()};
-      document.getElementById('btn-v51044-top-paut').onclick=function(e){e&&e.preventDefault();return linkHRMIS()};
-      document.getElementById('btn-v51044-recover').onclick=function(e){e&&e.preventDefault();return recoverData(true)};
-    }
-    var pm=document.getElementById('page-master');
-    if(pm && !document.getElementById('v51044-hrmis-panel')){
-      var p=document.createElement('div');p.id='v51044-hrmis-panel';p.className='panel';
-      p.innerHTML='<div class="ph"><div class="ph-title">Semakan Cuti HRMIS ↔ Masterfile <span style="font-size:7px;color:#34d399">v5.10.44</span></div></div><div class="pb"><div class="notif n-info"><div><b>HRMIS aktif.</b> Semak rekod cuti HRMIS yang belum masuk Masterfile dan pautkan rekod yang padan nama + tarikh ke bulan aktif.</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="btn-v51044-panel-hrmis" class="btn btn-bl btn-sm" type="button">Semak HRMIS ↔ Master</button><button id="btn-v51044-panel-paut" class="btn btn-gn btn-sm" type="button">Paut HRMIS ke Masterfile</button><button id="btn-v51044-panel-recover" class="btn btn-gold btn-sm" type="button">Pulih Data Selamat</button></div></div>';
-      pm.insertBefore(p,pm.firstChild||null);
-      document.getElementById('btn-v51044-panel-hrmis').onclick=function(e){e&&e.preventDefault();return showHRMIS()};
-      document.getElementById('btn-v51044-panel-paut').onclick=function(e){e&&e.preventDefault();return linkHRMIS()};
-      document.getElementById('btn-v51044-panel-recover').onclick=function(e){e&&e.preventDefault();return recoverData(true)};
-    }
-  }catch(e){console.warn('[51044 HRMIS buttons]',e)}
-}
-function scoreData(obj){
-  var seen=0, cells=0, names=0, stack=[obj], guard=0;
-  while(stack.length && guard++<12000){
-    var x=stack.pop(); if(!x||typeof x!=='object')continue; seen++;
-    if(Array.isArray(x)){names+=x.length>20?x.length:0; x.slice(0,200).forEach(function(v){if(v&&typeof v==='object')stack.push(v)}); continue;}
-    var keys=Object.keys(x); var kstr=keys.join('|').toLowerCase();
-    if(/kzp|kzk|tc_in|tc_out|hrmis|audit|mc|shift/.test(kstr))cells++;
-    keys.slice(0,200).forEach(function(k){var v=x[k];if(v&&typeof v==='object')stack.push(v)});
-  }
-  return cells*10 + names + seen/100;
-}
-function extractD(obj){
-  if(!obj||typeof obj!=='object')return null;
-  var best=null, bestS=0, stack=[obj], guard=0;
-  while(stack.length && guard++<3000){
-    var x=stack.pop(); if(!x||typeof x!=='object')continue;
-    var s=scoreData(x); if(s>bestS){bestS=s;best=x}
-    if(Array.isArray(x)){x.slice(0,100).forEach(function(v){if(v&&typeof v==='object')stack.push(v)})}
-    else Object.keys(x).slice(0,100).forEach(function(k){var v=x[k];if(v&&typeof v==='object')stack.push(v)})
-  }
-  return bestS>50?best:null;
-}
-function candidates(){
-  var out=[];
-  function add(k,raw,src){var o=readJSON(raw,null); if(!o)return; var d=extractD(o); if(d)out.push({key:k,src:src,obj:d,score:scoreData(d)})}
-  try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);add(k,localStorage.getItem(k),'localStorage')}}catch(e){}
-  try{for(var j=0;j<sessionStorage.length;j++){var k2=sessionStorage.key(j);add(k2,sessionStorage.getItem(k2),'sessionStorage')}}catch(e){}
-  try{if(typeof D!=='undefined')out.push({key:'window.D',src:'runtime',obj:D,score:scoreData(D)})}catch(e){}
-  out.sort(function(a,b){return b.score-a.score});
-  return out;
-}
-function backupNow(){try{if(typeof D==='undefined')return;var sc=scoreData(D);if(sc>80){var raw=JSON.stringify(D);storageSet('eakha_last_good_data_51044',raw);storageSet('eakha_backup_51044_'+Date.now(),raw)}}catch(e){} }
-function recoverData(manual){
-  var list=candidates(), cur=0;try{if(typeof D!=='undefined')cur=scoreData(D)}catch(e){}
-  var best=list[0];
-  if(!best||best.score<=cur+20){if(manual)toast44('Tiada backup lebih lengkap ditemui. Data semasa score '+Math.round(cur)+'.','warn');return false;}
-  try{
-    window.D=best.obj; try{D=window.D}catch(e){}
-    storageSet('eakha_data',JSON.stringify(best.obj));
-    storageSet('eakha_data_recovered_from_51044',best.src+':'+best.key);
-    if(typeof saveDataset==='function')try{saveDataset('AUTO PULIH DATA '+PATCH)}catch(e){}
-    if(typeof renderMaster==='function')renderMaster(null); if(typeof renderDash==='function')renderDash(); if(typeof updFlags==='function')updFlags();
-    toast44('Data dipulihkan dari '+best.key+' ('+Math.round(best.score)+' > '+Math.round(cur)+')','ok');
-    return true;
-  }catch(e){toast44('Gagal pulih data: '+e.message,'err');return false}
-}
-window.eakhaV51044RecoverData=recoverData;
-function patchPulihButtons(){
-  try{document.querySelectorAll('button').forEach(function(b){var t=U(b.textContent||'');if((t.indexOf('PULIH')>=0||t.indexOf('RELOAD PRELOAD')>=0)&&!b.__v51044){b.__v51044=true;b.addEventListener('click',function(){setTimeout(function(){backupNow();recoverData(false);boot44(false)},500);setTimeout(function(){recoverData(false);boot44(false)},1800)},true)}})}catch(e){}
-}
-function patchLogin(){try{var old=window.doLogin;if(typeof old==='function'&&!old.__v51044){window.doLogin=function(){forceOwner();var r;try{r=old.apply(this,arguments)}catch(e){}setTimeout(function(){boot44(true);try{if(typeof bootApp==='function')bootApp();if(typeof renderUpload==='function')renderUpload()}catch(e){}},120);return r===undefined?true:r};window.doLogin.__v51044=true;try{doLogin=window.doLogin}catch(e){}}}catch(e){}}
-function wrap(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__v51044){window[fn]=function(){backupNow();boot44(false);var r=old.apply(this,arguments);setTimeout(function(){boot44(false);backupNow()},90);setTimeout(function(){hideImportGabungan();ensureHRMISButtons();unlockUpload()},400);return r};window[fn].__v51044=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}}
-function boot44(show){forceOwner();patchAdmin();patchLogin();unlockUpload();hideImportGabungan();ensureHRMISButtons();patchPulihButtons();if(show)toast44('v5.10.44 aktif: OWNER upload, HRMIS button, import gabungan dibuang, recovery data siap.','ok')}
-['nav','renderUpload','renderMaster','renderDash','renderOutput','setMonth','loadMonthData','bootApp','applyRoleUI','updFlags','renderHRMISReg'].forEach(wrap);
-try{var css=document.createElement('style');css.id='css-v51044-final';css.textContent='.eakha-v51044-owner input[type=file],.eakha-v51044-owner button,.eakha-v51044-owner .uzone{pointer-events:auto!important;opacity:1!important;filter:none!important}.eakha-v51044-owner .viewer-disabled,.eakha-v51044-owner .disabled{pointer-events:auto!important;opacity:1!important;filter:none!important}';document.head.appendChild(css)}catch(e){}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){[60,200,500,1000,2000,4000,8000,12000].forEach(function(ms){setTimeout(function(){boot44(ms<300)},ms)})});else [40,160,400,900,1800,3600,7200,11000].forEach(function(ms){setTimeout(function(){boot44(ms<200)},ms)});
-try{new MutationObserver(function(){setTimeout(function(){boot44(false)},40)}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','class','style']})}catch(e){}
-try{window.addEventListener('beforeunload',backupNow);setInterval(backupNow,15000)}catch(e){}
-try{document.title='e-AKHA Vsavage v5.10.44 FINAL STABLE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+try{document.title='e-AKHA Vsavage v5.10.41 FINAL LIVE';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 <\/script>
 
@@ -1034,7 +744,7 @@ function fail(e){
 fetch(API_URL,{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('GitHub API '+r.status);return r.json()}).then(function(j){
   var html=decodeB64(j.content||'');
   if(!html||html.indexOf('</html>')<0)throw new Error('Index asas tidak lengkap.');
-  html=html.replace(/<title>[^<]*<\/title>/i,'<title>e-AKHA Vsavage v5.10.44 FINAL STABLE</title>');
+  html=html.replace(/<title>[^<]*<\/title>/i,'<title>e-AKHA Vsavage v5.10.41 FINAL LIVE</title>');
   if(html.indexOf('eakha-v51037-asree-owner-night-final')<0){
     html=html.replace(/<\/body>\s*<\/html>\s*$/i,HOTFIX+'\n</body>\n</html>');
   }
