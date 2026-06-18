@@ -10893,6 +10893,99 @@ try{
 }catch(e){}
 })();
 </script>
+<script id="eakha-v51044-owner-role-fix">
+/* e-AKHA v5.10.44 — FIX: role:'owner' dikenali sebagai admin penuh
+   Masalah: USERS_SAFE set role:'owner' tapi isAdm check role==='admin' sahaja.
+   Fix: normalize role kepada 'admin' untuk semua owner, dan patch isAdm/isOwner.
+*/
+(function(){
+'use strict';
+var PATCH='v5.10.44-OWNER-ROLE-FIX';
+function byId(id){return document.getElementById(id)}
+function isOwnerRole(r){return /owner|admin|pentadbir|auditor/i.test(String(r||''))}
+function fixAuth(auth){
+  if(!auth||!auth.loggedIn)return auth;
+  if(isOwnerRole(auth.role)||isOwnerRole(auth.jawatan)){
+    auth.role='admin';
+    auth.isAdmin=true;
+    auth.isOwner=/owner/i.test(auth.role+' '+(auth.jawatan||''));
+    auth.can_upload=true;
+    auth.canUpload=true;
+  }
+  return auth;
+}
+// Patch showApp so any owner/admin role gets normalized
+var oldShowApp=window.showApp;
+window.showApp=function(u){
+  if(u&&isOwnerRole(u.role)){u=Object.assign({},u,{role:'admin',can_upload:true,canUpload:true});}
+  try{if(typeof AUTH!=='undefined'&&AUTH&&isOwnerRole(AUTH.role))fixAuth(AUTH);}catch(e){}
+  if(typeof oldShowApp==='function')return oldShowApp(u);
+};
+// Patch bootApp to fix AUTH before it runs
+var oldBootApp=window.bootApp;
+window.bootApp=function(){
+  try{if(typeof AUTH!=='undefined'&&AUTH)fixAuth(AUTH);}catch(e){}
+  try{
+    // Also fix from localStorage session
+    var sess=localStorage.getItem('eakha_user');
+    if(sess){var u=JSON.parse(sess);if(u&&isOwnerRole(u.role)){u.role='admin';localStorage.setItem('eakha_user',JSON.stringify(u));}}
+  }catch(e){}
+  if(typeof oldBootApp==='function')return oldBootApp.apply(this,arguments);
+};
+// Patch doLogin to normalize role on login
+function patchDoLogin(){
+  var old=window.doLogin;
+  if(typeof old==='function'&&!old.__v51044){
+    window.doLogin=function(){
+      var r=old.apply(this,arguments);
+      setTimeout(function(){
+        try{
+          if(typeof AUTH!=='undefined'&&AUTH&&isOwnerRole(AUTH.role)){
+            fixAuth(AUTH);
+            // Re-render sidebar/upload to reflect admin role
+            try{if(typeof renderSidebar==='function')renderSidebar();}catch(e){}
+            try{if(typeof renderUpload==='function')renderUpload();}catch(e){}
+            try{if(typeof setView==='function')setView('upload');}catch(e){}
+          }
+        }catch(e){}
+      },200);
+      return r;
+    };
+    window.doLogin.__v51044=true;
+    try{doLogin=window.doLogin;}catch(e){}
+  }
+}
+// Continuously ensure AUTH is fixed (handles timing issues)
+function ensureOwnerAuth(){
+  try{
+    if(typeof AUTH!=='undefined'&&AUTH&&AUTH.loggedIn&&isOwnerRole(AUTH.role)&&AUTH.role!=='admin'){
+      fixAuth(AUTH);
+      try{if(typeof renderSidebar==='function')renderSidebar();}catch(e){}
+      try{if(typeof renderUpload==='function')renderUpload();}catch(e){}
+    }
+    // Fix CUR_USER too
+    if(typeof CUR_USER!=='undefined'&&CUR_USER&&isOwnerRole(CUR_USER.role)){
+      CUR_USER.role='admin';CUR_USER.can_upload=true;CUR_USER.canUpload=true;
+    }
+  }catch(e){}
+}
+patchDoLogin();
+[300,800,1500,3000].forEach(function(ms){setTimeout(ensureOwnerAuth,ms);});
+// Also run after any render
+['renderUpload','renderSidebar','bootApp','setView','nav'].forEach(function(fn){
+  try{
+    var old=window[fn];
+    if(typeof old==='function'&&!old.__v51044){
+      window[fn]=function(){ensureOwnerAuth();var r=old.apply(this,arguments);setTimeout(ensureOwnerAuth,100);return r;};
+      window[fn].__v51044=true;
+      try{eval(fn+'=window[fn]');}catch(e){}
+    }
+  }catch(e){}
+});
+try{console.log('[e-AKHA '+PATCH+'] loaded');}catch(e){}
+})();
+</script>
+
 <script id="eakha-v51037-asree-owner-night-final">
 /* e-AKHA Vsavage v5.10.37
    FINAL HOTFIX:
@@ -11802,6 +11895,171 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else [80,350,900,2000,4500,8500].forEach(function(ms){setTimeout(boot43,ms)});
 try{new MutationObserver(function(){setTimeout(boot43,40)}).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}
 try{document.title='e-AKHA Vsavage v5.10.43 FINAL LIVE';console.log('[e-AKHA '+PATCH+'] loaded OK')}catch(e){}
+})();
+</script>
+
+
+<script id="eakha-v51045-clean-master-final">
+/* e-AKHA v5.10.45 — FIX MASTER FILE:
+   1) Import Gabungan KZP+KZK panel — patch renderPanels() supaya tidak cipta panel ini langsung.
+   2) HRMIS panel + buttons — inject terus selepas renderPanels, bukan bergantung pada boot timing.
+   3) Pulih Data — tunjuk mesej jelas jika tiada snapshot, senarai semua backup yang ada.
+*/
+(function(){
+'use strict';
+var PATCH='v5.10.45-CLEAN-MASTER';
+function qs(s,root){return (root||document).querySelector(s)}
+function qsa(s,root){return Array.from((root||document).querySelectorAll(s))}
+function toast45(msg,t){try{if(typeof toast==='function')toast(msg,t||'ok');else console.log('[45]',msg)}catch(e){}}
+
+/* ── 1. PATCH renderPanels: skip v5105-master-kz-panel creation ── */
+function patchRenderPanels(){
+  var old=window.renderPanels;
+  if(typeof old==='function'&&!old.__v51045){
+    window.renderPanels=function(){
+      var r=old.apply(this,arguments);
+      // Remove the panel AFTER it's created
+      var p=document.getElementById('v5105-master-kz-panel');
+      if(p){try{p.remove()}catch(e){p.style.display='none'}}
+      // Also remove any buttons referencing it
+      qsa('button,label').forEach(function(el){
+        var t=(el.textContent||el.value||'').toUpperCase();
+        if(t.indexOf('UPLOAD EXCEL GABUNGAN KZ')>=0||t.indexOf('KEMASKINI KZP + KZK KE MASTER')>=0||t.indexOf('IMPORT GABUNGAN KZP')>=0){
+          try{el.closest('.panel')?el.closest('.panel').remove():el.remove()}catch(e){el.style.display='none'}
+        }
+      });
+      // Ensure HRMIS panel is present
+      setTimeout(ensureHRMIS45, 80);
+      return r;
+    };
+    window.renderPanels.__v51045=true;
+    try{renderPanels=window.renderPanels}catch(e){}
+  }
+}
+
+/* ── 2. HRMIS Panel inject ── */
+function callHRMIS45(fn){
+  var tries=0;
+  (function attempt(){
+    tries++;
+    if(typeof window[fn]==='function'){
+      try{window[fn]();}catch(e){toast45('Ralat HRMIS: '+e.message,'err')}
+      var panel=document.getElementById('v51040-hrmis-panel');
+      if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
+    } else if(tries<10){
+      setTimeout(attempt, tries*250);
+    } else {
+      toast45('Fungsi HRMIS belum sedia. Refresh halaman.','warn');
+    }
+  })();
+}
+function ensureHRMIS45(){
+  var pm=qs('#page-master');
+  if(!pm)return;
+  // Remove old v51042/v51043 panels to avoid duplicates
+  ['v51042-hrmis-actions','v51043-hrmis-actions'].forEach(function(id){
+    var old=document.getElementById(id);
+    if(old)try{old.remove()}catch(e){}
+  });
+  if(document.getElementById('v51045-hrmis-panel'))return;
+  var p=document.createElement('div');
+  p.id='v51045-hrmis-panel';
+  p.className='panel';
+  p.style.cssText='border:1px solid rgba(52,211,153,.35);margin-bottom:10px';
+  p.innerHTML=
+    '<div class="ph"><div class="ph-title">Semakan Cuti HRMIS ↔ Masterfile'
+    +' <span style="font-size:7px;color:#34d399">('+PATCH+')</span></div></div>'
+    +'<div class="pb">'
+    +'<div class="notif n-info" style="margin-bottom:8px"><div>'
+    +'<b>HRMIS aktif:</b> Semak rekod cuti HRMIS yang belum masuk Masterfile. '
+    +'MC + OUT 07:xx selepas shift malam diabaikan daripada MC ADA THUMB.'
+    +'</div></div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+    +'<button class="btn btn-bl btn-sm" id="btn-v51045-semak">↔ Semak HRMIS vs Master</button>'
+    +'<button class="btn btn-gn btn-sm" id="btn-v51045-paut">Paut HRMIS ke Masterfile</button>'
+    +'</div></div>';
+  // Insert as FIRST child of page-master (above everything)
+  pm.insertBefore(p, pm.firstChild);
+  var b1=document.getElementById('btn-v51045-semak');
+  var b2=document.getElementById('btn-v51045-paut');
+  if(b1)b1.onclick=function(e){e&&e.preventDefault();callHRMIS45('eakhaV51040ShowHRMIS')};
+  if(b2)b2.onclick=function(e){e&&e.preventDefault();callHRMIS45('eakhaV51040LinkHRMIS')};
+}
+
+/* ── 3. Pulih Data — tunjuk semua backup yang ada ── */
+function patchPulihData(){
+  var oldBtn=document.getElementById('btn-recover-best');
+  // Wrap eakhaRestoreBestBackup with clearer feedback
+  var oldRestore=window.eakhaRestoreBestBackup;
+  if(typeof oldRestore==='function'&&!oldRestore.__v51045){
+    window.eakhaRestoreBestBackup=function(force){
+      // List available snapshots first
+      var found=[];
+      try{
+        for(var i=0;i<localStorage.length;i++){
+          var k=localStorage.key(i);
+          if(k&&/eakha_(snap|data|boot|guard|dataset)/i.test(k))found.push(k);
+        }
+      }catch(e){}
+      console.log('[45] Available backups:', found);
+      var r=oldRestore.apply(this,arguments);
+      if(!r){
+        var msg=found.length
+          ?'Tiada snapshot bulan aktif. Backup ada: '+found.slice(0,5).join(', ')
+          :'Tiada sebarang data backup dalam browser ini.';
+        toast45(msg,'warn');
+      }
+      return r;
+    };
+    window.eakhaRestoreBestBackup.__v51045=true;
+    try{eakhaRestoreBestBackup=window.eakhaRestoreBestBackup}catch(e){}
+  }
+}
+
+/* ── Boot ── */
+function boot45(){
+  patchRenderPanels();
+  // Remove Import panel if already in DOM
+  var imp=document.getElementById('v5105-master-kz-panel');
+  if(imp)try{imp.remove()}catch(e){imp.style.display='none'}
+  qsa('.panel').forEach(function(el){
+    var t=(el.textContent||'').toUpperCase();
+    if(t.indexOf('IMPORT GABUNGAN KZP')>=0&&el.id!=='v51045-hrmis-panel'){
+      try{el.remove()}catch(e){el.style.display='none'}
+    }
+  });
+  ensureHRMIS45();
+  patchPulihData();
+}
+
+['renderPanels','renderMaster','nav','setMonth','loadMonthData'].forEach(function(fn){
+  try{
+    var old=window[fn];
+    if(typeof old==='function'&&!old.__v51045b){
+      window[fn]=function(){
+        var r=old.apply(this,arguments);
+        setTimeout(boot45,100);
+        return r;
+      };
+      window[fn].__v51045b=true;
+      try{eval(fn+'=window[fn]')}catch(e){}
+    }
+  }catch(e){}
+});
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',function(){
+    [200,600,1500,3000,6000].forEach(function(ms){setTimeout(boot45,ms)});
+  });
+}else{
+  [150,500,1200,2500,5500].forEach(function(ms){setTimeout(boot45,ms)});
+}
+try{new MutationObserver(function(ml){
+  var relevant=ml.some(function(m){return m.addedNodes.length>0});
+  if(relevant)setTimeout(boot45,50);
+}).observe(document.getElementById('page-master')||document.body,{childList:true,subtree:false})}catch(e){}
+
+try{console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
 })();
 </script>
 
