@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.51 PERSISTENT</title>
+  <title>e-AKHA Vsavage v5.10.52 MEI PERSISTENT</title>
   <style>
     body{margin:0;background:#0a1628;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center}
     .box{max-width:560px;padding:28px;border:1px solid rgba(200,150,10,.35);border-radius:14px;background:#0f1f3d;box-shadow:0 20px 60px rgba(0,0,0,.35)}
@@ -13,8 +13,8 @@
 <body>
 <div class="box">
   <h1>e-AKHA Vsavage</h1>
-  <p>Memuatkan sistem dan memasang rule engine kekal Mei 2026...</p>
-  <p style="font-size:10px;color:rgba(255,255,255,.4)">Snapshot terbaru yang sah dipin dalam IndexedDB · Owner SJN ADILAH dikekalkan</p>
+  <p>Memulihkan data penuh Mei 2026 dan memasang snapshot persistent...</p>
+  <p style="font-size:10px;color:rgba(255,255,255,.4)">53 anggota · 7 lapisan · audit asal tidak dikira semula</p>
   <div id="err" class="err"></div>
 </div>
 <script>
@@ -34,15 +34,14 @@ fetch(API+'?x='+Date.now(),{cache:'no-store'}).then(function(r){
 }).then(function(blob){
   var html=decodeB64(blob.content||'');
   if(!/e-AKHA Vsavage/i.test(html))throw new Error('Base bukan index e-AKHA');
-  var reset='<script>try{if(localStorage.getItem("eakha_engine_version")!=="5.10.51"){localStorage.removeItem("eakha_last_good_snapshot");localStorage.setItem("eakha_engine_version","5.10.51")}}catch(e){}<\\/script>';
-  var patch='<script src="v51051-persistent.js?v=51051-'+Date.now()+'"><\\/script>';
-  if(/<\/body>/i.test(html)) html=html.replace(/<\/body>/i, reset+patch+'</body>');
-  else html += reset+patch;
+  var patch='<script src="https://cdn.jsdelivr.net/gh/VillainSavage/e-AKHA_Vsavage@d5e5f33b827e83d71d942568345995e116610cef/v51052-mei-persistent.js?v=51052"><\/script>';
+  if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,patch+'</body>');
+  else html+=patch;
   document.open();document.write(html);document.close();
 }).catch(function(e){
   console.error(e);
   var el=document.getElementById('err');
-  if(el)el.textContent='Gagal load sistem persistent. Screenshot error ini dan hantar.\n\n'+(e&&e.stack||e);
+  if(el)el.textContent='Gagal load sistem v5.10.52. Screenshot error ini dan hantar.\n\n'+(e&&e.stack||e);
 });
 })();
 </script>
