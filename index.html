@@ -34,9 +34,10 @@ fetch(API+'?x='+Date.now(),{cache:'no-store'}).then(function(r){
 }).then(function(blob){
   var html=decodeB64(blob.content||'');
   if(!/e-AKHA Vsavage/i.test(html))throw new Error('Base bukan index e-AKHA');
+  var reset='<script>try{if(localStorage.getItem("eakha_engine_version")!=="5.10.51"){localStorage.removeItem("eakha_last_good_snapshot");localStorage.setItem("eakha_engine_version","5.10.51")}}catch(e){}<\\/script>';
   var patch='<script src="v51051-persistent.js?v=51051-'+Date.now()+'"><\\/script>';
-  if(/<\/body>/i.test(html)) html=html.replace(/<\/body>/i, patch+'</body>');
-  else html += patch;
+  if(/<\/body>/i.test(html)) html=html.replace(/<\/body>/i, reset+patch+'</body>');
+  else html += reset+patch;
   document.open();document.write(html);document.close();
 }).catch(function(e){
   console.error(e);
