@@ -13,14 +13,14 @@
 <body>
 <div class="box">
   <h1>e-AKHA Vsavage</h1>
-  <p>Memuatkan data bulan April/Mei 2026 mengikut snapshot yang dipin...</p>
-  <p style="font-size:10px;color:rgba(255,255,255,.4)">Snapshot bulan diasingkan · 53 anggota · 7 lapisan</p>
+  <p>Memuatkan aplikasi penuh dan data April/Mei 2026 mengikut snapshot yang dipin...</p>
+  <p style="font-size:10px;color:rgba(255,255,255,.4)">53 anggota · 7 lapisan · snapshot bulan diasingkan</p>
   <div id="err" class="err"></div>
 </div>
 <script>
 (function(){
 'use strict';
-var BASE_BLOB_SHA='ae323e025be6cff702e705eb662cb20d903dbe09';
+var BASE_BLOB_SHA='9efd43bf60c565ea44e82e36de7ab45fb0ffc54e';
 var API='https://api.github.com/repos/VillainSavage/e-AKHA_Vsavage/git/blobs/'+BASE_BLOB_SHA;
 function decodeB64(b64){
   b64=String(b64||'').replace(/\s+/g,'');
@@ -29,15 +29,20 @@ function decodeB64(b64){
   return new TextDecoder('utf-8').decode(bytes);
 }
 fetch(API+'?x='+Date.now(),{cache:'no-store'}).then(function(r){
-  if(!r.ok)throw new Error('Gagal fetch base index: '+r.status);
+  if(!r.ok)throw new Error('Gagal fetch aplikasi asas: '+r.status);
   return r.json();
 }).then(function(blob){
   var html=decodeB64(blob.content||'');
-  if(!/e-AKHA Vsavage/i.test(html))throw new Error('Base bukan index e-AKHA');
+  if(!/^\s*<!DOCTYPE html>/i.test(html)||!/<\/html>\s*$/i.test(html)){
+    throw new Error('Aplikasi asas tidak lengkap');
+  }
   var patch='<script src="v51053-month-loader.js?v=51053-'+Date.now()+'"><\/script>';
+  html=html.replace(/<title>[\s\S]*?<\/title>/i,'<title>e-AKHA Vsavage v5.10.53 MONTH AWARE</title>');
   if(/<\/body>/i.test(html))html=html.replace(/<\/body>/i,patch+'</body>');
   else html+=patch;
-  document.open();document.write(html);document.close();
+  document.open();
+  document.write(html);
+  document.close();
 }).catch(function(e){
   console.error(e);
   var el=document.getElementById('err');
