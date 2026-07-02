@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>e-AKHA Recovery 2026-07-03</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#0a1628;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#loading{height:100%;display:flex;align-items:center;justify-content:center;text-align:center}
+.box{max-width:620px;padding:28px;border:1px solid rgba(200,150,10,.35);border-radius:14px;background:#0f1f3d;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+h1{font-size:18px;color:#f0b429;margin:0 0 8px}p{font-size:12px;color:rgba(255,255,255,.72);line-height:1.55}#err{color:#fca5a5;white-space:pre-wrap;text-align:left;font-size:11px;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="loading"><div class="box"><h1>e-AKHA Vsavage</h1><p>Memuatkan aplikasi asal dan snapshot April/Mei yang telah dipin...</p><p>Jangan tutup halaman ini.</p><div id="err"></div></div></div>
+<script>
+(async()=>{
+'use strict';
+const BASE_BLOB='9efd43bf60c565ea44e82e36de7ab45fb0ffc54e';
+const API='https://api.github.com/repos/VillainSavage/e-AKHA_Vsavage/git/blobs/'+BASE_BLOB;
+const month=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
+const patch=function(){
+  'use strict';
+  const DB='eakha_vsavage_safe_store',STORE='snapshots';
+  const month=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
+  const clone=v=>JSON.parse(JSON.stringify(v));
+  const monthOf=s=>{const n=Number(s?.bulan??s?.month);if(n>=1&&n<=12)return n;const m=[s?.id,s?.reason,s?.sourceSnapshot].join(' ').match(/2026[_\/-](0?[1-9]|1[0-2])/);return m?Number(m[1]):null};
+  const stamp=s=>{const m=String(s?.id||'').match(/(17\d{11,})$/);return m?Number(m[1]):Date.parse(s?.savedAt||'')||0};
+  const valid=(s,m)=>!!(s&&monthOf(s)===m&&Array.isArray(s.MASTER)&&s.MASTER.length>=52&&s.D&&Object.keys(s.D).length>=50&&!/BROKEN|DRAFT|LOCK_POINTER/i.test((s.id||'')+' '+(s.reason||'')));
+  const score=(s,m)=>{const t=((s.id||'')+' '+(s.reason||'')).toUpperCase();let z=0;Object.values(s.D||{}).forEach(ds=>Object.values(ds||{}).forEach(c=>{if(!c||typeof c!=='object')return;['kzp','kzk','tc_in','tc_out','tc_display','mc_display','hrmis_display','audit_final'].forEach(f=>{const v=c[f];if(Array.isArray(v)?v.length:v!=null&&String(v).trim()!=='')z++})}));if(s.MASTER.length===53)z+=50000;if(/REAL_DATA_LOCKED|LOCKED_FINAL|FINAL_LOCKED/.test(t))z+=40000;if(m===5&&/AFTER_FIX_KZ_LEAVE_NO_HRMIS/.test(t))z+=35000;if(/GITHUB_RULE_ENGINE_51051|LOCKED_SEPARATE_MONTH/.test(t))z-=50000;return z+stamp(s)/1e12};
+  const openDb=()=>new Promise((a,b)=>{const r=indexedDB.open(DB);r.onerror=()=>b(r.error);r.onsuccess=()=>a(r.result)});
+  const getAll=d=>new Promise((a,b)=>{const r=d.transaction(STORE,'readonly').objectStore(STORE).getAll();r.onsuccess=()=>a(r.result||[]);r.onerror=()=>b(r.error)});
+  async function choose(m){const mm=String(m).padStart(2,'0'),ids=[];try{ids.push(localStorage.getItem('eakha_locked_snapshot_2026_'+mm));ids.push(localStorage.getItem('eakha_active_snapshot_2026_'+mm));if(m===4)ids.push('safe_snapshot_2026_04_FINAL_LOCKED')}catch(e){}const d=await openDb(),rows=await getAll(d);d.close();for(const id of ids){if(!id)continue;const hit=rows.find(x=>x.id===id&&valid(x,m));if(hit)return hit}return rows.filter(x=>valid(x,m)).sort((a,b)=>score(b,m)-score(a,m))[0]||null}
+  function assign(name,value){window.__eakha_assign_tmp=clone(value);try{eval(name+'=window.__eakha_assign_tmp')}catch(e){try{window[name]=clone(value)}catch(_){}}}
+  function renderAll(){['renderAllSafe','renderMaster','renderDash','updFlags','renderAuditFinal','renderHRMIS','renderCutiHRMIS'].forEach(f=>{try{if(typeof window[f]==='function')window[f](null)}catch(e){console.warn(f,e)}})}
+  function fixLabels(count,m){const label=m===4?'April':'Mei',w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),nodes=[];while(w.nextNode())nodes.push(w.currentNode);nodes.forEach(n=>{const old=n.nodeValue||'';let next=old.replace(/Master File\s*\(\d+\s*Anggota\)/gi,`Master File (${count} Anggota)`).replace(/Semua\s+\d+\b/gi,`Semua ${count}`).replace(/\b\d+\s+anggota\b/gi,`${count} anggota`).replace(/Bulan audit:\s*(April|Mei)\s*2026/gi,`Bulan audit: ${label} 2026`);if(next!==old)n.nodeValue=next})}
+  async function load(m){const s=await choose(m);if(!s)throw new Error('Snapshot '+(m===4?'April':'Mei')+' tidak dijumpai');assign('MASTER',s.MASTER||[]);assign('D',s.D||{});assign('ACTIVE_YEAR',2026);assign('ACTIVE_MONTH',m);['KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','MC_DATA','MC_REF','HRMIS_PRELOAD','HRMIS_DATA','HRMIS_REF','CUTI_HRMIS_PRELOAD','CUTI_HRMIS_REF'].forEach(k=>assign(k,s[k]||[]));window.MASTER=clone(s.MASTER||[]);window.D=clone(s.D||{});window.ACTIVE_YEAR=2026;window.ACTIVE_MONTH=m;try{localStorage.setItem('eakha_active_month',String(m));localStorage.setItem('eakha_last_good_snapshot',s.id)}catch(e){}renderAll();[500,1500,3000,6000,10000].forEach(ms=>setTimeout(()=>{assign('MASTER',s.MASTER||[]);assign('D',s.D||{});assign('ACTIVE_MONTH',m);renderAll();fixLabels((s.MASTER||[]).length,m)},ms));const badge=document.createElement('div');badge.textContent=(m===4?'APRIL':'MEI')+' LOADED · '+(s.MASTER||[]).length+' ANGGOTA · '+Object.keys(s.D||{}).length+' OWNER';Object.assign(badge.style,{position:'fixed',right:'12px',bottom:'12px',zIndex:'999999',background:'#064e3b',color:'#6ee7b7',padding:'8px 11px',borderRadius:'8px',fontSize:'11px',fontWeight:'700'});document.body.appendChild(badge);setTimeout(()=>badge.remove(),7000);window.EAKHA_RECOVERY_REPORT={month:m,snapshot:s.id,master:(s.MASTER||[]).length,owners:Object.keys(s.D||{}).length};console.log('[e-AKHA recovery]',window.EAKHA_RECOVERY_REPORT);return s}
+  window.eakhaLoadApril=()=>load(4);window.eakhaLoadMei=()=>load(5);window.eakhaLoadMonth=load;
+  document.addEventListener('click',e=>{const el=e.target?.closest?.('[data-bulan],button,a');if(!el)return;const text=String(el.textContent||'');const dm=Number(el.getAttribute?.('data-bulan'));if(dm===4||/\bAPRIL\b/i.test(text))setTimeout(()=>load(4).catch(console.error),500);if(dm===5||/\bMEI\b|\bMAY\b/i.test(text))setTimeout(()=>load(5).catch(console.error),500)},true);
+  setTimeout(()=>load(month).catch(e=>{console.error(e);alert('Recovery gagal: '+(e.message||e))}),900);
+};
+try{
+  const r=await fetch(API+'?x='+Date.now(),{cache:'no-store'});
+  if(!r.ok)throw new Error('Gagal fetch aplikasi asas: '+r.status);
+  const blob=await r.json();
+  const clean=String(blob.content||'').replace(/\s+/g,'');
+  const bin=atob(clean),bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  let html=new TextDecoder('utf-8').decode(bytes);
+  if(!/^\s*<!DOCTYPE html>/i.test(html))throw new Error('Aplikasi asas tidak lengkap');
+  const code='('+patch.toString()+')();';
+  const tag='<scr'+'ipt>'+code.replace(/<\/script/gi,'<\\/script')+'</scr'+'ipt>';
+  html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,tag+'</body>'):html+tag;
+  document.open();document.write(html);document.close();
+}catch(e){document.getElementById('err').textContent='Gagal load recovery.\n\n'+(e&&e.stack||e);console.error(e)}
+})();
+</script>
+</body>
+</html>
