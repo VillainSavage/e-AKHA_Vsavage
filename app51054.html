@@ -1,2 +1,227 @@
 <!DOCTYPE html>
-<html lang="ms"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>e-AKHA Vsavage v5.10.55 OFFDAY SAFE</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1628;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}#app{display:none;border:0;width:100%;height:100%}#loading{height:100%;display:flex;align-items:center;justify-content:center;text-align:center}.box{max-width:620px;padding:28px;border:1px solid rgba(200,150,10,.35);border-radius:14px;background:#0f1f3d}h1{font-size:18px;color:#f0b429;margin:0 0 8px}p{font-size:12px;color:rgba(255,255,255,.72)}#err{color:#fca5a5;white-space:pre-wrap;font-size:11px;margin-top:12px}#badge{display:none;position:fixed;right:12px;bottom:12px;z-index:99999;background:#064e3b;color:#6ee7b7;border-radius:8px;padding:7px 10px;font-size:10px;font-weight:700}</style></head><body><div id="loading"><div class="box"><h1>e-AKHA Vsavage</h1><p>Memuatkan aplikasi penuh dan snapshot sebenar April/Mei 2026...</p><div id="err"></div></div></div><iframe id="app"></iframe><div id="badge"></div><script>(function(){'use strict';var BASE_URL='base-v51017.html?v=51055-'+Date.now(),DB='eakha_vsavage_safe_store',STORE='snapshots',FIELDS=['KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','MC_DATA','MC_REF','HRMIS_PRELOAD','HRMIS_DATA','HRMIS_REF','CUTI_HRMIS_PRELOAD','CUTI_HRMIS_REF'],activeMonth=Number(new URL(location.href).searchParams.get('month'))===5?5:4,frame=document.getElementById('app'),err=document.getElementById('err'),badge=document.getElementById('badge'),ready=false,applying=false;function c(v){return JSON.parse(JSON.stringify(v))}function odb(){return new Promise((a,b)=>{let r=indexedDB.open(DB);r.onerror=()=>b(r.error);r.onsuccess=()=>a(r.result)})}function all(d){return new Promise((a,b)=>{let r=d.transaction(STORE,'readonly').objectStore(STORE).getAll();r.onsuccess=()=>a(r.result||[]);r.onerror=()=>b(r.error)})}function mo(s){let n=Number(s&&(s.bulan!=null?s.bulan:s.month));if(n>=1&&n<=12)return n;let m=[s&&s.id,s&&s.reason,s&&s.sourceSnapshot].join(' ').match(/2026[_\/-](0?[1-9]|1[0-2])/);return m?Number(m[1]):null}function ts(s){let m=String(s&&s.id||'').match(/(17\d{11,})$/);return m?Number(m[1]):Date.parse(s&&s.savedAt||'')||0}function valid(s,m){return !!(s&&mo(s)===m&&Array.isArray(s.MASTER)&&s.MASTER.length>=52&&s.D&&Object.keys(s.D).length>=50&&!/BROKEN|DRAFT|LOCK_POINTER/i.test((s.id||'')+' '+(s.reason||'')))}function score(s,m){let t=((s.id||'')+' '+(s.reason||'')).toUpperCase(),z=0;Object.values(s.D||{}).forEach(ds=>Object.values(ds||{}).forEach(x=>{if(!x||typeof x!=='object')return;['kzp','kzk','tc_in','tc_out','tc_display','mc_display','hrmis_display','audit_final'].forEach(f=>{let v=x[f];if(Array.isArray(v)?v.length:v!=null&&String(v).trim()!=='')z++})}));if(s.MASTER.length===53)z+=50000;if(/REAL_DATA_LOCKED|LOCKED_FINAL|FINAL_LOCKED/.test(t))z+=40000;if(m===5&&/AFTER_FIX_KZ_LEAVE_NO_HRMIS/.test(t))z+=35000;if(/GITHUB_RULE_ENGINE_51051|LOCKED_SEPARATE_MONTH/.test(t))z-=50000;return z+ts(s)/1e12}async function get(month){let mm=String(month).padStart(2,'0'),ids=[];try{ids.push(localStorage.getItem('eakha_locked_snapshot_2026_'+mm));ids.push(localStorage.getItem('eakha_active_snapshot_2026_'+mm));if(month===4)ids.push('safe_snapshot_2026_04_FINAL_LOCKED')}catch(e){}let d=await odb(),rows=await all(d);d.close();for(let id of ids){if(!id)continue;let h=rows.find(x=>x.id===id&&valid(x,month));if(h)return h}return rows.filter(x=>valid(x,month)).sort((a,b)=>score(b,month)-score(a,month))[0]||null}function apply(w,s,m){w.__EAKHA_PARENT_STATE=c(s);w.__EAKHA_PARENT_MONTH=m;let code="(function(){var s=window.__EAKHA_PARENT_STATE,m=window.__EAKHA_PARENT_MONTH,c=function(v){return JSON.parse(JSON.stringify(v));};try{window.MASTER=c(s.MASTER||[])}catch(e){};try{window.D=c(s.D||{})}catch(e){};try{window.ACTIVE_YEAR=2026;window.ACTIVE_MONTH=m}catch(e){};['KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','MC_DATA','MC_REF','HRMIS_PRELOAD','HRMIS_DATA','HRMIS_REF','CUTI_HRMIS_PRELOAD','CUTI_HRMIS_REF'].forEach(function(k){try{window[k]=c(s[k]||[])}catch(e){}});try{if(typeof restoreSnapshot==='function')restoreSnapshot(s)}catch(e){};try{if(typeof applySnapshot==='function')applySnapshot(s)}catch(e){};try{if(typeof loadSnapshot==='function')loadSnapshot(s)}catch(e){};['renderAllSafe','renderMaster','renderDash','updFlags','renderAuditFinal','renderHRMIS','renderCutiHRMIS'].forEach(function(f){try{if(typeof window[f]==='function')window[f](null)}catch(e){}});})();";try{w.eval(code)}catch(e){console.error(e)}}function show(s,m){badge.textContent=(m===4?'APRIL':'MEI')+' LOADED · '+(s.MASTER||[]).length+' ANGGOTA · '+Object.keys(s.D||{}).length+' OWNER';badge.style.display='block';setTimeout(()=>badge.style.display='none',4500)}async function load(m){if(!ready||applying)return;applying=true;activeMonth=m;try{let s=await get(m);if(!s)throw Error('Snapshot bulan '+m+' tidak dijumpai');let w=frame.contentWindow;apply(w,s,m);[500,1200,2500,4500,7500,11000].forEach(ms=>setTimeout(()=>apply(w,s,m),ms));try{localStorage.setItem('eakha_active_month',String(m));localStorage.setItem('eakha_last_good_snapshot',s.id)}catch(e){}window.EAKHA_PARENT_REPORT={month:m,snapshot:s.id,master:(s.MASTER||[]).length,owners:Object.keys(s.D||{}).length};show(s,m);document.getElementById('loading').style.display='none';frame.style.display='block'}catch(e){err.textContent='Gagal restore data.\n\n'+(e&&e.stack||e)}finally{applying=false}}window.eakhaParentLoadMonth=m=>load(Number(m));fetch(BASE_URL,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Gagal fetch aplikasi asas: '+r.status);return r.text()}).then(html=>{if(!/^\s*<!DOCTYPE html>/i.test(html))throw Error('Fail aplikasi tidak lengkap');frame.onload=function(){ready=true;let d=frame.contentDocument;try{d.addEventListener('click',ev=>{let el=ev.target&&ev.target.closest&&ev.target.closest('[data-bulan]');if(!el)return;let m=Number(el.getAttribute('data-bulan'));if(m===4||m===5)setTimeout(()=>load(m),550)},true)}catch(e){}setTimeout(()=>load(activeMonth),350)};frame.srcdoc=html}).catch(e=>{err.textContent='Gagal load sistem.\n\n'+(e&&e.stack||e)})})();</script><script src="v51055-offday-ui-cleanup.js?v=51055"></script></body></html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>e-AKHA Vsavage v5.10.59 STABLE OPEN</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1628;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    #app{display:none;border:0;width:100%;height:100%;background:#0a1628}
+    #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;background:#0a1628;z-index:20}
+    .box{max-width:560px;padding:28px;border:1px solid rgba(200,150,10,.35);border-radius:14px;background:#0f1f3d;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+    h1{font-size:18px;color:#f0b429;margin:0 0 8px}p{font-size:12px;color:rgba(255,255,255,.72);line-height:1.55}
+    #status{font-size:11px;color:#93c5fd;margin-top:10px;white-space:pre-line}
+    #error{font-size:11px;color:#fca5a5;margin-top:10px;white-space:pre-wrap;text-align:left}
+    #badge{display:none;position:fixed;right:12px;bottom:12px;z-index:99999;background:#064e3b;color:#6ee7b7;border:1px solid rgba(110,231,183,.35);border-radius:8px;padding:8px 11px;font-size:10px;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+    #openBtn{display:none;margin:14px auto 0;padding:8px 16px;border:1px solid rgba(240,180,41,.6);border-radius:7px;background:rgba(200,150,10,.2);color:#f0b429;font-weight:700;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="box">
+      <h1>e-AKHA Vsavage</h1>
+      <p>Memuatkan sistem stabil dan data bulan yang dipilih…</p>
+      <div id="status">Membuka aplikasi…</div>
+      <div id="error"></div>
+      <button id="openBtn" type="button">Buka sistem</button>
+    </div>
+  </div>
+  <iframe id="app" title="e-AKHA Vsavage"></iframe>
+  <div id="badge"></div>
+
+  <script>
+  (()=>{
+    'use strict';
+    const MONTH=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
+    const DB_NAME='eakha_vsavage_safe_store';
+    const STORE='snapshots';
+    const frame=document.getElementById('app');
+    const loading=document.getElementById('loading');
+    const status=document.getElementById('status');
+    const error=document.getElementById('error');
+    const badge=document.getElementById('badge');
+    const openBtn=document.getElementById('openBtn');
+    let frameReady=false;
+    let snapshotApplied=false;
+
+    const clone=v=>JSON.parse(JSON.stringify(v??null));
+    const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
+
+    function reveal(){
+      loading.style.display='none';
+      frame.style.display='block';
+    }
+
+    function showBadge(text){
+      badge.textContent=text;
+      badge.style.display='block';
+      setTimeout(()=>badge.style.display='none',5000);
+    }
+
+    function openDB(){
+      return new Promise((resolve,reject)=>{
+        const req=indexedDB.open(DB_NAME);
+        req.onerror=()=>reject(req.error);
+        req.onsuccess=()=>resolve(req.result);
+      });
+    }
+
+    function getAll(db){
+      return new Promise((resolve,reject)=>{
+        if(!db.objectStoreNames.contains(STORE)){
+          resolve([]);
+          return;
+        }
+        const req=db.transaction(STORE,'readonly').objectStore(STORE).getAll();
+        req.onsuccess=()=>resolve(req.result||[]);
+        req.onerror=()=>reject(req.error);
+      });
+    }
+
+    function monthOf(s){
+      const n=Number(s?.bulan??s?.month??s?.activeMonth);
+      if(n>=1&&n<=12)return n;
+      const m=[s?.id,s?.reason,s?.sourceSnapshot].join(' ').match(/2026[_\/-](0?[1-9]|1[0-2])/);
+      return m?Number(m[1]):null;
+    }
+
+    function valid(s,m){
+      return !!(s&&monthOf(s)===m&&Array.isArray(s.MASTER)&&s.MASTER.length>=52&&s.D&&Object.keys(s.D).length>=50&&!/BROKEN|DRAFT|LOCK_POINTER/i.test(`${s.id||''} ${s.reason||''}`));
+    }
+
+    function stamp(s){
+      const m=String(s?.id||'').match(/(17\d{11,})$/);
+      return m?Number(m[1]):Date.parse(s?.savedAt||'')||0;
+    }
+
+    function score(s,m){
+      const text=String(`${s.id||''} ${s.reason||''}`).toUpperCase();
+      let score=0;
+      if(s.MASTER?.length===53)score+=50000;
+      if(m===4&&/GLOBAL_RULES_LOCKED|OFFDAY_RULE_LOCKED|FINAL_AUDIT_LOCKED|FINAL_CLEAN_LOCKED/.test(text))score+=100000;
+      if(m===5&&/AFTER_FIX_KZ_LEAVE_NO_HRMIS|LOCK_ALIAS_ROHISHAM|FIX_FALSE_MC_ADA_THUMB/.test(text))score+=100000;
+      return score+stamp(s)/1e12;
+    }
+
+    async function chooseSnapshot(month){
+      const mm=String(month).padStart(2,'0');
+      const pointers=[];
+      try{
+        pointers.push(localStorage.getItem(`eakha_locked_snapshot_2026_${mm}`));
+        pointers.push(localStorage.getItem(`eakha_active_snapshot_2026_${mm}`));
+      }catch(e){}
+      const db=await openDB();
+      const rows=await getAll(db);
+      db.close();
+      for(const id of pointers){
+        if(!id)continue;
+        const hit=rows.find(x=>x.id===id&&valid(x,month));
+        if(hit)return hit;
+      }
+      return rows.filter(x=>valid(x,month)).sort((a,b)=>score(b,month)-score(a,month))[0]||null;
+    }
+
+    function getBinding(W,name){
+      try{return W.eval(`typeof ${name}!=='undefined'?${name}:undefined`)}catch(e){return W[name]}
+    }
+
+    function setBinding(W,name,value){
+      const current=getBinding(W,name);
+      const incoming=clone(value);
+      if(Array.isArray(current)&&Array.isArray(incoming)){
+        current.splice(0,current.length,...incoming);
+        try{W[name]=current}catch(e){}
+        return;
+      }
+      if(isObj(current)&&isObj(incoming)){
+        Object.keys(current).forEach(k=>delete current[k]);
+        Object.assign(current,incoming);
+        try{W[name]=current}catch(e){}
+        return;
+      }
+      W.__EAKHA_STABLE_TMP__=incoming;
+      try{W.eval(`${name}=window.__EAKHA_STABLE_TMP__`)}catch(e){try{W[name]=incoming}catch(_){} }
+      delete W.__EAKHA_STABLE_TMP__;
+    }
+
+    function call(W,name,...args){
+      try{
+        const fn=W.eval(`typeof ${name}==='function'?${name}:null`)||W[name];
+        if(typeof fn==='function')return fn(...args);
+      }catch(e){}
+    }
+
+    function removeOldButtons(W){
+      const labels=['UPLOAD EXCEL GABUNGAN KZ','KEMASKINI KZP + KZK KE MASTER','KEMAS KINI KZP + KZK KE MASTER','FORCE 1 IRWAN 51034'];
+      W.document?.querySelectorAll('button,a,[role="button"]').forEach(el=>{
+        const t=String(el.textContent||'').toUpperCase().replace(/\s+/g,' ').trim();
+        if(labels.some(x=>t===x||t.includes(x)))el.remove();
+      });
+    }
+
+    function applySnapshot(W,snapshot,month){
+      const fields=['MASTER','D','KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','MC_DATA','MC_REF','HRMIS_PRELOAD','HRMIS_DATA','HRMIS_REF','CUTI_HRMIS_PRELOAD','CUTI_HRMIS_REF'];
+      fields.forEach(name=>setBinding(W,name,snapshot[name]??(name==='D'?{}:[])));
+      setBinding(W,'ACTIVE_YEAR',2026);
+      setBinding(W,'ACTIVE_MONTH',month);
+      try{
+        W.localStorage.setItem('eakha_active_month',String(month));
+        W.localStorage.setItem('eakha_last_good_snapshot',snapshot.id);
+      }catch(e){}
+      ['renderMaster','renderDash','renderOutput','renderMCReg','renderHRMISReg','renderKZPStaging','renderKZKStaging','renderTCStaging','updFlags'].forEach(name=>call(W,name,name==='renderOutput'?'':null));
+      removeOldButtons(W);
+    }
+
+    async function restoreMonth(){
+      if(!frameReady)return;
+      status.textContent=`Membaca snapshot ${MONTH===4?'April':'Mei'}…`;
+      const snapshot=await chooseSnapshot(MONTH);
+      if(!snapshot){
+        status.textContent='Sistem dibuka. Snapshot bulan tidak ditemui.';
+        reveal();
+        return;
+      }
+      const W=frame.contentWindow;
+      applySnapshot(W,snapshot,MONTH);
+      [800,2000,4500].forEach(ms=>setTimeout(()=>applySnapshot(W,snapshot,MONTH),ms));
+      snapshotApplied=true;
+      reveal();
+      showBadge(`${MONTH===4?'APRIL':'MEI'} LOADED · ${snapshot.MASTER.length} ANGGOTA · ${Object.keys(snapshot.D||{}).length} OWNER`);
+      window.EAKHA_STABLE_OPEN_REPORT={month:MONTH,snapshot:snapshot.id,master:snapshot.MASTER.length,owners:Object.keys(snapshot.D||{}).length};
+      console.log('[e-AKHA stable open]',window.EAKHA_STABLE_OPEN_REPORT);
+    }
+
+    frame.addEventListener('load',()=>{
+      frameReady=true;
+      status.textContent='Aplikasi dibuka. Memulihkan data bulan…';
+      reveal();
+      setTimeout(()=>restoreMonth().catch(e=>{
+        console.error(e);
+        error.textContent='Data bulan tidak dapat dipulihkan secara automatik, tetapi sistem masih boleh digunakan.\n'+(e?.message||e);
+        openBtn.style.display='block';
+        reveal();
+      }),400);
+
+      try{
+        const W=frame.contentWindow;
+        if(!W.__EAKHA_STABLE_BUTTON_OBSERVER__){
+          W.__EAKHA_STABLE_BUTTON_OBSERVER__=new W.MutationObserver(()=>removeOldButtons(W));
+          W.__EAKHA_STABLE_BUTTON_OBSERVER__.observe(W.document.documentElement,{childList:true,subtree:true});
+        }
+      }catch(e){}
+    });
+
+    openBtn.addEventListener('click',reveal);
+
+    setTimeout(()=>{
+      if(!frameReady){
+        error.textContent='Aplikasi mengambil masa lebih lama. Tekan “Buka sistem” untuk teruskan.';
+        openBtn.style.display='block';
+      }
+    },12000);
+
+    frame.src=`base-v51017.html?v=51059-${Date.now()}`;
+  })();
+  </script>
+</body>
+</html>
