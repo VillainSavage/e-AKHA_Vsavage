@@ -3,7 +3,7 @@
 if(window.__EAKHA_51060_MASTER53__)return;
 window.__EAKHA_51060_MASTER53__=true;
 const DB='eakha_vsavage_safe_store',STORE='snapshots';
-const W=()=>document.querySelector('iframe#app,iframe')?.contentWindow||window;
+const W=()=>{let w=window;for(let i=0;i<5;i++){let f=null;try{f=w.document?.querySelector('iframe#system,iframe#app,iframe')}catch(e){}if(!f?.contentWindow||f.contentWindow===w)break;try{if(!f.contentDocument?.documentElement)break}catch(e){break}w=f.contentWindow}return w};
 const U=v=>String(v??'').toUpperCase().replace(/\s+/g,' ').trim();
 const C=v=>JSON.parse(JSON.stringify(v??null));
 const isLatifa=v=>/LATIF(?:A|AH|AH?)\s+RO(?:B|D)ANIA/i.test(String(v||''));
@@ -23,5 +23,5 @@ if(master.length>53){for(let i=master.length-1;i>=0&&master.length>53;i--)if(!is
 if(!D['53']||!Object.keys(D['53']).length){const rows=await snapshots();D['53']=latifaData(rows,month);changed=true}
 w.MASTER=master;w.D=D;labels(w);removeOld(w);for(const f of ['renderMaster','renderDash','updFlags'])try{if(typeof w[f]==='function')w[f](null)}catch(e){}labels(w);removeOld(w);window.EAKHA_51060_REPORT={month,master:master.length,latifa:master.filter(x=>isLatifa(x.nama)).length,owner53:!!D['53'],changed};console.log('[e-AKHA 51060]',window.EAKHA_51060_REPORT);return true}
 let tries=0;const timer=setInterval(()=>{tries++;fix().then(ok=>{if(ok)clearInterval(timer)}).catch(console.error);if(tries>120)clearInterval(timer)},500);
-const root=document.querySelector('iframe#app,iframe');root?.addEventListener('load',()=>setTimeout(fix,1000));
+document.querySelectorAll('iframe').forEach(f=>f.addEventListener('load',()=>setTimeout(fix,1000)));
 })();
