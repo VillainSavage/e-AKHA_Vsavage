@@ -1,0 +1,57 @@
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains('config'))db.createObjectStore('config',{keyPath:'key'});
+      if(!db.objectStoreNames.contains('months'))db.createObjectStore('months',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('backups'))db.createObjectStore('backups',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('auditLog'))db.createObjectStore('auditLog',{keyPath:'id',autoIncrement:true});
+    };
+    req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>resolve(req.result);
+  });
+}
+function idbGet(store,key){
+  return new Promise((resolve,reject)=>{
+    const r=state.cleanDb.transaction(store,'readonly').objectStore(store).get(key);
+    r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);
+  });
+}
+function idbPut(store,value){
+  return new Promise((resolve,reject)=>{
+    const tx=state.cleanDb.transaction(store,'readwrite');tx.objectStore(store).put(value);
+    tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error);
+  });
+}
+function idbAll(store){
+  return new Promise((resolve,reject)=>{
+    const r=state.cleanDb.transaction(store,'readonly').objectStore(store).getAll();
+    r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>reject(r.error);
+  });
+}
+function openLegacyDb(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(LEGACY_DB);
+    req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>resolve(req.result);
+  });
+}
+async function readLegacySnapshots(){
+  const db=await openLegacyDb();
+  if(!db.objectStoreNames.contains(LEGACY_STORE)){db.close();return []}
+  const rows=await new Promise((resolve,reject)=>{
+    const r=db.transaction(LEGACY_STORE,'readonly').objectStore(LEGACY_STORE).getAll();
+    r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>reject(r.error);
+  });
+  db.close();return rows;
+}
+
+function monthOfSnapshot(s){
+  const n=Number(s?.bulan??s?.month??s?.activeMonth);
+  if(n>=1&&n<=12)return n;
+  const m=[s?.id,s?.reason,s?.sourceSnapshot].join(' ').match(/2026[_\/-](0?[1-9]|1[0-2])/);
+  return m?Number(m[1]):null;
+}
+function snapshotStamp(s){
+  const m=String(s?.id||'').match(/(17\d{11,})$/);
+  return m?Number(m[1]):Date.parse(s?.savedAt||'')||0;
+}
+function validSnapshot(s,month){
