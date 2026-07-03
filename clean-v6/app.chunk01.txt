@@ -1,0 +1,53 @@
+(()=>{
+'use strict';
+
+const VERSION='6.0.0';
+const CLEAN_DB='eakha_clean_v6';
+const CLEAN_DB_VERSION=1;
+const LEGACY_DB='eakha_vsavage_safe_store';
+const LEGACY_STORE='snapshots';
+const OWNER_ID='sjnadilah';
+const OWNER_HASH='f29fb997eb9bba46715ca72a9d4f678756ac434ffb7d38fa9da248a2e2274548';
+const SESSION_KEY='eakha_v6_owner_session';
+const SESSION_MS=12*60*60*1000;
+const CYCLE=['PT','PT','PG','PG','M','M','OFF','OFF'];
+const COMPANY_OFFSET={ALPHA:0,BRAVO:4,CHARLIE:2,DELTA:6};
+const LAYERS=[
+  ['shift','SHIFT JADUAL'],['kzp','KZ PENYELIA'],['kzk','KZ KOPERAL'],
+  ['timecard','TIMECARD'],['mc','MC DITERIMA'],['hrmis','CUTI HRMIS'],['audit','AUDIT FINAL']
+];
+const KZ_OPTIONS=['TM','HADIR','MC','CR','EL','CTR','CB','PELEPASAN','TH','TT','L','LL','KP','OFF'];
+const HRMIS_TYPES=['CR','EL','CTR','CB','PELEPASAN'];
+
+const state={
+  cleanDb:null,user:null,month:4,page:'dashboard',dept:'ALL',search:'',
+  master:[],months:{4:null,5:null},config:null,editor:null
+};
+
+const $=id=>document.getElementById(id);
+const clone=v=>JSON.parse(JSON.stringify(v??null));
+const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
+const pad=n=>String(n).padStart(2,'0');
+const upper=v=>String(v??'').toUpperCase().replace(/\s+/g,' ').trim();
+const html=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nonEmpty=v=>Array.isArray(v)?v.length>0:isObj(v)?Object.keys(v).length>0:String(v??'').trim()!=='';
+
+function toast(message,error=false){
+  const el=$('toast');el.textContent=message;el.className='toast show'+(error?' error':'');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>el.className='toast',3000);
+}
+
+async function sha256(text){
+  const data=new TextEncoder().encode(String(text));
+  const digest=await crypto.subtle.digest('SHA-256',data);
+  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function normalizeLogin(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function sessionValid(){
+  try{const s=JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null');return s?.id===OWNER_ID&&s.expires>Date.now()}catch(e){return false}
+}
+function saveSession(){sessionStorage.setItem(SESSION_KEY,JSON.stringify({id:OWNER_ID,expires:Date.now()+SESSION_MS}))}
+
+function openCleanDb(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(CLEAN_DB,CLEAN_DB_VERSION);
