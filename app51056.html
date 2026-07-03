@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>e-AKHA Vsavage v5.10.56 GLOBAL RULES</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1628}
+    iframe{border:0;width:100%;height:100%;display:block}
+  </style>
+</head>
+<body>
+  <iframe id="system" title="e-AKHA Vsavage"></iframe>
+  <script>
+    const p=new URL(location.href).searchParams;
+    const month=Number(p.get('month'))===5?5:4;
+    document.getElementById('system').src=`app51054.html?month=${month}&v=51056-inner-${Date.now()}`;
+  </script>
+  <script src="v51056-global-rule-engine.js?v=51056"></script>
+</body>
+</html>
