@@ -1,0 +1,12 @@
+(()=>{
+'use strict';
+if(window.__C53_BOOT__)return;window.__C53_BOOT__=true;
+const X=window.C53,D=window.C53DATA;if(!X||!D)throw Error('Clean53 modules missing');
+let active=Number(new URL(location.href).searchParams.get('month'))===5?5:4,busy=false,ready=false,started=Date.now();
+const badge=document.createElement('div');badge.style.cssText='display:none;position:fixed;right:14px;bottom:14px;z-index:999999;background:#064e3b;color:#6ee7b7;border:1px solid rgba(110,231,183,.35);border-radius:8px;padding:9px 12px;font:700 11px Segoe UI,Arial;box-shadow:0 8px 30px rgba(0,0,0,.35)';document.body.appendChild(badge);
+function show(t,err=false){badge.textContent=t;badge.style.background=err?'#7f1d1d':'#064e3b';badge.style.color=err?'#fecaca':'#6ee7b7';badge.style.display='block';setTimeout(()=>badge.style.display='none',7000)}
+function loadRules(){if(window.__C53_RULE_SCRIPT__)return;window.__C53_RULE_SCRIPT__=true;const s=document.createElement('script');s.src=`../v51056-global-rule-engine.js?v=clean53-${Date.now()}`;document.head.appendChild(s)}
+async function run(m){if(busy)return;busy=true;try{if(!X.rows)await X.read();const report=await D.restore(m);if(!report)return;active=m;ready=true;show(`${m===4?'APRIL':'MEI'} DIPULIHKAN · 53 ANGGOTA · LATIFA ADA · 7 LAPISAN`);setTimeout(loadRules,500);setTimeout(()=>D.restore(m).catch(console.error),5200)}catch(e){console.error(e);show(`RESTORE GAGAL: ${e.message||e}`,true)}finally{busy=false}}
+function installClick(){const w=X.deep();if(!w.document||w.__C53_CLICK__)return;w.__C53_CLICK__=true;w.document.addEventListener('click',ev=>{const el=ev.target?.closest?.('[data-bulan],button,a');if(!el)return;const t=X.U(el.textContent),dm=Number(el.getAttribute?.('data-bulan'));let m=0;if(dm===4||/\bAPRIL\s+2026\b/.test(t))m=4;if(dm===5||/\bMEI\s+2026\b/.test(t))m=5;if(m){active=m;[700,2600].forEach(ms=>setTimeout(()=>run(m),ms))}},true);new w.MutationObserver(()=>D.cleanUI(w,53)).observe(w.document.documentElement,{childList:true,subtree:true})}
+let tries=0;const timer=setInterval(()=>{tries++;const w=X.deep(),M=X.get(w,'MASTER'),DD=X.get(w,'D'),render=X.get(w,'renderMaster');if(Date.now()-started>4800&&Array.isArray(M)&&DD&&typeof render==='function'){installClick();run(active);clearInterval(timer)}if(tries>180){clearInterval(timer);show('Aplikasi asas tidak siap untuk restore.',true)}},300);
+})();
