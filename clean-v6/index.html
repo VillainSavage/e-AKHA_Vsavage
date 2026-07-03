@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>e-AKHA Vsavage v6 Clean</title>
+</head>
+<body>
+  <div id="loginWall" class="login-wall">
+    <form id="loginForm" class="login-card" autocomplete="on">
+      <div class="brand">e-AKHA Vsavage</div>
+      <div class="subtitle">Versi Bersih · 53 Anggota · April & Mei 2026</div>
+      <label>ID pengguna
+        <input id="loginId" name="username" autocomplete="username" placeholder="sjnadilah" required>
+      </label>
+      <label>Kata laluan
+        <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="btn btn-gold btn-block" type="submit">Log Masuk</button>
+      <div id="loginError" class="form-error" aria-live="polite"></div>
+      <div class="version">v6.0 CLEAN DATABASE</div>
+    </form>
+  </div>
+
+  <div id="migrationOverlay" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="spinner"></div>
+      <h2>Membina Sistem Bersih</h2>
+      <p id="migrationStatus">Membaca snapshot April dan Mei…</p>
+      <pre id="migrationDetail"></pre>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="logo-wrap">
+        <div class="logo">e-AKHA Vsavage</div>
+        <div class="logo-sub">CLEAN v6 · HKL</div>
+      </div>
+
+      <div class="section-label">BULAN AUDIT 2026</div>
+      <button class="nav-item month-btn active" data-month="4">April 2026</button>
+      <button class="nav-item month-btn" data-month="5">Mei 2026</button>
+
+      <div class="section-label">UTAMA</div>
+      <button class="nav-item page-btn active" data-page="dashboard">Dashboard</button>
+      <button class="nav-item page-btn" data-page="master">Master File <span id="sideCount" class="badge">53</span></button>
+      <button class="nav-item page-btn" data-page="roster">Senarai Anggota</button>
+      <button class="nav-item page-btn" data-page="backup">Backup DB</button>
+
+      <div class="sidebar-foot">
+        <div id="dbState" class="db-state">DB: Memuatkan…</div>
+        <button id="logoutBtn" class="btn btn-small">Log Keluar</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div id="pageTitle" class="top-title">Dashboard</div>
+          <div id="pageSub" class="top-sub">April 2026 · 53 anggota</div>
+        </div>
+        <div class="top-actions">
+          <span class="pill pill-green">● DB Bersih</span>
+          <span class="pill">🔒 SJN Adilah · OWNER</span>
+          <button id="exportQuickBtn" class="btn btn-small">Export JSON</button>
+        </div>
+      </header>
+
+      <section id="page-dashboard" class="page active">
+        <div class="stats-grid">
+          <div class="stat"><span>Anggota</span><strong id="statMembers">53</strong></div>
+          <div class="stat"><span>Sel Audit</span><strong id="statCells">0</strong></div>
+          <div class="stat"><span>SAH</span><strong id="statSah">0</strong></div>
+          <div class="stat"><span>Perhatian</span><strong id="statAttention">0</strong></div>
+          <div class="stat"><span>MC Sah</span><strong id="statMc">0</strong></div>
+          <div class="stat"><span>HRMIS Sah</span><strong id="statHrmis">0</strong></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Semakan Integriti</h2></div>
+          <div id="integrityPanel" class="panel-body"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Kes Perhatian</h2></div>
+          <div id="attentionList" class="panel-body"></div>
+        </div>
+      </section>
+
+      <section id="page-master" class="page">
+        <div class="toolbar">
+          <div class="filters">
+            <button class="filter-btn active" data-dept="ALL">Semua 53</button>
+            <button class="filter-btn" data-dept="IKTAR">IKTAR</button>
+            <button class="filter-btn" data-dept="MHKL">MHKL</button>
+            <button class="filter-btn" data-dept="RT">RT</button>
+          </div>
+          <input id="searchInput" class="search" placeholder="Cari nama…">
+          <div class="toolbar-note">Klik sel untuk edit · Audit dikira automatik</div>
+        </div>
+        <div id="masterGrid" class="grid-wrap"></div>
+      </section>
+
+      <section id="page-roster" class="page">
+        <div class="panel">
+          <div class="panel-head"><h2>Senarai 53 Anggota</h2><span id="latifaState" class="pill pill-green">Latifa: OK</span></div>
+          <div class="panel-body table-wrap">
+            <table class="table">
+              <thead><tr><th>Bil</th><th>Nama</th><th>Jabatan</th><th>Kompeni</th><th>Alias</th></tr></thead>
+              <tbody id="rosterBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="page-backup" class="page">
+        <div class="panel">
+          <div class="panel-head"><h2>Backup & Pemulihan</h2></div>
+          <div class="panel-body backup-grid">
+            <button id="exportBtn" class="btn btn-gold">Export DB Bersih JSON</button>
+            <label class="btn file-btn">Import DB Bersih JSON<input id="importInput" type="file" accept="application/json"></label>
+            <button id="remigrateBtn" class="btn btn-danger">Bina Semula Dari Snapshot Lama</button>
+          </div>
+          <div class="warning-box">DB bersih tidak membaca semula patch lama selepas migrasi. Butang “Bina Semula” hanya digunakan jika benar-benar perlu.</div>
+          <pre id="backupInfo" class="info-pre"></pre>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="editorModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div><strong id="editorTitle">Edit</strong><div id="editorSub" class="modal-sub"></div></div>
+        <button id="editorClose" class="icon-btn" aria-label="Tutup">×</button>
+      </div>
+      <form id="editorForm" class="modal-body"></form>
+      <div class="modal-foot">
+        <button id="editorCancel" class="btn" type="button">Batal</button>
+        <button id="editorSave" class="btn btn-gold" type="button">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script>
+  (async()=>{
+    async function inflate(url){
+      const r=await fetch(url+'?v=600-'+Date.now(),{cache:'no-store'});
+      if(!r.ok)throw new Error(url+' gagal: '+r.status);
+      const b64=(await r.text()).replace(/\s+/g,'');
+      const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+      const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      return new Response(stream).text();
+    }
+    try{
+      const [css,js]=await Promise.all([inflate('style.css.gz.b64'),inflate('app.js.gz.b64')]);
+      const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
+      const script=document.createElement('script');script.textContent=js;document.body.appendChild(script);
+    }catch(error){
+      document.body.innerHTML='<div style="padding:30px;background:#071426;color:#ffaaa8;font-family:Arial">Gagal memuatkan e-AKHA Clean v6.<br><br>'+String(error)+'</div>';
+      console.error(error);
+    }
+  })();
+  </script>
+</body>
+</html>
