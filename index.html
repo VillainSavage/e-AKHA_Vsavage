@@ -1,15 +1,11 @@
 <!DOCTYPE html>
 <html lang="ms">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage CLEAN 53</title>
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>e-AKHA Vsavage CLEAN 53</title></head>
 <body>
 <script>
-  const query=new URLSearchParams(location.search);
-  const month=Number(query.get('month'))===5?5:4;
-  location.replace(`clean-v6/?month=${month}&v=51062-full7`);
+const q=new URLSearchParams(location.search);
+const m=Number(q.get('month'))===5?5:4;
+location.replace('clean-direct.html?month='+m+'&v=51063');
 </script>
 </body>
 </html>
