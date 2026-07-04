@@ -1,0 +1,12 @@
+(()=>{
+'use strict';
+if(window.__APRIL_APPLY_51063__)return;window.__APRIL_APPLY_51063__=true;
+const C=v=>JSON.parse(JSON.stringify(v??null)),O=v=>v&&typeof v==='object'&&!Array.isArray(v);
+function deep(){let w=window;for(let i=0;i<6;i++){let f=null;try{f=w.document?.querySelector('iframe#system,iframe#app,iframe')}catch(e){}if(!f?.contentWindow||f.contentWindow===w)break;try{if(!f.contentDocument?.documentElement)break}catch(e){break}w=f.contentWindow}return w}
+function get(w,n){try{return w.eval(`typeof ${n}!=='undefined'?${n}:undefined`)}catch(e){return w[n]}}
+function set(w,n,v){const cur=get(w,n),inc=C(v);if(Array.isArray(cur)&&Array.isArray(inc)){cur.splice(0,cur.length,...inc);return}if(O(cur)&&O(inc)){Object.keys(cur).forEach(k=>delete cur[k]);Object.assign(cur,inc);return}w.__APRIL_TMP__=inc;try{w.eval(`${n}=window.__APRIL_TMP__`)}catch(e){try{w[n]=inc}catch(_){}}delete w.__APRIL_TMP__}
+function call(w,n,...a){try{const f=w.eval(`typeof ${n}==='function'?${n}:null`)||w[n];if(typeof f==='function')return f(...a)}catch(e){}}
+function ui(w){const tw=w.document.createTreeWalker(w.document.body,w.NodeFilter.SHOW_TEXT),nodes=[];while(tw.nextNode())nodes.push(tw.currentNode);for(const n of nodes)n.nodeValue=(n.nodeValue||'').replace(/Master File\s*\(52\s*Anggota\)/gi,'Master File (53 Anggota)').replace(/Master File\s*\(52\)/gi,'Master File (53)').replace(/Semua\s+52\b/gi,'Semua 53').replace(/\b52\s+anggota\b/gi,'53 anggota')}
+function apply(){const s=window.__EAKHA_APRIL_AUTHORITATIVE_SNAPSHOT__,w=deep();if(!s||!w||!Array.isArray(get(w,'MASTER'))||!get(w,'D'))return false;set(w,'MASTER',s.MASTER);set(w,'D',s.D);for(const f of ['MC_DATA','HRMIS_DATA','CTR_DATA','KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','HRMIS_PRELOAD','CUTI_HRMIS_PRELOAD'])if(s[f]!==undefined)set(w,f,s[f]);set(w,'ACTIVE_YEAR',2026);set(w,'ACTIVE_MONTH',4);for(const n of ['renderMaster','renderDash','renderOutput','renderMCReg','renderHRMISReg','renderKZPStaging','renderKZKStaging','renderTCStaging','updFlags'])call(w,n,n==='renderOutput'?'':null);ui(w);window.EAKHA_APRIL_REINSTALL_DISPLAY={ok:true,master:s.MASTER.length,owners:Object.keys(s.D||{}).length,latifa:s.MASTER.filter(m=>/LATIFA ROBANIA/i.test(m.nama||'')).length};console.log('[April display 51063]',window.EAKHA_APRIL_REINSTALL_DISPLAY);return true}
+let tries=0;const t=setInterval(()=>{tries++;if(apply()){[900,2300,4800,8000].forEach(ms=>setTimeout(apply,ms));clearInterval(t)}if(tries>80)clearInterval(t)},400);
+})();
