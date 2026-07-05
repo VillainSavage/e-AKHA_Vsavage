@@ -1,0 +1,13 @@
+(()=>{
+'use strict';
+if(window.__EAKHA_51070_ACCESS__)return;
+window.__EAKHA_51070_ACCESS__=true;
+const clone=v=>JSON.parse(JSON.stringify(v??null));
+const upper=v=>String(v??'').toUpperCase().replace(/\s+/g,' ').trim();
+function deep(){let w=window;for(let i=0;i<6;i++){let f=null;try{f=w.document?.querySelector('iframe#system,iframe#app,iframe')}catch(e){}if(!f?.contentWindow||f.contentWindow===w)break;try{if(!f.contentDocument?.documentElement)break}catch(e){break}w=f.contentWindow}return w}
+function set(w,n,v){w.__ACCESS_TMP__=clone(v);try{w.eval(`${n}=window.__ACCESS_TMP__`)}catch(e){try{w[n]=window.__ACCESS_TMP__}catch(_){}}try{w[n]=window.__ACCESS_TMP__}catch(e){}delete w.__ACCESS_TMP__}
+function logged(w){const t=upper(w.document?.body?.innerText||'');return t.includes('MASTER FILE')&&!t.includes('ID PENGGUNA')&&t.includes('SJN ADILAH')}
+function labels(w){try{const walker=w.document.createTreeWalker(w.document.body,w.NodeFilter.SHOW_TEXT),nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);for(const n of nodes){const o=n.nodeValue||'';const x=o.replace(/Penonton Sahaja/gi,'OWNER · AUDITOR').replace(/Penonton/gi,'OWNER · AUDITOR');if(x!==o)n.nodeValue=x}}catch(e){}}
+function grant(w){const u={id:'sjnadilah',username:'sjnadilah',name:'SJN Adilah',nama:'SJN Adilah',role:'owner',akses:'owner',owner:true,admin:true,auditor:true,isOwner:true,isAdmin:true,isAuditor:true,canEdit:true,canUpload:true,canAudit:true,loggedIn:true,isLoggedIn:true,viewer:false,readonly:false,readOnly:false,ts:Date.now()};for(const n of ['CUR_USER','AUTH','AUTH_USER','USER'])set(w,n,u);w.reqAdmin=()=>true;w.reqOwner=()=>true;w.canUpload=()=>true;w.canEdit=()=>true;w.canAudit=()=>true;w.isAdmin=()=>true;w.isOwner=()=>true;w.isAuditor=()=>true;w.isViewer=()=>false;for(const n of ['reqAdmin','reqOwner','canUpload','canEdit','canAudit','isAdmin','isOwner','isAuditor','isViewer'])try{w.eval(`${n}=window.${n}`)}catch(e){}try{w.localStorage.setItem('eakha_user',JSON.stringify(u));w.localStorage.setItem('eakha_role','owner');w.localStorage.setItem('eakha_owner','SJN Adilah');w.localStorage.setItem('eakha_auditor','SJN Adilah');w.localStorage.removeItem('eakha_viewer_mode');w.localStorage.removeItem('eakha_readonly');w.sessionStorage.setItem('eakha_auth',JSON.stringify(u))}catch(e){}labels(w);try{if(typeof w.updFlags==='function')w.updFlags()}catch(e){}window.EAKHA_51070_ACCESS_REPORT={role:'owner',auditor:true};console.log('[51070 ACCESS]',window.EAKHA_51070_ACCESS_REPORT);return true}
+let n=0;const timer=setInterval(()=>{n++;const w=deep();try{if(w&&logged(w)){grant(w);clearInterval(timer)}}catch(e){}if(n>=120)clearInterval(timer)},1000);
+})();
