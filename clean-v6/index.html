@@ -13,15 +13,7 @@
   <iframe id="system" title="e-AKHA Vsavage CLEAN 53"></iframe>
   <script>
     const month=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
-    document.getElementById('system').src=`../app51054.html?month=${month}&v=51063-${Date.now()}`;
-    function load(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
-    if(month===4){
-      load('../v51063-april-db.js?v=51063').then(()=>load('../v51063-april-apply.js?v=51063'));
-    }else{
-      load('../v51062-clean53-core.js?v=51062')
-        .then(()=>load('../v51062-clean53-data.js?v=51062'))
-        .then(()=>load('../v51062-clean53-boot.js?v=51062'));
-    }
+    document.getElementById('system').src=`../app51054.html?month=${month}&v=clean53-single-${Date.now()}`;
   </script>
 </body>
 </html>
