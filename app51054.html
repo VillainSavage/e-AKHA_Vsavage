@@ -3,225 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage v5.10.59 STABLE OPEN</title>
+  <title>e-AKHA Vsavage CLEAN 53</title>
   <style>
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0a1628;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-    #app{display:none;border:0;width:100%;height:100%;background:#0a1628}
-    #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;background:#0a1628;z-index:20}
-    .box{max-width:560px;padding:28px;border:1px solid rgba(200,150,10,.35);border-radius:14px;background:#0f1f3d;box-shadow:0 20px 60px rgba(0,0,0,.35)}
-    h1{font-size:18px;color:#f0b429;margin:0 0 8px}p{font-size:12px;color:rgba(255,255,255,.72);line-height:1.55}
-    #status{font-size:11px;color:#93c5fd;margin-top:10px;white-space:pre-line}
-    #error{font-size:11px;color:#fca5a5;margin-top:10px;white-space:pre-wrap;text-align:left}
-    #badge{display:none;position:fixed;right:12px;bottom:12px;z-index:99999;background:#064e3b;color:#6ee7b7;border:1px solid rgba(110,231,183,.35);border-radius:8px;padding:8px 11px;font-size:10px;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,.35)}
-    #openBtn{display:none;margin:14px auto 0;padding:8px 16px;border:1px solid rgba(240,180,41,.6);border-radius:7px;background:rgba(200,150,10,.2);color:#f0b429;font-weight:700;cursor:pointer}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    #app{display:none;border:0;width:100%;height:100%;background:#071426}
+    #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#071426;z-index:20}
+    .box{width:min(560px,86vw);padding:26px;border:1px solid rgba(240,180,41,.35);border-radius:14px;background:#10203e;text-align:center;box-shadow:0 18px 55px rgba(0,0,0,.4)}
+    h1{margin:0 0 8px;color:#f0b429;font-size:19px}p{margin:6px 0;color:rgba(255,255,255,.72);font-size:12px;line-height:1.55}
+    #status{margin-top:12px;color:#93c5fd;font-size:11px;white-space:pre-line}#error{margin-top:10px;color:#fca5a5;font-size:11px;white-space:pre-wrap;text-align:left}
+    #badge{display:none;position:fixed;right:12px;bottom:12px;z-index:99999;padding:9px 12px;border-radius:8px;background:#064e3b;color:#6ee7b7;border:1px solid rgba(110,231,183,.4);font-size:10px;font-weight:800;box-shadow:0 8px 28px rgba(0,0,0,.4)}
   </style>
 </head>
 <body>
-  <div id="loading">
-    <div class="box">
-      <h1>e-AKHA Vsavage</h1>
-      <p>Memuatkan sistem stabil dan data bulan yang dipilih…</p>
-      <div id="status">Membuka aplikasi…</div>
-      <div id="error"></div>
-      <button id="openBtn" type="button">Buka sistem</button>
-    </div>
-  </div>
-  <iframe id="app" title="e-AKHA Vsavage"></iframe>
+  <div id="loading"><div class="box"><h1>e-AKHA Vsavage</h1><p>Memuatkan pangkalan data bersih 53 anggota…</p><div id="status">Mencari snapshot bulan…</div><div id="error"></div></div></div>
+  <iframe id="app" title="e-AKHA Vsavage CLEAN 53"></iframe>
   <div id="badge"></div>
-
-  <script>
-  (()=>{
-    'use strict';
-    const MONTH=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
-    const DB_NAME='eakha_vsavage_safe_store';
-    const STORE='snapshots';
-    const frame=document.getElementById('app');
-    const loading=document.getElementById('loading');
-    const status=document.getElementById('status');
-    const error=document.getElementById('error');
-    const badge=document.getElementById('badge');
-    const openBtn=document.getElementById('openBtn');
-    let frameReady=false;
-    let snapshotApplied=false;
-
-    const clone=v=>JSON.parse(JSON.stringify(v??null));
-    const isObj=v=>v&&typeof v==='object'&&!Array.isArray(v);
-
-    function reveal(){
-      loading.style.display='none';
-      frame.style.display='block';
-    }
-
-    function showBadge(text){
-      badge.textContent=text;
-      badge.style.display='block';
-      setTimeout(()=>badge.style.display='none',5000);
-    }
-
-    function openDB(){
-      return new Promise((resolve,reject)=>{
-        const req=indexedDB.open(DB_NAME);
-        req.onerror=()=>reject(req.error);
-        req.onsuccess=()=>resolve(req.result);
-      });
-    }
-
-    function getAll(db){
-      return new Promise((resolve,reject)=>{
-        if(!db.objectStoreNames.contains(STORE)){
-          resolve([]);
-          return;
-        }
-        const req=db.transaction(STORE,'readonly').objectStore(STORE).getAll();
-        req.onsuccess=()=>resolve(req.result||[]);
-        req.onerror=()=>reject(req.error);
-      });
-    }
-
-    function monthOf(s){
-      const n=Number(s?.bulan??s?.month??s?.activeMonth);
-      if(n>=1&&n<=12)return n;
-      const m=[s?.id,s?.reason,s?.sourceSnapshot].join(' ').match(/2026[_\/-](0?[1-9]|1[0-2])/);
-      return m?Number(m[1]):null;
-    }
-
-    function valid(s,m){
-      return !!(s&&monthOf(s)===m&&Array.isArray(s.MASTER)&&s.MASTER.length>=52&&s.D&&Object.keys(s.D).length>=50&&!/BROKEN|DRAFT|LOCK_POINTER/i.test(`${s.id||''} ${s.reason||''}`));
-    }
-
-    function stamp(s){
-      const m=String(s?.id||'').match(/(17\d{11,})$/);
-      return m?Number(m[1]):Date.parse(s?.savedAt||'')||0;
-    }
-
-    function score(s,m){
-      const text=String(`${s.id||''} ${s.reason||''}`).toUpperCase();
-      let score=0;
-      if(s.MASTER?.length===53)score+=50000;
-      if(m===4&&/GLOBAL_RULES_LOCKED|OFFDAY_RULE_LOCKED|FINAL_AUDIT_LOCKED|FINAL_CLEAN_LOCKED/.test(text))score+=100000;
-      if(m===5&&/AFTER_FIX_KZ_LEAVE_NO_HRMIS|LOCK_ALIAS_ROHISHAM|FIX_FALSE_MC_ADA_THUMB/.test(text))score+=100000;
-      return score+stamp(s)/1e12;
-    }
-
-    async function chooseSnapshot(month){
-      const mm=String(month).padStart(2,'0');
-      const pointers=[];
-      try{
-        pointers.push(localStorage.getItem(`eakha_locked_snapshot_2026_${mm}`));
-        pointers.push(localStorage.getItem(`eakha_active_snapshot_2026_${mm}`));
-      }catch(e){}
-      const db=await openDB();
-      const rows=await getAll(db);
-      db.close();
-      for(const id of pointers){
-        if(!id)continue;
-        const hit=rows.find(x=>x.id===id&&valid(x,month));
-        if(hit)return hit;
-      }
-      return rows.filter(x=>valid(x,month)).sort((a,b)=>score(b,month)-score(a,month))[0]||null;
-    }
-
-    function getBinding(W,name){
-      try{return W.eval(`typeof ${name}!=='undefined'?${name}:undefined`)}catch(e){return W[name]}
-    }
-
-    function setBinding(W,name,value){
-      const current=getBinding(W,name);
-      const incoming=clone(value);
-      if(Array.isArray(current)&&Array.isArray(incoming)){
-        current.splice(0,current.length,...incoming);
-        try{W[name]=current}catch(e){}
-        return;
-      }
-      if(isObj(current)&&isObj(incoming)){
-        Object.keys(current).forEach(k=>delete current[k]);
-        Object.assign(current,incoming);
-        try{W[name]=current}catch(e){}
-        return;
-      }
-      W.__EAKHA_STABLE_TMP__=incoming;
-      try{W.eval(`${name}=window.__EAKHA_STABLE_TMP__`)}catch(e){try{W[name]=incoming}catch(_){} }
-      delete W.__EAKHA_STABLE_TMP__;
-    }
-
-    function call(W,name,...args){
-      try{
-        const fn=W.eval(`typeof ${name}==='function'?${name}:null`)||W[name];
-        if(typeof fn==='function')return fn(...args);
-      }catch(e){}
-    }
-
-    function removeOldButtons(W){
-      const labels=['UPLOAD EXCEL GABUNGAN KZ','KEMASKINI KZP + KZK KE MASTER','KEMAS KINI KZP + KZK KE MASTER','FORCE 1 IRWAN 51034'];
-      W.document?.querySelectorAll('button,a,[role="button"]').forEach(el=>{
-        const t=String(el.textContent||'').toUpperCase().replace(/\s+/g,' ').trim();
-        if(labels.some(x=>t===x||t.includes(x)))el.remove();
-      });
-    }
-
-    function applySnapshot(W,snapshot,month){
-      const fields=['MASTER','D','KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','MC_DATA','MC_REF','HRMIS_PRELOAD','HRMIS_DATA','HRMIS_REF','CUTI_HRMIS_PRELOAD','CUTI_HRMIS_REF'];
-      fields.forEach(name=>setBinding(W,name,snapshot[name]??(name==='D'?{}:[])));
-      setBinding(W,'ACTIVE_YEAR',2026);
-      setBinding(W,'ACTIVE_MONTH',month);
-      try{
-        W.localStorage.setItem('eakha_active_month',String(month));
-        W.localStorage.setItem('eakha_last_good_snapshot',snapshot.id);
-      }catch(e){}
-      ['renderMaster','renderDash','renderOutput','renderMCReg','renderHRMISReg','renderKZPStaging','renderKZKStaging','renderTCStaging','updFlags'].forEach(name=>call(W,name,name==='renderOutput'?'':null));
-      removeOldButtons(W);
-    }
-
-    async function restoreMonth(){
-      if(!frameReady)return;
-      status.textContent=`Membaca snapshot ${MONTH===4?'April':'Mei'}…`;
-      const snapshot=await chooseSnapshot(MONTH);
-      if(!snapshot){
-        status.textContent='Sistem dibuka. Snapshot bulan tidak ditemui.';
-        reveal();
-        return;
-      }
-      const W=frame.contentWindow;
-      applySnapshot(W,snapshot,MONTH);
-      [800,2000,4500].forEach(ms=>setTimeout(()=>applySnapshot(W,snapshot,MONTH),ms));
-      snapshotApplied=true;
-      reveal();
-      showBadge(`${MONTH===4?'APRIL':'MEI'} LOADED · ${snapshot.MASTER.length} ANGGOTA · ${Object.keys(snapshot.D||{}).length} OWNER`);
-      window.EAKHA_STABLE_OPEN_REPORT={month:MONTH,snapshot:snapshot.id,master:snapshot.MASTER.length,owners:Object.keys(snapshot.D||{}).length};
-      console.log('[e-AKHA stable open]',window.EAKHA_STABLE_OPEN_REPORT);
-    }
-
-    frame.addEventListener('load',()=>{
-      frameReady=true;
-      status.textContent='Aplikasi dibuka. Memulihkan data bulan…';
-      reveal();
-      setTimeout(()=>restoreMonth().catch(e=>{
-        console.error(e);
-        error.textContent='Data bulan tidak dapat dipulihkan secara automatik, tetapi sistem masih boleh digunakan.\n'+(e?.message||e);
-        openBtn.style.display='block';
-        reveal();
-      }),400);
-
-      try{
-        const W=frame.contentWindow;
-        if(!W.__EAKHA_STABLE_BUTTON_OBSERVER__){
-          W.__EAKHA_STABLE_BUTTON_OBSERVER__=new W.MutationObserver(()=>removeOldButtons(W));
-          W.__EAKHA_STABLE_BUTTON_OBSERVER__.observe(W.document.documentElement,{childList:true,subtree:true});
-        }
-      }catch(e){}
-    });
-
-    openBtn.addEventListener('click',reveal);
-
-    setTimeout(()=>{
-      if(!frameReady){
-        error.textContent='Aplikasi mengambil masa lebih lama. Tekan “Buka sistem” untuk teruskan.';
-        openBtn.style.display='block';
-      }
-    },12000);
-
-    frame.src=`base-v51017.html?v=51059-${Date.now()}`;
-  })();
-  </script>
+<script>
+(()=>{
+'use strict';
+const MONTH=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
+const YEAR=2026, DB_NAME='eakha_vsavage_safe_store', STORE='snapshots';
+const APRIL_SOURCE_ID='safe_FINAL_BEFORE_CLEAN_RELOAD_1782960660745';
+const APRIL_LOCK_ID='safe_snapshot_2026_04_AUTHORITATIVE_53_FULL7';
+const MAY_LOCK_ID='safe_snapshot_2026_05_AUTHORITATIVE_53_FULL7';
+const frame=document.getElementById('app'),loading=document.getElementById('loading'),status=document.getElementById('status'),error=document.getElementById('error'),badge=document.getElementById('badge');
+const clone=v=>JSON.parse(JSON.stringify(v??null));
+const obj=v=>v&&typeof v==='object'&&!Array.isArray(v);
+const upper=v=>String(v??'').toUpperCase().replace(/\s+/g,' ').trim();
+const latifaName=v=>/LATIF(?:A|AH|IPAH).*RO(?:B|D)ANIA/i.test(String(v||''));
+function openDB(){return new Promise((ok,no)=>{const r=indexedDB.open(DB_NAME);r.onerror=()=>no(r.error);r.onsuccess=()=>ok(r.result)})}
+function getAll(db){return new Promise((ok,no)=>{if(!db.objectStoreNames.contains(STORE)){ok([]);return}const r=db.transaction(STORE,'readonly').objectStore(STORE).getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error)})}
+function put(db,row){return new Promise((ok,no)=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).put(row);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)})}
+function monthOf(s){const n=Number(s?.bulan??s?.month??s?.activeMonth);if(n>=1&&n<=12)return n;const m=[s?.id,s?.reason,s?.sourceSnapshot].join(' ').match(/2026[_\/-](0?[1-9]|1[0-2])/);return m?Number(m[1]):null}
+function valid53(s){return !!(s&&Array.isArray(s.MASTER)&&s.MASTER.length>=53&&s.D&&Object.keys(s.D).length>=53)}
+function fieldCount(s,fields){let n=0;for(const days of Object.values(s?.D||{}))for(const c of Object.values(days||{})){if(!obj(c))continue;if(fields.some(k=>{const v=c[k];return Array.isArray(v)?v.length:obj(v)?Object.keys(v).length:v!==null&&v!==undefined&&String(v).trim()!==''}))n++}return n}
+function aprilEvidence(s){if(!s)return 0;let q=0;if(s.id===APRIL_SOURCE_ID)q+=10000000;if(s.id===APRIL_LOCK_ID)q+=9000000;if(valid53(s))q+=1000000;if(monthOf(s)===4)q+=500000;const text=upper(`${s.id||''} ${s.reason||''} ${s.sourceSnapshot||''}`);if(/APRIL|2026_04|2026-04/.test(text))q+=500000;q+=fieldCount(s,['kzp','kzp_status'])*2+fieldCount(s,['kzk','kzk_status'])*2+fieldCount(s,['tc_in','tc_out','tc_all','tc_status'])*3+fieldCount(s,['audit_final','final_audit','audit_status']);return q}
+function mayEvidence(s){if(!s)return 0;let q=0;if(s.id===MAY_LOCK_ID)q+=9000000;if(valid53(s))q+=1000000;if(monthOf(s)===5)q+=700000;const text=upper(`${s.id||''} ${s.reason||''} ${s.sourceSnapshot||''}`);if(/MEI|MAY|2026_05|2026-05/.test(text))q+=400000;q+=fieldCount(s,['kzp','kzp_status'])+fieldCount(s,['kzk','kzk_status'])+fieldCount(s,['tc_in','tc_out','tc_all','tc_status'])*2+fieldCount(s,['audit_final','final_audit','audit_status']);return q}
+function canonicalMaster(master){const out=[],seen=new Set();let latifa=null;for(const raw of master||[]){if(!raw?.nama)continue;const m=clone(raw);if(latifaName(m.nama)){if(!latifa)latifa=m;continue}const key=upper(m.nama).replace(/MOHAMMAD|MUHAMMAD|MOHAMED/g,'MOHAMAD').replace(/\bBIN\b|\bBINTI\b/g,' ').replace(/[^A-Z0-9]+/g,' ').trim();if(seen.has(key))continue;seen.add(key);out.push(m)}latifa=latifa||{bil:53,nama:'LATIFA ROBANIA BINTI ABDUL RAZAK',jab:'IKTAR',komp:'DELTA',user_id:'60555',staff_id:'60555'};latifa.bil=53;latifa.nama='LATIFA ROBANIA BINTI ABDUL RAZAK';latifa.jab=latifa.jabatan=latifa.department=latifa.unit='IKTAR';latifa.komp=latifa.kompeni=latifa.company='DELTA';latifa.user_id=latifa.user_id||'60555';latifa.staff_id=latifa.staff_id||'60555';latifa.no_staff=latifa.no_staff||latifa.staff_id;latifa.aliases=['LATIFA RODANIA BINTI ABDUL RAZAK','LATIFAH ROBANIA BINTI ABDUL RAZAK','LATIPAH ROBANIA BINTI ABDUL RAZAK'];out.push(latifa);out.sort((a,b)=>Number(a.bil||9999)-Number(b.bil||9999));return out}
+function normalizeSnapshot(source,month){const s=clone(source);s.MASTER=canonicalMaster(s.MASTER);if(s.MASTER.length!==53)throw new Error(`Master sumber tidak tepat: ${s.MASTER.length} anggota`);if(!s.D||Object.keys(s.D).length<53)throw new Error(`Data owner sumber tidak tepat: ${Object.keys(s.D||{}).length}`);s.id=month===4?APRIL_LOCK_ID:MAY_LOCK_ID;s.tahun=YEAR;s.bulan=month;s.type='EAKHA_LOCKED_MONTH_DATABASE';s.locked=true;s.immutable=true;s.savedAt=new Date().toISOString();s.lockedAt=s.savedAt;s.sourceSnapshot=source.id;s.reason=`${month===4?'APRIL':'MEI'} 2026 AUTHORITATIVE 53 FULL 7 LAYERS`;return s}
+async function chooseAndPin(){const db=await openDB();const rows=await getAll(db);if(!rows.length){db.close();throw new Error('Tiada snapshot ditemui dalam IndexedDB browser ini.')}let source;if(MONTH===4){source=rows.find(x=>x.id===APRIL_LOCK_ID&&valid53(x))||rows.find(x=>x.id===APRIL_SOURCE_ID&&valid53(x))||rows.filter(valid53).sort((a,b)=>aprilEvidence(b)-aprilEvidence(a))[0]}else{source=rows.find(x=>x.id===MAY_LOCK_ID&&valid53(x))||rows.filter(x=>valid53(x)&&monthOf(x)===5).sort((a,b)=>mayEvidence(b)-mayEvidence(a))[0]}if(!source){db.close();throw new Error(`Snapshot ${MONTH===4?'April':'Mei'} 53 anggota tidak dijumpai.`)}const clean=normalizeSnapshot(source,MONTH);await put(db,clean);db.close();const mm=String(MONTH).padStart(2,'0');try{localStorage.setItem(`eakha_locked_snapshot_2026_${mm}`,clean.id);localStorage.setItem(`eakha_active_snapshot_2026_${mm}`,clean.id);localStorage.setItem('eakha_last_good_snapshot',clean.id);localStorage.setItem('eakha_active_month',String(MONTH))}catch(e){}return clean}
+function getBinding(W,name){try{return W.eval(`typeof ${name}!=='undefined'?${name}:undefined`)}catch(e){return W[name]}}
+function setBinding(W,name,value){const cur=getBinding(W,name),inc=clone(value);if(Array.isArray(cur)&&Array.isArray(inc)){cur.splice(0,cur.length,...inc);try{W[name]=cur}catch(e){};return}if(obj(cur)&&obj(inc)){Object.keys(cur).forEach(k=>delete cur[k]);Object.assign(cur,inc);try{W[name]=cur}catch(e){};return}W.__EAKHA_CLEAN_TMP__=inc;try{W.eval(`${name}=window.__EAKHA_CLEAN_TMP__`)}catch(e){try{W[name]=inc}catch(_){}}delete W.__EAKHA_CLEAN_TMP__}
+function call(W,name,...args){try{const f=W.eval(`typeof ${name}==='function'?${name}:null`)||W[name];if(typeof f==='function')return f(...args)}catch(e){}}
+function removeOldButtons(W){const labels=['UPLOAD EXCEL GABUNGAN KZ','KEMASKINI KZP + KZK KE MASTER','KEMAS KINI KZP + KZK KE MASTER','FORCE 1 IRWAN 51034'];W.document?.querySelectorAll('button,a,[role="button"]').forEach(el=>{const t=upper(el.textContent);if(labels.some(x=>t===x||t.includes(x)))el.remove()})}
+function fixText(W){const tw=W.document.createTreeWalker(W.document.body,W.NodeFilter.SHOW_TEXT),nodes=[];while(tw.nextNode())nodes.push(tw.currentNode);for(const n of nodes){const old=n.nodeValue||'';const next=old.replace(/Master File\s*\(52\s*Anggota\)/gi,'Master File (53 Anggota)').replace(/Master File\s*\(52\)/gi,'Master File (53)').replace(/Semua\s+52\b/gi,'Semua 53').replace(/\b52\s+anggota\b/gi,'53 anggota');if(next!==old)n.nodeValue=next}}
+function applyToFrame(snapshot){const W=frame.contentWindow;if(!W)return false;const fields=['MASTER','D','KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','MC_DATA','MC_REF','HRMIS_PRELOAD','HRMIS_DATA','HRMIS_REF','CUTI_HRMIS_PRELOAD','CUTI_HRMIS_REF','CTR_DATA'];for(const name of fields)if(snapshot[name]!==undefined)setBinding(W,name,snapshot[name]);setBinding(W,'ACTIVE_YEAR',YEAR);setBinding(W,'ACTIVE_MONTH',MONTH);for(const name of ['renderMaster','renderDash','renderOutput','renderMCReg','renderHRMISReg','renderKZPStaging','renderKZKStaging','renderTCStaging','updFlags'])call(W,name,name==='renderOutput'?'':null);removeOldButtons(W);fixText(W);return Array.isArray(getBinding(W,'MASTER'))&&getBinding(W,'MASTER').length===53}
+function reveal(){loading.style.display='none';frame.style.display='block'}
+function showBadge(text){badge.textContent=text;badge.style.display='block';setTimeout(()=>badge.style.display='none',7000)}
+(async()=>{try{status.textContent=`Mengesahkan DB ${MONTH===4?'April':'Mei'}…`;const snapshot=await chooseAndPin();status.textContent='DB 53 anggota ditemui. Membuka sistem…';frame.src=`base-v51017.html?month=${MONTH}&v=clean53-${Date.now()}`;frame.addEventListener('load',()=>{reveal();let tries=0;const timer=setInterval(()=>{tries++;const ok=applyToFrame(snapshot);if(ok&&tries>8){clearInterval(timer);showBadge(`${MONTH===4?'APRIL':'MEI'} · 53 ANGGOTA · LATIFA ADA · 7 LAPISAN`)}if(tries>80)clearInterval(timer)},400);try{const W=frame.contentWindow;if(!W.__EAKHA_CLEAN53_OBSERVER__){W.__EAKHA_CLEAN53_OBSERVER__=new W.MutationObserver(()=>{applyToFrame(snapshot)});W.__EAKHA_CLEAN53_OBSERVER__.observe(W.document.documentElement,{childList:true,subtree:true})}}catch(e){}}, {once:true})}catch(e){console.error(e);error.textContent=(e?.message||String(e))+'\n\nGunakan Chrome/profile browser yang mempunyai IndexedDB asal.';status.textContent='Pemulihan belum berjaya.';reveal();frame.src=`base-v51017.html?month=${MONTH}&v=fallback-${Date.now()}`}})();
+})();
+</script>
 </body>
 </html>
