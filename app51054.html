@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage CLEAN 53</title>
+  <title>e-AKHA Vsavage CLEAN 53 SAFE</title>
   <style>
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     #app{display:none;border:0;width:100%;height:100%;background:#071426}
@@ -15,14 +15,14 @@
   </style>
 </head>
 <body>
-  <div id="loading"><div class="box"><h1>e-AKHA Vsavage</h1><p>Memuatkan pangkalan data bersih 53 anggota…</p><div id="status">Mencari snapshot bulan…</div><div id="error"></div></div></div>
+  <div id="loading"><div class="box"><h1>e-AKHA Vsavage</h1><p>Memuatkan sistem tanpa proses berulang…</p><div id="status">Mencari snapshot bulan…</div><div id="error"></div></div></div>
   <iframe id="app" title="e-AKHA Vsavage CLEAN 53"></iframe>
   <div id="badge"></div>
 <script>
 (()=>{
 'use strict';
 const MONTH=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
-const YEAR=2026, DB_NAME='eakha_vsavage_safe_store', STORE='snapshots';
+const YEAR=2026,DB_NAME='eakha_vsavage_safe_store',STORE='snapshots';
 const APRIL_SOURCE_ID='safe_FINAL_BEFORE_CLEAN_RELOAD_1782960660745';
 const APRIL_LOCK_ID='safe_snapshot_2026_04_AUTHORITATIVE_53_FULL7';
 const MAY_LOCK_ID='safe_snapshot_2026_05_AUTHORITATIVE_53_FULL7';
@@ -47,10 +47,11 @@ function setBinding(W,name,value){const cur=getBinding(W,name),inc=clone(value);
 function call(W,name,...args){try{const f=W.eval(`typeof ${name}==='function'?${name}:null`)||W[name];if(typeof f==='function')return f(...args)}catch(e){}}
 function removeOldButtons(W){const labels=['UPLOAD EXCEL GABUNGAN KZ','KEMASKINI KZP + KZK KE MASTER','KEMAS KINI KZP + KZK KE MASTER','FORCE 1 IRWAN 51034'];W.document?.querySelectorAll('button,a,[role="button"]').forEach(el=>{const t=upper(el.textContent);if(labels.some(x=>t===x||t.includes(x)))el.remove()})}
 function fixText(W){const tw=W.document.createTreeWalker(W.document.body,W.NodeFilter.SHOW_TEXT),nodes=[];while(tw.nextNode())nodes.push(tw.currentNode);for(const n of nodes){const old=n.nodeValue||'';const next=old.replace(/Master File\s*\(52\s*Anggota\)/gi,'Master File (53 Anggota)').replace(/Master File\s*\(52\)/gi,'Master File (53)').replace(/Semua\s+52\b/gi,'Semua 53').replace(/\b52\s+anggota\b/gi,'53 anggota');if(next!==old)n.nodeValue=next}}
-function applyToFrame(snapshot){const W=frame.contentWindow;if(!W)return false;const fields=['MASTER','D','KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','MC_DATA','MC_REF','HRMIS_PRELOAD','HRMIS_DATA','HRMIS_REF','CUTI_HRMIS_PRELOAD','CUTI_HRMIS_REF','CTR_DATA'];for(const name of fields)if(snapshot[name]!==undefined)setBinding(W,name,snapshot[name]);setBinding(W,'ACTIVE_YEAR',YEAR);setBinding(W,'ACTIVE_MONTH',MONTH);for(const name of ['renderMaster','renderDash','renderOutput','renderMCReg','renderHRMISReg','renderKZPStaging','renderKZKStaging','renderTCStaging','updFlags'])call(W,name,name==='renderOutput'?'':null);removeOldButtons(W);fixText(W);return Array.isArray(getBinding(W,'MASTER'))&&getBinding(W,'MASTER').length===53}
+function bindingsReady(W){return Array.isArray(getBinding(W,'MASTER'))&&obj(getBinding(W,'D'))}
+function applyOnce(snapshot){const W=frame.contentWindow;if(!W||!bindingsReady(W))return false;const fields=['MASTER','D','KZP_PRELOAD','KZK_PRELOAD','TIMECARD_PRELOAD','MC_PRELOAD','MC_DATA','MC_REF','HRMIS_PRELOAD','HRMIS_DATA','HRMIS_REF','CUTI_HRMIS_PRELOAD','CUTI_HRMIS_REF','CTR_DATA'];for(const name of fields)if(snapshot[name]!==undefined)setBinding(W,name,snapshot[name]);setBinding(W,'ACTIVE_YEAR',YEAR);setBinding(W,'ACTIVE_MONTH',MONTH);for(const name of ['renderMaster','renderDash','renderOutput','renderMCReg','renderHRMISReg','renderKZPStaging','renderKZKStaging','renderTCStaging','updFlags'])call(W,name,name==='renderOutput'?'':null);removeOldButtons(W);fixText(W);window.EAKHA_CLEAN53_REPORT={month:MONTH,snapshot:snapshot.id,master:snapshot.MASTER.length,owners:Object.keys(snapshot.D||{}).length};console.log('[CLEAN53 SAFE]',window.EAKHA_CLEAN53_REPORT);return true}
 function reveal(){loading.style.display='none';frame.style.display='block'}
 function showBadge(text){badge.textContent=text;badge.style.display='block';setTimeout(()=>badge.style.display='none',7000)}
-(async()=>{try{status.textContent=`Mengesahkan DB ${MONTH===4?'April':'Mei'}…`;const snapshot=await chooseAndPin();status.textContent='DB 53 anggota ditemui. Membuka sistem…';frame.src=`base-v51017.html?month=${MONTH}&v=clean53-${Date.now()}`;frame.addEventListener('load',()=>{reveal();let tries=0;const timer=setInterval(()=>{tries++;const ok=applyToFrame(snapshot);if(ok&&tries>8){clearInterval(timer);showBadge(`${MONTH===4?'APRIL':'MEI'} · 53 ANGGOTA · LATIFA ADA · 7 LAPISAN`)}if(tries>80)clearInterval(timer)},400);try{const W=frame.contentWindow;if(!W.__EAKHA_CLEAN53_OBSERVER__){W.__EAKHA_CLEAN53_OBSERVER__=new W.MutationObserver(()=>{applyToFrame(snapshot)});W.__EAKHA_CLEAN53_OBSERVER__.observe(W.document.documentElement,{childList:true,subtree:true})}}catch(e){}}, {once:true})}catch(e){console.error(e);error.textContent=(e?.message||String(e))+'\n\nGunakan Chrome/profile browser yang mempunyai IndexedDB asal.';status.textContent='Pemulihan belum berjaya.';reveal();frame.src=`base-v51017.html?month=${MONTH}&v=fallback-${Date.now()}`}})();
+(async()=>{try{status.textContent=`Mengesahkan DB ${MONTH===4?'April':'Mei'}…`;const snapshot=await chooseAndPin();status.textContent='DB 53 anggota ditemui. Membuka sistem…';frame.src=`base-v51017.html?month=${MONTH}&v=clean53-safe-${Date.now()}`;frame.addEventListener('load',()=>{reveal();let attempts=0;const timer=setInterval(()=>{attempts++;if(applyOnce(snapshot)){clearInterval(timer);showBadge(`${MONTH===4?'APRIL':'MEI'} · 53 ANGGOTA · LATIFA ADA · 7 LAPISAN`)}else if(attempts>=20){clearInterval(timer);error.textContent='Sistem dibuka tetapi data belum boleh dipasang. Login dahulu dan buka semula pautan ini.'}},1000)}, {once:true})}catch(e){console.error(e);error.textContent=(e?.message||String(e))+'\n\nGunakan Chrome/profile browser yang mempunyai IndexedDB asal.';status.textContent='Pemulihan belum berjaya.';frame.src=`base-v51017.html?month=${MONTH}&v=fallback-${Date.now()}`;frame.addEventListener('load',reveal,{once:true})}})();
 })();
 </script>
 </body>
