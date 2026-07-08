@@ -3,17 +3,88 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage SAFE START</title>
+  <title>e-AKHA Vsavage v5.10.38</title>
   <style>
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426}
     #system{display:block;border:0;width:100%;height:100%;background:#071426}
+    #status{position:fixed;right:10px;bottom:8px;z-index:10;padding:4px 8px;border-radius:5px;background:rgba(7,20,38,.9);color:#94a3b8;font:10px/1.3 system-ui;border:1px solid rgba(255,255,255,.08)}
   </style>
 </head>
 <body>
-  <iframe id="system" title="e-AKHA Vsavage SAFE START"></iframe>
+  <iframe id="system" title="e-AKHA Vsavage v5.10.38"></iframe>
+  <div id="status">Memuatkan e-AKHA v5.10.38…</div>
   <script>
+  (function(){
+    'use strict';
+    const frame=document.getElementById('system');
+    const status=document.getElementById('status');
     const month=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
-    document.getElementById('system').src=`../base-v51017.html?month=${month}&v=safe-start-${Date.now()}`;
+    const PATCH=String.raw`
+(function(){
+'use strict';
+if(window.__EAKHA_51038_INJECTED__)return;
+window.__EAKHA_51038_INJECTED__=true;
+var PATCH='v5.10.38-MC-TIMECARD-AUDIT';
+function U(v){return String(v==null?'':v).toUpperCase().replace(/MOHAMMAD/g,'MOHAMAD').replace(/MOHAMED/g,'MOHAMAD').replace(/MUHAMMAD/g,'MUHAMAD').replace(/MUHD\b/g,'MOHD').replace(/MOHD\./g,'MOHD').replace(/HAIKAL/g,'HAIQAL').replace(/[^A-Z0-9 ]+/g,' ').replace(/\s+/g,' ').trim()}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function mins(t){var m=String(t||'').match(/(\d{1,2})[:.]?(\d{2})/);if(!m)return null;var h=+m[1],n=+m[2];return h>=0&&h<24&&n>=0&&n<60?h*60+n:null}
+function fmt(t){var m=String(t||'').match(/(\d{1,2})[:.]?(\d{2})/);return m?String(+m[1]).padStart(2,'0')+':'+m[2]:''}
+function arr(v){return Array.isArray(v)?v:[]}
+function activeM(){try{return +(typeof ACTIVE_MONTH!=='undefined'?ACTIVE_MONTH:4)||4}catch(e){return 4}}
+function activeY(){try{return +(typeof ACTIVE_YEAR!=='undefined'?ACTIVE_YEAR:2026)||2026}catch(e){return 2026}}
+function daysN(){try{return typeof daysInActiveMonth==='function'?daysInActiveMonth():new Date(activeY(),activeM(),0).getDate()}catch(e){return 30}}
+function masters(){try{return Array.isArray(MASTER)?MASTER:[]}catch(e){return []}}
+function cell(b,d){try{return typeof D!=='undefined'&&D[b]?D[b][d]:null}catch(e){return null}}
+function member(b){return masters().find(function(m){return +m.bil===+b})||null}
+function dateObj(s){if(!s)return null;var x=String(s).trim(),m;if((m=x.match(/^(\d{1,2})[\.\/-](\d{1,2})[\.\/-](\d{2,4})$/))){return {d:+m[1],m:+m[2],y:+m[3]<100?2000+(+m[3]):+m[3]}}if((m=x.match(/^(20\d{2})-(\d{1,2})-(\d{1,2})$/)))return {d:+m[3],m:+m[2],y:+m[1]};return null}
+function recDates(r){var a=dateObj(r&&r.dari)||dateObj(r&&r.tarikh),z=dateObj(r&&r.hingga)||a,out=[];if(!a)return out;if(!z)z=a;var da=new Date(a.y,a.m-1,a.d),dz=new Date(z.y,z.m-1,z.d);if(dz<da)dz=da;for(var q=new Date(da);q<=dz&&out.length<40;q.setDate(q.getDate()+1))out.push({d:q.getDate(),m:q.getMonth()+1,y:q.getFullYear()});return out}
+function sig(n){return U(n).split(' ').filter(function(x){return x.length>=4&&!/^(BIN|BINTI|BT|BTE|MOHD|MOHAMAD|MUHAMAD|AL|A L)$/.test(x)})}
+function scoreName(a,b){a=U(a);b=U(b);if(!a||!b)return 0;if(a===b)return 100;if(a.indexOf(b)>=0||b.indexOf(a)>=0)return 96;var x=sig(a),y=sig(b),hit=x.filter(function(w){return y.indexOf(w)>=0}).length;return Math.round(100*hit/Math.max(2,Math.max(x.length,y.length)))}
+function recName(r){return r&&(r.nama||r.owner_name||r.patient_name||r.pemilik||r.owner||r.patient)||''}
+function recNo(r){return U(r&&(r.no_mc||r.siri||r.no_siri||r.rujukan)||'')}
+function recClinic(r){return U(r&&(r.klinik||r.clinic||r.fasiliti)||'')}
+function dateHit(r,d){return recDates(r).some(function(x){return +x.d===+d&&+x.m===activeM()&&+x.y===activeY()})}
+function mcList(){try{return Array.isArray(MC_DATA)?MC_DATA:[]}catch(e){return []}}
+function dedupeMC(){var seen={},keep=[],dups=[];mcList().forEach(function(r){var ds=recDates(r),dt=ds[0]?ds[0].y+'-'+ds[0].m+'-'+ds[0].d:U(r.tarikh||r.dari||'');var k=U(recName(r))+'|'+dt+'|'+recNo(r)+'|'+recClinic(r);if(seen[k]){seen[k]._duplicate_count_51038=(seen[k]._duplicate_count_51038||1)+1;dups.push(r)}else{seen[k]=r;keep.push(r)}});window.__EAKHA_MC_DUP_51038=dups;try{MC_DATA.length=0;keep.forEach(function(r){MC_DATA.push(r)});localStorage.setItem('eakha_mc',JSON.stringify(MC_DATA))}catch(e){}return keep}
+function mcFor(b,d){var m=member(b),best=null,bestSc=0,low=[];mcList().forEach(function(r){if(!dateHit(r,d))return;var sc=0;if(+r.bil===+b)sc=100;else if(m)sc=scoreName(recName(r),m.nama);if(sc>bestSc){bestSc=sc;best=r}if(sc>=50&&sc<78)low.push({r:r,m:m,score:sc,d:d})});window.__EAKHA_MC_LOW_51038=(window.__EAKHA_MC_LOW_51038||[]).concat(low);return bestSc>=78?best:null}
+function punchList(c){var p=[];arr(c&&c.tc_all).forEach(function(x){var t=fmt(typeof x==='object'?(x.t||x.time||x.jam):x);if(t&&p.indexOf(t)<0)p.push(t)});[c&&c.tc_in,c&&c.tc_out].forEach(function(x){var t=fmt(x);if(t&&p.indexOf(t)<0)p.push(t)});return p}
+function prevNight(b,d){try{return d>1&&typeof gSh==='function'&&String(gSh(b,d-1)).toUpperCase()==='M'}catch(e){return false}}
+function outOnlyPrevNight(b,d,c){var p=punchList(c);if(p.length!==1)return false;var n=mins(p[0]);return n>=420&&n<=480&&prevNight(b,d)}
+function realMCPunch(b,d,c){var p=punchList(c);return p.length>0&&!outOnlyPrevNight(b,d,c)}
+function actualKZ(v){var s=U(v);if(!s)return '—';if(s==='TM'||s==='TIADA MAKLUMAN'||s==='TIADA MAKLUM')return 'TM / Tiada Makluman';if(s==='✓'||s==='✔'||s==='/'||s==='HADIR')return '✓ HADIR';return s}
+function kzPresent(v){return /^(✓|✔|\/|HADIR)$/.test(U(v))}
+function kzNoInfo(c){return !c||(!U(c.kzp)&&!U(c.kzk))||(['TM','TIADA MAKLUMAN','TIADA MAKLUM'].indexOf(U(c.kzp))>=0&&['TM','TIADA MAKLUMAN','TIADA MAKLUM'].indexOf(U(c.kzk))>=0)}
+function save(){try{localStorage.setItem('eakha_data',JSON.stringify(D));if(typeof saveDataset==='function')saveDataset('PATCH '+PATCH)}catch(e){}}
+function isAsree(m){var n=U(m&&m.nama);return /\bASREE\b|\bASRI\b/.test(n)&&/\bHAZIR\b/.test(n)}
+function fixAsree(){var ids={};masters().filter(isAsree).forEach(function(m){ids[m.bil]=1;for(var d=1;d<=daysN();d++){var c=cell(m.bil,d);if(!c)continue;c.kzp='TH';c.kzk='TH';c.tc_in='';c.tc_out='';c.tc_all=[];c.tc_shift='TH';c.hrmis='';c._mc=null;c.note='TAHAN TUGAS';}});try{for(var i=MC_DATA.length-1;i>=0;i--){if(ids[MC_DATA[i].bil]||isAsree({nama:recName(MC_DATA[i])}))MC_DATA.splice(i,1)}}catch(e){}return Object.keys(ids).length}
+function ownerId(){var vals=[];try{vals.push(AUTH&&AUTH.id,AUTH&&AUTH.nama,AUTH&&AUTH.name)}catch(e){}try{vals.push(CUR_USER&&CUR_USER.id,CUR_USER&&CUR_USER.nama)}catch(e){}try{vals.push(localStorage.getItem('eakha_user'),localStorage.getItem('eakha_login'))}catch(e){}return U(vals.join(' ')).replace(/[^A-Z0-9]/g,'')}
+function isOwner(){return /SJNADILAH|ADILAHFITRAH|ADILAHFITRAHBINTIBASIR/.test(ownerId())}
+var oldReq=typeof reqAdmin==='function'?reqAdmin:null;window.reqAdmin=reqAdmin=function(){if(isOwner())return true;return oldReq?oldReq.apply(this,arguments):false};
+var oldTC=typeof tcAudit==='function'?tcAudit:null;window.tcAudit=tcAudit=function(b,d){var c=cell(b,d),mc=mcFor(b,d);if(mc){if(realMCPunch(b,d,c))return {txt:'MC ADA THUMB / SEMAK\n'+punchList(c).join(' · '),cls:'tc-warn',ok:false,mc:true};if(outOnlyPrevNight(b,d,c))return {txt:'OUT-ONLY 07:xx\nPOSSIBLE NIGHT SHIFT OUT',cls:'tc-off',ok:true,mc:true};return {txt:'MC DITERIMA\nTIADA PUNCH',cls:'tc-off',ok:true,mc:true}}var sh='';try{sh=String(gSh(b,d)).toUpperCase()}catch(e){}if(sh==='M'&&c){var inM=mins(c.tc_in),outM=mins(c.tc_out),lines=[],ok=true,cls='tc-ok';if(inM!=null){if(inM>=1320&&inM<=1385)lines.push('✓ IN '+fmt(c.tc_in)+' SAH');else{lines.push('LEWAT · IN '+fmt(c.tc_in));ok=false;cls='tc-lw'}}if(outM!=null){if(outM>=420&&outM<=480)lines.push('✓ OUT '+fmt(c.tc_out)+' ESOK SAH');else if(outM<420){lines.push('OUT AWAL · '+fmt(c.tc_out));ok=false;cls='tc-lw'}else lines.push('OUT '+fmt(c.tc_out)+' · SEMAK')}if(lines.length)return {txt:lines.join('\n'),cls:cls,ok:ok}}return oldTC?oldTC.apply(this,arguments):{txt:'—',cls:'tc-bp',ok:false}};
+var oldAF=typeof auditFinal==='function'?auditFinal:null;window.auditFinal=auditFinal=function(b,d){var c=cell(b,d),mc=mcFor(b,d);if(mc){var lines=['MC / ABSENCE'],warn=false;if(realMCPunch(b,d,c)){lines.push('MC ADA THUMB / SEMAK');warn=true}if(c&&(kzPresent(c.kzp)||kzPresent(c.kzk))){lines.push('MC ADA KZ HADIR');warn=true}if(outOnlyPrevNight(b,d,c))lines.push('OUT-ONLY 07:xx POSSIBLE NIGHT SHIFT OUT');if(kzNoInfo(c))lines.push('MC diterima, KZ tiada makluman.');return {txt:lines.join('\n'),cls:warn?'af-warn':'af-mc',inc:false,ok:!warn,mc:true}}return oldAF?oldAF.apply(this,arguments):{txt:'BELUM DIPROSES',cls:'af-bp'}};
+function stopKZAutofill(fn){if(typeof window[fn]!=='function'||window[fn].__mc51038)return;var old=window[fn];window[fn]=function(){var snap={};masters().forEach(function(m){for(var d=1;d<=daysN();d++){var c=cell(m.bil,d);if(c)snap[m.bil+'|'+d]=[c.kzp,c.kzk]}});var r=old.apply(this,arguments);Object.keys(snap).forEach(function(k){var p=k.split('|'),c=cell(+p[0],+p[1]);if(c){c.kzp=snap[k][0];c.kzk=snap[k][1]}});return r};window[fn].__mc51038=true;try{eval(fn+'=window[fn]')}catch(e){}}
+stopKZAutofill('ensureAuditReady');stopKZAutofill('validasiAudit');
+function crossRows(){var out=[];masters().forEach(function(m){for(var d=1;d<=daysN();d++){var mc=mcFor(m.bil,d),c=cell(m.bil,d);if(!mc)continue;if(realMCPunch(m.bil,d,c))out.push(['MC ADA THUMB',m,d,punchList(c).join(' · ')]);if(c&&(kzPresent(c.kzp)||kzPresent(c.kzk)))out.push(['MC ADA KZ HADIR',m,d,'KZ PNY: '+actualKZ(c.kzp)+' · KZ KPL: '+actualKZ(c.kzk)]);if(outOnlyPrevNight(m.bil,d,c))out.push(['OUT-ONLY 07:xx POSSIBLE NIGHT SHIFT OUT',m,d,punchList(c).join(' · ')])}});arr(window.__EAKHA_MC_DUP_51038).forEach(function(r){out.push(['MC DUPLICATE',member(r.bil)||{nama:recName(r)},(recDates(r)[0]||{}).d||'',recNo(r)+' · '+recClinic(r)])});arr(window.__EAKHA_MC_LOW_51038).forEach(function(x){out.push(['MC OWNER LOW CONFIDENCE',x.m||{nama:recName(x.r)},x.d,'Confidence '+x.score+'% · '+recName(x.r)])});var seen={};return out.filter(function(x){var k=x[0]+'|'+(x[1]&&x[1].nama)+'|'+x[2]+'|'+x[3];if(seen[k])return false;seen[k]=1;return true})}
+function renderMC(){var el=document.getElementById('mc-reg-table');if(!el)return;dedupeMC();window.__EAKHA_MC_LOW_51038=[];var rows=mcList().filter(function(r){return recDates(r).some(function(x){return x.m===activeM()&&x.y===activeY()})});var html='<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>#</th><th>Nama Anggota</th><th>Jab</th><th>Komp</th><th>Tarikh MC</th><th>Klinik</th><th>No MC</th><th>Hari</th><th>KZ PNY</th><th>KZ KPL</th></tr></thead><tbody>';rows.forEach(function(r,i){var ds=recDates(r),b=+r.bil||0,m=member(b),d=(ds[0]||{}).d||0,c=cell(b,d);html+='<tr><td>'+(i+1)+'</td><td>'+esc((m&&m.nama)||recName(r))+'</td><td>'+esc(r.jab||(m&&m.jab)||'')+'</td><td>'+esc(r.komp||(m&&m.komp)||'')+'</td><td>'+esc(ds.map(function(x){return String(x.d).padStart(2,'0')+'/'+String(x.m).padStart(2,'0')+'/'+x.y}).join(', '))+'</td><td>'+esc(r.klinik||'—')+'</td><td>'+esc(r.no_mc||r.siri||'—')+'</td><td>'+esc(r.hari||ds.length||1)+'</td><td>'+esc(actualKZ(c&&c.kzp))+'</td><td>'+esc(actualKZ(c&&c.kzk))+'</td></tr>'});html+='</tbody></table></div>';var cr=crossRows();html+='<div class="panel" style="margin-top:10px"><div class="ph"><span class="ph-title">Cross-check MC untuk perhatian ('+cr.length+')</span></div>'+(cr.length?'<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Kategori</th><th>Nama</th><th>Hari</th><th>Butiran</th></tr></thead><tbody>'+cr.map(function(x){return '<tr><td>'+esc(x[0])+'</td><td>'+esc(x[1]&&x[1].nama||'')+'</td><td>'+esc(x[2])+'</td><td>'+esc(x[3])+'</td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty">Tiada isu cross-check MC.</div>')+'</div>';el.innerHTML=html;var cnt=document.getElementById('mc-cnt');if(cnt)cnt.textContent=rows.length+' rekod'}
+window.renderMCReg=renderMCReg=renderMC;
+function apply(){dedupeMC();fixAsree();save();try{if(typeof renderMaster==='function')renderMaster(null)}catch(e){}try{if(typeof renderDash==='function')renderDash()}catch(e){}try{if(typeof updFlags==='function')updFlags()}catch(e){}try{var p=document.getElementById('page-mc-reg');if(p&&p.classList.contains('on'))renderMC()}catch(e){}}
+['renderMaster','renderMiniGrid','setMonth','loadMonthData','sahTerima','nav'].forEach(function(fn){try{var old=window[fn];if(typeof old==='function'&&!old.__mc51038){window[fn]=function(){var r=old.apply(this,arguments);setTimeout(apply,80);return r};window[fn].__mc51038=true;try{eval(fn+'=window[fn]')}catch(e){}}}catch(e){}});
+[200,800,1800,3500].forEach(function(ms){setTimeout(apply,ms)});
+try{document.title='e-AKHA Vsavage v5.10.38 MC VS TIMECARD FIX';console.log('[e-AKHA '+PATCH+'] loaded')}catch(e){}
+})();
+`;
+    function inject(){
+      try{
+        const w=frame.contentWindow,d=frame.contentDocument;
+        if(!w||!d)return;
+        if(w.__EAKHA_51038_INJECTED__){status.textContent='e-AKHA v5.10.38 aktif';return;}
+        const s=d.createElement('script');s.textContent=PATCH;(d.head||d.documentElement).appendChild(s);
+        status.textContent='e-AKHA v5.10.38 aktif';setTimeout(()=>status.remove(),2500);
+      }catch(e){status.textContent='Patch gagal: '+e.message;console.error(e)}
+    }
+    frame.addEventListener('load',inject);
+    frame.src=`../base-v51017.html?month=${month}&v=51038-${Date.now()}`;
+  })();
   </script>
 </body>
 </html>
