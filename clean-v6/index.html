@@ -3,20 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage STABLE 53</title>
+  <title>e-AKHA Vsavage SAFE START</title>
   <style>
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426}
     #system{display:block;border:0;width:100%;height:100%;background:#071426}
   </style>
 </head>
 <body>
-  <iframe id="system" title="e-AKHA Vsavage STABLE 53"></iframe>
+  <iframe id="system" title="e-AKHA Vsavage SAFE START"></iframe>
   <script>
     const month=Number(new URL(location.href).searchParams.get('month'))===5?5:4;
-    document.getElementById('system').src=`../base-v51017.html?month=${month}&v=51071-direct-${Date.now()}`;
+    document.getElementById('system').src=`../base-v51017.html?month=${month}&v=safe-start-${Date.now()}`;
   </script>
-  <script src="../v51066-late-apply-full.js?v=51071"></script>
-  <script src="../v51069-stability-guard.js?v=51071"></script>
-  <script src="../v51070-access-state.js?v=51071"></script>
 </body>
 </html>
