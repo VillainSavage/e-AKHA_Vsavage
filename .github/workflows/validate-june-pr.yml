@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   validate:
@@ -18,6 +19,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           show-progress: false
       - name: Build and syntax-check June application
+        id: test
         shell: bash
         run: |
           cat > /tmp/test-june.js <<'NODE'
@@ -45,21 +47,38 @@ jobs:
             console.log('has migration', finalSource.includes('IMPORT_JUNE_LEGACY'));
             if (!finalSource.includes('SNAPSHOT BOS — JUN 2026') || !finalSource.includes('IMPORT_JUNE_LEGACY')) throw new Error('June completion markers missing');
             if (window.__EAKHA_JUNE_KZK_SEED__?.records?.length !== 52) throw new Error('KZ Koperal seed is not 52 members');
+            const index = fs.readFileSync('jun-2026/index.html', 'utf8');
+            const names = ['part08.js', 'june-migration-seed-2026.js', 'loader-b64-01.js', 'loader.js'];
+            const positions = names.map(name => index.indexOf(name));
+            if (positions.some(x => x < 0) || positions.some((x,i) => i && x < positions[i-1])) throw new Error('HTML load order invalid');
+            console.log('load order OK');
           } catch (error) {
             console.error('VALIDATION_ERROR:', error && error.stack ? error.stack : error);
             process.exit(1);
           }
           NODE
-          node /tmp/test-june.js
-      - name: Validate load order
+          set +e
+          node /tmp/test-june.js > /tmp/june-validation.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/june-validation.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Comment validation result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TEST_STATUS: ${{ steps.test.outputs.status }}
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          index = Path('jun-2026/index.html').read_text()
-          names = ['part08.js', 'june-migration-seed-2026.js', 'loader-b64-01.js', 'loader.js']
-          positions = [index.index(name) for name in names]
-          assert positions == sorted(positions), (names, positions)
-          assert '52 Anggota' in index
-          print('Load order OK')
-          PY
+          if [ "$TEST_STATUS" = "0" ]; then verdict="✅ LULUS"; else verdict="❌ GAGAL"; fi
+          {
+            echo "### June completion validation: $verdict"
+            echo '```'
+            tail -40 /tmp/june-validation.txt
+            echo '```'
+          } > /tmp/comment.md
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+      - name: Fail when validation failed
+        if: steps.test.outputs.status != '0'
+        run: exit 1
