@@ -1,0 +1,64 @@
+name: Validate June PR
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - name: Build and syntax-check June application
+        shell: bash
+        run: |
+          cat > /tmp/test-june.js <<'NODE'
+          const fs = require('fs');
+          const vm = require('vm');
+          try {
+            global.window = { __JUN_APP_PARTS__: [], __JUN_LOADER_B64_PARTS__: [] };
+            for (let i = 1; i <= 8; i++) vm.runInThisContext(fs.readFileSync(`jun-2026/part${String(i).padStart(2, '0')}.js`, 'utf8'));
+            console.log('parts', window.__JUN_APP_PARTS__.length);
+            vm.runInThisContext(fs.readFileSync('jun-2026/june-migration-seed-2026.js', 'utf8'));
+            console.log('migration patch applied');
+            vm.runInThisContext(fs.readFileSync('jun-2026/kzk-seed-june-2026.js', 'utf8'));
+            console.log('kzk records', window.__EAKHA_JUNE_KZK_SEED__?.records?.length);
+            for (let i = 1; i <= 7; i++) vm.runInThisContext(fs.readFileSync(`jun-2026/loader-b64-${String(i).padStart(2, '0')}.js`, 'utf8'));
+            let patch = Buffer.from(window.__JUN_LOADER_B64_PARTS__.join(''), 'base64').toString('utf8');
+            const before = patch;
+            patch = patch.replace(/new Function\(code\)\(\);/g, 'globalThis.__JUNE_FINAL_SOURCE__=code;');
+            if (patch === before) throw new Error('Loader evaluator marker not found');
+            vm.runInThisContext(patch);
+            const finalSource = globalThis.__JUNE_FINAL_SOURCE__;
+            if (!finalSource) throw new Error('Final June source was not generated');
+            new Function(finalSource);
+            console.log('final source syntax OK', finalSource.length);
+            console.log('has BOS', finalSource.includes('SNAPSHOT BOS — JUN 2026'));
+            console.log('has migration', finalSource.includes('IMPORT_JUNE_LEGACY'));
+            if (!finalSource.includes('SNAPSHOT BOS — JUN 2026') || !finalSource.includes('IMPORT_JUNE_LEGACY')) throw new Error('June completion markers missing');
+            if (window.__EAKHA_JUNE_KZK_SEED__?.records?.length !== 52) throw new Error('KZ Koperal seed is not 52 members');
+          } catch (error) {
+            console.error('VALIDATION_ERROR:', error && error.stack ? error.stack : error);
+            process.exit(1);
+          }
+          NODE
+          node /tmp/test-june.js
+      - name: Validate load order
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          index = Path('jun-2026/index.html').read_text()
+          names = ['part08.js', 'june-migration-seed-2026.js', 'loader-b64-01.js', 'loader.js']
+          positions = [index.index(name) for name in names]
+          assert positions == sorted(positions), (names, positions)
+          assert '52 Anggota' in index
+          print('Load order OK')
+          PY
