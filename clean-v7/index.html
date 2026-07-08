@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>e-AKHA Vsavage v5.10.72 April Reconcile</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426}
+    #system{display:block;border:0;width:100%;height:100%;background:#071426}
+    #boot{position:fixed;right:10px;bottom:8px;z-index:99998;padding:5px 9px;border-radius:6px;background:rgba(7,20,38,.95);border:1px solid rgba(255,255,255,.1);color:#94a3b8;font:10px/1.35 system-ui}
+  </style>
+</head>
+<body>
+  <iframe id="system" title="e-AKHA Vsavage April Reconcile"></iframe>
+  <div id="boot">Memuatkan snapshot April terlindung dan semakan DB…</div>
+  <script>
+    const q=new URLSearchParams(location.search);
+    const month=Number(q.get('month'))===5?5:4;
+    const frame=document.getElementById('system');
+    frame.src=`../clean-v6/?month=${month}&v=51072-${Date.now()}`;
+    frame.addEventListener('load',()=>{
+      const b=document.getElementById('boot');
+      if(b){b.textContent='Sistem dimuatkan. Log masuk untuk pulihkan dan semak April.';setTimeout(()=>b.remove(),6000)}
+    });
+  </script>
+  <script src="../v51066-late-apply-full.js?v=51072"></script>
+  <script src="../v51069-stability-guard.js?v=51072"></script>
+  <script src="../v51070-access-state.js?v=51072"></script>
+  <script src="../v51072-april-reconcile.js?v=51072"></script>
+</body>
+</html>
