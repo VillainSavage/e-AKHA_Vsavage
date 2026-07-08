@@ -1,0 +1,74 @@
+name: Test June completion
+
+on:
+  push:
+    branches:
+      - agent/june-data-import
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/june-data-import
+      - name: Build and syntax-check final June application
+        shell: bash
+        run: |
+          cat > /tmp/test-june.js <<'NODE'
+          const fs = require('fs');
+          const vm = require('vm');
+
+          global.window = { __JUN_APP_PARTS__: [], __JUN_LOADER_B64_PARTS__: [] };
+          for (let i = 1; i <= 8; i++) {
+            vm.runInThisContext(fs.readFileSync(`jun-2026/part${String(i).padStart(2, '0')}.js`, 'utf8'));
+          }
+          vm.runInThisContext(fs.readFileSync('jun-2026/june-migration-seed-2026.js', 'utf8'));
+          vm.runInThisContext(fs.readFileSync('jun-2026/kzk-seed-june-2026.js', 'utf8'));
+          for (let i = 1; i <= 7; i++) {
+            vm.runInThisContext(fs.readFileSync(`jun-2026/loader-b64-${String(i).padStart(2, '0')}.js`, 'utf8'));
+          }
+
+          let patch = Buffer.from(window.__JUN_LOADER_B64_PARTS__.join(''), 'base64').toString('utf8');
+          const before = patch;
+          patch = patch.replace(/new Function\(code\)\(\);/g, 'globalThis.__JUNE_FINAL_SOURCE__=code;');
+          if (patch === before) throw new Error('Loader evaluator marker not found');
+          vm.runInThisContext(patch);
+          const finalSource = globalThis.__JUNE_FINAL_SOURCE__;
+          if (!finalSource) throw new Error('Final June source was not generated');
+          new Function(finalSource);
+
+          const required = [
+            'SNAPSHOT BOS — JUN 2026',
+            'IMPORT_JUNE_LEGACY',
+            'JUNE-COMPLETE-20260709-1',
+            'Import Backup Lama Jun',
+            'MOHD FAHMIE BIN HAMIL dibuang',
+            'applyJuneKzkSeed'
+          ];
+          for (const text of required) {
+            if (!finalSource.includes(text)) throw new Error(`Missing final-source marker: ${text}`);
+          }
+          if (!window.__EAKHA_JUNE_KZK_SEED__?.records?.length) throw new Error('KZ Koperal seed missing');
+          console.log(`Final source OK: ${finalSource.length} chars`);
+          console.log(`KZK seed members: ${window.__EAKHA_JUNE_KZK_SEED__.records.length}`);
+          NODE
+          node /tmp/test-june.js
+      - name: Validate HTML load order
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('jun-2026/index.html').read_text()
+          names = ['part08.js', 'june-migration-seed-2026.js', 'loader-b64-01.js', 'loader.js']
+          positions = [text.index(name) for name in names]
+          assert positions == sorted(positions), (names, positions)
+          assert '52 Anggota' in text
+          print('HTML load order OK')
+          PY
