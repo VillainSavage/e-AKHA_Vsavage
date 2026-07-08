@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>e-AKHA Vsavage — Jun 2026 · Master File</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426}
+    #system{display:block;border:0;width:100%;height:100%;background:#071426}
+    #boot{position:fixed;right:10px;bottom:8px;z-index:99998;padding:5px 9px;border-radius:6px;background:rgba(7,20,38,.95);border:1px solid rgba(255,255,255,.1);color:#94a3b8;font:10px/1.35 system-ui}
+  </style>
+</head>
+<body>
+  <iframe id="system" title="e-AKHA Vsavage Jun 2026 Master File"></iframe>
+  <div id="boot">Memuatkan layout asal Master File Jun 2026…</div>
+  <script>
+    const frame=document.getElementById('system');
+    frame.src=`../base-v51017.html?month=6&v=51074-${Date.now()}`;
+    frame.addEventListener('load',()=>{
+      const b=document.getElementById('boot');
+      if(b){b.textContent='Layout asal aktif · data Jun sedang dipadankan ke 7 lapisan';setTimeout(()=>b.remove(),7000)}
+    });
+  </script>
+  <script src="../jun-2026/kzk-seed-june-2026.js?v=20260709-restore-1"></script>
+  <script src="../v51069-stability-guard.js?v=51074"></script>
+  <script src="../v51070-access-state.js?v=51074"></script>
+  <script src="../v51071-hrmis-mc-upload-repair.js?v=51074"></script>
+  <script src="../v51074-june-master-restore.js?v=51074-1"></script>
+</body>
+</html>
