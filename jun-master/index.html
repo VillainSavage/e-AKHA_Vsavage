@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage — Jun 2026 · Master File</title>
+  <title>e-AKHA Vsavage — Jun 2026 · Final Snapshot</title>
   <style>
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426}
     #system{display:block;border:0;width:100%;height:100%;background:#071426}
@@ -11,21 +11,21 @@
   </style>
 </head>
 <body>
-  <iframe id="system" title="e-AKHA Vsavage Jun 2026 Master File"></iframe>
-  <div id="boot">Memuatkan live data Master File Jun 2026…</div>
+  <iframe id="system" title="e-AKHA Vsavage Jun 2026 Final Snapshot"></iframe>
+  <div id="boot">Memuatkan Final Snapshot Jun 2026…</div>
   <script>
     const frame=document.getElementById('system');
-    frame.src=`../base-v51017.html?month=6&v=51077-hard-offday-${Date.now()}`;
+    frame.src=`../base-v51017.html?month=6&v=51079-final-jun-${Date.now()}`;
     frame.addEventListener('load',()=>{
       const b=document.getElementById('boot');
-      if(b){b.textContent='Layout asal aktif · live data Jun 7 lapisan sedang dimasukkan';setTimeout(()=>b.remove(),7000)}
+      if(b){b.textContent='Final Jun 2026 aktif · 7 lapisan sedang dikunci';setTimeout(()=>b.remove(),7000)}
     });
   </script>
   <script src="../jun-2026/kzk-seed-june-2026.js?v=20260709-restore-1"></script>
-  <script src="../v51069-stability-guard.js?v=51077"></script>
-  <script src="../v51070-access-state.js?v=51077"></script>
-  <script src="../v51071-hrmis-mc-upload-repair.js?v=51077"></script>
-  <script src="../v51074-june-master-restore.js?v=51077-hard-offday-1"></script>
+  <script src="../v51069-stability-guard.js?v=51079"></script>
+  <script src="../v51070-access-state.js?v=51079"></script>
+  <script src="../v51071-hrmis-mc-upload-repair.js?v=51079"></script>
+  <script src="../v51074-june-master-restore.js?v=51079-final-jun-1"></script>
   <script>window.__EAKHA_JUN_LIVE_B64='';</script>
   <script src="../jun-2026/live-data-jun-2026-part01.js?v=20260709-live-1"></script>
   <script src="../jun-2026/live-data-jun-2026-part02.js?v=20260709-live-1"></script>
@@ -36,5 +36,6 @@
   <script src="../v51075-june-live-data.js?v=51075-live-1"></script>
   <script src="../v51076-offday-dedup.js?v=51076-offday-dedup-1"></script>
   <script src="../v51077-hard-offday-hrmis-owner.js?v=51077-hard-offday-1"></script>
+  <script src="../v51079-final-june-lock.js?v=51079-final-jun-1"></script>
 </body>
 </html>
