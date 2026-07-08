@@ -1,1 +1,1 @@
-(()=>{const code=(window.__JUN_APP_PARTS__||[]).join('');window.__JUN_APP_PARTS__=[];new Function(code)();})();
+(()=>{const s=(window.__JUN_LOADER_B64_PARTS__||[]).join('');window.__JUN_LOADER_B64_PARTS__=[];const b=Uint8Array.from(atob(s),c=>c.charCodeAt(0));new Function(new TextDecoder().decode(b))();})();
