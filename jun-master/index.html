@@ -12,19 +12,27 @@
 </head>
 <body>
   <iframe id="system" title="e-AKHA Vsavage Jun 2026 Master File"></iframe>
-  <div id="boot">Memuatkan layout asal Master File Jun 2026…</div>
+  <div id="boot">Memuatkan live data Master File Jun 2026…</div>
   <script>
     const frame=document.getElementById('system');
-    frame.src=`../base-v51017.html?month=6&v=51074-${Date.now()}`;
+    frame.src=`../base-v51017.html?month=6&v=51075-live-${Date.now()}`;
     frame.addEventListener('load',()=>{
       const b=document.getElementById('boot');
-      if(b){b.textContent='Layout asal aktif · data Jun sedang dipadankan ke 7 lapisan';setTimeout(()=>b.remove(),7000)}
+      if(b){b.textContent='Layout asal aktif · live data Jun 7 lapisan sedang dimasukkan';setTimeout(()=>b.remove(),7000)}
     });
   </script>
   <script src="../jun-2026/kzk-seed-june-2026.js?v=20260709-restore-1"></script>
-  <script src="../v51069-stability-guard.js?v=51074"></script>
-  <script src="../v51070-access-state.js?v=51074"></script>
-  <script src="../v51071-hrmis-mc-upload-repair.js?v=51074"></script>
-  <script src="../v51074-june-master-restore.js?v=51074-1"></script>
+  <script src="../v51069-stability-guard.js?v=51075"></script>
+  <script src="../v51070-access-state.js?v=51075"></script>
+  <script src="../v51071-hrmis-mc-upload-repair.js?v=51075"></script>
+  <script src="../v51074-june-master-restore.js?v=51075-live-1"></script>
+  <script>window.__EAKHA_JUN_LIVE_B64='';</script>
+  <script src="../jun-2026/live-data-jun-2026-part01.js?v=20260709-live-1"></script>
+  <script src="../jun-2026/live-data-jun-2026-part02.js?v=20260709-live-1"></script>
+  <script src="../jun-2026/live-data-jun-2026-part03.js?v=20260709-live-1"></script>
+  <script src="../jun-2026/live-data-jun-2026-part04.js?v=20260709-live-1"></script>
+  <script src="../jun-2026/live-data-jun-2026-part05.js?v=20260709-live-1"></script>
+  <script src="../jun-2026/live-data-jun-2026-part06.js?v=20260709-live-1"></script>
+  <script src="../v51075-june-live-data.js?v=51075-live-1"></script>
 </body>
 </html>
