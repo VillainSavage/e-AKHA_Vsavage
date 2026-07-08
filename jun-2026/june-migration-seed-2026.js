@@ -1,10 +1,7 @@
 (()=>{
   'use strict';
-  const parts=window.__JUN_APP_PARTS__||[];
-  if(!parts.length) throw new Error('June migration patch: app source belum dimuat');
-  let code=parts.join('');
+  const nativeFunction=globalThis.Function;
   const marker="if(sessionValid())bootApp().catch(e=>{console.error(e);showLogin()});else showLogin();";
-  if(!code.includes(marker)) throw new Error('June migration patch: boot marker tidak ditemui');
 
   function installJuneCompletion(){
     const LEGACY_ROSTER_53=[
@@ -115,6 +112,24 @@
   }
 
   const injected='('+installJuneCompletion.toString()+')();\n';
-  code=code.replace(marker,injected+marker);
-  window.__JUN_APP_PARTS__=[code];
+  function compileFinal(args){
+    const next=Array.from(args),i=next.length-1,src=String(next[i]||'');
+    if(src.includes(marker)&&src.includes("const DB_NAME='eakha_june_2026_v1'")){
+      const finalSource=src.replace(marker,injected+marker);
+      next[i]=finalSource;
+      globalThis.Function=nativeFunction;
+      if(globalThis.window)window.Function=nativeFunction;
+      if(globalThis.window&&window.__JUNE_CAPTURE_ONLY__){
+        window.__JUNE_FINAL_SOURCE__=finalSource;
+        return function(){};
+      }
+    }
+    return Reflect.construct(nativeFunction,next,nativeFunction);
+  }
+  const wrappedFunction=new Proxy(nativeFunction,{
+    construct(target,args){return compileFinal(args)},
+    apply(target,thisArg,args){return compileFinal(args)}
+  });
+  globalThis.Function=wrappedFunction;
+  if(globalThis.window)window.Function=wrappedFunction;
 })();
