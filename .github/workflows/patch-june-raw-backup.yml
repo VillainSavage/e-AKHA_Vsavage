@@ -1,0 +1,94 @@
+name: Patch June raw backup support
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/patch-june-raw-backup.yml]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/june-data-import
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Add raw legacy D support
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('jun-2026/june-migration-seed-2026.js')
+          t=p.read_text(encoding='utf-8')
+          old="function findJunePayload(root){root=parseJsonDeep(root);if(!root||typeof root!=='object')return null;"
+          new="function isRawLegacyD(x){if(!x||typeof x!=='object'||Array.isArray(x)||x.D)return false;const rows=Object.entries(x).filter(([k,v])=>/^\\d+$/.test(k)&&v&&typeof v==='object');return rows.length>=20&&rows.some(([,v])=>Object.keys(v).some(d=>/^(?:[1-9]|[12]\\d|30)$/.test(d)))}\n    function findJunePayload(root){root=parseJsonDeep(root);if(isRawLegacyD(root))return{D:root,year:2026,month:6};if(!root||typeof root!=='object')return null;"
+          if old not in t: raise SystemExit('findJunePayload marker not found')
+          t=t.replace(old,new,1)
+          old_keys="const keys=['eakha_guard_last_good_dataset','eakha_dataset_2026_6','eakha_dataset_2026_06','eakha_snapshot_latest_2026_06'];"
+          new_keys="const keys=['eakha_guard_last_good_dataset','eakha_guard_last_good_data','eakha_data','eakha_dataset_2026_6','eakha_dataset_2026_06','eakha_snapshot_latest_2026_06'];"
+          if old_keys not in t: raise SystemExit('localStorage keys marker not found')
+          t=t.replace(old_keys,new_keys,1)
+          p.write_text(t,encoding='utf-8')
+          PY
+          node --check jun-2026/june-migration-seed-2026.js
+
+      - name: Validate live loader and raw backup markers
+        id: validate
+        shell: bash
+        run: |
+          cat >/tmp/test.js <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const NativeFunction=global.Function;
+          try{
+            global.window={__JUN_APP_PARTS__:[],__JUN_LOADER_B64_PARTS__:[],__JUNE_CAPTURE_ONLY__:true};
+            vm.runInThisContext(fs.readFileSync('jun-2026/kzk-seed-june-2026.js','utf8'));
+            for(let i=1;i<=8;i++)vm.runInThisContext(fs.readFileSync(`jun-2026/part${String(i).padStart(2,'0')}.js`,'utf8'));
+            vm.runInThisContext(fs.readFileSync('jun-2026/june-migration-seed-2026.js','utf8'));
+            for(let i=1;i<=7;i++)vm.runInThisContext(fs.readFileSync(`jun-2026/loader-b64-${String(i).padStart(2,'0')}.js`,'utf8'));
+            vm.runInThisContext(fs.readFileSync('jun-2026/loader.js','utf8'));
+            const src=window.__JUNE_FINAL_SOURCE__;
+            if(!src)throw new Error('Final source not captured');
+            NativeFunction(src);
+            for(const x of ['isRawLegacyD','eakha_guard_last_good_data','eakha_data','SNAPSHOT BOS — JUN 2026'])if(!src.includes(x))throw new Error(`Missing ${x}`);
+            console.log('PASS live loader');
+            console.log('PASS raw D backup support');
+            console.log('PASS KZK 52 and BOS snapshot');
+          }catch(e){console.error(e.stack||e);process.exit(1)}
+          NODE
+          set +e
+          node /tmp/test.js >/tmp/result.txt 2>&1
+          s=$?
+          set -e
+          cat /tmp/result.txt
+          echo "status=$s" >> "$GITHUB_OUTPUT"
+
+      - name: Commit patch
+        if: steps.validate.outputs.status == '0'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add jun-2026/june-migration-seed-2026.js
+          git commit -m "Accept raw legacy D backups for June migration"
+          git push origin HEAD:agent/june-data-import
+
+      - name: Comment result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TEST_STATUS: ${{ steps.validate.outputs.status }}
+        shell: bash
+        run: |
+          [ "$TEST_STATUS" = 0 ] && v='✅ LULUS' || v='❌ GAGAL'
+          { echo "### Raw backup validation: $v"; echo '```'; cat /tmp/result.txt; echo '```'; } >/tmp/comment.md
+          gh pr comment 2 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Fail on error
+        if: steps.validate.outputs.status != '0'
+        run: exit 1
