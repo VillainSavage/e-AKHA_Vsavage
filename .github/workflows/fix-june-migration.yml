@@ -1,0 +1,165 @@
+name: Fix and validate June migration
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-june-migration.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  fix-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/june-data-import
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Move June completion injection after loader patches
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('jun-2026/june-migration-seed-2026.js')
+          text = path.read_text(encoding='utf-8')
+          body_start = text.index('  function installJuneCompletion(){')
+          suffix_start = text.rindex("  const injected='('+installJuneCompletion.toString()+')();\\n';")
+          body = text[body_start:suffix_start]
+
+          prefix = """(()=>{
+            'use strict';
+            const nativeFunction=globalThis.Function;
+            const marker=\"if(sessionValid())bootApp().catch(e=>{console.error(e);showLogin()});else showLogin();\";
+
+          """
+
+          suffix = r"""  const injected='('+installJuneCompletion.toString()+')();\n';
+            function compileFinal(args){
+              const next=Array.from(args);
+              const bodyIndex=next.length-1;
+              const src=String(next[bodyIndex]||'');
+              if(src.includes(marker)&&src.includes("const DB_NAME='eakha_june_2026_v1'")){
+                const finalSource=src.replace(marker,injected+marker);
+                next[bodyIndex]=finalSource;
+                globalThis.Function=nativeFunction;
+                if(globalThis.window)window.Function=nativeFunction;
+                if(globalThis.window&&window.__JUNE_CAPTURE_ONLY__){
+                  window.__JUNE_FINAL_SOURCE__=finalSource;
+                  return function(){};
+                }
+              }
+              return Reflect.construct(nativeFunction,next,nativeFunction);
+            }
+            const wrappedFunction=new Proxy(nativeFunction,{
+              construct(target,args){return compileFinal(args)},
+              apply(target,thisArg,args){return compileFinal(args)}
+            });
+            globalThis.Function=wrappedFunction;
+            if(globalThis.window)window.Function=wrappedFunction;
+          })();
+          """
+
+          path.write_text(prefix + body + suffix, encoding='utf-8')
+          PY
+          node --check jun-2026/june-migration-seed-2026.js
+
+      - name: Validate final generated June application
+        id: validate
+        shell: bash
+        run: |
+          cat > /tmp/test-june.js <<'NODE'
+          const fs = require('fs');
+          const vm = require('vm');
+          const NativeFunction = global.Function;
+          try {
+            global.window = {
+              __JUN_APP_PARTS__: [],
+              __JUN_LOADER_B64_PARTS__: [],
+              __JUNE_CAPTURE_ONLY__: true
+            };
+            for (let i = 1; i <= 8; i++) {
+              vm.runInThisContext(fs.readFileSync(`jun-2026/part${String(i).padStart(2, '0')}.js`, 'utf8'));
+            }
+            vm.runInThisContext(fs.readFileSync('jun-2026/june-migration-seed-2026.js', 'utf8'));
+            vm.runInThisContext(fs.readFileSync('jun-2026/kzk-seed-june-2026.js', 'utf8'));
+            for (let i = 1; i <= 7; i++) {
+              vm.runInThisContext(fs.readFileSync(`jun-2026/loader-b64-${String(i).padStart(2, '0')}.js`, 'utf8'));
+            }
+            const patch = Buffer.from(window.__JUN_LOADER_B64_PARTS__.join(''), 'base64').toString('utf8');
+            vm.runInThisContext(patch);
+            const finalSource = window.__JUNE_FINAL_SOURCE__;
+            if (!finalSource) throw new Error('Final June source was not captured');
+            NativeFunction(finalSource);
+            const required = [
+              'SNAPSHOT BOS — JUN 2026',
+              'IMPORT_JUNE_LEGACY',
+              'JUNE-COMPLETE-20260709-1',
+              'Import Backup Lama Jun',
+              'applyJuneKzkSeed'
+            ];
+            for (const text of required) {
+              if (!finalSource.includes(text)) throw new Error(`Missing marker: ${text}`);
+            }
+            if (window.__EAKHA_JUNE_KZK_SEED__?.records?.length !== 52) {
+              throw new Error('KZ Koperal seed is not 52 members');
+            }
+            const index = fs.readFileSync('jun-2026/index.html', 'utf8');
+            const order = ['part08.js','june-migration-seed-2026.js','loader-b64-01.js','loader.js'];
+            const positions = order.map(x => index.indexOf(x));
+            if (positions.some(x => x < 0) || positions.some((x,i) => i && x < positions[i-1])) {
+              throw new Error('HTML load order invalid');
+            }
+            console.log(`PASS: final source ${finalSource.length} chars`);
+            console.log('PASS: KZ Koperal 52 members');
+            console.log('PASS: BOS snapshot and legacy migration present');
+            console.log('PASS: HTML load order valid');
+          } catch (error) {
+            console.error(error && error.stack ? error.stack : error);
+            process.exit(1);
+          }
+          NODE
+          set +e
+          node /tmp/test-june.js > /tmp/june-fix-result.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/june-fix-result.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Commit fixed migration to working branch
+        if: steps.validate.outputs.status == '0'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add jun-2026/june-migration-seed-2026.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Fix June migration injection after loader patches"
+            git push origin HEAD:agent/june-data-import
+          fi
+
+      - name: Post validation result to PR 2
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TEST_STATUS: ${{ steps.validate.outputs.status }}
+        shell: bash
+        run: |
+          if [ "$TEST_STATUS" = "0" ]; then verdict="✅ LULUS"; else verdict="❌ GAGAL"; fi
+          {
+            echo "### Final June migration validation: $verdict"
+            echo '```'
+            cat /tmp/june-fix-result.txt
+            echo '```'
+          } > /tmp/comment.md
+          gh pr comment 2 --repo "$GITHUB_REPOSITORY" --body-file /tmp/comment.md
+
+      - name: Fail when validation failed
+        if: steps.validate.outputs.status != '0'
+        run: exit 1
