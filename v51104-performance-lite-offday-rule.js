@@ -1,40 +1,82 @@
-/* e-AKHA v5.11.04 — PERFORMANCE LITE + HARD OFFDAY LOCK
-   Single Jun patch. No render loop.
-   OFFDAY hard rule:
-   - OFFDAY ikut jadual hakiki Jun sahaja.
-   - Pada hakiki OFFDAY: semua layer paparan dikunci OFFDAY/OF; punch jari/OT diabaikan.
-   - Tidak boleh paparkan HADIR/LEWAT/MC/CR/EL sebagai audit pada OFFDAY.
-   - Pada hari bertugas: OFF/OF palsu dalam KZ ditukar kepada TM.
+/* e-AKHA v5.11.04 — HARD OFFDAY LOCK CLEAN
+   Single Jun patch. No render loop. No new refix file.
+   Rule: OFFDAY ikut jadual hakiki Jun sahaja. Semua layer pada OFFDAY dikunci OFF/OFFDAY.
+   Thumb/jari, OT, HADIR, LEWAT, MC, CR, EL, HRMIS pada OFFDAY tidak dipaparkan sebagai hadir/isu/audit.
 */
 (function(){
 'use strict';
-var PATCH='v5.11.04-HARD-OFFDAY-LOCK';
-var HAKIKI={
+var PATCH='v5.11.04-HARD-OFFDAY-LOCK-CLEAN';
+var H={
 1:{ALPHA:'M',BRAVO:'P',CHARLIE:'O',DELTA:'S'},2:{ALPHA:'O',BRAVO:'S',CHARLIE:'P',DELTA:'M'},3:{ALPHA:'O',BRAVO:'S',CHARLIE:'P',DELTA:'M'},4:{ALPHA:'P',BRAVO:'M',CHARLIE:'S',DELTA:'O'},5:{ALPHA:'P',BRAVO:'M',CHARLIE:'S',DELTA:'O'},6:{ALPHA:'S',BRAVO:'O',CHARLIE:'M',DELTA:'P'},7:{ALPHA:'S',BRAVO:'O',CHARLIE:'M',DELTA:'P'},8:{ALPHA:'M',BRAVO:'P',CHARLIE:'O',DELTA:'S'},9:{ALPHA:'M',BRAVO:'P',CHARLIE:'O',DELTA:'S'},10:{ALPHA:'O',BRAVO:'S',CHARLIE:'P',DELTA:'M'},11:{ALPHA:'O',BRAVO:'S',CHARLIE:'P',DELTA:'M'},12:{ALPHA:'P',BRAVO:'M',CHARLIE:'S',DELTA:'O'},13:{ALPHA:'P',BRAVO:'M',CHARLIE:'S',DELTA:'O'},14:{ALPHA:'S',BRAVO:'O',CHARLIE:'M',DELTA:'P'},15:{ALPHA:'S',BRAVO:'O',CHARLIE:'M',DELTA:'P'},16:{ALPHA:'M',BRAVO:'P',CHARLIE:'O',DELTA:'S'},17:{ALPHA:'M',BRAVO:'P',CHARLIE:'O',DELTA:'S'},18:{ALPHA:'O',BRAVO:'S',CHARLIE:'P',DELTA:'M'},19:{ALPHA:'O',BRAVO:'S',CHARLIE:'P',DELTA:'M'},20:{ALPHA:'P',BRAVO:'M',CHARLIE:'S',DELTA:'O'},21:{ALPHA:'P',BRAVO:'M',CHARLIE:'S',DELTA:'O'},22:{ALPHA:'S',BRAVO:'O',CHARLIE:'M',DELTA:'P'},23:{ALPHA:'S',BRAVO:'O',CHARLIE:'M',DELTA:'P'},24:{ALPHA:'M',BRAVO:'P',CHARLIE:'O',DELTA:'S'},25:{ALPHA:'M',BRAVO:'P',CHARLIE:'O',DELTA:'S'},26:{ALPHA:'O',BRAVO:'S',CHARLIE:'P',DELTA:'M'},27:{ALPHA:'O',BRAVO:'S',CHARLIE:'P',DELTA:'M'},28:{ALPHA:'P',BRAVO:'M',CHARLIE:'S',DELTA:'O'},29:{ALPHA:'P',BRAVO:'M',CHARLIE:'S',DELTA:'O'},30:{ALPHA:'S',BRAVO:'O',CHARLIE:'M',DELTA:'P'}};
-var LAB={P:'PT',S:'PG',M:'M',O:'OF'};
 function target(){var f=document.getElementById('system')||document.querySelector('iframe');try{if(f&&f.contentWindow&&f.contentDocument)return f.contentWindow}catch(e){}return window}
 function get(W,n){try{return W.eval('typeof '+n+'!=="undefined"?'+n+':undefined')}catch(e){return W[n]}}
 function put(W,n,v){try{W[n]=v;W.eval(n+'=window["'+n+'"]')}catch(e){W[n]=v}}
 function up(s){return String(s==null?'':s).toUpperCase().replace(/MOHAMMAD|MUHAMMAD|MUHAMAD|MOHD|MUHD/g,'MOHAMAD').replace(/[^A-Z0-9 ]+/g,' ').replace(/\s+/g,' ').trim()}
-function esc(s){return String(s==null?'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function M(W){var m=get(W,'MASTER');return Array.isArray(m)?m:[]}
 function D(W){var d=get(W,'D');return d&&typeof d==='object'?d:null}
-function isOffVal(v){var s=up(v);return s==='O'||s==='OF'||s==='OFF'||s==='OFFDAY'||s==='REHAT'}
-function hasPunch(c){return !!(c&&(c.tc_in||c.tc_out||(Array.isArray(c.tc_all)&&c.tc_all.length)))}
-function shFor(m,d){var k=up(m&&m.komp);return HAKIKI[d]&&HAKIKI[d][k]||''}
-function findMemberByBil(W,bil){return M(W).find(function(m){return +m.bil===+bil})||null}
+function kompOfText(t){t=up(t);return ['ALPHA','BRAVO','CHARLIE','DELTA'].find(function(k){return t.indexOf(k)>=0})||''}
+function shK(k,d){return H[+d]&&H[+d][up(k)]||''}
+function shM(m,d){return shK(m&&m.komp,d)}
+function isOffBilDay(W,bil,day){var m=M(W).find(function(x){return +x.bil===+bil});return !!(m&&shM(m,+day)==='O')}
 function findByName(W,a,b){return M(W).find(function(m){var n=up(m.nama);return n.indexOf(a)>=0&&n.indexOf(b)>=0})||null}
-function mcArr(W){var a=get(W,'MC_DATA');if(Array.isArray(a))return a;try{a=JSON.parse(W.localStorage.getItem('eakha_mc')||'[]');if(Array.isArray(a)){put(W,'MC_DATA',a);return a}}catch(e){}a=[];put(W,'MC_DATA',a);return a}
 function mcNo(r){return String((r&&(r.no_mc||r.siri||r.mc_no||r.no||''))||'').toUpperCase().trim()}
-function forceOffdayCell(c){var punch=hasPunch(c);c.kzp='OF';c.kzk='OF';c.tc_shift='O';c.shift='O';c.shift_live='O';c.live_shift_label='OF';c.hakiki_shift='O';c.shift_hakiki='O';c.ot=!!punch;c.no_perhatian=true;c.audit_ignore_attention=true;c.tc_audit_status='OFFDAY';c.tc_issue='OFFDAY';c.audit_final='OFFDAY';c.audit_status='OFFDAY';c.final_audit='OFFDAY';c.audit_class='af-off';c.audit_incomplete=false;c.audit_reason=PATCH;c.offday_locked=true;c.locked_by=PATCH;return c}
-function applyOffdayAndHakiki(W){var d=D(W);if(!d)return 0;var changed=0;M(W).forEach(function(m){if(!d[m.bil])d[m.bil]={};for(var day=1;day<=30;day++){var sh=shFor(m,day);if(!sh)continue;if(!d[m.bil][day])d[m.bil][day]={};var c=d[m.bil][day];c.shift_live=sh;c.live_shift_label=LAB[sh]||sh;c.hakiki_shift=sh;c.shift_hakiki=sh;if(sh==='O'){forceOffdayCell(c);changed++}else{if(isOffVal(c.kzp)){c.kzp='TM';changed++}if(isOffVal(c.kzk)){c.kzk='TM';changed++}if(isOffVal(c.audit_final)||isOffVal(c.audit_status)||String(c.audit_final||'').toUpperCase().indexOf('OFF')>=0){delete c.audit_final;delete c.audit_status;delete c.final_audit;changed++}}}});return changed}
-function lockAsree(W){var d=D(W),a=findByName(W,'ASREE','HAZIR');if(!d||!a)return 0;if(!d[a.bil])d[a.bil]={};for(var day=1;day<=30;day++){if(!d[a.bil][day])d[a.bil][day]={};var c=d[a.bil][day];c.kzp='TH';c.kzk='TH';c.tc_in='';c.tc_out='';c.tc_all=[];c.hrmis='';delete c._hrmis_rec;delete c._mc;delete c.mc;c.audit_final='TH - TIDAK HADIR TUGAS';c.audit_status=c.audit_final;c.final_audit=c.audit_final;c.audit_class='af-th';c.audit_incomplete=false;c.locked_by=PATCH}return 30}
-function fixMC14811(W){var d=D(W),nor=findByName(W,'NOR AINA','TARMIZI'),y=findByName(W,'YUSRI','YUNUS');if(!d||!nor)return false;var arr=mcArr(W),rec=arr.find(function(r){return mcNo(r)==='MC14811'});if(!rec){rec={no_mc:'MC14811',siri:'MC14811'};arr.push(rec)}rec.bil=nor.bil;rec.nama=nor.nama;rec.jab=nor.jab;rec.komp=nor.komp;rec.d=3;rec.m=6;rec.y=2026;rec.dari='03/06/2026';rec.hingga='04/06/2026';rec.tarikh='03/06/2026';rec.hari=2;rec.klinik='POLIKLINIK MEDI IHSAN';rec._days=[3,4];rec.source=PATCH;[3,4].forEach(function(day){if(y&&d[y.bil]&&d[y.bil][day]){var c=d[y.bil][day];try{if(JSON.stringify(c._mc||c.mc||'').toUpperCase().indexOf('MC14811')>=0){delete c._mc;delete c.mc;delete c.mc_rec;if(String(c.audit_final||'').toUpperCase().indexOf('MC')>=0){delete c.audit_final;delete c.audit_status;delete c.final_audit}}}catch(e){}}if(!d[nor.bil])d[nor.bil]={};if(!d[nor.bil][day])d[nor.bil][day]={};d[nor.bil][day]._mc=rec;d[nor.bil][day].mc_src=PATCH});return true}
-function isOffdayBilDay(W,bil,day){var m=findMemberByBil(W,bil);return !!(m&&shFor(m,+day)==='O')}
-function installCore(W){if(W.__EAKHA_51104_CORE__)return;W.__EAKHA_51104_CORE__=true;var oldAF=get(W,'auditFinal');if(typeof oldAF==='function')put(W,'auditFinal',function(bil,day){if(isOffdayBilDay(W,bil,day))return {txt:'OFFDAY',cls:'af-off',inc:false};var a=findByName(W,'ASREE','HAZIR');if(a&&+bil===+a.bil)return {txt:'TH - TIDAK HADIR TUGAS',cls:'af-th',inc:false};return oldAF.apply(this,arguments)});var oldTC=get(W,'tcAudit');if(typeof oldTC==='function')put(W,'tcAudit',function(bil,day){if(isOffdayBilDay(W,bil,day))return {txt:'OFFDAY',cls:'tc-off',ok:true,offday:true,ignore:true};return oldTC.apply(this,arguments)});var oldCL=get(W,'checkLayersComplete');if(typeof oldCL==='function')put(W,'checkLayersComplete',function(bil,day){if(isOffdayBilDay(W,bil,day))return {complete:true,missing:[],offday:true,special:false,ignore:true,locked:true};return oldCL.apply(this,arguments)});var oldMC=get(W,'getMC');if(typeof oldMC==='function')put(W,'getMC',function(bil,day){if(isOffdayBilDay(W,bil,day))return null;var r=oldMC.apply(this,arguments);if(r&&mcNo(r)==='MC14811'){var nor=findByName(W,'NOR AINA','TARMIZI');if(nor&&+bil!==+nor.bil)return null}return r});put(W,'gSh',function(bil,day){var m=findMemberByBil(W,bil);return m?shFor(m,+day):''});put(W,'daysInActiveMonth',function(){return 30});var oldRender=get(W,'renderMaster');if(typeof oldRender==='function'&&!oldRender.__OFFDAY_LOCK_51104__){var wrap=function(){applyOffdayAndHakiki(W);lockAsree(W);fixMC14811(W);var r=oldRender.apply(this,arguments);setTimeout(function(){try{applyOffdayAndHakiki(W);paintDom(W)}catch(e){}},0);return r};wrap.__OFFDAY_LOCK_51104__=true;put(W,'renderMaster',wrap)}}
-function paintDom(W){try{var doc=W.document;doc.querySelectorAll('td,div').forEach(function(el){var t=up(el.textContent);if(t==='OFFDAY / OT ABAIKAN'||t==='OFF OT'||t==='OF OT'){el.textContent='OFFDAY';el.title='OFFDAY dikunci ikut jadual hakiki — punch/OT diabaikan';el.classList.add('af-off')}})}catch(e){}}
-function snapshot(W){var rows=M(W),d=D(W)||{},now=new Date().toLocaleString('ms-MY'),html='',head='';for(var day=1;day<=30;day++)head+='<th>'+day+'</th>';rows.forEach(function(m){html+='<tr><td>'+esc(m.bil)+'</td><td class="name">'+esc(m.nama)+'<br><small>'+esc(m.jab+' · '+m.komp)+'</small></td>';for(var day=1;day<=30;day++){var c=d[m.bil]&&d[m.bil][day]||{},txt=String(c.audit_final||c.audit_status||'');var st='-';if(up(m.nama).indexOf('ASREE')>=0&&up(m.nama).indexOf('HAZIR')>=0)st='TH';else if((shFor(m,day)||'')==='O')st='OFF';else if(/MC/i.test(txt)||c._mc||c.mc)st='MC';else if(/HRMIS|CR|EL|CTR|CB/i.test(txt)||c.hrmis)st='CUTI';else if(/ABS/i.test(txt))st='ABS';else if(/LEWAT/i.test(txt))st='L';else if(/SEMAK|MOHON|BELUM|TM/i.test(txt))st='SEMAK';else if(/SAH/i.test(txt)||c.tc_in||c.tc_out)st='SAH';html+='<td class="'+st+'">'+st+'</td>'}html+='</tr>'});var out='<!doctype html><html><head><meta charset="utf-8"><title>Snapshot BOS Live Jun</title><style>@page{size:A3 landscape;margin:8mm}body{font-family:Arial;margin:0}.bar{background:#111827;color:#fff;padding:10px;display:flex;gap:8px}.bar h1{font-size:15px;flex:1;margin:0}button{padding:7px 12px;font-weight:700}table{border-collapse:collapse;width:100%;font-size:7px}th,td{border:1px solid #ccc;padding:2px;text-align:center}.name{text-align:left;min-width:150px}.SAH{background:#dcfce7}.MC{background:#fed7aa}.CUTI{background:#dbeafe}.OFF{background:#e5e7eb;color:#777}.TH{background:#fee2e2;color:#991b1b;font-weight:800}.ABS{background:#fecaca;color:#991b1b}.L{background:#fef3c7}.SEMAK{background:#ede9fe;color:#5b21b6}@media print{.bar{display:none}}</style></head><body><div class="bar"><h1>Snapshot BOS Live Jun 2026 · '+esc(now)+'</h1><button onclick="print()">Print / Save PDF</button><button onclick="close()">Tutup</button></div><table><thead><tr><th>Bil</th><th>Nama</th>'+head+'</tr></thead><tbody>'+html+'</tbody></table></body></html>';var win=W.open('','_blank');if(!win){alert('Popup blocked. Benarkan pop-up untuk Snapshot BOS.');return false}win.document.open();win.document.write(out);win.document.close();return true}
-function addButtons(W){try{W.eakhaSnapshotBosLive=function(){return snapshot(W)};put(W,'eakhaSnapshotBosLive',W.eakhaSnapshotBosLive);var doc=W.document,bar=doc.querySelector('#page-master > div[style*="display:flex"]')||doc.getElementById('page-master')||doc.body;if(!doc.getElementById('btn-51104-snap')){var b=doc.createElement('button');b.id='btn-51104-snap';b.className='btn btn-gold btn-sm';b.textContent='Snapshot BOS Jun';b.style.cssText='margin-left:6px;font-size:8px;position:relative;z-index:9999';b.onclick=function(e){e&&e.preventDefault();return snapshot(W)};bar.appendChild(b)}}catch(e){}try{if(!document.getElementById('btn-51104-parent-snap')){var p=document.createElement('button');p.id='btn-51104-parent-snap';p.textContent='Snapshot BOS Jun';p.style.cssText='position:fixed;right:14px;bottom:14px;z-index:999999;border:0;border-radius:8px;background:#f0b429;color:#111;font:800 12px Arial;padding:9px 13px;box-shadow:0 8px 22px rgba(0,0,0,.35);cursor:pointer';p.onclick=function(){snapshot(target())};document.body.appendChild(p)}}catch(e){}}
-function apply(render){var W=target();if(!W||!W.document||!D(W)||!M(W).length)return false;installCore(W);var rep={offday_hardlock:applyOffdayAndHakiki(W),asree:lockAsree(W),mc14811:fixMC14811(W),at:new Date().toISOString(),patch:PATCH};addButtons(W);W.__EAKHA_51104_REPORT__=rep;if(render&&!W.__EAKHA_51104_RENDERED__){W.__EAKHA_51104_RENDERED__=true;try{var rm=get(W,'renderMaster');if(typeof rm==='function')rm(null);var uf=get(W,'updFlags');if(typeof uf==='function')uf();paintDom(W)}catch(e){}}try{console.log('[e-AKHA '+PATCH+']',rep)}catch(e){}return true}
-function boot(){var tries=0;function tick(){tries++;if(apply(tries>2)||tries>=18)return;setTimeout(tick,700)}tick()}try{var f=document.getElementById('system')||document.querySelector('iframe');if(f)f.addEventListener('load',function(){setTimeout(boot,900);setTimeout(function(){try{apply(true)}catch(e){}},4500)})}catch(e){}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,900)});else setTimeout(boot,900);
+function forceOffCell(c){
+  if(!c)return;
+  if(c.tc_in||c.tc_out||(Array.isArray(c.tc_all)&&c.tc_all.length))c._offday_ignored_timecard={in:c.tc_in||'',out:c.tc_out||'',all:Array.isArray(c.tc_all)?c.tc_all.slice():[]};
+  if(c._mc||c.mc)c._offday_hidden_mc=c._mc||c.mc;
+  if(c.hrmis||c._hrmis_rec)c._offday_hidden_hrmis={hrmis:c.hrmis||'',rec:c._hrmis_rec||null};
+  c.kzp='OF';c.kzk='OF';
+  c.tc_in='';c.tc_out='';c.tc_all=[];c.tc_shift='O';c.ot=false;
+  c.hrmis='';delete c._hrmis_rec;delete c._mc;delete c.mc;delete c.mc_rec;
+  c.shift='O';c.shift_live='O';c.live_shift_label='OF';c.hakiki_shift='O';c.shift_hakiki='O';
+  c.tc_audit_status='OFFDAY';c.tc_issue='OFFDAY';
+  c.audit_final='OFFDAY';c.audit_status='OFFDAY';c.final_audit='OFFDAY';c.audit_class='af-off';c.audit_incomplete=false;c.audit_reason=PATCH;
+  c.offday_locked=true;c.locked_by=PATCH;c.no_perhatian=true;c.audit_ignore_attention=true;
+}
+function applyData(W){
+  var d=D(W),m=M(W);if(!d||!m.length)return 0;var n=0;
+  m.forEach(function(row){if(!d[row.bil])d[row.bil]={};for(var day=1;day<=30;day++){if(!d[row.bil][day])d[row.bil][day]={};var c=d[row.bil][day],sh=shM(row,day);if(!sh)continue;c.shift_live=sh;c.hakiki_shift=sh;c.shift_hakiki=sh;c.live_shift_label=sh==='O'?'OF':(sh==='S'?'PG':sh==='P'?'PT':sh);if(sh==='O'){forceOffCell(c);n++}else{['kzp','kzk'].forEach(function(k){if(/^(O|OF|OFF|OFFDAY|REHAT)$/i.test(String(c[k]||''))){c[k]='TM';n++}})}}});
+  return n;
+}
+function fixMC14811(W){
+  var d=D(W),nor=findByName(W,'NOR AINA','TARMIZI'),y=findByName(W,'YUSRI','YUNUS');if(!d||!nor)return false;
+  var arr=get(W,'MC_DATA');if(!Array.isArray(arr)){arr=[];put(W,'MC_DATA',arr)}
+  var rec=arr.find(function(r){return mcNo(r)==='MC14811'});if(!rec){rec={no_mc:'MC14811',siri:'MC14811'};arr.push(rec)}
+  Object.assign(rec,{bil:nor.bil,nama:nor.nama,jab:nor.jab,komp:nor.komp,d:3,m:6,y:2026,dari:'03/06/2026',hingga:'04/06/2026',tarikh:'03/06/2026',hari:2,klinik:'POLIKLINIK MEDI IHSAN',source:PATCH,_days:[3,4]});
+  [3,4].forEach(function(day){if(y&&d[y.bil]&&d[y.bil][day]){delete d[y.bil][day]._mc;delete d[y.bil][day].mc;delete d[y.bil][day].mc_rec}if(!isOffBilDay(W,nor.bil,day)){d[nor.bil]=d[nor.bil]||{};d[nor.bil][day]=d[nor.bil][day]||{};d[nor.bil][day]._mc=rec;d[nor.bil][day].mc_src=PATCH}});
+  return true;
+}
+function lockAsree(W){var d=D(W),a=findByName(W,'ASREE','HAZIR');if(!d||!a)return 0;for(var day=1;day<=30;day++){d[a.bil]=d[a.bil]||{};d[a.bil][day]=d[a.bil][day]||{};var c=d[a.bil][day];c.kzp='TH';c.kzk='TH';c.tc_in='';c.tc_out='';c.tc_all=[];c.hrmis='';delete c._hrmis_rec;delete c._mc;delete c.mc;c.audit_final='TH - TIDAK HADIR TUGAS';c.audit_status=c.audit_final;c.final_audit=c.audit_final;c.audit_class='af-th';c.audit_incomplete=false;c.locked_by=PATCH}return 30}
+function writeCell(cell,layer){
+  if(!cell)return;cell.dataset.offdayLocked='1';cell.classList.add('dc-noedit','af-off');cell.onclick=null;cell.style.pointerEvents='none';cell.title='OFFDAY dikunci ikut jadual hakiki — bukan hadir; thumb/OT diabaikan';
+  layer=up(layer);
+  if(layer.indexOf('SHIFT')>=0){cell.innerHTML='<b>OF</b><br><span style="opacity:.65">Rehat</span>';return}
+  if(layer.indexOf('KZ PENYELIA')>=0||layer.indexOf('KZ KOPERAL')>=0){cell.innerHTML='<b>OF</b><br><span style="opacity:.65">OFFDAY</span>';return}
+  if(layer.indexOf('TIMECARD')>=0){cell.innerHTML='OFFDAY';return}
+  if(layer.indexOf('MC DITERIMA')>=0||layer.indexOf('CUTI HRMIS')>=0){cell.innerHTML='<span style="opacity:.55">OFF</span>';return}
+  if(layer.indexOf('AUDIT')>=0){cell.innerHTML='<b>OFFDAY</b>';return}
+}
+function paintDom(W){
+  var doc=W.document;if(!doc)return 0;var count=0,currentKomp='';
+  doc.querySelectorAll('tr').forEach(function(tr){
+    var nameCell=tr.querySelector('.ntd');if(nameCell){var k=kompOfText(nameCell.textContent);if(k)currentKomp=k}
+    var layerCell=tr.querySelector('.ltd');if(!layerCell||!currentKomp)return;
+    var cells=Array.prototype.slice.call(tr.children),start=cells.indexOf(layerCell)+1,layer=layerCell.textContent;
+    for(var day=1;day<=30;day++){if(shK(currentKomp,day)==='O'){writeCell(cells[start+day-1],layer);count++}}
+  });
+  return count;
+}
+function install(W){
+  if(W.__EAKHA_51104_HARD_OFFDAY_CLEAN__)return;W.__EAKHA_51104_HARD_OFFDAY_CLEAN__=true;
+  var oldAF=get(W,'auditFinal');if(typeof oldAF==='function')put(W,'auditFinal',function(bil,day){if(isOffBilDay(W,bil,day))return {txt:'OFFDAY',cls:'af-off',inc:false};return oldAF.apply(this,arguments)});
+  var oldTC=get(W,'tcAudit');if(typeof oldTC==='function')put(W,'tcAudit',function(bil,day){if(isOffBilDay(W,bil,day))return {txt:'OFFDAY',cls:'tc-off',ok:true,offday:true,ignore:true};return oldTC.apply(this,arguments)});
+  var oldMC=get(W,'getMC');if(typeof oldMC==='function')put(W,'getMC',function(bil,day){if(isOffBilDay(W,bil,day))return null;var r=oldMC.apply(this,arguments);if(r&&mcNo(r)==='MC14811'){var nor=findByName(W,'NOR AINA','TARMIZI');if(nor&&+bil!==+nor.bil)return null}return r});
+  put(W,'gSh',function(bil,day){var m=M(W).find(function(x){return +x.bil===+bil});return m?shM(m,+day):''});put(W,'daysInActiveMonth',function(){return 30});
+  var oldRender=get(W,'renderMaster');if(typeof oldRender==='function'&&!oldRender.__EAKHA_OFFDAY_51104__){var wrap=function(){applyData(W);lockAsree(W);fixMC14811(W);var out=oldRender.apply(this,arguments);setTimeout(function(){try{applyData(W);paintDom(W)}catch(e){}},50);return out};wrap.__EAKHA_OFFDAY_51104__=true;put(W,'renderMaster',wrap)}
+  W.document.addEventListener('click',function(e){var c=e.target&&e.target.closest&&e.target.closest('[data-offday-locked="1"]');if(c){e.preventDefault();e.stopPropagation();return false}},true);
+}
+function apply(render){var W=target();if(!W||!W.document||!D(W)||!M(W).length)return false;install(W);var rep={offday_cells:applyData(W),asree:lockAsree(W),mc14811:fixMC14811(W),dom:0,patch:PATCH,at:new Date().toISOString()};if(render&&!W.__EAKHA_51104_RENDER_DONE__){W.__EAKHA_51104_RENDER_DONE__=true;try{var rm=get(W,'renderMaster');if(typeof rm==='function')rm(null)}catch(e){}}rep.dom=paintDom(W);W.__EAKHA_51104_REPORT__=rep;try{console.log('[e-AKHA '+PATCH+']',rep)}catch(e){}return true}
+function boot(){var tries=0;function tick(){tries++;if(apply(tries>2)||tries>=25)return;setTimeout(tick,650)}tick();setTimeout(function(){try{apply(true)}catch(e){}},5000);setTimeout(function(){try{apply(false)}catch(e){}},9000)}
+try{var f=document.getElementById('system')||document.querySelector('iframe');if(f)f.addEventListener('load',function(){setTimeout(boot,700)})}catch(e){}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,700)});else setTimeout(boot,700);
 })();
