@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage — Jun 2026 · BOS Live Report</title>
+  <title>e-AKHA Vsavage — Jun 2026 · MC Owner Truth</title>
   <style>
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426}
     #system{display:block;border:0;width:100%;height:100%;background:#071426}
@@ -11,21 +11,21 @@
   </style>
 </head>
 <body>
-  <iframe id="system" title="e-AKHA Vsavage Jun 2026 BOS Live Report"></iframe>
+  <iframe id="system" title="e-AKHA Vsavage Jun 2026 MC Owner Truth"></iframe>
   <div id="boot">Memuatkan Final Snapshot Jun 2026…</div>
   <script>
     const frame=document.getElementById('system');
-    frame.src=`../base-v51017.html?month=6&v=51100-snapshot-bos-live-${Date.now()}`;
+    frame.src=`../base-v51017.html?month=6&v=51101-mc-owner-truth-${Date.now()}`;
     frame.addEventListener('load',()=>{
       const b=document.getElementById('boot');
-      if(b){b.textContent='Final Jun 2026 · Snapshot BOS Live 51100';setTimeout(()=>b.remove(),7000)}
+      if(b){b.textContent='Final Jun 2026 · MC owner truth lock 51101';setTimeout(()=>b.remove(),7000)}
     });
   </script>
   <script src="../jun-2026/kzk-seed-june-2026.js?v=20260709-restore-1"></script>
-  <script src="../v51069-stability-guard.js?v=51100-snapshot-bos-live"></script>
-  <script src="../v51070-access-state.js?v=51100-snapshot-bos-live"></script>
-  <script src="../v51071-hrmis-mc-upload-repair.js?v=51100-snapshot-bos-live"></script>
-  <script src="../v51074-june-master-restore.js?v=51100-snapshot-bos-live"></script>
+  <script src="../v51069-stability-guard.js?v=51101-mc-owner-truth"></script>
+  <script src="../v51070-access-state.js?v=51101-mc-owner-truth"></script>
+  <script src="../v51071-hrmis-mc-upload-repair.js?v=51101-mc-owner-truth"></script>
+  <script src="../v51074-june-master-restore.js?v=51101-mc-owner-truth"></script>
   <script>window.__EAKHA_JUN_LIVE_B64='';</script>
   <script src="../jun-2026/live-data-jun-2026-part01.js?v=20260709-live-1"></script>
   <script src="../jun-2026/live-data-jun-2026-part02.js?v=20260709-live-1"></script>
@@ -43,5 +43,6 @@
   <script src="../v51098-asree-th-lock.js?v=51098-asree-th-lock-1"></script>
   <script src="../v51099-asree-th-final-dom-lock.js?v=51099-asree-final-dom-1"></script>
   <script src="../v51100-snapshot-bos-live-report.js?v=51100-snapshot-bos-live-1"></script>
+  <script src="../v51101-june-mc-owner-truth-lock.js?v=51101-mc-owner-truth-1"></script>
 </body>
 </html>
