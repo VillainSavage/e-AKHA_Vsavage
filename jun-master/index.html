@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>e-AKHA Vsavage — Jun 2026 · Offday Rule</title>
+  <title>e-AKHA Vsavage — Jun 2026 · Hard Offday Lock</title>
   <style>
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426}
     #system{display:block;border:0;width:100%;height:100%;background:#071426}
@@ -11,21 +11,21 @@
   </style>
 </head>
 <body>
-  <iframe id="system" title="e-AKHA Vsavage Jun 2026 Offday Rule"></iframe>
-  <div id="boot">Memuatkan Jun 2026 Offday Rule…</div>
+  <iframe id="system" title="e-AKHA Vsavage Jun 2026 Hard Offday Lock"></iframe>
+  <div id="boot">Memuatkan Jun 2026 Hard Offday Lock…</div>
   <script>
     const frame=document.getElementById('system');
-    frame.src=`../base-v51017.html?month=6&v=51104-offday-rule-${Date.now()}`;
+    frame.src=`../base-v51017.html?month=6&v=51104-hard-offday-lock-${Date.now()}`;
     frame.addEventListener('load',()=>{
       const b=document.getElementById('boot');
-      if(b){b.textContent='Jun 2026 · Offday Rule 51104';setTimeout(()=>b.remove(),7000)}
+      if(b){b.textContent='Jun 2026 · Hard Offday Lock 51104';setTimeout(()=>b.remove(),7000)}
     });
   </script>
   <script src="../jun-2026/kzk-seed-june-2026.js?v=20260709-restore-1"></script>
-  <script src="../v51069-stability-guard.js?v=51104-offday-rule"></script>
-  <script src="../v51070-access-state.js?v=51104-offday-rule"></script>
-  <script src="../v51071-hrmis-mc-upload-repair.js?v=51104-offday-rule"></script>
-  <script src="../v51074-june-master-restore.js?v=51104-offday-rule"></script>
+  <script src="../v51069-stability-guard.js?v=51104-hard-offday-lock"></script>
+  <script src="../v51070-access-state.js?v=51104-hard-offday-lock"></script>
+  <script src="../v51071-hrmis-mc-upload-repair.js?v=51104-hard-offday-lock"></script>
+  <script src="../v51074-june-master-restore.js?v=51104-hard-offday-lock"></script>
   <script>window.__EAKHA_JUN_LIVE_B64='';</script>
   <script src="../jun-2026/live-data-jun-2026-part01.js?v=20260709-live-1"></script>
   <script src="../jun-2026/live-data-jun-2026-part02.js?v=20260709-live-1"></script>
@@ -34,6 +34,6 @@
   <script src="../jun-2026/live-data-jun-2026-part05.js?v=20260709-live-1"></script>
   <script src="../jun-2026/live-data-jun-2026-part06.js?v=20260709-live-1"></script>
   <script src="../v51075-june-live-data.js?v=51075-live-1"></script>
-  <script src="../v51104-performance-lite-offday-rule.js?v=51104-offday-rule-1"></script>
+  <script src="../v51104-performance-lite-offday-rule.js?v=51104-hard-offday-lock-2"></script>
 </body>
 </html>
