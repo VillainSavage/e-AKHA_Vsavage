@@ -1256,4 +1256,3 @@
     } catch (error) {}
   }, 1500);
 })();
-Fix duplicate data and lock permanent TH
